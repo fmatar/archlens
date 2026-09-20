@@ -37,7 +37,7 @@
         <!-- Testing -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
+            <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -156,7 +156,6 @@
                 <version>${pmd-plugin.version}</version>
                 <configuration>
                     <linkXRef>false</linkXRef>
-                    <sourceEncoding>UTF-8</sourceEncoding>
                     <minimumTokens>100</minimumTokens>
                     <targetJdk>25</targetJdk>
                     <printFailingErrors>true</printFailingErrors>
@@ -166,14 +165,15 @@
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
-                        <version>9.10.1</version>
+                        <version>${asm.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm-commons</artifactId>
-                        <version>9.10.1</version>
+                        <version>${asm.version}</version>
                     </dependency>
                 </dependencies>
+
                 <executions>
                     <execution>
                         <id>pmd-check</id>

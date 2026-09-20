@@ -22,8 +22,9 @@
         <maven.compiler.target>25</maven.compiler.target>
 
         <!-- Toolchain & Plugin Versions -->
-        <quarkus.platform.version>3.19.1</quarkus.platform.version>
+        <quarkus.platform.version>3.39.4</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <javaparser.version>3.26.3</javaparser.version>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>

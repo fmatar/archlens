@@ -6,6 +6,7 @@
   import ClassCard from './lib/components/ClassCard.svelte';
   import SourceModal from './lib/components/SourceModal.svelte';
   import { ShieldCheck, Network, AlertTriangle } from 'lucide-svelte';
+  import type { DependencyEdge } from './lib/types/diagram';
 
   onMount(async () => {
     await diagramStore.loadPolicy();
@@ -19,7 +20,7 @@
   });
 
   let violatingCount = $derived(
-    diagramStore.graph?.edges.filter(e => e.isViolating).length || 0
+    diagramStore.graph?.edges.filter((e: DependencyEdge) => e.isViolating).length || 0
   );
 </script>
 

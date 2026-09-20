@@ -4,6 +4,8 @@ target
 **/target/
 node_modules/
 **/node_modules/
+frontend/node/
+frontend/dist/
 .idea/
 .DS_Store
 .uml-viewer/

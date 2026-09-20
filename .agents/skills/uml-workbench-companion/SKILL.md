@@ -8,9 +8,16 @@ description: >-
 
 # UML Workbench Companion Skill (`uml-workbench-companion`)
 
-Use this skill when interacting with the **Clean Architecture Dynamic UML Workbench**. This skill enables Antigravity to act as the autonomous coding companion to the human architect who is using the visual UML viewer.
+Use this skill when interacting with the **Clean Architecture Dynamic UML Workbench**. This skill enables Antigravity or Gemini agents to act as the autonomous coding companion to the human architect who is using the visual UML viewer.
 
 ---
+
+## ⚙️ Configuration & Service Endpoints
+
+The workbench service endpoint defaults to `http://localhost:8088`, configurable via `.uml-viewer/workbench.config.json` or the `WORKBENCH_URL` environment variable.
+
+- **Graph & Violation API**: `GET http://localhost:8088/api/graph?proposalId=<id>&projectRoot=<root>`
+- **Mailbox Files**: Located in `.uml-viewer/` under the examined repository root.
 
 ## 📋 Core Responsibilities
 

@@ -9,5 +9,4 @@ public record ComponentNode(
     CrapScore crap,
     Double mutationScore,
     List<String> childPackageIds,
-    List<ClassNode> classes
-) {}
+    List<ClassNode> classes) {}

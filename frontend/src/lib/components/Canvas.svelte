@@ -4,6 +4,7 @@
   import ComponentBox from './ComponentBox.svelte';
   import DependencyEdge from './DependencyEdge.svelte';
   import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-svelte';
+  import type { ComponentNode, ClassNode } from '../types/diagram';
 
   let svgElement: SVGSVGElement | null = $state(null);
   let isPanning = $state(false);
@@ -21,7 +22,7 @@
   let componentOffsets = $state<Record<string, { x: number; y: number }>>({});
 
   let graph = $derived(diagramStore.graph);
-  let components = $derived(graph?.components || []);
+  let components = $derived<ComponentNode[]>(graph?.components || []);
   let edges = $derived(graph?.edges || []);
 
   // Compute 2D Sugiyama-style rank coordinates
@@ -32,19 +33,19 @@
 
   let positionedComponents = $derived.by(() => {
     // Group components by level
-    const levelMap = new Map<number, typeof components>();
-    components.forEach(c => {
+    const levelMap = new Map<number, ComponentNode[]>();
+    components.forEach((c: ComponentNode) => {
       const lvl = c.level !== null ? c.level : 3;
       if (!levelMap.has(lvl)) levelMap.set(lvl, []);
       levelMap.get(lvl)!.push(c);
     });
 
     const sortedLevels = Array.from(levelMap.keys()).sort((a, b) => a - b);
-    const coords = new Map<string, { x: number; y: number; width: number; height: number; comp: any }>();
+    const coords = new Map<string, { x: number; y: number; width: number; height: number; comp: ComponentNode }>();
 
     sortedLevels.forEach((level, rowIdx) => {
       const row = levelMap.get(level)!;
-      row.forEach((comp, colIdx) => {
+      row.forEach((comp: ComponentNode, colIdx: number) => {
         const baseOffset = componentOffsets[comp.id] || { x: 0, y: 0 };
         const x = 100 + colIdx * (BOX_WIDTH + GAP_X) + baseOffset.x;
         const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) + baseOffset.y;
@@ -167,7 +168,7 @@
             const simpleName = fullClassName.split('.').pop() || fullClassName;
             for (const item of positionedComponents.values()) {
               if (item.comp.id === fullClassName || item.comp.id === simpleName) return item;
-              if (item.comp.classes && item.comp.classes.some((cl: any) => cl.id === fullClassName || cl.name === simpleName)) {
+              if (item.comp.classes && item.comp.classes.some((cl: ClassNode) => cl.id === fullClassName || cl.name === simpleName)) {
                 return item;
               }
               const pkgSeg = fullClassName.split('.').slice(-2, -1)[0];

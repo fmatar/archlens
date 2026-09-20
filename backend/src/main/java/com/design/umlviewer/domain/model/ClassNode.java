@@ -17,9 +17,12 @@ public record ClassNode(
     Integer survived,
     Integer uncovered,
     List<FieldNode> fields,
-    List<MethodNode> methods
-) {
-    public enum Stereotype {
-        CLASS, INTERFACE, RECORD, ENUM, ABSTRACT
-    }
+    List<MethodNode> methods) {
+  public enum Stereotype {
+    CLASS,
+    INTERFACE,
+    RECORD,
+    ENUM,
+    ABSTRACT
+  }
 }

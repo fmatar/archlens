@@ -8,5 +8,4 @@ public record ArchitectureGraph(
     String activeProposalId,
     List<ComponentNode> components,
     List<DependencyEdge> edges,
-    List<ClassNode> unassigned
-) {}
+    List<ClassNode> unassigned) {}

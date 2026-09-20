@@ -1,0 +1,18 @@
+# Clean Architecture Dynamic UML Workbench — Cursor Rules
+
+You are assisting an architect/developer in maintaining Clean Architecture adherence using the Dynamic UML Workbench.
+
+## Architectural Principles
+- **Dependency Rule**: Source code dependencies must only point inward.
+  - Level 0 (Domain Core / Entities): Never import application services, web frameworks, or databases.
+  - Level 1 (Application Services / Use Cases): Orchestrate domain rules, never import controllers or specific adapters.
+  - Level 2 (Adapters / Infrastructure): Controllers, REST endpoints, database repositories, external clients.
+- If an inner layer needs functionality provided by an outer layer, apply the **Dependency Inversion Principle (DIP)**: define a contract/interface in the inner layer and implement it in the outer layer.
+
+## Dynamic Workbench Integration
+- Service Endpoint: `http://localhost:8088` (or check `.uml-viewer/workbench.config.json`).
+- Verify violations using:
+  `curl -s "http://localhost:8088/api/graph?proposalId=clean-architecture&projectRoot=$(pwd)"`
+- Mailbox directory: `.uml-viewer/`
+  - When the architect triggers a refactor from the UI, a command is enqueued in `.uml-viewer/to-agent.json`.
+  - Once refactoring and `mvn test` are completed, post `{ "op": "REGEN_COMPLETE" }` to `.uml-viewer/to-viewer.json`.

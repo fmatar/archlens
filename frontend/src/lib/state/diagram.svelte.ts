@@ -1,4 +1,5 @@
 import { DEMO_POLICY, DEMO_GRAPH_REAL, DEMO_GRAPH_PROPOSAL } from '../data/demoData';
+import type { ArchitectureGraph, ArchitecturePolicy, ClassNode } from '../types/diagram';
 
 export type DeclutterMode = 'NONE' | 'ARROWS' | 'REMOVE_ARROWS' | 'ELEMENTS' | 'CLASSES';
 

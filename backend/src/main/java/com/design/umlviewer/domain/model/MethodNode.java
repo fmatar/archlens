@@ -13,5 +13,4 @@ public record MethodNode(
     int killed,
     int survived,
     int uncovered,
-    int line
-) {}
+    int line) {}

@@ -52,6 +52,7 @@ export interface ComponentNode {
   crap: CrapScore;
   mutationScore: number;
   childPackageIds: string[];
+  packages?: string[];
   classes: ClassNode[];
   x?: number;
   y?: number;

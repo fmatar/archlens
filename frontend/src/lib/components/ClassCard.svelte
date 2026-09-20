@@ -1,7 +1,7 @@
 <script lang="ts">
   import { diagramStore } from '../state/diagram.svelte';
   import { formatCrap, formatCoverage } from '../utils/colors';
-  import { X, Code, ShieldAlert, Cpu } from 'lucide-svelte';
+  import { X, Code, ShieldAlert, Cpu } from '@lucide/svelte';
 
   let cls = $derived(diagramStore.selectedClass);
 </script>
@@ -9,7 +9,11 @@
 {#if cls}
   <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
       class="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
       onclick={(e) => e.stopPropagation()}
     >
@@ -67,9 +71,9 @@
           <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Operations & Methods</h3>
           <div class="bg-slate-950/40 rounded-lg divide-y divide-slate-800 font-mono text-xs">
             {#each cls.methods as m}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <div
-                class="p-2 hover:bg-slate-800/40 cursor-pointer flex items-center justify-between transition-colors group"
+              <button
+                type="button"
+                class="w-full text-left p-2 hover:bg-slate-800/40 cursor-pointer flex items-center justify-between transition-colors group"
                 onclick={() => diagramStore.openSource(cls.filePath, m.line)}
               >
                 <div class="flex items-center gap-2">
@@ -82,7 +86,7 @@
                   <span class="text-emerald-400">CRAP: {m.crap}</span>
                   <Code size={14} class="text-slate-500 group-hover:text-blue-400" />
                 </div>
-              </div>
+              </button>
             {/each}
             {#if cls.methods.length === 0}
               <div class="p-3 text-slate-500 italic text-center">No methods defined</div>

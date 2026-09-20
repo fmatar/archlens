@@ -20,17 +20,15 @@
         <maven.compiler.release>25</maven.compiler.release>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
-
         <!-- Toolchain & Plugin Versions -->
         <quarkus.platform.version>3.39.4</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <javaparser.version>3.26.3</javaparser.version>
-        <compiler-plugin.version>3.13.0</compiler-plugin.version>
-        <surefire-plugin.version>3.5.2</surefire-plugin.version>
+        <javaparser.version>3.28.2</javaparser.version>
+        <compiler-plugin.version>3.16.0</compiler-plugin.version>
+        <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <jacoco.version>0.8.15</jacoco.version>
-        <enforcer-plugin.version>3.5.0</enforcer-plugin.version>
+        <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
         <spotless-plugin.version>3.10.2</spotless-plugin.version>
         <google-java-format.version>1.30.0</google-java-format.version>
         <pmd-plugin.version>3.28.0</pmd-plugin.version>
@@ -40,13 +38,10 @@
         <frontend-plugin.version>2.0.2</frontend-plugin.version>
         <resources-plugin.version>3.3.1</resources-plugin.version>
         <versions-plugin.version>2.18.0</versions-plugin.version>
-
-
-
         <!-- Frontend Versions (Installed automatically by frontend-maven-plugin) -->
         <node.version>v26.8.2</node.version>
-        <pnpm.version>12.14.1</pnpm.version>
-        <maven.min.version>3.9.0</maven.min.version>
+        <pnpm.version>12.4.1</pnpm.version>
+        <maven.min.version>3.9.16</maven.min.version>
     </properties>
 
 

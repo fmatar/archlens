@@ -3,7 +3,7 @@
   import { diagramStore } from '../state/diagram.svelte';
   import ComponentBox from './ComponentBox.svelte';
   import DependencyEdge from './DependencyEdge.svelte';
-  import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-svelte';
+  import { ZoomIn, ZoomOut, Maximize2 } from '@lucide/svelte';
   import type { ComponentNode, ClassNode } from '../types/diagram';
 
   let svgElement: SVGSVGElement | null = $state(null);

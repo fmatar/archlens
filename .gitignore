@@ -9,3 +9,5 @@ frontend/dist/
 .idea/
 .DS_Store
 .uml-viewer/
+coverage/
+**/coverage/

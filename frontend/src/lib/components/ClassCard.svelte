@@ -1,7 +1,7 @@
 <script lang="ts">
   import { diagramStore } from '../state/diagram.svelte';
   import { formatCrap, formatCoverage } from '../utils/colors';
-  import { X, Code, ShieldAlert, Cpu } from 'lucide-svelte';
+  import { X, Code, ShieldAlert, Cpu } from '@lucide/svelte';
 
   let cls = $derived(diagramStore.selectedClass);
 </script>

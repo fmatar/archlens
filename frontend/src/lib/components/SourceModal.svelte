@@ -1,6 +1,6 @@
 <script lang="ts">
   import { diagramStore } from '../state/diagram.svelte';
-  import { X, FileCode } from 'lucide-svelte';
+  import { X, FileCode } from '@lucide/svelte';
 
   let modal = $derived(diagramStore.sourceFileModal);
   let lines = $derived(modal?.content ? modal.content.split('\n') : []);

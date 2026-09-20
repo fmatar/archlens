@@ -1,6 +1,6 @@
 <script lang="ts">
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree } from 'lucide-svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree } from '@lucide/svelte';
 
   let policy = $derived(diagramStore.policy);
   let proposals = $derived(policy?.proposals || []);

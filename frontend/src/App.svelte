@@ -5,7 +5,7 @@
   import Inspector from './lib/components/Inspector.svelte';
   import ClassCard from './lib/components/ClassCard.svelte';
   import SourceModal from './lib/components/SourceModal.svelte';
-  import { ShieldCheck, Network, AlertTriangle } from 'lucide-svelte';
+  import { ShieldCheck, Network, AlertTriangle } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   onMount(async () => {

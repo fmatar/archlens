@@ -1,0 +1,102 @@
+export type Stereotype = 'CLASS' | 'INTERFACE' | 'RECORD' | 'ENUM' | 'ABSTRACT';
+export type EdgeKind = 'DEPENDENCY' | 'IMPLEMENTS' | 'INHERITANCE' | 'ASSOCIATION' | 'AGGREGATION' | 'COMPOSITION';
+
+export interface CrapScore {
+  mu: number;
+  max: number;
+  sigma: number;
+}
+
+export interface FieldNode {
+  name: string;
+  type: string;
+  isPrivate: boolean;
+}
+
+export interface MethodNode {
+  name: string;
+  args: string[];
+  returnType: string;
+  isPrivate: boolean;
+  cc: number;
+  coverage: number;
+  crap: number;
+  killed: number;
+  survived: number;
+  uncovered: number;
+  line: number;
+}
+
+export interface ClassNode {
+  id: string;
+  name: string;
+  packageName: string;
+  filePath: string;
+  stereotype: Stereotype;
+  isForeign: boolean;
+  level: number | null;
+  crap: CrapScore;
+  coverage: number;
+  cc: number;
+  killed: number;
+  survived: number;
+  uncovered: number;
+  fields: FieldNode[];
+  methods: MethodNode[];
+}
+
+export interface ComponentNode {
+  id: string;
+  label: string;
+  level: number | null;
+  crap: CrapScore;
+  mutationScore: number;
+  childPackageIds: string[];
+  classes: ClassNode[];
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+}
+
+export interface DependencyEdge {
+  from: string;
+  to: string;
+  kind: EdgeKind;
+  label?: string;
+  isViolating: boolean;
+}
+
+export interface ArchitectureGraph {
+  title: string;
+  isProposal: boolean;
+  activeProposalId?: string;
+  components: ComponentNode[];
+  edges: DependencyEdge[];
+  unassigned: ClassNode[];
+}
+
+export interface ProposalLayer {
+  id: string;
+  label: string;
+  packages: string[];
+}
+
+export interface Proposal {
+  id: string;
+  name: string;
+  layers: ProposalLayer[];
+  omit: string[];
+}
+
+export interface ArchitecturePolicy {
+  title: string;
+  src: string;
+  prefix: string;
+  hierarchical: boolean;
+  order: string[];
+  levels: string[][];
+  foreign: string[];
+  proposals: Proposal[];
+  omit: string[];
+}

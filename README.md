@@ -1,14 +1,16 @@
 # Clean Architecture Dynamic UML Workbench
 
-[![Java 21+](https://img.shields.io/badge/Java-21%2B-orange.svg)](https://openjdk.org/)
-[![Quarkus](https://img.shields.io/badge/Quarkus-3.x-blue.svg)](https://quarkus.io/)
+[![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/)
+[![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.19-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
+[![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](https://hub.docker.com/)
+[![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go-emerald.svg)](#polyglot-language-support)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
 > — **Robert C. Martin (Uncle Bob)**
 
-An interactive, real-time architectural visualization workbench and agent-driven refactoring platform for modern Java enterprise systems.
+An interactive, real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and agent-driven refactoring platform for modern software systems.
 
 ---
 
@@ -16,14 +18,16 @@ An interactive, real-time architectural visualization workbench and agent-driven
 
 Robert C. Martin’s writings have been a foundational reference point throughout modern software engineering. *Clean Code*, *Clean Architecture*, and the SOLID principles established how we protect core business policies from the volatility of frameworks, delivery mechanisms, and external databases.
 
-When Uncle Bob open-sourced [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), the vision was captivating: transforming the Dependency Rule from an abstract diagram in a book into a living, tangible feedback loop right on our screens. Seeing that experimental Clojure prototype sparked an immediate ambition: *bring this exact philosophy into the heart of modern enterprise environments.*
+When Uncle Bob open-sourced [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), the vision was captivating: transforming the Dependency Rule from an abstract diagram in a book into a living, tangible feedback loop right on our screens. Seeing that experimental prototype sparked an immediate ambition: *bring this exact philosophy into the heart of modern polyglot enterprise environments.*
 
-Modern enterprise platforms run on distributed services, multi-module Maven setups, Java 21+ records, asynchronous reactive pipelines, and rich web interfaces. We took Uncle Bob's core thesis and engineered a production-grade workbench built from the ground up for modern enterprise codebases:
+We took Uncle Bob's core thesis and engineered a production-grade workbench built from the ground up:
 
-1. **Enterprise Java AST Engine**: Built with Quarkus and JavaParser supporting Java 21/25 language features (records, pattern matching, sealed types, annotations) with on-the-fly cyclomatic complexity and CRAP score calculations.
+1. **Polyglot AST Engine (SPI)**: Pluggable AST and dependency scanners supporting **Java 25**, **Python**, **Rust**, **TypeScript / JavaScript**, and **Go**.
 2. **Fluid Reactive Architecture Canvas**: Svelte 5 and SVG rendering capable of dynamically visualizing and decluttering hundreds of classes across concentric layers with bidirectional dependency arrows.
 3. **Multi-Project Architecture Governance**: Point the workbench at any repository on your machine—from standalone services to large multi-module codebases—to validate architectural boundaries against version-controlled policies.
 4. **Agent Refactoring Loop**: Agnostic file-based mailbox protocol (`.uml-viewer/`) allowing autonomous AI agents (such as Google Antigravity) to receive refactoring commands, fix violations, run tests, and push hot-reloads to the canvas.
+5. **Single-Container Deployment**: Fully packaged as an all-in-one container serving both the embedded Svelte 5 SPA and Quarkus REST/SSE backend on port `8088`.
+
 
 ---
 

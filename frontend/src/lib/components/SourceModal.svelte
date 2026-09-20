@@ -9,7 +9,11 @@
 {#if modal}
   <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
     <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
       class="bg-slate-950 border border-slate-700 rounded-xl shadow-2xl max-w-4xl w-full h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       onclick={(e) => e.stopPropagation()}
     >

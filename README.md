@@ -5,7 +5,7 @@
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](https://hub.docker.com/)
 [![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go-emerald.svg)](#polyglot-language-support)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 > *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
 > — **Robert C. Martin (Uncle Bob)**
@@ -157,4 +157,5 @@ Pull requests and issues are welcome! Please ensure all backend tests pass (`mvn
 
 ## License
 
-[MIT](LICENSE)
+Licensed under the [Apache License, Version 2.0](LICENSE).  
+See the [NOTICE](NOTICE) file for attribution and acknowledgements.

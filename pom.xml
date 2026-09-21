@@ -9,6 +9,14 @@
     <packaging>pom</packaging>
     <name>Clean Architecture Dynamic UML Workbench :: Parent</name>
 
+    <licenses>
+        <license>
+            <name>Apache-2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <modules>
         <module>frontend</module>
         <module>backend</module>

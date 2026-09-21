@@ -116,7 +116,7 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await page.goto('/');
 
     // Wait for a component box to be rendered
-    const firstBox = page.locator('svg g.group rect').first();
+    const firstBox = page.locator('rect[data-testid="component-card"]').first();
     await expect(firstBox).toBeVisible({ timeout: 10000 });
 
     const initialBoxBounds = await firstBox.boundingBox();
@@ -177,5 +177,49 @@ test.describe('Archlens Workbench & Source Inspection', () => {
 
     // 7. Detailed class rows re-appear
     await expect(classRow).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should toggle edge bundling and multi-select declutter filters', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. Verify HUD edge bundling toggle exists
+    const bundlingBtn = page.locator('button[title*="Toggle Hierarchical Edge Bundling"]');
+    await expect(bundlingBtn).toBeVisible({ timeout: 10000 });
+    await expect(bundlingBtn).toContainText('Bundled');
+
+    // 2. Toggle bundling to Detailed via click
+    await bundlingBtn.click();
+    await expect(bundlingBtn).toContainText('Detailed');
+
+    // 3. Toggle back via 'b' hotkey
+    await page.keyboard.press('b');
+    await expect(bundlingBtn).toContainText('Bundled');
+
+    // 4. Test Violation X-Ray mode via 'v' hotkey
+    const xrayBtn = page.locator('button[title*="Violation X-Ray Mode"]');
+    await expect(xrayBtn).toBeVisible();
+    await page.keyboard.press('v');
+    await expect(xrayBtn).toHaveClass(/bg-rose-500/);
+
+    // 5. Test Multi-Select matrix in Inspector
+    const xrayToggle = page.locator('button', { hasText: 'Violation X-Ray Mode' });
+    const compactToggle = page.locator('button', { hasText: 'Compact Macro Cards' });
+
+    await expect(xrayToggle).toBeVisible();
+    await expect(compactToggle).toBeVisible();
+
+    // Toggle compact cards as well (both active simultaneously!)
+    await compactToggle.click();
+    await expect(xrayToggle).toContainText('[✓]');
+    await expect(compactToggle).toContainText('[✓]');
+
+    // Press 'v' again to toggle off X-Ray while keeping Compact active
+    await page.keyboard.press('v');
+    await expect(xrayToggle).toContainText('[ ]');
+    await expect(compactToggle).toContainText('[✓]');
+
+    // Reset filters
+    await compactToggle.click();
+    await expect(compactToggle).toContainText('[ ]');
   });
 });

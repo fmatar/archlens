@@ -103,10 +103,10 @@
 
     <!-- Decluttering Controls -->
     <div>
-      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Display Controls</div>
+      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Display & Triage Controls</div>
       <button
         onclick={() => diagramStore.cycleDeclutter()}
-        class="w-full px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-between border border-slate-700/80 transition-all hover:border-slate-600"
+        class="w-full px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-between border border-slate-700/80 transition-all hover:border-slate-600 mb-2.5"
       >
         <span class="flex items-center gap-2">
           <Eye size={14} class="text-slate-400" />
@@ -116,6 +116,99 @@
           {diagramStore.declutterMode}
         </span>
       </button>
+
+      <!-- Multi-Select Declutter Filter Matrix -->
+      <div class="space-y-1.5">
+        <!-- Edge Bundling Toggle -->
+        <button
+          onclick={() => diagramStore.toggleEdgeBundling()}
+          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            diagramStore.isEdgeBundlingEnabled
+              ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
+              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span class="flex items-center gap-1.5 font-mono text-[11px]">
+            <span class={diagramStore.isEdgeBundlingEnabled ? 'text-blue-400 font-bold' : 'text-slate-600'}>
+              {diagramStore.isEdgeBundlingEnabled ? '[✓]' : '[ ]'}
+            </span>
+            Edge Bundling (Corridors)
+          </span>
+          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">B</span>
+        </button>
+
+        <!-- Violation X-Ray Toggle -->
+        <button
+          onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES')}
+          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')
+              ? 'bg-rose-950/50 border-rose-600/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span class="flex items-center gap-1.5 font-mono text-[11px]">
+            <span class={diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? 'text-rose-400 font-bold' : 'text-slate-600'}>
+              {diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? '[✓]' : '[ ]'}
+            </span>
+            Violation X-Ray Mode
+          </span>
+          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">V</span>
+        </button>
+
+        <!-- Compact Macro Cards Toggle -->
+        <button
+          onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CLASSES')}
+          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            diagramStore.hasDeclutterFilter('HIDE_CLASSES')
+              ? 'bg-indigo-950/40 border-indigo-600/50 text-indigo-300'
+              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span class="flex items-center gap-1.5 font-mono text-[11px]">
+            <span class={diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? 'text-indigo-400 font-bold' : 'text-slate-600'}>
+              {diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? '[✓]' : '[ ]'}
+            </span>
+            Compact Macro Cards
+          </span>
+          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">C</span>
+        </button>
+
+        <!-- 1-Hop Neighborhood Focus Toggle -->
+        <button
+          onclick={() => diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD')}
+          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD')
+              ? 'bg-emerald-950/40 border-emerald-600/50 text-emerald-300'
+              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span class="flex items-center gap-1.5 font-mono text-[11px]">
+            <span class={diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? 'text-emerald-400 font-bold' : 'text-slate-600'}>
+              {diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? '[✓]' : '[ ]'}
+            </span>
+            1-Hop Neighborhood Focus
+          </span>
+          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">F</span>
+        </button>
+
+        <!-- Tier Lanes Toggle -->
+        <button
+          onclick={() => diagramStore.toggleDeclutterFilter('HIDE_TIER_LANES')}
+          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')
+              ? 'bg-purple-950/40 border-purple-600/50 text-purple-300'
+              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <span class="flex items-center gap-1.5 font-mono text-[11px]">
+            <span class={diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? 'text-purple-400 font-bold' : 'text-slate-600'}>
+              {diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? '[✓]' : '[ ]'}
+            </span>
+            Hide Tier Backdrops
+          </span>
+          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">T</span>
+        </button>
+      </div>
     </div>
 
     <!-- Clean Architecture Legend -->

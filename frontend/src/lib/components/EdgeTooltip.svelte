@@ -42,12 +42,12 @@
         {#if info.edge.isViolating}
           <div class="flex items-center gap-1 text-rose-400 font-semibold font-mono text-[11px]">
             <AlertTriangle size={14} class="animate-pulse" />
-            DEPENDENCY RULE VIOLATION
+            {info.isBundled ? `VIOLATING CORRIDOR (${info.violationCount || 1}/${info.bundleCount || 1} BREACHES)` : 'DEPENDENCY RULE VIOLATION'}
           </div>
         {:else}
           <div class="flex items-center gap-1 text-emerald-400 font-semibold font-mono text-[11px]">
             <ShieldCheck size={14} />
-            CONFORMING DEPENDENCY
+            {info.isBundled ? `CONFORMING CORRIDOR (${info.bundleCount || 1} DEPENDENCIES)` : 'CONFORMING DEPENDENCY'}
           </div>
         {/if}
       </div>

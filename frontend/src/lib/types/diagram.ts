@@ -120,4 +120,27 @@ export interface EdgeTooltipInfo {
   toLevel: number | null;
   x: number;
   y: number;
+  isBundled?: boolean;
+  bundleCount?: number;
+  violationCount?: number;
+}
+
+export type DeclutterFilter =
+  | 'HIDE_CONFORMING_EDGES'  // Violation X-Ray ('V')
+  | 'HIDE_ALL_EDGES'         // Hide all lines ('A')
+  | 'HIDE_CLASSES'           // Compact macro cards ('C')
+  | 'HIDE_TIER_LANES'        // Hide background tier rings ('T')
+  | 'ISOLATE_NEIGHBORHOOD';  // 1-Hop focus isolation ('F')
+
+export interface BundledEdge {
+  id: string;
+  fromCompId: string;
+  toCompId: string;
+  fromNode: { x: number; y: number; width: number; height: number; comp: ComponentNode };
+  toNode: { x: number; y: number; width: number; height: number; comp: ComponentNode };
+  edges: DependencyEdge[];
+  totalCount: number;
+  violationCount: number;
+  isViolating: boolean;
+  representativeEdge: DependencyEdge;
 }

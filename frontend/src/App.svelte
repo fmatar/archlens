@@ -75,6 +75,18 @@
     } else if (e.key.toLowerCase() === 'd') {
       e.preventDefault();
       diagramStore.cycleDeclutter();
+    } else if (e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES');
+    } else if (e.key.toLowerCase() === 'b') {
+      e.preventDefault();
+      diagramStore.toggleEdgeBundling();
+    } else if (e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      diagramStore.toggleDeclutterFilter('HIDE_CLASSES');
+    } else if (e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD');
     } else if (e.key.toLowerCase() === 't') {
       e.preventDefault();
       diagramStore.isTelemetryDrawerOpen = !diagramStore.isTelemetryDrawerOpen;

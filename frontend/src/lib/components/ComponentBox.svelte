@@ -28,7 +28,9 @@
 
   let rankBadge = $derived(component.level !== null ? `Ring ${component.level}` : 'Unranked');
   let hasHalo = $derived(diagramStore.targetHaloNodeId === component.id);
-  let isCompactLOD = $derived(diagramStore.zoom < 0.55 && !isFocused);
+  let isCompactLOD = $derived(
+    (diagramStore.zoom < 0.55 || diagramStore.hasDeclutterFilter('HIDE_CLASSES')) && !isFocused
+  );
 
   function getCrapColor(crapMu: number): string {
     if (crapMu <= 4) return '#10b981'; // Emerald
@@ -85,6 +87,7 @@
 
   <!-- Outer Box Card Surface (Entire card is draggable) -->
   <rect
+    data-testid="component-card"
     width={width}
     height={height}
     rx="8"

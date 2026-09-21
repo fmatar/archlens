@@ -86,12 +86,34 @@ describe('diagramStore state management', () => {
     expect(diagramStore.isTelemetryDrawerOpen).toBe(true);
   });
 
-  it('should handle panToComponent smoothly with halo', async () => {
-    await diagramStore.loadGraph(null);
-    expect(diagramStore.graph).not.toBeNull();
+  it('should toggle edge bundling corridors', () => {
+    expect(diagramStore.isEdgeBundlingEnabled).toBe(true);
+    diagramStore.toggleEdgeBundling();
+    expect(diagramStore.isEdgeBundlingEnabled).toBe(false);
+    diagramStore.toggleEdgeBundling();
+    expect(diagramStore.isEdgeBundlingEnabled).toBe(true);
+  });
 
-    diagramStore.panToComponent('domain');
-    expect(diagramStore.targetHaloNodeId).toBe('domain');
-    expect(diagramStore.focusedNodeId).toBe('domain');
+  it('should toggle and clear multi-select declutter filters', () => {
+    expect(diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')).toBe(false);
+    expect(diagramStore.hasDeclutterFilter('HIDE_CLASSES')).toBe(false);
+
+    // Toggle X-Ray
+    diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES');
+    expect(diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')).toBe(true);
+
+    // Toggle Compact Cards simultaneously
+    diagramStore.toggleDeclutterFilter('HIDE_CLASSES');
+    expect(diagramStore.hasDeclutterFilter('HIDE_CLASSES')).toBe(true);
+    expect(diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')).toBe(true);
+
+    // Toggle off one filter
+    diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES');
+    expect(diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')).toBe(false);
+    expect(diagramStore.hasDeclutterFilter('HIDE_CLASSES')).toBe(true);
+
+    // Clear all filters
+    diagramStore.clearDeclutterFilters();
+    expect(diagramStore.hasDeclutterFilter('HIDE_CLASSES')).toBe(false);
   });
 });

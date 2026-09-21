@@ -16,6 +16,9 @@
     toLevel?: number | null;
     isDimmed?: boolean;
     isHighlighted?: boolean;
+    isBundled?: boolean;
+    bundleCount?: number;
+    violationCount?: number;
   }
 
   let {
@@ -29,7 +32,10 @@
     fromLevel = null,
     toLevel = null,
     isDimmed = false,
-    isHighlighted = false
+    isHighlighted = false,
+    isBundled = false,
+    bundleCount = 1,
+    violationCount = 0
   }: Props = $props();
 
   let flowPathEl: SVGPathElement | null = $state(null);
@@ -41,6 +47,16 @@
   let midX = $derived((x1 + x2) / 2);
   let pathD = $derived(`M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`);
   let markerId = $derived(edge.isViolating ? 'arrow-violating' : 'arrow-normal');
+
+  // Scale stroke width dynamically for bundled corridors
+  let strokeThickness = $derived.by(() => {
+    if (!isBundled) {
+      return edge.isViolating ? 2.5 : (isHighlighted ? 2.5 : 1.5);
+    }
+    const count = bundleCount || 1;
+    const base = edge.isViolating ? 3.0 : (isHighlighted ? 3.0 : 2.0);
+    return Math.min(7.5, base + Math.log2(count) * 1.1);
+  });
 
   $effect(() => {
     // Svelte 5 + GSAP lifecycle management
@@ -98,7 +114,10 @@
       fromLevel,
       toLevel,
       x: e.clientX,
-      y: e.clientY
+      y: e.clientY,
+      isBundled,
+      bundleCount,
+      violationCount
     };
   }
 
@@ -120,7 +139,7 @@
       d={pathD}
       fill="none"
       stroke="#ef4444"
-      stroke-width={isHighlighted ? 6 : 4}
+      stroke-width={isHighlighted ? strokeThickness + 3 : strokeThickness + 2}
       stroke-opacity="0.3"
       filter="url(#violation-glow)"
     />
@@ -131,9 +150,9 @@
     d={pathD}
     fill="none"
     stroke={edge.isViolating ? '#dc2626' : (isHighlighted ? '#60a5fa' : '#475569')}
-    stroke-width={edge.isViolating ? 2.5 : (isHighlighted ? 2.5 : 1.5)}
+    stroke-width={strokeThickness}
     marker-end={`url(#${markerId})`}
-    class="group-hover:stroke-blue-400 group-hover:stroke-[3px] transition-colors"
+    class="group-hover:stroke-blue-400 transition-colors"
   />
 
   <!-- Directional Motion Flow Overlay -->
@@ -142,14 +161,39 @@
     d={pathD}
     fill="none"
     stroke={edge.isViolating ? '#fca5a5' : '#38bdf8'}
-    stroke-width={edge.isViolating ? 2 : (isHighlighted ? 2.5 : 1.5)}
+    stroke-width={Math.max(1.2, strokeThickness - 0.75)}
     stroke-dasharray={edge.isViolating ? '5 7' : '6 8'}
     stroke-opacity={edge.isViolating ? 0.9 : 0.75}
     class="pointer-events-none"
   />
 
-  <!-- Edge Label / Violation Warning Badge -->
-  {#if edge.isViolating}
+  <!-- Bundled Pill Badge vs Single Edge Badges -->
+  {#if isBundled && bundleCount && bundleCount > 1}
+    <g
+      transform={`translate(${midX}, ${midY})`}
+      class="pointer-events-none select-none"
+    >
+      <rect
+        x={edge.isViolating ? -26 : -18}
+        y="-10"
+        width={edge.isViolating ? 52 : 36}
+        height="20"
+        rx="10"
+        class={edge.isViolating
+          ? 'fill-rose-950/95 stroke-rose-500 stroke-[1.5] shadow-lg shadow-rose-950/80'
+          : 'fill-slate-900/95 stroke-slate-600 stroke-[1] shadow-md'}
+      />
+      <text
+        y="4"
+        text-anchor="middle"
+        class={edge.isViolating
+          ? 'fill-rose-200 font-bold text-[10px] font-mono'
+          : 'fill-slate-300 font-medium text-[10px] font-mono'}
+      >
+        {edge.isViolating ? `! ${violationCount}/${bundleCount}` : `${bundleCount}`}
+      </text>
+    </g>
+  {:else if edge.isViolating}
     <g
       bind:this={badgeEl}
       transform={`translate(${midX}, ${midY})`}

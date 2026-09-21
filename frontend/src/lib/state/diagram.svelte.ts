@@ -5,7 +5,8 @@ import type {
   ClassNode,
   AgentTelemetryEvent,
   EdgeTooltipInfo,
-  ComponentNode
+  ComponentNode,
+  DeclutterFilter
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -18,6 +19,12 @@ class DiagramState {
   activeProposalId = $state<string | null>(null);
   declutterMode = $state<DeclutterMode>('ARROWS');
   sourceFileModal = $state<{ filePath: string; line: number; content?: string } | null>(null);
+
+  // Edge Bundling (Structural Corridor Aggregation)
+  isEdgeBundlingEnabled = $state<boolean>(true);
+
+  // Multi-Select Declutter Matrix
+  declutterFilters = $state<Set<DeclutterFilter>>(new Set());
 
   // Focus and Halo Highlights
   focusedNodeId = $state<string | null>(null);
@@ -190,6 +197,34 @@ class DiagramState {
     const nextIdx = (modes.indexOf(this.declutterMode) + 1) % modes.length;
     this.declutterMode = modes[nextIdx];
     this.addTelemetryEvent('INFO', `Declutter mode switched to ${this.declutterMode}`);
+  }
+
+  toggleEdgeBundling() {
+    this.isEdgeBundlingEnabled = !this.isEdgeBundlingEnabled;
+    this.addTelemetryEvent(
+      'INFO',
+      `Edge bundling ${this.isEdgeBundlingEnabled ? 'enabled (corridors)' : 'disabled (individual curves)'}`
+    );
+  }
+
+  hasDeclutterFilter(filter: DeclutterFilter): boolean {
+    return this.declutterFilters.has(filter);
+  }
+
+  toggleDeclutterFilter(filter: DeclutterFilter) {
+    const next = new Set(this.declutterFilters);
+    if (next.has(filter)) {
+      next.delete(filter);
+    } else {
+      next.add(filter);
+    }
+    this.declutterFilters = next;
+    this.addTelemetryEvent('INFO', `Toggled filter: ${filter} (${this.declutterFilters.has(filter) ? 'ON' : 'OFF'})`);
+  }
+
+  clearDeclutterFilters() {
+    this.declutterFilters = new Set();
+    this.addTelemetryEvent('INFO', 'Cleared all declutter filters');
   }
 
   componentOffsets = $state<Record<string, { x: number; y: number }>>({});

@@ -91,9 +91,26 @@
     return !(x + width < vb.minX || x > vb.maxX || y + height < vb.minY || y > vb.maxY);
   }
 
+  interface RenderableEdge {
+    key: string;
+    edge: EdgeType;
+    fromNode: { x: number; y: number; width: number; height: number; comp: ComponentNode };
+    toNode: { x: number; y: number; width: number; height: number; comp: ComponentNode };
+    isBundled: boolean;
+    bundleCount: number;
+    violationCount: number;
+  }
+
   let visibleComponents = $derived.by(() => {
     const list: Array<{ x: number; y: number; width: number; height: number; comp: ComponentNode }> = [];
+    const isNeighborhoodIsolation = diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD');
+    const focused = diagramStore.focusedNodeId;
+
     for (const item of positionedComponents.values()) {
+      if (isNeighborhoodIsolation && focused && connectedNodeIds && !connectedNodeIds.has(item.comp.id)) {
+        continue;
+      }
+
       if (
         draggedNodeId === item.comp.id ||
         diagramStore.focusedNodeId === item.comp.id ||
@@ -107,9 +124,13 @@
   });
 
   let visibleEdges = $derived.by(() => {
-    if (diagramStore.declutterMode === 'REMOVE_ARROWS') return [];
+    if (diagramStore.declutterMode === 'REMOVE_ARROWS' || diagramStore.hasDeclutterFilter('HIDE_ALL_EDGES')) return [];
+    const isXRayMode = diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES');
+
     const list: EdgeType[] = [];
     for (const edge of edges) {
+      if (isXRayMode && !edge.isViolating) continue;
+
       const fromNode = findNodeForClass(edge.from);
       const toNode = findNodeForClass(edge.to);
       if (!fromNode || !toNode || fromNode === toNode) continue;
@@ -125,6 +146,87 @@
       }
     }
     return list;
+  });
+
+  let renderedGraphEdges = $derived.by(() => {
+    if (!diagramStore.isEdgeBundlingEnabled) {
+      return visibleEdges.map((edge, idx) => {
+        const fromNode = findNodeForClass(edge.from)!;
+        const toNode = findNodeForClass(edge.to)!;
+        return {
+          key: `${edge.from}->${edge.to}:${edge.kind}:${idx}`,
+          edge,
+          fromNode,
+          toNode,
+          isBundled: false,
+          bundleCount: 1,
+          violationCount: edge.isViolating ? 1 : 0
+        };
+      });
+    }
+
+    const focusedId = diagramStore.focusedNodeId;
+    const bundles = new Map<string, {
+      fromNode: { x: number; y: number; width: number; height: number; comp: ComponentNode };
+      toNode: { x: number; y: number; width: number; height: number; comp: ComponentNode };
+      edges: EdgeType[];
+      violationCount: number;
+    }>();
+    const unbundled: RenderableEdge[] = [];
+
+    for (const edge of visibleEdges) {
+      const fromNode = findNodeForClass(edge.from);
+      const toNode = findNodeForClass(edge.to);
+      if (!fromNode || !toNode) continue;
+
+      const touchesFocused = focusedId && (fromNode.comp.id === focusedId || toNode.comp.id === focusedId);
+      if (touchesFocused) {
+        unbundled.push({
+          key: `unbundled:${edge.from}->${edge.to}:${edge.kind}`,
+          edge,
+          fromNode,
+          toNode,
+          isBundled: false,
+          bundleCount: 1,
+          violationCount: edge.isViolating ? 1 : 0
+        });
+      } else {
+        const bundleKey = `${fromNode.comp.id}->${toNode.comp.id}`;
+        if (!bundles.has(bundleKey)) {
+          bundles.set(bundleKey, {
+            fromNode,
+            toNode,
+            edges: [],
+            violationCount: 0
+          });
+        }
+        const b = bundles.get(bundleKey)!;
+        b.edges.push(edge);
+        if (edge.isViolating) b.violationCount++;
+      }
+    }
+
+    const result: RenderableEdge[] = [...unbundled];
+    for (const [key, b] of bundles.entries()) {
+      const representativeEdge: EdgeType = {
+        from: b.fromNode.comp.id,
+        to: b.toNode.comp.id,
+        kind: 'DEPENDENCY',
+        isViolating: b.violationCount > 0,
+        label: b.violationCount > 0 ? `! ${b.violationCount}/${b.edges.length}` : `${b.edges.length}`
+      };
+      result.push({
+        key: `bundle:${key}`,
+        edge: representativeEdge,
+        fromNode: b.fromNode,
+        toNode: b.toNode,
+        isBundled: true,
+        bundleCount: b.edges.length,
+        violationCount: b.violationCount
+      });
+    }
+
+    return result;
   });
 
   // Radar Scanline Telemetry State
@@ -425,6 +527,47 @@
     <div class="px-2 font-mono text-[10px] text-slate-400" title="Frustum Culled Rendered Nodes">
       {visibleComponents.length}/{components.length} nodes
     </div>
+    <div class="h-3 w-px bg-slate-800"></div>
+
+    <!-- Multi-Select HUD Triage Chips -->
+    <button
+      onclick={() => diagramStore.toggleEdgeBundling()}
+      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+        diagramStore.isEdgeBundlingEnabled
+          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30'
+          : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
+      }`}
+      title="Toggle Hierarchical Edge Bundling (B)"
+    >
+      <span>{diagramStore.isEdgeBundlingEnabled ? 'Bundled' : 'Detailed'}</span>
+      <span class="text-[9px] text-slate-400">B</span>
+    </button>
+
+    <button
+      onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES')}
+      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+        diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')
+          ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 hover:bg-rose-500/35 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
+          : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
+      }`}
+      title="Violation X-Ray Mode: Only Show Violations (V)"
+    >
+      <span class={diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? 'font-bold text-rose-200' : ''}>X-Ray</span>
+      <span class="text-[9px] text-slate-400">V</span>
+    </button>
+
+    <button
+      onclick={() => diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD')}
+      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+        diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD')
+          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+          : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
+      }`}
+      title="1-Hop Neighborhood Focus (F)"
+    >
+      <span>1-Hop</span>
+      <span class="text-[9px] text-slate-400">F</span>
+    </button>
   </div>
 
   <!-- SVG Graph Canvas -->
@@ -463,32 +606,34 @@
 
     <!-- Transformed Graph Group -->
     <g transform={`translate(${diagramStore.panX}, ${diagramStore.panY}) scale(${diagramStore.zoom})`}>
-      <!-- Concentric Architecture Tier Lanes Backdrop (Culled to viewport) -->
-      {#each sortedLevels as level, rowIdx}
-        {@const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35}
-        {@const height = BOX_HEIGHT + 70}
-        {#if !(y + height < viewportBounds.minY || y > viewportBounds.maxY)}
-          <g class="pointer-events-none select-none tier-backdrop">
-            <rect
-              x="-400"
-              y={y}
-              width="3200"
-              height={height}
-              rx="12"
-              class="fill-slate-900/35 stroke-slate-800/40"
-              stroke-width="1"
-              stroke-dasharray="8 6"
-            />
-            <text
-              x="-360"
-              y={y + 24}
-              class="fill-slate-500 font-mono text-[11px] font-semibold tracking-wider uppercase"
-            >
-              {getTierTitle(level)}
-            </text>
-          </g>
-        {/if}
-      {/each}
+      <!-- Concentric Architecture Tier Lanes Backdrop (Culled to viewport & declutter filter) -->
+      {#if !diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')}
+        {#each sortedLevels as level, rowIdx}
+          {@const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35}
+          {@const height = BOX_HEIGHT + 70}
+          {#if !(y + height < viewportBounds.minY || y > viewportBounds.maxY)}
+            <g class="pointer-events-none select-none tier-backdrop">
+              <rect
+                x="-400"
+                y={y}
+                width="3200"
+                height={height}
+                rx="12"
+                class="fill-slate-900/35 stroke-slate-800/40"
+                stroke-width="1"
+                stroke-dasharray="8 6"
+              />
+              <text
+                x="-360"
+                y={y + 24}
+                class="fill-slate-500 font-mono text-[11px] font-semibold tracking-wider uppercase"
+              >
+                {getTierTitle(level)}
+              </text>
+            </g>
+          {/if}
+        {/each}
+      {/if}
 
       <!-- Agent Radar Scanline Overlay -->
       {#if radarState.opacity > 0.01}
@@ -513,31 +658,30 @@
         </g>
       {/if}
 
-      <!-- Animated Dependency Edges (Frustum Culled) -->
-      {#if diagramStore.declutterMode !== 'REMOVE_ARROWS'}
-        {#each visibleEdges as edge, i (edge.from + '->' + edge.to + ':' + edge.kind + ':' + i)}
-          {@const fromNode = findNodeForClass(edge.from)}
-          {@const toNode = findNodeForClass(edge.to)}
-          {#if fromNode && toNode && fromNode !== toNode}
-            {@const goingDown = fromNode.y < toNode.y}
-            {@const isHighlighted = diagramStore.focusedNodeId
-              ? (fromNode.comp.id === diagramStore.focusedNodeId || toNode.comp.id === diagramStore.focusedNodeId)
-              : false}
-            {@const isDimmed = connectedNodeIds ? !isHighlighted : false}
-            <DependencyEdge
-              {edge}
-              x1={fromNode.x + fromNode.width / 2 + (edge.isViolating ? -15 : 15)}
-              y1={goingDown ? fromNode.y + fromNode.height : fromNode.y}
-              x2={toNode.x + toNode.width / 2 + (edge.isViolating ? -15 : 15)}
-              y2={goingDown ? toNode.y : toNode.y + toNode.height}
-              fromLabel={fromNode.comp.label}
-              toLabel={toNode.comp.label}
-              fromLevel={fromNode.comp.level}
-              toLevel={toNode.comp.level}
-              {isDimmed}
-              {isHighlighted}
-            />
-          {/if}
+      <!-- Animated Dependency Edges (Frustum Culled & Hierarchically Bundled) -->
+      {#if diagramStore.declutterMode !== 'REMOVE_ARROWS' && !diagramStore.hasDeclutterFilter('HIDE_ALL_EDGES')}
+        {#each renderedGraphEdges as item (item.key)}
+          {@const goingDown = item.fromNode.y < item.toNode.y}
+          {@const isHighlighted = diagramStore.focusedNodeId
+            ? (item.fromNode.comp.id === diagramStore.focusedNodeId || item.toNode.comp.id === diagramStore.focusedNodeId)
+            : false}
+          {@const isDimmed = connectedNodeIds ? !isHighlighted : false}
+          <DependencyEdge
+            edge={item.edge}
+            x1={item.fromNode.x + item.fromNode.width / 2 + (item.edge.isViolating ? -15 : 15)}
+            y1={goingDown ? item.fromNode.y + item.fromNode.height : item.fromNode.y}
+            x2={item.toNode.x + item.toNode.width / 2 + (item.edge.isViolating ? -15 : 15)}
+            y2={goingDown ? item.toNode.y : item.toNode.y + item.toNode.height}
+            fromLabel={item.fromNode.comp.label}
+            toLabel={item.toNode.comp.label}
+            fromLevel={item.fromNode.comp.level}
+            toLevel={item.toNode.comp.level}
+            {isDimmed}
+            {isHighlighted}
+            isBundled={item.isBundled}
+            bundleCount={item.bundleCount}
+            violationCount={item.violationCount}
+          />
         {/each}
       {/if}
 

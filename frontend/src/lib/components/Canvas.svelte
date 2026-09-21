@@ -743,6 +743,45 @@
     </g>
   </svg>
 
+  <!-- Canvas Radar Scrim Overlay (Active while isLoading) -->
+  {#if diagramStore.isLoading}
+    <div
+      data-testid="canvas-loading-scrim"
+      class="absolute inset-0 z-30 bg-slate-950/40 backdrop-blur-[2px] flex items-center justify-center pointer-events-none select-none transition-opacity duration-200"
+    >
+      <div
+        class="flex items-center gap-3 px-4 py-2 rounded-full bg-slate-900/95 border border-blue-500/40 shadow-2xl text-xs font-mono text-blue-300"
+      >
+        <div class="relative w-4 h-4 flex items-center justify-center">
+          <span class="absolute w-4 h-4 rounded-full bg-blue-500/30 animate-ping"></span>
+          <span class="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin"></span>
+        </div>
+        <span>Compiling AST & Concentric Topology...</span>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Autonomous Agent Sonar Wave (Active while isRegenerating) -->
+  {#if diagramStore.isRegenerating}
+    <div class="absolute inset-0 z-20 pointer-events-none overflow-hidden select-none">
+      <div
+        class="w-full h-32 bg-gradient-to-b from-transparent via-cyan-400/20 to-transparent animate-sonar-sweep border-b border-cyan-400/50"
+      ></div>
+    </div>
+  {/if}
+
   <!-- Agent Mailbox Telemetry Drawer -->
   <AgentDrawer />
 </div>
+
+<style>
+  @keyframes sonar-sweep {
+    0% { transform: translateY(-100%); opacity: 0; }
+    25% { opacity: 1; }
+    75% { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+  }
+  .animate-sonar-sweep {
+    animation: sonar-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+</style>

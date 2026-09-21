@@ -185,6 +185,15 @@
 
     <!-- Live Architectural Status Badge & Quick Search -->
     <div class="flex items-center gap-3">
+      {#if diagramStore.isRegenerating}
+        <div
+          class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-xs font-mono shadow-sm shadow-cyan-950 animate-pulse"
+        >
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span>Agent Re-indexing AST...</span>
+        </div>
+      {/if}
+
       <button
         onclick={() => diagramStore.isCommandPaletteOpen = true}
         class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 hover:text-white text-xs transition-colors cursor-pointer"

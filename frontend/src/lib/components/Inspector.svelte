@@ -111,8 +111,23 @@
             type="text"
             bind:value={classSearchQuery}
             placeholder={`Filter ${focusedComponent.classes.length} classes...`}
-            class="w-full bg-slate-900 border border-slate-700/80 focus:border-blue-500 rounded px-2 py-1 pl-7 text-[11px] font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            class="w-full bg-slate-900 border border-slate-700/80 focus:border-blue-500 rounded px-2 py-1 pl-7 pr-16 text-[11px] font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
+          {#if classSearchQuery.trim()}
+            <div class="absolute right-1.5 flex items-center gap-1">
+              <span class="text-[9px] font-mono text-slate-400 bg-slate-800 px-1 rounded">
+                {filteredFocusedClasses.length}/{focusedComponent.classes.length}
+              </span>
+              <button
+                type="button"
+                onclick={() => classSearchQuery = ''}
+                class="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                title="Clear filter"
+              >
+                <X size={11} />
+              </button>
+            </div>
+          {/if}
         </div>
 
         <!-- Scrollable Class List -->

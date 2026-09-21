@@ -138,9 +138,49 @@
         </button>
       </div>
 
-      <!-- Code Viewer: ponytail: pure preformatted code rendering without fragile regex tokenization -->
+      <!-- Code Viewer: pure preformatted code rendering or skeleton shimmer -->
       <div class="flex-1 overflow-auto font-mono text-xs p-4 bg-slate-950 select-text">
-        {#if lines.length > 0}
+        {#if diagramStore.isSourceLoading || (!modal.content && lines.length === 0)}
+          <!-- Skeleton Shimmer Loader -->
+          <div class="space-y-3 p-2 animate-pulse">
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">1</span>
+              <div class="h-3.5 bg-slate-800/90 rounded w-1/4"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">2</span>
+              <div class="h-3.5 bg-slate-800/60 rounded w-3/5"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">3</span>
+              <div class="h-3.5 bg-slate-800/50 rounded w-4/5"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">4</span>
+              <div class="h-3.5 bg-blue-900/40 rounded w-2/3 border border-blue-500/20"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">5</span>
+              <div class="h-3.5 bg-slate-800/60 rounded w-3/4"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">6</span>
+              <div class="h-3.5 bg-slate-800/40 rounded w-1/3"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">7</span>
+              <div class="h-3.5 bg-slate-800/70 rounded w-5/6"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">8</span>
+              <div class="h-3.5 bg-slate-800/50 rounded w-2/5"></div>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="w-8 text-right text-slate-700 select-none">9</span>
+              <div class="h-3.5 bg-slate-800/60 rounded w-3/4"></div>
+            </div>
+          </div>
+        {:else if lines.length > 0}
           <table class="w-full border-collapse">
             <tbody>
               {#each lines as line, i}

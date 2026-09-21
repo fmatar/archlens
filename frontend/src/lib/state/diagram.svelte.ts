@@ -61,6 +61,7 @@ class DiagramState {
 
   // Loading
   isLoading = $state<boolean>(false);
+  isSourceLoading = $state<boolean>(false);
   errorMessage = $state<string | null>(null);
 
   projectRoot = $state<string>(
@@ -170,6 +171,12 @@ class DiagramState {
   }
 
   async openSource(filePath: string, line: number) {
+    this.sourceFileModal = {
+      filePath,
+      line,
+      content: ''
+    };
+    this.isSourceLoading = true;
     try {
       const res = await fetch(`/api/source?filePath=${encodeURIComponent(filePath)}&line=${line}`);
       if (res.ok) {
@@ -193,6 +200,8 @@ class DiagramState {
         line,
         content: `// Error connecting to server: ${e?.message || e}`
       };
+    } finally {
+      this.isSourceLoading = false;
     }
   }
 

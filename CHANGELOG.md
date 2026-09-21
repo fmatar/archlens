@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.0.1-Alpha-02] - 2026-09-21
 
 ### Added
 - **Recursive Multi-Module Source Auto-Discovery**:
@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Renders a diagnostic card when zero components are detected in a workspace, providing actionable causes and one-click shortcuts to switch repositories or trigger agent policy synthesis (Closes #32).
 - **Direct Submodule Discovery in Workspace Browser**:
   - Recursively indexes submodules in `/api/projects` to enable direct one-click navigation into subprojects.
+
+### Fixed
+- **Agent Regen Infinite Reactive Loop**:
+  - Eliminated browser thread lockup by replacing the GSAP canvas scanline loop with a GPU-accelerated CSS keyframe animation (`@keyframes radar-scan`), decoupling radar telemetry from Svelte 5 reactive ticks (PR #29).
 
 ## [0.0.1-Alpha-01] - 2026-09-21
 

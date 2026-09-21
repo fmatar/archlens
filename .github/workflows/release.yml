@@ -42,6 +42,7 @@ jobs:
           npm --prefix frontend install
           npm --prefix frontend run build
           mvn -B -ntp package -DskipTests
+          tar -czf "backend/target/archlens-${{ github.ref_name }}-runner.tar.gz" -C backend/target quarkus-app
 
       - name: Set up QEMU (Multi-Arch)
         uses: docker/setup-qemu-action@v4
@@ -89,4 +90,5 @@ jobs:
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'Alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'Beta') || contains(github.ref_name, 'rc') }}
           files: |
             backend/target/archlens-backend-*.jar
+            backend/target/archlens-*-runner.tar.gz
             media/archlens-teaser.mp4

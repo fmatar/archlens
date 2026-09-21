@@ -23,7 +23,7 @@ FROM eclipse-temurin:25-jre-alpine
 LABEL org.opencontainers.image.title="Clean Architecture Dynamic UML Workbench" \
       org.opencontainers.image.description="Interactive architecture workbench and autonomous AI refactoring companion" \
       org.opencontainers.image.source="https://github.com/fmatar/archlens" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="Apache-2.0"
 
 ENV LANGUAGE='en_US:en'
 

@@ -1,0 +1,11 @@
+Archlens
+Copyright 2026 Fady Matar
+
+This product includes software developed by Fady Matar (https://github.com/fmatar/archlens).
+
+==========================================================================
+Acknowledgements & Inspiration
+==========================================================================
+This project is an original clean-room implementation inspired by the Clean
+Architecture principles and conceptual prototypes designed by Robert C. Martin
+("Uncle Bob") (https://github.com/unclebob/uml-viewer).

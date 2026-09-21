@@ -206,9 +206,9 @@
               closePalette();
             }}
             onmouseenter={() => selectedIndex = idx}
-            class={`px-3 py-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-              isSelected ? 'bg-blue-600/30 border border-blue-500/50 text-white' : 'hover:bg-slate-800/60 text-slate-300'
-            }`}
+            class="px-3 py-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors"
+            class:palette-row-selected={isSelected}
+            class:palette-row-idle={!isSelected}
           >
             <div class="flex items-center gap-2.5 min-w-0">
               {#if item.type === 'COMPONENT'}
@@ -220,12 +220,16 @@
               {/if}
               <div class="truncate">
                 <div class="font-medium text-xs font-mono">{item.title}</div>
-                <div class="text-[11px] text-slate-400 truncate">{item.subtitle}</div>
+                <div class="text-[11px] truncate" class:text-blue-200={isSelected} class:text-slate-400={!isSelected}>{item.subtitle}</div>
               </div>
             </div>
 
             {#if item.badge}
-              <span class="text-[10px] px-2 py-0.5 rounded font-mono bg-slate-800 text-slate-300 shrink-0 border border-slate-700/80">
+              <span
+                class="text-[10px] px-2 py-0.5 rounded font-mono shrink-0 border"
+                class:badge-selected={isSelected}
+                class:badge-idle={!isSelected}
+              >
                 {item.badge}
               </span>
             {/if}
@@ -253,3 +257,28 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .palette-row-selected {
+    background-color: rgba(37, 99, 235, 0.25);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    color: #ffffff;
+  }
+  .palette-row-idle {
+    color: #cbd5e1;
+    border: 1px solid transparent;
+  }
+  .palette-row-idle:hover {
+    background-color: rgba(30, 41, 59, 0.6);
+  }
+  .badge-selected {
+    background-color: rgba(30, 58, 138, 0.5);
+    color: #bfdbfe;
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+  .badge-idle {
+    background-color: #1e293b;
+    color: #cbd5e1;
+    border-color: rgba(51, 65, 85, 0.8);
+  }
+</style>

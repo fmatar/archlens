@@ -147,7 +147,8 @@
                 {@const lineNum = i + 1}
                 {@const isTarget = lineNum === modal.line}
                 <tr
-                  class={isTarget ? 'target-code-row bg-blue-900/35 text-blue-200 font-medium' : 'hover:bg-slate-900/40 text-slate-300'}
+                  class:target-code-row={isTarget}
+                  class:code-row-idle={!isTarget}
                 >
                   <td class="w-12 text-right pr-4 text-slate-600 select-none align-top">{lineNum}</td>
                   <td class="whitespace-pre font-mono">{line}</td>
@@ -165,3 +166,17 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .target-code-row {
+    background-color: rgba(30, 58, 138, 0.35);
+    color: #bfdbfe;
+    font-weight: 500;
+  }
+  .code-row-idle {
+    color: #cbd5e1;
+  }
+  .code-row-idle:hover {
+    background-color: rgba(15, 23, 42, 0.4);
+  }
+</style>

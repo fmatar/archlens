@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
   import ComponentBox from './ComponentBox.svelte';
@@ -7,23 +7,29 @@
   import ProposalDiffBanner from './ProposalDiffBanner.svelte';
   import EdgeTooltip from './EdgeTooltip.svelte';
   import AgentDrawer from './AgentDrawer.svelte';
-  import { ZoomIn, ZoomOut, Maximize2, Radio, Search } from '@lucide/svelte';
+  import { ZoomIn, ZoomOut, Maximize2, Radio, Search, RotateCcw } from '@lucide/svelte';
   import type { ComponentNode, ClassNode, DependencyEdge as EdgeType } from '../types/diagram';
 
   let svgElement: SVGSVGElement | null = $state(null);
+
+  // Canvas Panning State
   let isPanning = $state(false);
-  let startX = $state(0);
-  let startY = $state(0);
+  let panStartX = 0;
+  let panStartY = 0;
+  let rafPanId: number | null = null;
+  let targetPanX = 0;
+  let targetPanY = 0;
 
-  // Dragging individual boxes
+  // Node Dragging State (Buttery smooth with RAF & global pointer tracking)
   let draggedNodeId = $state<string | null>(null);
-  let dragNodeStartX = $state(0);
-  let dragNodeStartY = $state(0);
-  let dragMouseStartX = $state(0);
-  let dragMouseStartY = $state(0);
-
-  // Position overrides for dragged components
-  let componentOffsets = $state<Record<string, { x: number; y: number }>>({});
+  let dragNodeStartX = 0;
+  let dragNodeStartY = 0;
+  let dragPointerStartX = 0;
+  let dragPointerStartY = 0;
+  let dragHasMoved = false;
+  let rafDragId: number | null = null;
+  let targetDragX = 0;
+  let targetDragY = 0;
 
   let graph = $derived(diagramStore.graph);
   let components = $derived<ComponentNode[]>(graph?.components || []);
@@ -48,14 +54,14 @@
 
   let sortedLevels = $derived(Array.from(levelMap.keys()).sort((a, b) => a - b));
 
-  // ponytail: directly derive layout coordinates from components - zero race conditions, instantaneous rendering
+  // Directly derive layout coordinates from components and persistent offsets
   let positionedComponents = $derived.by(() => {
     const coords = new Map<string, { x: number; y: number; width: number; height: number; comp: ComponentNode }>();
 
     sortedLevels.forEach((level, rowIdx) => {
       const row = levelMap.get(level)!;
       row.forEach((comp: ComponentNode, colIdx: number) => {
-        const baseOffset = componentOffsets[comp.id] || { x: 0, y: 0 };
+        const baseOffset = diagramStore.componentOffsets[comp.id] || { x: 0, y: 0 };
         const x = 100 + colIdx * (BOX_WIDTH + GAP_X) + baseOffset.x;
         const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) + baseOffset.y;
         coords.set(comp.id, { x, y, width: BOX_WIDTH, height: BOX_HEIGHT, comp });
@@ -135,48 +141,139 @@
     }
   }
 
-  function startNodeDrag(id: string, e: MouseEvent) {
+  // --- Smooth Node Dragging with Window Listeners & RAF ---
+  function startNodeDrag(id: string, e: PointerEvent | MouseEvent) {
     e.stopPropagation();
+    if (e.button !== 0) return;
+
     draggedNodeId = id;
-    const currentOffset = componentOffsets[id] || { x: 0, y: 0 };
+    dragHasMoved = false;
+
+    const currentOffset = diagramStore.componentOffsets[id] || { x: 0, y: 0 };
     dragNodeStartX = currentOffset.x;
     dragNodeStartY = currentOffset.y;
-    dragMouseStartX = e.clientX;
-    dragMouseStartY = e.clientY;
+    dragPointerStartX = e.clientX;
+    dragPointerStartY = e.clientY;
+    targetDragX = dragNodeStartX;
+    targetDragY = dragNodeStartY;
+
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+
+    window.addEventListener('pointermove', onNodeDragMove, { passive: false });
+    window.addEventListener('pointerup', onNodeDragUp);
+    window.addEventListener('pointercancel', onNodeDragUp);
   }
 
-  function handleMouseDown(e: MouseEvent) {
-    if (e.button === 0) {
-      isPanning = true;
-      startX = e.clientX - diagramStore.panX;
-      startY = e.clientY - diagramStore.panY;
-      // Click canvas background clears focus
-      if ((e.target as HTMLElement).tagName === 'svg' || (e.target as HTMLElement).tagName === 'DIV') {
-        diagramStore.setFocusedNode(null);
-        diagramStore.activeEdgeTooltip = null;
-      }
+  function onNodeDragMove(e: PointerEvent) {
+    if (!draggedNodeId) return;
+    e.preventDefault();
+
+    const dx = (e.clientX - dragPointerStartX) / diagramStore.zoom;
+    const dy = (e.clientY - dragPointerStartY) / diagramStore.zoom;
+
+    if (Math.hypot(dx, dy) > 3) {
+      dragHasMoved = true;
+    }
+
+    targetDragX = dragNodeStartX + dx;
+    targetDragY = dragNodeStartY + dy;
+
+    if (!rafDragId) {
+      rafDragId = requestAnimationFrame(() => {
+        if (draggedNodeId) {
+          diagramStore.setComponentOffset(draggedNodeId, {
+            x: targetDragX,
+            y: targetDragY
+          });
+        }
+        rafDragId = null;
+      });
     }
   }
 
-  function handleMouseMove(e: MouseEvent) {
+  function onNodeDragUp() {
+    window.removeEventListener('pointermove', onNodeDragMove);
+    window.removeEventListener('pointerup', onNodeDragUp);
+    window.removeEventListener('pointercancel', onNodeDragUp);
+
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+
+    if (rafDragId) {
+      cancelAnimationFrame(rafDragId);
+      rafDragId = null;
+    }
+
     if (draggedNodeId) {
-      const dx = (e.clientX - dragMouseStartX) / diagramStore.zoom;
-      const dy = (e.clientY - dragMouseStartY) / diagramStore.zoom;
-      componentOffsets[draggedNodeId] = {
-        x: dragNodeStartX + dx,
-        y: dragNodeStartY + dy
-      };
-      return;
-    }
-    if (isPanning) {
-      diagramStore.panX = e.clientX - startX;
-      diagramStore.panY = e.clientY - startY;
+      if (dragHasMoved) {
+        diagramStore.setComponentOffset(draggedNodeId, {
+          x: targetDragX,
+          y: targetDragY
+        });
+      } else {
+        diagramStore.setFocusedNode(
+          diagramStore.focusedNodeId === draggedNodeId ? null : draggedNodeId
+        );
+      }
+      draggedNodeId = null;
     }
   }
 
-  function handleMouseUp() {
+  // --- Smooth Canvas Panning with Window Listeners & RAF ---
+  function handleMouseDown(e: MouseEvent) {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'svg' || target.tagName === 'DIV' || target.classList?.contains('tier-backdrop')) {
+      diagramStore.setFocusedNode(null);
+      diagramStore.activeEdgeTooltip = null;
+
+      isPanning = true;
+      panStartX = e.clientX - diagramStore.panX;
+      panStartY = e.clientY - diagramStore.panY;
+      targetPanX = diagramStore.panX;
+      targetPanY = diagramStore.panY;
+
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+
+      window.addEventListener('pointermove', onCanvasPanMove, { passive: false });
+      window.addEventListener('pointerup', onCanvasPanUp);
+      window.addEventListener('pointercancel', onCanvasPanUp);
+    }
+  }
+
+  function onCanvasPanMove(e: PointerEvent) {
+    if (!isPanning) return;
+    e.preventDefault();
+
+    targetPanX = e.clientX - panStartX;
+    targetPanY = e.clientY - panStartY;
+
+    if (!rafPanId) {
+      rafPanId = requestAnimationFrame(() => {
+        if (isPanning) {
+          diagramStore.panX = targetPanX;
+          diagramStore.panY = targetPanY;
+        }
+        rafPanId = null;
+      });
+    }
+  }
+
+  function onCanvasPanUp() {
+    window.removeEventListener('pointermove', onCanvasPanMove);
+    window.removeEventListener('pointerup', onCanvasPanUp);
+    window.removeEventListener('pointercancel', onCanvasPanUp);
+
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+
+    if (rafPanId) {
+      cancelAnimationFrame(rafPanId);
+      rafPanId = null;
+    }
     isPanning = false;
-    draggedNodeId = null;
   }
 
   function handleWheel(e: WheelEvent) {
@@ -184,6 +281,19 @@
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
     diagramStore.zoom = Math.max(0.2, Math.min(3.0, diagramStore.zoom * zoomFactor));
   }
+
+  onDestroy(() => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pointermove', onNodeDragMove);
+      window.removeEventListener('pointerup', onNodeDragUp);
+      window.removeEventListener('pointercancel', onNodeDragUp);
+      window.removeEventListener('pointermove', onCanvasPanMove);
+      window.removeEventListener('pointerup', onCanvasPanUp);
+      window.removeEventListener('pointercancel', onCanvasPanUp);
+    }
+    if (rafDragId) cancelAnimationFrame(rafDragId);
+    if (rafPanId) cancelAnimationFrame(rafPanId);
+  });
 </script>
 
 <!-- Canvas Container -->
@@ -191,8 +301,6 @@
 <div
   class="relative flex-1 h-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
   onmousedown={handleMouseDown}
-  onmousemove={handleMouseMove}
-  onmouseup={handleMouseUp}
   onwheel={handleWheel}
 >
   <!-- Floating Proposal Diff Banner -->
@@ -224,6 +332,7 @@
       onclick={() => diagramStore.zoom = Math.min(3.0, diagramStore.zoom * 1.1)}
       class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
       title="Zoom In (+)"
+      aria-label="Zoom in"
     >
       <ZoomIn size={16} />
     </button>
@@ -231,6 +340,7 @@
       onclick={() => diagramStore.zoom = Math.max(0.2, diagramStore.zoom * 0.9)}
       class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
       title="Zoom Out (-)"
+      aria-label="Zoom out"
     >
       <ZoomOut size={16} />
     </button>
@@ -238,8 +348,17 @@
       onclick={() => diagramStore.resetZoom()}
       class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
       title="Reset View (0)"
+      aria-label="Reset zoom"
     >
       <Maximize2 size={16} />
+    </button>
+    <button
+      onclick={() => diagramStore.resetLayout()}
+      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      title="Reset Node Positions to Clean Architecture Rings"
+      aria-label="Reset layout"
+    >
+      <RotateCcw size={15} />
     </button>
     <div class="px-2 font-mono text-[10px] text-slate-400">
       {Math.round(diagramStore.zoom * 100)}%
@@ -267,6 +386,11 @@
         <feComposite in="SourceGraphic" in2="blur" operator="over" />
       </filter>
 
+      <!-- Elevated Node Drag Shadow Filter -->
+      <filter id="node-drag-shadow" x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#000000" flood-opacity="0.65" />
+      </filter>
+
       <!-- Agent Radar Scanline Gradient -->
       <linearGradient id="radar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
         <stop offset="0%" stop-color="#10b981" stop-opacity="0" />
@@ -281,7 +405,7 @@
       {#each sortedLevels as level, rowIdx}
         {@const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35}
         {@const height = BOX_HEIGHT + 70}
-        <g class="pointer-events-none select-none">
+        <g class="pointer-events-none select-none tier-backdrop">
           <rect
             x="-400"
             y={y}
@@ -357,6 +481,7 @@
       {#each Array.from(positionedComponents.values()) as item, i (item.comp.id + ':' + i)}
         {@const isFocused = diagramStore.focusedNodeId === item.comp.id}
         {@const isDimmed = connectedNodeIds ? !connectedNodeIds.has(item.comp.id) : false}
+        {@const isDragging = draggedNodeId === item.comp.id}
         <ComponentBox
           component={item.comp}
           x={item.x}
@@ -365,6 +490,7 @@
           height={item.height}
           {isDimmed}
           {isFocused}
+          {isDragging}
           onStartDrag={(e) => startNodeDrag(item.comp.id, e)}
         />
       {/each}

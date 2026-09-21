@@ -10,7 +10,8 @@
     height: number;
     isDimmed?: boolean;
     isFocused?: boolean;
-    onStartDrag?: (e: MouseEvent) => void;
+    isDragging?: boolean;
+    onStartDrag?: (e: PointerEvent | MouseEvent) => void;
   }
 
   let {
@@ -21,6 +22,7 @@
     height,
     isDimmed = false,
     isFocused = false,
+    isDragging = false,
     onStartDrag
   }: Props = $props();
 
@@ -44,12 +46,9 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <g
   transform={`translate(${x}, ${y})`}
-  class="group cursor-pointer transition-opacity duration-300"
+  class="group select-none"
   opacity={isDimmed ? 0.18 : 1.0}
-  onclick={(e) => {
-    e.stopPropagation();
-    diagramStore.setFocusedNode(diagramStore.focusedNodeId === component.id ? null : component.id);
-  }}
+  filter={isDragging ? 'url(#node-drag-shadow)' : undefined}
 >
   <!-- Spotlight Target Halo (Triggered by Command Palette) -->
   {#if hasHalo}
@@ -83,29 +82,39 @@
     />
   {/if}
 
-  <!-- Outer Box -->
+  <!-- Outer Box Card Surface (Entire card is draggable) -->
   <rect
     width={width}
     height={height}
     rx="8"
-    class={`fill-slate-800/85 stroke-slate-600 transition-colors ${
-      isFocused ? 'stroke-blue-400 fill-slate-800' : 'group-hover:stroke-blue-400'
+    class={`fill-slate-800/90 transition-colors ${
+      isDragging
+        ? 'stroke-sky-400 stroke-2 fill-slate-800 cursor-grabbing'
+        : isFocused
+          ? 'stroke-blue-400 stroke-2 fill-slate-800 cursor-grab'
+          : 'stroke-slate-600 group-hover:stroke-blue-400 stroke-[1.5] cursor-grab'
     }`}
-    stroke-width={isFocused ? 2 : 1.5}
+    onpointerdown={(e) => {
+      if (e.button === 0) onStartDrag?.(e);
+    }}
   />
 
-  <!-- Component Title Banner (Draggable handle) -->
+  <!-- Component Title Banner -->
   <path
     d={`M 0 8 Q 0 0 8 0 L ${width - 8} 0 Q ${width} 0 ${width} 8 L ${width} 28 L 0 28 Z`}
-    class="fill-slate-900/90 cursor-move hover:fill-slate-850 transition-colors"
-    onmousedown={(e) => onStartDrag && onStartDrag(e)}
+    class={`transition-colors ${isDragging ? 'fill-slate-900 cursor-grabbing' : 'fill-slate-900/90 group-hover:fill-slate-850 cursor-grab'}`}
+    onpointerdown={(e) => {
+      if (e.button === 0) onStartDrag?.(e);
+    }}
   />
 
   <text
     x="12"
     y="19"
-    class="fill-slate-100 font-semibold text-xs tracking-wide cursor-move select-none"
-    onmousedown={(e) => onStartDrag && onStartDrag(e)}
+    class={`fill-slate-100 font-semibold text-xs tracking-wide select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+    onpointerdown={(e) => {
+      if (e.button === 0) onStartDrag?.(e);
+    }}
   >
     {component.label}
   </text>
@@ -117,9 +126,9 @@
     width="52"
     height="16"
     rx="4"
-    class="fill-slate-700/90"
+    class="fill-slate-700/90 cursor-grab pointer-events-none"
   />
-  <text x={width - 38} y="18" text-anchor="middle" class="fill-slate-300 font-mono text-[10px] font-medium">
+  <text x={width - 38} y="18" text-anchor="middle" class="fill-slate-300 font-mono text-[10px] font-medium pointer-events-none select-none">
     {rankBadge}
   </text>
 
@@ -133,6 +142,10 @@
         <g
           transform={`translate(0, ${i * 24})`}
           class="cursor-pointer group/row"
+          onpointerdown={(e) => {
+            // Stop drag so user can click to inspect class
+            e.stopPropagation();
+          }}
           onclick={(e) => {
             e.stopPropagation();
             diagramStore.selectedClass = cls;
@@ -176,7 +189,7 @@
         </g>
       {/each}
       {#if component.classes.length > 6}
-        <text x="10" y={6 * 24 + 14} class="fill-slate-500 text-[10px] italic">
+        <text x="10" y={6 * 24 + 14} class="fill-slate-500 text-[10px] italic pointer-events-none select-none">
           + {component.classes.length - 6} more classes...
         </text>
       {/if}

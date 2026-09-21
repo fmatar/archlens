@@ -192,6 +192,15 @@ class DiagramState {
     this.addTelemetryEvent('INFO', `Declutter mode switched to ${this.declutterMode}`);
   }
 
+  componentOffsets = $state<Record<string, { x: number; y: number }>>({});
+
+  setComponentOffset(id: string, offset: { x: number; y: number }) {
+    this.componentOffsets = {
+      ...this.componentOffsets,
+      [id]: offset
+    };
+  }
+
   resetZoom(instant = false) {
     if (instant || import.meta.env?.MODE === 'test') {
       this.zoom = 1.0;
@@ -206,6 +215,12 @@ class DiagramState {
       duration: 0.5,
       ease: 'power2.out'
     });
+  }
+
+  resetLayout(instant = false) {
+    this.resetZoom(instant);
+    this.componentOffsets = {};
+    this.addTelemetryEvent('INFO', 'Reset canvas node positions to concentric ring baseline');
   }
 
   setFocusedNode(id: string | null) {

@@ -111,4 +111,35 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await declutterBtn.click();
     await expect(declutterBtn).toContainText('CLASSES');
   });
+
+  test('should smoothly drag a component node and reset layout', async ({ page }) => {
+    await page.goto('/');
+
+    // Wait for a component box to be rendered
+    const firstBox = page.locator('svg g.group rect').first();
+    await expect(firstBox).toBeVisible({ timeout: 10000 });
+
+    const initialBoxBounds = await firstBox.boundingBox();
+    expect(initialBoxBounds).not.toBeNull();
+
+    // Perform smooth drag
+    await page.mouse.move(initialBoxBounds!.x + 30, initialBoxBounds!.y + 15);
+    await page.mouse.down();
+    await page.mouse.move(initialBoxBounds!.x + 150, initialBoxBounds!.y + 120, { steps: 5 });
+    await page.mouse.up();
+
+    // Verify node moved
+    const movedBoxBounds = await firstBox.boundingBox();
+    expect(movedBoxBounds!.x).toBeGreaterThan(initialBoxBounds!.x + 50);
+
+    // Click reset layout button
+    const resetLayoutBtn = page.locator('button[aria-label="Reset layout"]');
+    await expect(resetLayoutBtn).toBeVisible();
+    await resetLayoutBtn.click();
+
+    // Verify position reset
+    await page.waitForTimeout(600);
+    const resetBoxBounds = await firstBox.boundingBox();
+    expect(Math.abs(resetBoxBounds!.x - initialBoxBounds!.x)).toBeLessThan(10);
+  });
 });

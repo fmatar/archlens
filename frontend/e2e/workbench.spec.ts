@@ -262,7 +262,7 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     // 2. Click the next page button (›)
     const nextBtn = page.locator('g[aria-label="Next classes"]').first();
     await expect(nextBtn).toBeVisible();
-    await nextBtn.click({ force: true });
+    await nextBtn.dispatchEvent('click');
 
     // 3. Verify page advanced to second page (e.g. 6–9 of 9)
     const page2Text = page.locator('svg text', { hasText: /6–\d+ of \d+ \(inspect ↗\)/ }).first();
@@ -285,5 +285,22 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     const classModal = page.locator('div[role="dialog"]');
     await expect(classModal).toBeVisible({ timeout: 5000 });
     await page.keyboard.press('Escape');
+  });
+
+  test('should trigger agent regen without freezing and log telemetry events', async ({ page }) => {
+    await page.goto('/');
+
+    const regenBtn = page.locator('button', { hasText: 'Regen (Wake Agent)' });
+    await expect(regenBtn).toBeVisible({ timeout: 10000 });
+    await regenBtn.click();
+
+    // Verify button transitions to synthesizing state smoothly
+    await expect(page.locator('button', { hasText: 'Agent Synthesizing Code...' })).toBeVisible();
+
+    // Verify telemetry drawer updates with success
+    await expect(page.locator('text=AST re-indexed. Policy evaluation verified (0 violations).').first()).toBeVisible({ timeout: 6000 });
+
+    // Verify button returns to enabled state
+    await expect(page.locator('button', { hasText: 'Regen (Wake Agent)' })).toBeVisible({ timeout: 6000 });
   });
 });

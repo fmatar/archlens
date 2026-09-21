@@ -227,7 +227,11 @@ class DiagramState {
     this.addTelemetryEvent('TASK', 'Dispatched refactoring directive to .uml-viewer/to-agent.json', 'Target: AST scan & Clean Architecture validation');
 
     try {
-      await fetch('/api/mailbox/to-agent', {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/mailbox/to-agent?${params.toString()}` : '/api/mailbox/to-agent';
+
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

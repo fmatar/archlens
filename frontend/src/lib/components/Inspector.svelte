@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import gsap from 'gsap';
+  import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
   import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X } from '@lucide/svelte';
 
@@ -22,48 +21,6 @@
     return focusedComponent.classes.filter(
       (cls) => cls.name.toLowerCase().includes(q) || cls.packageName.toLowerCase().includes(q)
     );
-  });
-
-  let noticeEl: HTMLDivElement | null = $state(null);
-  let regenBtnEl: HTMLButtonElement | null = $state(null);
-
-  $effect(() => {
-    const isRegen = diagramStore.isRegenerating;
-    const ctx = gsap.context(() => {
-      if (isRegen && regenBtnEl) {
-        gsap.to(regenBtnEl, {
-          boxShadow: '0 0 22px rgba(16, 185, 129, 0.65)',
-          scale: 1.02,
-          duration: 0.75,
-          repeat: -1,
-          yoyo: true,
-          ease: 'sine.inOut'
-        });
-      } else if (regenBtnEl) {
-        gsap.to(regenBtnEl, {
-          boxShadow: '0 0 0px rgba(0, 0, 0, 0)',
-          scale: 1,
-          duration: 0.3,
-          ease: 'power2.out'
-        });
-      }
-    });
-
-    return () => ctx.revert();
-  });
-
-  $effect(() => {
-    const notice = diagramStore.regenNotice;
-    if (notice && noticeEl) {
-      const ctx = gsap.context(() => {
-        gsap.fromTo(
-          noticeEl,
-          { y: -10, opacity: 0, scale: 0.96 },
-          { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: 'back.out(1.5)' }
-        );
-      });
-      return () => ctx.revert();
-    }
   });
 </script>
 
@@ -327,7 +284,7 @@
   <div class="p-4 border-t border-slate-800 bg-slate-900 space-y-2">
     {#if diagramStore.regenNotice}
       <div
-        bind:this={noticeEl}
+        transition:fly={{ y: -8, duration: 220 }}
         class="p-2.5 rounded-lg bg-blue-500/15 border border-blue-500/30 text-blue-300 text-[11px] font-mono flex items-start gap-2 shadow-sm"
       >
         <Radio size={14} class="text-blue-400 shrink-0 mt-0.5 animate-pulse" />
@@ -335,10 +292,9 @@
       </div>
     {/if}
     <button
-      bind:this={regenBtnEl}
       disabled={diagramStore.isRegenerating}
       onclick={() => diagramStore.triggerRegen()}
-      class="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700/80 text-white font-medium text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 transition-all cursor-pointer disabled:cursor-not-allowed"
+      class="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700/80 text-white font-medium text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 transition-all cursor-pointer disabled:cursor-not-allowed {diagramStore.isRegenerating ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 shadow-emerald-500/40 shadow-xl animate-pulse' : ''}"
     >
       <RefreshCw size={14} class={diagramStore.isRegenerating ? 'animate-spin' : ''} />
       {diagramStore.isRegenerating ? 'Agent Synthesizing Code...' : 'Regen (Wake Agent)'}

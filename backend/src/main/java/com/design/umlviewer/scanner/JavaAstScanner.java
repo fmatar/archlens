@@ -144,7 +144,10 @@ public class JavaAstScanner implements LanguageScanner {
 
                   // Compute mock coverage & CRAP for demo metrics
                   List<Double> methodCraps = methods.stream().map(MethodNode::crap).toList();
-                  CrapScore crapScore = crapCalculator.aggregate(methodCraps);
+                  CrapScore crapScore =
+                      crapCalculator != null
+                          ? crapCalculator.aggregate(methodCraps)
+                          : CrapScore.zero();
 
                   classes.add(
                       new ClassNode(
@@ -300,7 +303,7 @@ public class JavaAstScanner implements LanguageScanner {
       cc += m.findAll(com.github.javaparser.ast.expr.ConditionalExpr.class).size();
 
       double coverage = 0.8;
-      double crap = crapCalculator.calculateMethodCrap(cc, coverage);
+      double crap = crapCalculator != null ? crapCalculator.calculateMethodCrap(cc, coverage) : cc;
       int line = m.getRange().map(r -> r.begin.line).orElse(1);
 
       List<String> params =

@@ -60,6 +60,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <g
+  data-component-id={component.id}
   transform={`translate(${x}, ${y})`}
   class="group select-none"
   opacity={isDimmed ? 0.18 : 1.0}

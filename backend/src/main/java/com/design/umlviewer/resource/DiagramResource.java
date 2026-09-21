@@ -32,6 +32,12 @@ public class DiagramResource {
       return DEFAULT_PROJECT_ROOT;
     }
     String normalized = root.trim();
+    if (normalized.equals(".")) {
+      if (!new File(".", "pom.xml").exists()
+          && new File("/Users/fady/workspace/labs/archlens/pom.xml").exists()) {
+        return "/Users/fady/workspace/labs/archlens";
+      }
+    }
     // Expand home directory shorthand ~
     if (normalized.startsWith("~")) {
       normalized = System.getProperty("user.home") + normalized.substring(1);

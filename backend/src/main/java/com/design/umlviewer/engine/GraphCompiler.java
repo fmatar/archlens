@@ -98,16 +98,56 @@ public class GraphCompiler {
           List.of());
     }
 
+    String projectTitle = root.getName().equals(".") ? "Current Workspace" : root.getName();
+
     return new ArchitecturePolicy(
-        "Default Project",
+        projectTitle,
         "src/main/java",
-        "com.design",
+        null,
         true,
         List.of(),
         List.of(),
         List.of(),
         List.of(),
         List.of());
+  }
+
+  public static String computeCommonPrefix(List<ClassNode> classes) {
+    if (classes == null || classes.isEmpty()) {
+      return "";
+    }
+    List<String> pkgs =
+        classes.stream()
+            .map(ClassNode::packageName)
+            .filter(p -> p != null && !p.isBlank())
+            .distinct()
+            .toList();
+    if (pkgs.isEmpty()) {
+      return "";
+    }
+    if (pkgs.size() == 1) {
+      String only = pkgs.get(0);
+      int lastDot = only.lastIndexOf('.');
+      return lastDot > 0 ? only.substring(0, lastDot) : only;
+    }
+
+    String[] parts = pkgs.get(0).split("\\.");
+    int commonSegments = parts.length;
+    for (int i = 1; i < pkgs.size(); i++) {
+      String[] cur = pkgs.get(i).split("\\.");
+      int match = 0;
+      while (match < commonSegments && match < cur.length && parts[match].equals(cur[match])) {
+        match++;
+      }
+      commonSegments = match;
+      if (commonSegments == 0) {
+        break;
+      }
+    }
+    if (commonSegments == 0) {
+      return "";
+    }
+    return String.join(".", java.util.Arrays.copyOf(parts, commonSegments));
   }
 
   public ArchitectureGraph compileGraph(String projectRoot, String proposalId) throws IOException {
@@ -185,9 +225,27 @@ public class GraphCompiler {
       }
     } else {
       // Group according to packages
+      String effectivePrefix = policy.prefix();
+      if ((effectivePrefix == null
+              || effectivePrefix.isBlank()
+              || "com.design".equals(effectivePrefix))
+          && !scan.classes().isEmpty()) {
+        effectivePrefix = computeCommonPrefix(scan.classes());
+      }
+
       for (Map.Entry<String, List<ClassNode>> entry : pkgMap.entrySet()) {
         String pkgName = entry.getKey();
-        String shortId = pkgName.replace(policy.prefix() != null ? policy.prefix() + "." : "", "");
+        String shortId = pkgName;
+        if (effectivePrefix != null && !effectivePrefix.isBlank()) {
+          if (pkgName.startsWith(effectivePrefix + ".")) {
+            shortId = pkgName.substring(effectivePrefix.length() + 1);
+          } else if (pkgName.equals(effectivePrefix)) {
+            shortId = pkgName;
+          }
+        }
+        if (shortId.isBlank()) {
+          shortId = pkgName;
+        }
         Integer level = validator.resolveRank(shortId);
 
         components.add(

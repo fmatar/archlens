@@ -303,4 +303,29 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     // Verify button returns to enabled state
     await expect(page.locator('button', { hasText: 'Regen (Wake Agent)' })).toBeVisible({ timeout: 6000 });
   });
+
+  test('should render diagnostic empty state card when workspace has no components', async ({ page }) => {
+    // Intercept /api/graph to simulate empty workspace
+    await page.route('**/api/graph*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          title: 'Empty Workspace',
+          isProposal: false,
+          activeProposalId: null,
+          components: [],
+          edges: [],
+          unassigned: []
+        })
+      });
+    });
+
+    await page.goto('/');
+
+    // Verify diagnostic empty state card appears
+    await expect(page.locator('text=No Architecture Components Found')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByRole('button', { name: 'Switch Workspace' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Wake Agent', exact: true })).toBeVisible();
+  });
 });

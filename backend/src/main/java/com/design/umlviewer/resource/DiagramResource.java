@@ -95,6 +95,30 @@ public class DiagramResource {
                   Map.of(
                       "name", sibling.getName(),
                       "path", sibling.getAbsolutePath()));
+
+              File[] subFiles = sibling.listFiles();
+              if (subFiles != null) {
+                java.util.Arrays.sort(subFiles, java.util.Comparator.comparing(File::getName));
+                for (File sub : subFiles) {
+                  if (sub.isDirectory() && !sub.getName().startsWith(".")) {
+                    boolean isSubProject =
+                        new File(sub, "pom.xml").exists()
+                            || new File(sub, "package.json").exists()
+                            || new File(sub, "src/main/java").exists();
+                    if (isSubProject
+                        && !sub.getName().equals("target")
+                        && !sub.getName().equals("node_modules")
+                        && !sub.getName().equals("build")) {
+                      discovered.add(
+                          Map.of(
+                              "name",
+                              sibling.getName() + " / " + sub.getName(),
+                              "path",
+                              sub.getAbsolutePath()));
+                    }
+                  }
+                }
+              }
             }
           }
         }

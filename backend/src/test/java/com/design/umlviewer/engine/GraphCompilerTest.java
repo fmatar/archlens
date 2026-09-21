@@ -36,7 +36,7 @@ class GraphCompilerTest {
 
     // 1. Default policy when missing
     ArchitecturePolicy defaultPolicy = compiler.loadPolicy(tempDir.toString());
-    assertEquals("Default Project", defaultPolicy.title());
+    assertEquals(tempDir.toFile().getName(), defaultPolicy.title());
 
     // 2. Write custom policy
     Path umlDir = tempDir.resolve(".uml-viewer");
@@ -111,6 +111,44 @@ class GraphCompilerTest {
     // 6. Test corrupt policy.json fallback
     Files.writeString(umlDir.resolve("policy.json"), "invalid-json-content");
     ArchitecturePolicy fallbackPolicy = compiler.loadPolicy(tempDir.toString());
-    assertEquals("Default Project", fallbackPolicy.title());
+    assertEquals(tempDir.toFile().getName(), fallbackPolicy.title());
+
+    // 7. Test dynamic common prefix computation
+    com.design.umlviewer.domain.model.ClassNode c1 =
+        new com.design.umlviewer.domain.model.ClassNode(
+            "com.slixes.vanguard.chat.ChatService",
+            "ChatService",
+            "com.slixes.vanguard.chat",
+            "path",
+            com.design.umlviewer.domain.model.ClassNode.Stereotype.CLASS,
+            false,
+            null,
+            null,
+            1.0,
+            1,
+            0,
+            0,
+            0,
+            java.util.List.of(),
+            java.util.List.of());
+    com.design.umlviewer.domain.model.ClassNode c2 =
+        new com.design.umlviewer.domain.model.ClassNode(
+            "com.slixes.vanguard.project.ProjectService",
+            "ProjectService",
+            "com.slixes.vanguard.project",
+            "path",
+            com.design.umlviewer.domain.model.ClassNode.Stereotype.CLASS,
+            false,
+            null,
+            null,
+            1.0,
+            1,
+            0,
+            0,
+            0,
+            java.util.List.of(),
+            java.util.List.of());
+    assertEquals(
+        "com.slixes.vanguard", GraphCompiler.computeCommonPrefix(java.util.List.of(c1, c2)));
   }
 }

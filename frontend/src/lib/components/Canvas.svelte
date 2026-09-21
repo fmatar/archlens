@@ -7,7 +7,7 @@
   import ProposalDiffBanner from './ProposalDiffBanner.svelte';
   import EdgeTooltip from './EdgeTooltip.svelte';
   import AgentDrawer from './AgentDrawer.svelte';
-  import { ZoomIn, ZoomOut, Maximize2, Radio, Search, RotateCcw } from '@lucide/svelte';
+  import { ZoomIn, ZoomOut, Maximize2, Radio, Search, RotateCcw, FolderOpen, Sparkles, AlertCircle } from '@lucide/svelte';
   import type { ComponentNode, ClassNode, DependencyEdge as EdgeType } from '../types/diagram';
 
   let svgElement: SVGSVGElement | null = $state(null);
@@ -574,6 +574,47 @@
       <span class="text-[9px] text-slate-400">F</span>
     </button>
   </div>
+
+  <!-- Diagnostic Empty State Overlay when no components exist -->
+  {#if components.length === 0 && !diagramStore.isLoading}
+    <div class="absolute inset-0 flex items-center justify-center p-6 pointer-events-none z-10">
+      <div class="bg-slate-900/95 border border-slate-800 rounded-2xl p-8 max-w-md shadow-2xl backdrop-blur-md text-center pointer-events-auto space-y-4">
+        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 mx-auto flex items-center justify-center">
+          <AlertCircle size={24} />
+        </div>
+        <div>
+          <h3 class="text-base font-semibold text-slate-100">
+            No Architecture Components Found
+          </h3>
+          <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
+            Archlens scanned <code class="px-1.5 py-0.5 bg-slate-800 text-blue-300 rounded font-mono text-[11px]">{diagramStore.projectRoot}</code> but did not identify any classes or packages.
+          </p>
+        </div>
+        <div class="p-3 bg-slate-800/50 rounded-lg text-left text-xs text-slate-300 space-y-1 font-mono text-[11px]">
+          <div class="text-slate-400 font-sans font-medium text-[11px] mb-1">Common causes:</div>
+          <div>• Source files located in nested modules</div>
+          <div>• Missing <span class="text-blue-300">.uml-viewer/policy.json</span></div>
+          <div>• Unsupported language or non-standard layout</div>
+        </div>
+        <div class="flex items-center justify-center gap-3 pt-2">
+          <button
+            onclick={() => diagramStore.isOpenProjectModalOpen = true}
+            class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-blue-900/40"
+          >
+            <FolderOpen size={14} />
+            Switch Workspace
+          </button>
+          <button
+            onclick={() => diagramStore.triggerRegen()}
+            class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-900/40"
+          >
+            <Sparkles size={14} />
+            Wake Agent
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- SVG Graph Canvas -->
   <svg

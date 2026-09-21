@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Recursive Multi-Module Source Auto-Discovery**:
+  - Automatically searches and aggregates nested `**/src/main/java` module source trees in multi-module Maven and Gradle repositories (e.g. `vanguard-api`, `gossip-api`) without requiring manual submodule configuration (Closes #30).
+- **Dynamic Package Prefix & Project Title Deduction**:
+  - Infers project titles dynamically from the repository folder name or root POM artifact ID.
+  - Automatically derives the longest common package namespace across scanned compilation units, stripping repetitive package prefixes to generate concise component identifiers (Closes #31).
+- **Interactive Canvas Diagnostic Empty State**:
+  - Renders a diagnostic card when zero components are detected in a workspace, providing actionable causes and one-click shortcuts to switch repositories or trigger agent policy synthesis (Closes #32).
+- **Direct Submodule Discovery in Workspace Browser**:
+  - Recursively indexes submodules in `/api/projects` to enable direct one-click navigation into subprojects.
+
 ## [0.0.1-Alpha-01] - 2026-09-21
 
 ### Added

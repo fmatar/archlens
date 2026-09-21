@@ -1,0 +1,20 @@
+name: Enforce Branch Flow Policy
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  enforce-develop-source:
+    name: Enforce Merge From Develop Only
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Pull Request Source Branch
+        run: |
+          echo "Target branch (base): ${{ github.base_ref }}"
+          echo "Source branch (head): ${{ github.head_ref }}"
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "::error::Branch policy violation: Pull requests targeting 'main' must originate exclusively from 'develop'. Direct merges from '${{ github.head_ref }}' into 'main' are forbidden."
+            exit 1
+          fi
+          echo "Branch policy validated: PR originates from 'develop'."

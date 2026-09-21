@@ -16,6 +16,7 @@ export default defineConfig({
   // @ts-ignore
   test: {
     environment: 'jsdom',
+    exclude: ['**/node_modules/**', '**/e2e/**', '**/dist/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

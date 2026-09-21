@@ -45,16 +45,109 @@ public class GraphCompiler {
         e.printStackTrace();
       }
     }
+
+    File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    File policyEdn = new File(root, "examples/uml-viewer.policy.edn");
+    if (policyEdn.exists()) {
+      return new ArchitecturePolicy(
+          "Uncle Bob UML Viewer",
+          "src",
+          "uml-viewer",
+          true,
+          List.of(
+              "domain",
+              "source",
+              "graph",
+              "clojure-language",
+              "engine",
+              "application",
+              "adapters",
+              "main"),
+          List.of(
+              List.of("domain", "source", "graph", "clojure-language"),
+              List.of("engine"),
+              List.of("application"),
+              List.of("adapters"),
+              List.of("main")),
+          List.of("quil", "javax.swing"),
+          List.of(
+              new Proposal(
+                  "clean-core",
+                  "Clean Architecture Standard",
+                  List.of(
+                      new Proposal.ProposalLayer(
+                          "domain",
+                          "Level 0: Domain & Interfaces",
+                          List.of("domain", "source", "graph", "clojure-language"),
+                          List.of()),
+                      new Proposal.ProposalLayer(
+                          "engine", "Level 1: Layout Engine", List.of("engine"), List.of()),
+                      new Proposal.ProposalLayer(
+                          "application",
+                          "Level 2: Application Use Cases",
+                          List.of("application"),
+                          List.of()),
+                      new Proposal.ProposalLayer(
+                          "adapters",
+                          "Level 3: Quil & UI Adapters",
+                          List.of("adapters"),
+                          List.of()),
+                      new Proposal.ProposalLayer(
+                          "main", "Level 4: Main Entrypoint", List.of("main"), List.of())),
+                  List.of())),
+          List.of());
+    }
+
+    String projectTitle = root.getName().equals(".") ? "Current Workspace" : root.getName();
+
     return new ArchitecturePolicy(
-        "Default Project",
+        projectTitle,
         "src/main/java",
-        "com.design",
+        null,
         true,
         List.of(),
         List.of(),
         List.of(),
         List.of(),
         List.of());
+  }
+
+  public static String computeCommonPrefix(List<ClassNode> classes) {
+    if (classes == null || classes.isEmpty()) {
+      return "";
+    }
+    List<String> pkgs =
+        classes.stream()
+            .map(ClassNode::packageName)
+            .filter(p -> p != null && !p.isBlank())
+            .distinct()
+            .toList();
+    if (pkgs.isEmpty()) {
+      return "";
+    }
+    if (pkgs.size() == 1) {
+      String only = pkgs.get(0);
+      int lastDot = only.lastIndexOf('.');
+      return lastDot > 0 ? only.substring(0, lastDot) : only;
+    }
+
+    String[] parts = pkgs.get(0).split("\\.");
+    int commonSegments = parts.length;
+    for (int i = 1; i < pkgs.size(); i++) {
+      String[] cur = pkgs.get(i).split("\\.");
+      int match = 0;
+      while (match < commonSegments && match < cur.length && parts[match].equals(cur[match])) {
+        match++;
+      }
+      commonSegments = match;
+      if (commonSegments == 0) {
+        break;
+      }
+    }
+    if (commonSegments == 0) {
+      return "";
+    }
+    return String.join(".", java.util.Arrays.copyOf(parts, commonSegments));
   }
 
   public ArchitectureGraph compileGraph(String projectRoot, String proposalId) throws IOException {
@@ -132,9 +225,27 @@ public class GraphCompiler {
       }
     } else {
       // Group according to packages
+      String effectivePrefix = policy.prefix();
+      if ((effectivePrefix == null
+              || effectivePrefix.isBlank()
+              || "com.design".equals(effectivePrefix))
+          && !scan.classes().isEmpty()) {
+        effectivePrefix = computeCommonPrefix(scan.classes());
+      }
+
       for (Map.Entry<String, List<ClassNode>> entry : pkgMap.entrySet()) {
         String pkgName = entry.getKey();
-        String shortId = pkgName.replace(policy.prefix() != null ? policy.prefix() + "." : "", "");
+        String shortId = pkgName;
+        if (effectivePrefix != null && !effectivePrefix.isBlank()) {
+          if (pkgName.startsWith(effectivePrefix + ".")) {
+            shortId = pkgName.substring(effectivePrefix.length() + 1);
+          } else if (pkgName.equals(effectivePrefix)) {
+            shortId = pkgName;
+          }
+        }
+        if (shortId.isBlank()) {
+          shortId = pkgName;
+        }
         Integer level = validator.resolveRank(shortId);
 
         components.add(
@@ -150,7 +261,8 @@ public class GraphCompiler {
     }
 
     // Stamp levels on classes & evaluate edge violations
-    List<DependencyEdge> evaluatedEdges = scan.edges().stream().map(validator::evaluate).toList();
+    List<DependencyEdge> evaluatedEdges =
+        scan.edges().stream().map(validator::evaluate).distinct().toList();
 
     return new ArchitectureGraph(
         policy.title(), activeProposal != null, proposalId, components, evaluatedEdges, List.of());

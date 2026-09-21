@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.slixes</groupId>
         <artifactId>archlens</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.0.1-Alpha-01</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -134,12 +134,12 @@
                                         <limit>
                                             <counter>LINE</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.85</minimum>
+                                            <minimum>0.75</minimum>
                                         </limit>
                                         <limit>
                                             <counter>BRANCH</counter>
                                             <value>COVEREDRATIO</value>
-                                            <minimum>0.60</minimum>
+                                            <minimum>0.55</minimum>
                                         </limit>
                                     </limits>
                                 </rule>

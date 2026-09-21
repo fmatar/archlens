@@ -81,8 +81,12 @@ flowchart LR
 
 ## Key Workstation Capabilities
 
-### 1. Dynamic Project Switcher (`⌘O` / `Ctrl+O`)
-Switch between local repositories without restarting the server. Archlens scans your workspace recursively for `.uml-viewer/policy.json` configurations, updates browser URLs seamlessly (`?projectRoot=...`), and permits manual directory input.
+### 1. Dynamic Project Switcher & Filesystem Explorer (`⌘O` / `Ctrl+O`)
+Switch between local repositories without restarting the server:
+- **Native OS Directory Picker (`Browse...`)**: Launch your operating system's native folder selection dialog (macOS Finder) with a single click.
+- **Interactive Directory Explorer**: Navigate folders visually with clickable breadcrumbs, quick jump bookmarks (`Home`, `Current Workspace`, `Labs`), instant folder filtering, and automatic project framework classification badges (`Maven`, `Gradle`, `Node`, `Java`, `Git`).
+- **Recursive Multi-Module Source Discovery**: Mono-repos and multi-module projects are scanned automatically across all nested module paths (`**/src/main/java`).
+- **Dynamic Package Deduction**: If a project lacks `.uml-viewer/policy.json`, Archlens deduces the common package prefix and project title on-the-fly.
 
 ### 2. Hierarchical Edge Bundling (`B`) & Violation X-Ray (`V`)
 Tame dense dependency webs. Edge bundling routes connections along concentric radial paths using smooth Catmull-Rom splines, reducing visual noise. Toggle Violation X-Ray (`V`) to fade compliant dependencies into the background and isolate rule violations in bold crimson.
@@ -93,7 +97,8 @@ Component cards display a clean 5-class window with intuitive navigation chevron
 ### 4. Semantic Macro LOD & Frustum Virtualization (`C`)
 Large codebases remain responsive through automatic viewport frustum culling and real-time node visibility counters. Zooming out smoothly collapses fine-grained component cards into Macro Level Badges to retain structural clarity.
 
-### 5. Tactile Feedback & Loading Experience
+### 5. Tactile Feedback & Diagnostic Empty State
+- **Diagnostic Empty State Card**: When opening a repository without architectural components or prior to policy initialization, an interactive guidance card provides direct actions to switch workspaces or wake the refactoring companion.
 - **Canvas Radar Scrim**: Frosted glass overlay with animated pulse beacon while AST compilation and layout calculate.
 - **Optimistic Source Code Modal**: Instant modal opening with a multi-line skeleton shimmer during file retrieval.
 - **Agent Sonar Wave**: Animated cyan wave sweeps down the canvas while AI agents execute refactoring tasks.
@@ -144,7 +149,30 @@ npm run dev
 
 You can analyze any repository by placing an architectural policy file at the root of that project: `.uml-viewer/policy.json`.
 
-### Example Policy (`.uml-viewer/policy.json`)
+### Automated Policy Installation via Agent Skill (`archlens-install-policy`)
+
+You can install and configure the architectural policy in any codebase automatically using the **`archlens-install-policy`** skill for **Claude Code**, **Gemini CLI**, and **Google Antigravity**:
+
+1. **Invoke via AI Agent**:
+   Instruct your agent:
+   > *"Install the Archlens Clean Architecture policy in this project."*
+
+2. **Standalone Scaffolding Script**:
+   Execute the zero-dependency Python generator directly in your target repository:
+   ```bash
+   python3 skills/archlens-install-policy/scripts/init_policy.py --path /path/to/target/project
+   ```
+
+3. **What It Configures**:
+   - **`.uml-viewer/policy.json`**: Inspects build files (`pom.xml`, `build.gradle`, `package.json`, etc.), computes common package prefixes, and organizes packages into concentric rings:
+     - **Level 0 (Domain Core)**: Entities, domain models, and business logic
+     - **Level 1 (Application)**: Use cases, interactor services, and ports
+     - **Level 2 (Adapters)**: Controllers, REST endpoints, presenters, and repositories
+     - **Level 3 (Infrastructure)**: Databases, frameworks, external drivers, and network clients
+   - **`.uml-viewer/workbench.config.json`**: Configures the local Archlens server endpoint (`http://localhost:8088`).
+   - **Agent Companion Protocols (`CLAUDE.md` & `AGENTS.md`)**: Configures Claude Code, Gemini, and Antigravity to process refactoring mailbox tasks (`REGEN`, `APPLY_PROPOSAL`, `REFRESH_CRAP`) and enforce inward dependency rules.
+
+### Manual Configuration Example (`.uml-viewer/policy.json`)
 
 ```json
 {
@@ -190,10 +218,13 @@ http://localhost:5173/?projectRoot=/path/to/your/repository
 
 ---
 
-## AI Agent Integration
+## AI Agent Integration (Claude Code & Gemini / Antigravity)
 
-This workbench includes a companion agent skill for **Google Antigravity** located in [`.agents/skills/uml-workbench-companion/SKILL.md`](.agents/skills/uml-workbench-companion/SKILL.md).
+Archlens provides full bidirectional integration with autonomous coding assistants:
+- **Claude Code**: Guidelines and mailbox protocol defined in [`CLAUDE.md`](CLAUDE.md).
+- **Google Antigravity & Gemini**: Companion skills located in [`.agents/skills/uml-workbench-companion/SKILL.md`](.agents/skills/uml-workbench-companion/SKILL.md) and [`skills/archlens-install-policy/SKILL.md`](skills/archlens-install-policy/SKILL.md).
 
+### Mailbox Protocol (`.uml-viewer/`)
 When you click **Regen (Wake Agent)** in the UI:
 1. The workbench posts a command to `.uml-viewer/to-agent.json`.
 2. The AI agent evaluates red dependency violations, refactors code (e.g. introducing interfaces or applying the Dependency Inversion Principle), runs unit tests, and signals the viewer.

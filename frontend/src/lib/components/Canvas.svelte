@@ -262,16 +262,54 @@
     return () => ctx.revert();
   });
 
-  function findNodeForClass(fullClassName: string) {
-    const simpleName = fullClassName.split('.').pop() || fullClassName;
-    for (const item of positionedComponents.values()) {
-      if (item.comp.id === fullClassName || item.comp.id === simpleName) return item;
-      if (item.comp.classes && item.comp.classes.some((cl: ClassNode) => cl.id === fullClassName || cl.name === simpleName)) {
-        return item;
+  // O(1) Class-to-Component Spatial Index for Massive Repositories
+  let classToNodeIdMap = $derived.by(() => {
+    const map = new Map<string, string>();
+    for (const comp of components) {
+      map.set(comp.id, comp.id);
+      map.set(comp.label, comp.id);
+      const simpleComp = comp.label.split('.').pop();
+      if (simpleComp) map.set(simpleComp, comp.id);
+
+      if (comp.packages) {
+        for (const pkg of comp.packages) {
+          map.set(pkg, comp.id);
+          const pkgSeg = pkg.split('.').pop();
+          if (pkgSeg) map.set(pkgSeg, comp.id);
+        }
       }
-      const pkgSeg = fullClassName.split('.').slice(-2, -1)[0];
-      if (item.comp.packages && item.comp.packages.includes(pkgSeg)) return item;
+
+      if (comp.classes) {
+        for (const cls of comp.classes) {
+          map.set(cls.id, comp.id);
+          map.set(cls.name, comp.id);
+          if (cls.packageName) {
+            map.set(cls.packageName, comp.id);
+            const pSeg = cls.packageName.split('.').pop();
+            if (pSeg) map.set(pSeg, comp.id);
+          }
+        }
+      }
     }
+    return map;
+  });
+
+  function findNodeForClass(fullClassName: string) {
+    if (!fullClassName) return null;
+    const directCompId = classToNodeIdMap.get(fullClassName);
+    if (directCompId) return positionedComponents.get(directCompId) || null;
+
+    const simpleName = fullClassName.split('.').pop() || fullClassName;
+    const simpleCompId = classToNodeIdMap.get(simpleName);
+    if (simpleCompId) return positionedComponents.get(simpleCompId) || null;
+
+    const parts = fullClassName.split('.');
+    if (parts.length > 2) {
+      const pkgSeg = parts[parts.length - 2];
+      const pkgCompId = classToNodeIdMap.get(pkgSeg);
+      if (pkgCompId) return positionedComponents.get(pkgCompId) || null;
+    }
+
     return null;
   }
 

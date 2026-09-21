@@ -131,6 +131,180 @@ public class DiagramResource {
   }
 
   @GET
+  @Path("/fs/directories")
+  public Map<String, Object> listDirectories(@QueryParam("path") String rawPath) {
+    File targetDir;
+    if (rawPath == null || rawPath.isBlank() || rawPath.trim().equals(".")) {
+      try {
+        targetDir = new File(".").getCanonicalFile();
+      } catch (IOException e) {
+        targetDir = new File(".").getAbsoluteFile();
+      }
+    } else {
+      String expanded = rawPath.trim();
+      if (expanded.startsWith("~")) {
+        expanded = System.getProperty("user.home") + expanded.substring(1);
+      }
+      targetDir = new File(expanded);
+      try {
+        targetDir = targetDir.getCanonicalFile();
+      } catch (IOException e) {
+        targetDir = targetDir.getAbsoluteFile();
+      }
+    }
+
+    if (!targetDir.exists() || !targetDir.isDirectory()) {
+      File userHome = new File(System.getProperty("user.home"));
+      if (targetDir.getParentFile() != null && targetDir.getParentFile().exists()) {
+        targetDir = targetDir.getParentFile();
+      } else if (userHome.exists()) {
+        targetDir = userHome;
+      }
+    }
+
+    String canonicalCurrent = targetDir.getAbsolutePath();
+    File parentFile = targetDir.getParentFile();
+    String parentPath = parentFile != null ? parentFile.getAbsolutePath() : null;
+
+    java.util.List<Map<String, String>> breadcrumbs = new java.util.ArrayList<>();
+    java.util.List<File> hierarchy = new java.util.ArrayList<>();
+    File cur = targetDir;
+    while (cur != null) {
+      hierarchy.add(0, cur);
+      cur = cur.getParentFile();
+    }
+    for (File f : hierarchy) {
+      String name = f.getName();
+      if (name == null || name.isEmpty()) {
+        name = f.getPath();
+      }
+      breadcrumbs.add(Map.of("name", name, "path", f.getAbsolutePath()));
+    }
+
+    java.util.List<Map<String, String>> quickNav = new java.util.ArrayList<>();
+    String userHome = System.getProperty("user.home");
+    quickNav.add(Map.of("name", "Home", "path", userHome, "icon", "home"));
+    try {
+      quickNav.add(
+          Map.of(
+              "name",
+              "Current Workspace",
+              "path",
+              new File(".").getCanonicalPath(),
+              "icon",
+              "briefcase"));
+    } catch (IOException ignored) {
+    }
+
+    File workspaceLabs = new File(userHome, "workspace/labs");
+    if (workspaceLabs.exists() && workspaceLabs.isDirectory()) {
+      quickNav.add(
+          Map.of("name", "Labs", "path", workspaceLabs.getAbsolutePath(), "icon", "folder-git"));
+    } else {
+      File workspace = new File(userHome, "workspace");
+      if (workspace.exists() && workspace.isDirectory()) {
+        quickNav.add(
+            Map.of("name", "Workspace", "path", workspace.getAbsolutePath(), "icon", "folder-git"));
+      }
+    }
+
+    java.util.List<Map<String, Object>> directories = new java.util.ArrayList<>();
+    File[] children = targetDir.listFiles(File::isDirectory);
+    if (children != null) {
+      java.util.Arrays.sort(
+          children, java.util.Comparator.comparing(f -> f.getName().toLowerCase()));
+      for (File child : children) {
+        String name = child.getName();
+        if (name.startsWith(".")
+            || name.equals("node_modules")
+            || name.equals("target")
+            || name.equals("build")) {
+          continue;
+        }
+        boolean isMaven = new File(child, "pom.xml").exists();
+        boolean isGradle =
+            new File(child, "build.gradle").exists()
+                || new File(child, "build.gradle.kts").exists();
+        boolean isNode = new File(child, "package.json").exists();
+        boolean isJava = new File(child, "src/main/java").exists();
+        boolean isGit = new File(child, ".git").exists();
+        boolean isProject = isMaven || isGradle || isNode || isJava || isGit;
+
+        String projectType = null;
+        if (isMaven) {
+          projectType = "Maven";
+        } else if (isGradle) {
+          projectType = "Gradle";
+        } else if (isJava) {
+          projectType = "Java";
+        } else if (isNode) {
+          projectType = "Node";
+        } else if (isGit) {
+          projectType = "Git";
+        }
+
+        File[] subDirs = child.listFiles(File::isDirectory);
+        boolean hasChildren = subDirs != null && subDirs.length > 0;
+
+        java.util.Map<String, Object> dirEntry = new java.util.HashMap<>();
+        dirEntry.put("name", name);
+        dirEntry.put("path", child.getAbsolutePath());
+        dirEntry.put("isProject", isProject);
+        if (projectType != null) {
+          dirEntry.put("projectType", projectType);
+        }
+        dirEntry.put("hasChildren", hasChildren);
+        directories.add(dirEntry);
+      }
+    }
+
+    java.util.Map<String, Object> response = new java.util.HashMap<>();
+    response.put("currentPath", canonicalCurrent);
+    if (parentPath != null) {
+      response.put("parentPath", parentPath);
+    }
+    response.put("breadcrumbs", breadcrumbs);
+    response.put("quickNav", quickNav);
+    response.put("directories", directories);
+    return response;
+  }
+
+  @POST
+  @Path("/fs/pick-directory")
+  public Map<String, Object> pickDirectory() {
+    if (Boolean.getBoolean("java.awt.headless") || Boolean.getBoolean("test.headless")) {
+      return Map.of("success", false, "supported", false, "reason", "headless");
+    }
+    String os = System.getProperty("os.name", "").toLowerCase();
+    if (os.contains("mac")) {
+      try {
+        ProcessBuilder pb =
+            new ProcessBuilder(
+                "osascript",
+                "-e",
+                "POSIX path of (choose folder with prompt \"Select Repository or Project Directory\")");
+        Process p = pb.start();
+        boolean finished = p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+        if (finished && p.exitValue() == 0) {
+          String selectedPath =
+              new String(p.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+                  .trim();
+          if (!selectedPath.isEmpty()) {
+            return Map.of("success", true, "path", selectedPath);
+          }
+        }
+        if (!finished) {
+          p.destroyForcibly();
+        }
+        return Map.of("success", false, "cancelled", true);
+      } catch (Exception e) {
+        return Map.of("success", false, "error", e.getMessage());
+      }
+    }
+    return Map.of("success", false, "supported", false);
+  }
+
+  @GET
   @Path("/graph")
   public ArchitectureGraph getGraph(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,

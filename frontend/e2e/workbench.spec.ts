@@ -328,4 +328,50 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await expect(page.getByRole('button', { name: 'Switch Workspace' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Wake Agent', exact: true })).toBeVisible();
   });
+
+  test('should browse filesystem, navigate breadcrumbs, and filter directories in open modal', async ({ page }) => {
+    // 1. Navigate to default root
+    await page.goto('/');
+
+    // 2. Open project modal via quick button
+    const openBtn = page.locator('button[aria-label="Open Project Folder"]');
+    await expect(openBtn).toBeVisible({ timeout: 10000 });
+    await openBtn.click();
+
+    // 3. Verify Open Project dialog is visible
+    const modalTitle = page.getByRole('heading', { name: 'Open Repository or Directory' });
+    await expect(modalTitle).toBeVisible({ timeout: 5000 });
+
+    // 4. Verify Browse... button is present and ready
+    const browseBtn = page.locator('button[title*="Browse via native Finder folder dialog"]');
+    await expect(browseBtn).toBeVisible({ timeout: 5000 });
+    await expect(browseBtn).toContainText('Browse...');
+
+    // 5. Verify Directory Explorer is displayed with breadcrumbs & filter input
+    const filterInput = page.locator('input[placeholder*="Filter folders in this directory..."]');
+    await expect(filterInput).toBeVisible({ timeout: 5000 });
+
+    // 6. Test folder filtering
+    await filterInput.fill('backend');
+    await expect(filterInput).toHaveValue('backend');
+
+    // 7. Clear folder filter
+    await filterInput.fill('');
+    await expect(filterInput).toHaveValue('');
+
+    // 8. Test collapsing and expanding the explorer
+    const toggleExplorerBtn = page.locator('button', { hasText: /Hide Explorer|Explore Folders/ });
+    await expect(toggleExplorerBtn).toBeVisible();
+    await toggleExplorerBtn.click();
+    await expect(filterInput).not.toBeVisible();
+
+    // Expand explorer again
+    await toggleExplorerBtn.click();
+    await expect(filterInput).toBeVisible();
+
+    // 9. Close dialog with Escape
+    await page.keyboard.press('Escape');
+    await expect(modalTitle).not.toBeVisible();
+  });
 });
+

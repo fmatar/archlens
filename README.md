@@ -4,7 +4,7 @@
 [![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/)
 [![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.39-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
-[![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](https://github.com/fmatar/archlens/pkgs/container/archlens)
+[![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](Dockerfile)
 [![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go%20%7C%20Clojure-emerald.svg)](#polyglot-language-support)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -19,8 +19,8 @@ docker run -d -p 8088:8088 -v $(pwd):/workspace ghcr.io/fmatar/archlens:latest
 ```
 Visit **`http://localhost:8088`** to interactively explore and validate your architecture.
 
-![Archlens Dynamic Workbench Teaser](media/archlens-teaser.gif)  
-*(Full HD 1080p Teaser: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) &bull; Extended Journey: [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4))*
+![Archlens Clean Architecture Dynamic Workbench](media/archlens-canvas.png)  
+*(Full HD 1080p Video Teaser: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) &bull; Extended Journey: [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) &bull; Animated Preview: [`media/archlens-teaser.gif`](media/archlens-teaser.gif))*
 
 ---
 
@@ -101,6 +101,21 @@ Large codebases remain responsive through automatic viewport frustum culling and
 
 ---
 
+## Polyglot Language Support
+
+Archlens features a modular Service Provider Interface (SPI) for language scanners:
+
+| Language | Ecosystem & AST Engine | File Extensions | Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Java 25** | JavaParser 3.26 | `.java` | Records, Sealed Types, Interfaces, Class Hierarchies, Inward Dependency Rules |
+| **Python** | Python AST Visitor | `.py` | Modules, Classes, Functions, Imports, Relative Imports |
+| **TypeScript / JS** | Babel AST / Regex Scanner | `.ts`, `.tsx`, `.js`, `.jsx` | Classes, Interfaces, Named Imports, ESM Re-exports |
+| **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths |
+| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions |
+| **Clojure** | EDN & Regex AST Scanner | `.clj`, `.cljs`, `.edn` | Namespaces (`ns`), `(:require ...)`, `def`, `defn`, Protocols |
+
+---
+
 ## Quick Start
 
 ### Prerequisites
@@ -121,7 +136,7 @@ cd frontend
 npm install
 npm run dev
 ```
-* Open **`http://localhost:5173`** in your browser.
+* Open `http://localhost:5173` in your browser.
 
 ---
 

@@ -229,39 +229,6 @@
     return result;
   });
 
-  // Radar Scanline Telemetry State
-  let radarState = $state({ y: -120, opacity: 0 });
-
-  // Agent Radar Telemetry Loop
-  $effect(() => {
-    const isRegenerating = diagramStore.isRegenerating;
-    const ctx = gsap.context(() => {
-      if (isRegenerating) {
-        gsap.to(radarState, { opacity: 0.85, duration: 0.3 });
-        gsap.fromTo(
-          radarState,
-          { y: -100 },
-          {
-            y: 1800,
-            duration: 2.2,
-            repeat: -1,
-            ease: 'none'
-          }
-        );
-      } else {
-        gsap.to(radarState, {
-          opacity: 0,
-          duration: 0.6,
-          onComplete: () => {
-            radarState.y = -120;
-          }
-        });
-      }
-    });
-
-    return () => ctx.revert();
-  });
-
   // O(1) Class-to-Component Spatial Index for Massive Repositories
   let classToNodeIdMap = $derived.by(() => {
     const map = new Map<string, string>();
@@ -674,20 +641,20 @@
       {/if}
 
       <!-- Agent Radar Scanline Overlay -->
-      {#if radarState.opacity > 0.01}
-        <g opacity={radarState.opacity} class="pointer-events-none">
+      {#if diagramStore.isRegenerating}
+        <g class="pointer-events-none animate-radar-scan">
           <rect
             x="-500"
-            y={radarState.y - 120}
+            y="-120"
             width="3500"
             height="120"
             fill="url(#radar-gradient)"
           />
           <line
             x1="-500"
-            y1={radarState.y}
+            y1="0"
             x2="3000"
-            y2={radarState.y}
+            y2="0"
             stroke="#34d399"
             stroke-width="2"
             stroke-dasharray="8 4"
@@ -775,6 +742,15 @@
 </div>
 
 <style>
+  @keyframes radar-scan {
+    0% { transform: translateY(-100px); opacity: 0; }
+    15% { opacity: 0.85; }
+    85% { opacity: 0.85; }
+    100% { transform: translateY(1800px); opacity: 0; }
+  }
+  .animate-radar-scan {
+    animation: radar-scan 2.2s linear infinite;
+  }
   @keyframes sonar-sweep {
     0% { transform: translateY(-100%); opacity: 0; }
     25% { opacity: 1; }

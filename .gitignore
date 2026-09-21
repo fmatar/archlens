@@ -13,3 +13,7 @@ coverage/
 **/coverage/
 .grok/
 .metrics/
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/

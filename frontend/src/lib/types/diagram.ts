@@ -101,3 +101,23 @@ export interface ArchitecturePolicy {
   proposals: Proposal[];
   omit: string[];
 }
+
+export type TelemetryEventType = 'INFO' | 'SUCCESS' | 'WARNING' | 'TASK';
+
+export interface AgentTelemetryEvent {
+  id: string;
+  timestamp: string;
+  type: TelemetryEventType;
+  message: string;
+  details?: string;
+}
+
+export interface EdgeTooltipInfo {
+  edge: DependencyEdge;
+  fromLabel: string;
+  toLabel: string;
+  fromLevel: number | null;
+  toLevel: number | null;
+  x: number;
+  y: number;
+}

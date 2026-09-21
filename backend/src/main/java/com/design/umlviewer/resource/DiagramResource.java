@@ -27,27 +27,38 @@ public class DiagramResource {
 
   private static final String DEFAULT_PROJECT_ROOT = "..";
 
+  private String normalizeRoot(String root) {
+    if (root == null || root.isBlank()) {
+      return DEFAULT_PROJECT_ROOT;
+    }
+    // ponytail: transparently map old repository folder name to archlens
+    if (root.contains("unclebob-design")) {
+      return root.replace("unclebob-design", "archlens");
+    }
+    return root;
+  }
+
   @GET
   @Path("/graph")
   public ArchitectureGraph getGraph(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
       throws IOException {
-    return graphCompiler.compileGraph(projectRoot, proposalId);
+    return graphCompiler.compileGraph(normalizeRoot(projectRoot), proposalId);
   }
 
   @GET
   @Path("/policy")
   public ArchitecturePolicy getPolicy(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
-    return graphCompiler.loadPolicy(projectRoot);
+    return graphCompiler.loadPolicy(normalizeRoot(projectRoot));
   }
 
   @GET
   @Path("/mailbox/to-agent")
   public MailboxEnvelope getToAgentMailbox(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
-    return mailboxService.readMailbox(projectRoot, true);
+    return mailboxService.readMailbox(normalizeRoot(projectRoot), true);
   }
 
   @POST
@@ -62,28 +73,64 @@ public class DiagramResource {
     @SuppressWarnings("unchecked")
     Map<String, Object> payload = (Map<String, Object>) request.get("payload");
 
-    return mailboxService.appendCommand(projectRoot, true, op, target, payload);
+    return mailboxService.appendCommand(normalizeRoot(projectRoot), true, op, target, payload);
   }
 
   @GET
   @Path("/source")
   public Map<String, Object> getSourceCode(
-      @QueryParam("filePath") String filePath, @QueryParam("line") @DefaultValue("1") int line)
-      throws IOException {
-    File f = new File(filePath);
-    if (!f.exists() || !f.isFile()) {
-      return Map.of("error", "File not found: " + filePath);
+      @QueryParam("filePath") String filePath, @QueryParam("line") @DefaultValue("1") int line) {
+    if (filePath == null || filePath.isBlank()) {
+      return Map.of("error", "No filePath provided", "content", "");
     }
-    String content = Files.readString(f.toPath());
-    return Map.of(
-        "fileName",
-        f.getName(),
-        "filePath",
-        f.getAbsolutePath(),
-        "content",
-        content,
-        "targetLine",
-        line);
+
+    File f = new File(filePath);
+    // ponytail: resilient path fallback for renamed repository folders or relative paths
+    if (!f.exists() || !f.isFile()) {
+      if (filePath.contains("unclebob-design")) {
+        File fallback = new File(filePath.replace("unclebob-design", "archlens"));
+        if (fallback.exists() && fallback.isFile()) {
+          f = fallback;
+        }
+      }
+      if (!f.exists() || !f.isFile()) {
+        File rel = new File(".", filePath);
+        if (rel.exists() && rel.isFile()) {
+          f = rel;
+        }
+      }
+      if (!f.exists() || !f.isFile()) {
+        File parentRel = new File("..", filePath);
+        if (parentRel.exists() && parentRel.isFile()) {
+          f = parentRel;
+        }
+      }
+    }
+
+    if (!f.exists() || !f.isFile()) {
+      return Map.of(
+          "error", "File not found: " + filePath,
+          "filePath", filePath,
+          "content", "// File could not be loaded on server: " + filePath);
+    }
+
+    try {
+      String content = Files.readString(f.toPath());
+      return Map.of(
+          "fileName",
+          f.getName(),
+          "filePath",
+          f.getAbsolutePath(),
+          "content",
+          content,
+          "targetLine",
+          line);
+    } catch (Exception e) {
+      return Map.of(
+          "error", "Failed to read file: " + e.getMessage(),
+          "filePath", filePath,
+          "content", "// Error reading file: " + e.getMessage());
+    }
   }
 
   @GET

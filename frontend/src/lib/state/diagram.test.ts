@@ -42,4 +42,56 @@ describe('diagramStore state management', () => {
     expect(diagramStore.panX).toBe(0);
     expect(diagramStore.panY).toBe(0);
   });
+
+  it('should manage agent regeneration state and notices', () => {
+    expect(diagramStore.isRegenerating).toBe(false);
+    expect(diagramStore.regenNotice).toBeNull();
+
+    diagramStore.isRegenerating = true;
+    diagramStore.regenNotice = 'Agent analyzing AST...';
+
+    expect(diagramStore.isRegenerating).toBe(true);
+    expect(diagramStore.regenNotice).toContain('Agent');
+  });
+
+  it('should toggle active proposals', () => {
+    expect(diagramStore.activeProposalId).toBeNull();
+    diagramStore.activeProposalId = 'clean-core';
+    expect(diagramStore.activeProposalId).toBe('clean-core');
+  });
+
+  it('should manage focused node state', () => {
+    expect(diagramStore.focusedNodeId).toBeNull();
+    diagramStore.setFocusedNode('domain');
+    expect(diagramStore.focusedNodeId).toBe('domain');
+    diagramStore.setFocusedNode(null);
+    expect(diagramStore.focusedNodeId).toBeNull();
+  });
+
+  it('should record agent telemetry events', () => {
+    const initialCount = diagramStore.telemetryEvents.length;
+    diagramStore.addTelemetryEvent('TASK', 'Test refactor directive', 'Target: AST scan');
+    expect(diagramStore.telemetryEvents.length).toBe(initialCount + 1);
+    expect(diagramStore.telemetryEvents[0].message).toBe('Test refactor directive');
+    expect(diagramStore.telemetryEvents[0].type).toBe('TASK');
+  });
+
+  it('should toggle command palette and telemetry drawer', () => {
+    expect(diagramStore.isCommandPaletteOpen).toBe(false);
+    diagramStore.isCommandPaletteOpen = true;
+    expect(diagramStore.isCommandPaletteOpen).toBe(true);
+
+    expect(diagramStore.isTelemetryDrawerOpen).toBe(false);
+    diagramStore.isTelemetryDrawerOpen = true;
+    expect(diagramStore.isTelemetryDrawerOpen).toBe(true);
+  });
+
+  it('should handle panToComponent smoothly with halo', async () => {
+    await diagramStore.loadGraph(null);
+    expect(diagramStore.graph).not.toBeNull();
+
+    diagramStore.panToComponent('domain');
+    expect(diagramStore.targetHaloNodeId).toBe('domain');
+    expect(diagramStore.focusedNodeId).toBe('domain');
+  });
 });

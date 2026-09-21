@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
   import ComponentBox from './ComponentBox.svelte';
   import DependencyEdge from './DependencyEdge.svelte';
-  import { ZoomIn, ZoomOut, Maximize2 } from '@lucide/svelte';
-  import type { ComponentNode, ClassNode } from '../types/diagram';
+  import ProposalDiffBanner from './ProposalDiffBanner.svelte';
+  import EdgeTooltip from './EdgeTooltip.svelte';
+  import AgentDrawer from './AgentDrawer.svelte';
+  import { ZoomIn, ZoomOut, Maximize2, Radio, Search } from '@lucide/svelte';
+  import type { ComponentNode, ClassNode, DependencyEdge as EdgeType } from '../types/diagram';
 
   let svgElement: SVGSVGElement | null = $state(null);
   let isPanning = $state(false);
@@ -31,16 +35,21 @@
   const GAP_X = 60;
   const GAP_Y = 120;
 
-  let positionedComponents = $derived.by(() => {
-    // Group components by level
-    const levelMap = new Map<number, ComponentNode[]>();
+  // Group levels
+  let levelMap = $derived.by(() => {
+    const map = new Map<number, ComponentNode[]>();
     components.forEach((c: ComponentNode) => {
       const lvl = c.level !== null ? c.level : 3;
-      if (!levelMap.has(lvl)) levelMap.set(lvl, []);
-      levelMap.get(lvl)!.push(c);
+      if (!map.has(lvl)) map.set(lvl, []);
+      map.get(lvl)!.push(c);
     });
+    return map;
+  });
 
-    const sortedLevels = Array.from(levelMap.keys()).sort((a, b) => a - b);
+  let sortedLevels = $derived(Array.from(levelMap.keys()).sort((a, b) => a - b));
+
+  // ponytail: directly derive layout coordinates from components - zero race conditions, instantaneous rendering
+  let positionedComponents = $derived.by(() => {
     const coords = new Map<string, { x: number; y: number; width: number; height: number; comp: ComponentNode }>();
 
     sortedLevels.forEach((level, rowIdx) => {
@@ -55,6 +64,76 @@
 
     return coords;
   });
+
+  // Radar Scanline Telemetry State
+  let radarState = $state({ y: -120, opacity: 0 });
+
+  // Agent Radar Telemetry Loop
+  $effect(() => {
+    const isRegenerating = diagramStore.isRegenerating;
+    const ctx = gsap.context(() => {
+      if (isRegenerating) {
+        gsap.to(radarState, { opacity: 0.85, duration: 0.3 });
+        gsap.fromTo(
+          radarState,
+          { y: -100 },
+          {
+            y: 1800,
+            duration: 2.2,
+            repeat: -1,
+            ease: 'none'
+          }
+        );
+      } else {
+        gsap.to(radarState, {
+          opacity: 0,
+          duration: 0.6,
+          onComplete: () => {
+            radarState.y = -120;
+          }
+        });
+      }
+    });
+
+    return () => ctx.revert();
+  });
+
+  function findNodeForClass(fullClassName: string) {
+    const simpleName = fullClassName.split('.').pop() || fullClassName;
+    for (const item of positionedComponents.values()) {
+      if (item.comp.id === fullClassName || item.comp.id === simpleName) return item;
+      if (item.comp.classes && item.comp.classes.some((cl: ClassNode) => cl.id === fullClassName || cl.name === simpleName)) {
+        return item;
+      }
+      const pkgSeg = fullClassName.split('.').slice(-2, -1)[0];
+      if (item.comp.packages && item.comp.packages.includes(pkgSeg)) return item;
+    }
+    return null;
+  }
+
+  // Focus and Dimming calculations
+  let connectedNodeIds = $derived.by(() => {
+    const focused = diagramStore.focusedNodeId;
+    if (!focused) return null;
+    const set = new Set<string>([focused]);
+    edges.forEach((edge: EdgeType) => {
+      const from = findNodeForClass(edge.from);
+      const to = findNodeForClass(edge.to);
+      if (from?.comp.id === focused && to) set.add(to.comp.id);
+      if (to?.comp.id === focused && from) set.add(from.comp.id);
+    });
+    return set;
+  });
+
+  function getTierTitle(level: number): string {
+    switch (level) {
+      case 0: return 'Ring 0: Entities & Domain Core';
+      case 1: return 'Ring 1: Use Cases & Application Services';
+      case 2: return 'Ring 2: Interface Adapters & Controllers';
+      case 3: return 'Ring 3: Frameworks & External Drivers';
+      default: return `Ring ${level}: Architectural Tier`;
+    }
+  }
 
   function startNodeDrag(id: string, e: MouseEvent) {
     e.stopPropagation();
@@ -71,6 +150,11 @@
       isPanning = true;
       startX = e.clientX - diagramStore.panX;
       startY = e.clientY - diagramStore.panY;
+      // Click canvas background clears focus
+      if ((e.target as HTMLElement).tagName === 'svg' || (e.target as HTMLElement).tagName === 'DIV') {
+        diagramStore.setFocusedNode(null);
+        diagramStore.activeEdgeTooltip = null;
+      }
     }
   }
 
@@ -111,30 +195,49 @@
   onmouseup={handleMouseUp}
   onwheel={handleWheel}
 >
-  <!-- Floating Proposal Banner -->
-  {#if graph?.isProposal}
-    <div class="absolute top-4 left-6 z-20 px-3 py-1.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 font-mono text-xs shadow-lg backdrop-blur">
-      PROPOSAL — not instantiated in code
+  <!-- Floating Proposal Diff Banner -->
+  <ProposalDiffBanner />
+
+  <!-- Edge Explanation Tooltip -->
+  <EdgeTooltip />
+
+  <!-- Active Agent Radar Sweep Badge -->
+  {#if diagramStore.isRegenerating}
+    <div class="absolute top-4 right-6 z-20 px-3 py-1.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono text-xs shadow-xl backdrop-blur flex items-center gap-2">
+      <Radio size={14} class="animate-spin text-emerald-400" />
+      Autonomous Agent Analyzing AST & Clean Architecture Rules...
     </div>
   {/if}
 
   <!-- View Controls -->
-  <div class="absolute bottom-6 left-6 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-lg p-1 shadow-xl backdrop-blur">
+  <div class="absolute bottom-12 left-6 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-lg p-1 shadow-xl backdrop-blur">
+    <button
+      onclick={() => diagramStore.isCommandPaletteOpen = true}
+      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 px-2"
+      title="Search (Cmd+K)"
+    >
+      <Search size={14} />
+      <span class="font-mono text-[10px] text-slate-400">Cmd+K</span>
+    </button>
+    <div class="h-3 w-px bg-slate-800"></div>
     <button
       onclick={() => diagramStore.zoom = Math.min(3.0, diagramStore.zoom * 1.1)}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      title="Zoom In (+)"
     >
       <ZoomIn size={16} />
     </button>
     <button
       onclick={() => diagramStore.zoom = Math.max(0.2, diagramStore.zoom * 0.9)}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      title="Zoom Out (-)"
     >
       <ZoomOut size={16} />
     </button>
     <button
       onclick={() => diagramStore.resetZoom()}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white"
+      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      title="Reset View (0)"
     >
       <Maximize2 size={16} />
     </button>
@@ -157,51 +260,117 @@
       <marker id="arrow-violating" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
         <path d="M 0 1 L 10 5 L 0 9 z" fill="#ef4444" />
       </marker>
+
+      <!-- Neon Violation Filter -->
+      <filter id="violation-glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+
+      <!-- Agent Radar Scanline Gradient -->
+      <linearGradient id="radar-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#10b981" stop-opacity="0" />
+        <stop offset="60%" stop-color="#10b981" stop-opacity="0.12" />
+        <stop offset="100%" stop-color="#34d399" stop-opacity="0.5" />
+      </linearGradient>
     </defs>
 
     <!-- Transformed Graph Group -->
     <g transform={`translate(${diagramStore.panX}, ${diagramStore.panY}) scale(${diagramStore.zoom})`}>
-      <!-- Edges -->
+      <!-- Concentric Architecture Tier Lanes Backdrop -->
+      {#each sortedLevels as level, rowIdx}
+        {@const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35}
+        {@const height = BOX_HEIGHT + 70}
+        <g class="pointer-events-none select-none">
+          <rect
+            x="-400"
+            y={y}
+            width="3200"
+            height={height}
+            rx="12"
+            class="fill-slate-900/35 stroke-slate-800/40"
+            stroke-width="1"
+            stroke-dasharray="8 6"
+          />
+          <text
+            x="-360"
+            y={y + 24}
+            class="fill-slate-500 font-mono text-[11px] font-semibold tracking-wider uppercase"
+          >
+            {getTierTitle(level)}
+          </text>
+        </g>
+      {/each}
+
+      <!-- Agent Radar Scanline Overlay -->
+      {#if radarState.opacity > 0.01}
+        <g opacity={radarState.opacity} class="pointer-events-none">
+          <rect
+            x="-500"
+            y={radarState.y - 120}
+            width="3500"
+            height="120"
+            fill="url(#radar-gradient)"
+          />
+          <line
+            x1="-500"
+            y1={radarState.y}
+            x2="3000"
+            y2={radarState.y}
+            stroke="#34d399"
+            stroke-width="2"
+            stroke-dasharray="8 4"
+            opacity="0.9"
+          />
+        </g>
+      {/if}
+
+      <!-- Animated Dependency Edges -->
       {#if diagramStore.declutterMode !== 'REMOVE_ARROWS'}
-        {#each edges as edge}
-          {@const findNodeForClass = (fullClassName: string) => {
-            const simpleName = fullClassName.split('.').pop() || fullClassName;
-            for (const item of positionedComponents.values()) {
-              if (item.comp.id === fullClassName || item.comp.id === simpleName) return item;
-              if (item.comp.classes && item.comp.classes.some((cl: ClassNode) => cl.id === fullClassName || cl.name === simpleName)) {
-                return item;
-              }
-              const pkgSeg = fullClassName.split('.').slice(-2, -1)[0];
-              if (item.comp.packages && item.comp.packages.includes(pkgSeg)) return item;
-            }
-            return null;
-          }}
+        {#each edges as edge, i (edge.from + '->' + edge.to + ':' + edge.kind + ':' + i)}
           {@const fromNode = findNodeForClass(edge.from)}
           {@const toNode = findNodeForClass(edge.to)}
           {#if fromNode && toNode && fromNode !== toNode}
             {@const goingDown = fromNode.y < toNode.y}
+            {@const isHighlighted = diagramStore.focusedNodeId
+              ? (fromNode.comp.id === diagramStore.focusedNodeId || toNode.comp.id === diagramStore.focusedNodeId)
+              : false}
+            {@const isDimmed = connectedNodeIds ? !isHighlighted : false}
             <DependencyEdge
               {edge}
               x1={fromNode.x + fromNode.width / 2 + (edge.isViolating ? -15 : 15)}
               y1={goingDown ? fromNode.y + fromNode.height : fromNode.y}
               x2={toNode.x + toNode.width / 2 + (edge.isViolating ? -15 : 15)}
               y2={goingDown ? toNode.y : toNode.y + toNode.height}
+              fromLabel={fromNode.comp.label}
+              toLabel={toNode.comp.label}
+              fromLevel={fromNode.comp.level}
+              toLevel={toNode.comp.level}
+              {isDimmed}
+              {isHighlighted}
             />
           {/if}
         {/each}
       {/if}
 
-      <!-- Component Layer Boxes -->
-      {#each Array.from(positionedComponents.values()) as item}
+      <!-- Component Layer Boxes (Direct Reactive Positions & Focus Dimming) -->
+      {#each Array.from(positionedComponents.values()) as item, i (item.comp.id + ':' + i)}
+        {@const isFocused = diagramStore.focusedNodeId === item.comp.id}
+        {@const isDimmed = connectedNodeIds ? !connectedNodeIds.has(item.comp.id) : false}
         <ComponentBox
           component={item.comp}
           x={item.x}
           y={item.y}
           width={item.width}
           height={item.height}
+          {isDimmed}
+          {isFocused}
           onStartDrag={(e) => startNodeDrag(item.comp.id, e)}
         />
       {/each}
     </g>
   </svg>
+
+  <!-- Agent Mailbox Telemetry Drawer -->
+  <AgentDrawer />
 </div>

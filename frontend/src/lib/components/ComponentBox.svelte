@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ComponentNode } from '../types/diagram';
+  import type { ComponentNode, ClassNode } from '../types/diagram';
   import { diagramStore } from '../state/diagram.svelte';
 
   interface Props {
@@ -8,29 +8,96 @@
     y: number;
     width: number;
     height: number;
+    isDimmed?: boolean;
+    isFocused?: boolean;
     onStartDrag?: (e: MouseEvent) => void;
   }
 
-  let { component, x, y, width, height, onStartDrag }: Props = $props();
+  let {
+    component,
+    x,
+    y,
+    width,
+    height,
+    isDimmed = false,
+    isFocused = false,
+    onStartDrag
+  }: Props = $props();
 
-  let rankBadge = $derived(component.level !== null ? `Level ${component.level}` : 'Unranked');
+  let rankBadge = $derived(component.level !== null ? `Ring ${component.level}` : 'Unranked');
+  let hasHalo = $derived(diagramStore.targetHaloNodeId === component.id);
+
+  function getCrapColor(crapMu: number): string {
+    if (crapMu <= 4) return '#10b981'; // Emerald
+    if (crapMu <= 15) return '#f59e0b'; // Amber
+    return '#ef4444'; // Rose
+  }
+
+  function getCoverageColor(cov: number): string {
+    if (cov >= 0.8) return '#10b981';
+    if (cov >= 0.5) return '#f59e0b';
+    return '#ef4444';
+  }
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<g transform={`translate(${x}, ${y})`} class="group cursor-pointer">
+<g
+  transform={`translate(${x}, ${y})`}
+  class="group cursor-pointer transition-opacity duration-300"
+  opacity={isDimmed ? 0.18 : 1.0}
+  onclick={(e) => {
+    e.stopPropagation();
+    diagramStore.setFocusedNode(diagramStore.focusedNodeId === component.id ? null : component.id);
+  }}
+>
+  <!-- Spotlight Target Halo (Triggered by Command Palette) -->
+  {#if hasHalo}
+    <rect
+      x="-8"
+      y="-8"
+      width={width + 16}
+      height={height + 16}
+      rx="14"
+      fill="none"
+      stroke="#38bdf8"
+      stroke-width="3"
+      stroke-dasharray="6 4"
+      class="animate-pulse"
+      filter="url(#violation-glow)"
+    />
+  {/if}
+
+  <!-- Active Focus Glow -->
+  {#if isFocused}
+    <rect
+      x="-3"
+      y="-3"
+      width={width + 6}
+      height={height + 6}
+      rx="10"
+      fill="none"
+      stroke="#3b82f6"
+      stroke-width="2"
+      opacity="0.8"
+    />
+  {/if}
+
   <!-- Outer Box -->
   <rect
     width={width}
     height={height}
     rx="8"
-    class="fill-slate-800/80 stroke-slate-600 group-hover:stroke-blue-400 transition-colors"
-    stroke-width="1.5"
+    class={`fill-slate-800/85 stroke-slate-600 transition-colors ${
+      isFocused ? 'stroke-blue-400 fill-slate-800' : 'group-hover:stroke-blue-400'
+    }`}
+    stroke-width={isFocused ? 2 : 1.5}
   />
 
   <!-- Component Title Banner (Draggable handle) -->
   <path
     d={`M 0 8 Q 0 0 8 0 L ${width - 8} 0 Q ${width} 0 ${width} 8 L ${width} 28 L 0 28 Z`}
-    class="fill-slate-900/90 cursor-move hover:fill-slate-850"
+    class="fill-slate-900/90 cursor-move hover:fill-slate-850 transition-colors"
     onmousedown={(e) => onStartDrag && onStartDrag(e)}
   />
 
@@ -43,7 +110,7 @@
     {component.label}
   </text>
 
-  <!-- Clean Architecture Level Badge -->
+  <!-- Clean Architecture Ring Badge -->
   <rect
     x={width - 64}
     y="6"
@@ -52,18 +119,20 @@
     rx="4"
     class="fill-slate-700/90"
   />
-  <text x={width - 38} y="18" text-anchor="middle" class="fill-slate-300 font-mono text-[10px]">
+  <text x={width - 38} y="18" text-anchor="middle" class="fill-slate-300 font-mono text-[10px] font-medium">
     {rankBadge}
   </text>
 
-  <!-- Contained Classes / Modules -->
+  <!-- Contained Classes / Modules with Health Heatmap Badges -->
   {#if diagramStore.declutterMode !== 'CLASSES'}
     <g transform="translate(10, 36)">
       {#each component.classes.slice(0, 6) as cls, i}
+        {@const crapCol = getCrapColor(cls.crap.mu)}
+        {@const covCol = getCoverageColor(cls.coverage)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <g
           transform={`translate(0, ${i * 24})`}
-          class="cursor-pointer"
+          class="cursor-pointer group/row"
           onclick={(e) => {
             e.stopPropagation();
             diagramStore.selectedClass = cls;
@@ -73,16 +142,37 @@
             width={width - 20}
             height="20"
             rx="4"
-            class="fill-slate-900/50 hover:fill-blue-900/40 stroke-slate-750 stroke-[0.5]"
+            class="fill-slate-900/60 hover:fill-blue-900/40 stroke-slate-750 stroke-[0.5] transition-colors"
           />
-          <text x="8" y="14" class="fill-slate-200 text-[11px] font-mono">
+          <text x="8" y="14" class="fill-slate-200 group-hover/row:fill-blue-300 text-[11px] font-mono transition-colors">
             {cls.name}
           </text>
-          <!-- C / M badges -->
-          <circle cx={width - 40} cy="10" r="4" class="fill-emerald-500" />
-          <text x={width - 40} y="13" text-anchor="middle" class="fill-black text-[7px] font-bold">C</text>
-          <circle cx={width - 28} cy="10" r="4" class="fill-emerald-500" />
-          <text x={width - 28} y="13" text-anchor="middle" class="fill-black text-[7px] font-bold">M</text>
+
+          <!-- Dynamic CRAP Badge Indicator -->
+          <rect
+            x={width - 64}
+            y="4"
+            width="20"
+            height="12"
+            rx="2"
+            fill={crapCol}
+            opacity="0.25"
+          />
+          <text
+            x={width - 54}
+            y="13"
+            text-anchor="middle"
+            fill={crapCol}
+            class="text-[8px] font-mono font-bold select-none"
+          >
+            {Math.round(cls.crap.mu)}
+          </text>
+
+          <!-- Coverage Dot -->
+          <circle cx={width - 32} cy="10" r="3.5" fill={covCol} />
+
+          <!-- Mutation Indicator Dot -->
+          <circle cx={width - 22} cy="10" r="3.5" fill="#10b981" />
         </g>
       {/each}
       {#if component.classes.length > 6}

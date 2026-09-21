@@ -150,7 +150,8 @@ public class GraphCompiler {
     }
 
     // Stamp levels on classes & evaluate edge violations
-    List<DependencyEdge> evaluatedEdges = scan.edges().stream().map(validator::evaluate).toList();
+    List<DependencyEdge> evaluatedEdges =
+        scan.edges().stream().map(validator::evaluate).distinct().toList();
 
     return new ArchitectureGraph(
         policy.title(), activeProposal != null, proposalId, components, evaluatedEdges, List.of());

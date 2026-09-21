@@ -1,0 +1,114 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Archlens Workbench & Source Inspection', () => {
+  test('should render canvas, open class card, and view non-empty source code', async ({ page }) => {
+    // 1. Navigate to workbench
+    await page.goto('/');
+
+    // 2. Verify workbench header is visible
+    await expect(page.getByText('Clean Architecture Workbench')).toBeVisible();
+
+    // 3. Wait for SVG canvas to render component boxes
+    const componentHeader = page.locator('svg text').first();
+    await expect(componentHeader).toBeVisible({ timeout: 10000 });
+
+    // 4. Click a class text inside a component box to open ClassCard
+    const classText = page.locator('svg text', { hasText: /GraphCompiler|ClassNode|DiagramResource|Proposal/ }).first();
+    await expect(classText).toBeVisible({ timeout: 10000 });
+    await classText.click({ force: true });
+
+    // 5. Verify ClassCard dialog opens
+    const classModal = page.locator('div[role="dialog"]');
+    await expect(classModal).toBeVisible({ timeout: 5000 });
+
+    // 6. Click "View Source Code" button
+    const viewSourceBtn = page.locator('button', { hasText: 'View Source Code' });
+    await expect(viewSourceBtn).toBeVisible();
+    await viewSourceBtn.click();
+
+    // 7. Verify SourceModal opens and code viewer is populated with actual code lines
+    const sourceTable = page.locator('table');
+    await expect(sourceTable).toBeVisible({ timeout: 5000 });
+
+    const codeRows = page.locator('table tbody tr');
+    await expect(codeRows.first()).toBeVisible({ timeout: 5000 });
+    const rowCount = await codeRows.count();
+    expect(rowCount).toBeGreaterThan(5);
+
+    // 8. Verify target line highlight exists
+    const targetRow = page.locator('tr.target-code-row');
+    await expect(targetRow).toBeVisible();
+
+    // 9. ponytail: verify text is clean preformatted code without broken HTML fragments
+    const codeText = await sourceTable.textContent();
+    expect(codeText).not.toContain('<span');
+    expect(codeText).not.toContain('undefined');
+    expect(codeText).toContain('package');
+  });
+
+  test('should open command palette with shortcut and search items', async ({ page }) => {
+    await page.goto('/');
+
+    // Click on Quick Find button in header
+    const quickFindBtn = page.locator('button', { hasText: 'Quick Find' });
+    await expect(quickFindBtn).toBeVisible({ timeout: 10000 });
+    await quickFindBtn.click();
+
+    // Verify palette input opens
+    const palette = page.locator('input[placeholder*="Type to search"]');
+    await expect(palette).toBeVisible({ timeout: 5000 });
+
+    // Search for a class
+    await palette.fill('GraphCompiler');
+    const resultItem = page.locator('div[role="dialog"]', { hasText: 'GraphCompiler' });
+    await expect(resultItem.first()).toBeVisible({ timeout: 5000 });
+
+    // Press Escape to dismiss
+    await page.keyboard.press('Escape');
+    await expect(palette).not.toBeVisible();
+  });
+
+  test('should switch to architecture proposal and display diff banner', async ({ page }) => {
+    await page.goto('/');
+
+    // Click on Clean Architecture proposal button in Inspector
+    const proposalBtn = page.locator('button', { hasText: 'Clean Architecture Standard' });
+    await expect(proposalBtn).toBeVisible({ timeout: 10000 });
+    await proposalBtn.click();
+
+    // Verify ProposalDiffBanner appears
+    const diffBanner = page.locator('text=WHAT-IF PROPOSAL');
+    await expect(diffBanner).toBeVisible({ timeout: 5000 });
+
+    // Click "Compare Real (Live)" to return to real graph
+    const compareRealBtn = page.locator('button', { hasText: 'Compare Real (Live)' });
+    await expect(compareRealBtn).toBeVisible();
+    await compareRealBtn.click();
+
+    // Verify banner disappears
+    await expect(diffBanner).not.toBeVisible({ timeout: 5000 });
+  });
+
+  test('should cycle declutter modes', async ({ page }) => {
+    await page.goto('/');
+
+    // Find declutter button
+    const declutterBtn = page.locator('button', { hasText: 'Declutter' });
+    await expect(declutterBtn).toBeVisible({ timeout: 10000 });
+
+    // Initial mode is ARROWS
+    await expect(declutterBtn).toContainText('ARROWS');
+
+    // Click to cycle
+    await declutterBtn.click();
+    await expect(declutterBtn).toContainText('REMOVE_ARROWS');
+
+    // Click to cycle again
+    await declutterBtn.click();
+    await expect(declutterBtn).toContainText('ELEMENTS');
+
+    // Click to cycle to CLASSES
+    await declutterBtn.click();
+    await expect(declutterBtn).toContainText('CLASSES');
+  });
+});

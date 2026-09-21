@@ -1,9 +1,10 @@
 # Archlens — Clean Architecture Dynamic Workbench
 
+[![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
 [![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/)
 [![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.39-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
-[![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](https://hub.docker.com/)
+[![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](https://github.com/fmatar/archlens/pkgs/container/archlens)
 [![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go-emerald.svg)](#polyglot-language-support)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -11,6 +12,12 @@
 > — **Robert C. Martin (Uncle Bob)**
 
 An interactive, real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and agent-driven refactoring platform for modern software systems.
+
+```bash
+# Instant Quickstart via Container (analyzing your current project)
+docker run -d -p 8088:8088 -v $(pwd):/workspace ghcr.io/fmatar/archlens:latest
+```
+Visit **`http://localhost:8088`** to interactively explore and validate your architecture.
 
 ---
 
@@ -165,7 +172,11 @@ When you click **Regen (Wake Agent)** in the UI:
 
 ## Contributing
 
-Pull requests and issues are welcome! Please ensure all backend tests pass (`mvn test`) and frontend type-checks succeed (`npm run check`) before submitting.
+We welcome contributions from the community! Check out our [Contributing Guide](CONTRIBUTING.md) to get started with local development, quality standards, and PR workflows.
+
+Please also review our [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).
+
+---
 
 ## License
 

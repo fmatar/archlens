@@ -251,4 +251,39 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await page.keyboard.press('Escape');
     await expect(modalTitle).not.toBeVisible();
   });
+
+  test('should support stepwise class pagination on nodes and focus inventory in inspector', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. Locate the pagination control on scanner component (which has 9 classes)
+    const pagerText = page.locator('svg text', { hasText: /1–5 of \d+ \(inspect ↗\)/ }).first();
+    await expect(pagerText).toBeVisible({ timeout: 10000 });
+
+    // 2. Click the next page button (›)
+    const nextBtn = page.locator('g[aria-label="Next classes"]').first();
+    await expect(nextBtn).toBeVisible();
+    await nextBtn.click({ force: true });
+
+    // 3. Verify page advanced to second page (e.g. 6–9 of 9)
+    const page2Text = page.locator('svg text', { hasText: /6–\d+ of \d+ \(inspect ↗\)/ }).first();
+    await expect(page2Text).toBeVisible({ timeout: 5000 });
+
+    // 4. Click the pager badge to inspect in sidebar
+    await page2Text.click({ force: true });
+
+    // 5. Verify Inspector opens the Focused Component Inventory
+    const inspectorFilter = page.locator('input[placeholder*="Filter"][placeholder*="classes..."]');
+    await expect(inspectorFilter).toBeVisible({ timeout: 5000 });
+
+    // 6. Type to filter classes in Inspector
+    await inspectorFilter.fill('Node');
+    const filteredClass = page.locator('button', { hasText: 'ComponentNode' });
+    await expect(filteredClass).toBeVisible({ timeout: 5000 });
+
+    // 7. Click the filtered class to open ClassCard
+    await filteredClass.click();
+    const classModal = page.locator('div[role="dialog"]');
+    await expect(classModal).toBeVisible({ timeout: 5000 });
+    await page.keyboard.press('Escape');
+  });
 });

@@ -2,10 +2,27 @@
   import { onMount } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X } from '@lucide/svelte';
 
   let policy = $derived(diagramStore.policy);
   let proposals = $derived(policy?.proposals || []);
+
+  let classSearchQuery = $state('');
+
+  let focusedComponent = $derived(
+    diagramStore.focusedNodeId && diagramStore.graph?.components
+      ? diagramStore.graph.components.find((c) => c.id === diagramStore.focusedNodeId)
+      : null
+  );
+
+  let filteredFocusedClasses = $derived.by(() => {
+    if (!focusedComponent?.classes) return [];
+    const q = classSearchQuery.trim().toLowerCase();
+    if (!q) return focusedComponent.classes;
+    return focusedComponent.classes.filter(
+      (cls) => cls.name.toLowerCase().includes(q) || cls.packageName.toLowerCase().includes(q)
+    );
+  });
 
   let noticeEl: HTMLDivElement | null = $state(null);
   let regenBtnEl: HTMLButtonElement | null = $state(null);
@@ -61,6 +78,68 @@
 
   <!-- Content -->
   <div class="flex-1 overflow-y-auto p-4 space-y-6">
+    <!-- Focused Component Class Inventory (Triggered by clicking node or inspect ↗) -->
+    {#if focusedComponent}
+      <div class="p-3.5 rounded-xl bg-slate-950/80 border border-blue-500/30 space-y-3 shadow-lg shadow-blue-950/30 animate-in fade-in duration-150">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2 min-w-0">
+            <Box size={15} class="text-blue-400 shrink-0" />
+            <span class="text-xs font-semibold text-slate-100 font-mono truncate">{focusedComponent.label}</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[9px] px-1.5 py-0.5 rounded font-mono bg-blue-500/15 border border-blue-500/30 text-blue-300">
+              Ring {focusedComponent.level ?? '?'}
+            </span>
+            <button
+              onclick={() => {
+                diagramStore.setFocusedNode(null);
+                classSearchQuery = '';
+              }}
+              class="p-0.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Clear focus"
+              aria-label="Clear focus"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </div>
+
+        <!-- Class Search Input -->
+        <div class="relative flex items-center">
+          <Search size={12} class="absolute left-2.5 text-slate-500" />
+          <input
+            type="text"
+            bind:value={classSearchQuery}
+            placeholder={`Filter ${focusedComponent.classes.length} classes...`}
+            class="w-full bg-slate-900 border border-slate-700/80 focus:border-blue-500 rounded px-2 py-1 pl-7 text-[11px] font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        <!-- Scrollable Class List -->
+        <div class="space-y-1 max-h-48 overflow-y-auto pr-0.5">
+          {#each filteredFocusedClasses as cls (cls.id)}
+            <button
+              onclick={() => diagramStore.selectedClass = cls}
+              class="w-full text-left px-2 py-1.5 rounded bg-slate-900/90 hover:bg-blue-950/40 border border-slate-800 hover:border-blue-500/40 flex items-center justify-between transition-colors cursor-pointer group"
+            >
+              <span class="text-[11px] font-mono text-slate-300 group-hover:text-blue-200 truncate pr-2">
+                {cls.name}
+              </span>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[8px] font-mono font-bold px-1 rounded bg-slate-800 text-slate-400">
+                  CRAP {Math.round(cls.crap?.mu ?? 0)}
+                </span>
+                <span class="w-1.5 h-1.5 rounded-full" style={`background-color: ${cls.coverage >= 0.8 ? '#10b981' : cls.coverage >= 0.5 ? '#f59e0b' : '#ef4444'}`}></span>
+              </div>
+            </button>
+          {/each}
+          {#if filteredFocusedClasses.length === 0}
+            <div class="text-[10px] text-slate-500 italic text-center py-2">No matching classes</div>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
     <!-- Real Diagram vs Proposals -->
     <div>
       <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Architectural Views</div>

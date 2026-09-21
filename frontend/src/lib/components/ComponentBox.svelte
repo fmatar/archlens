@@ -32,6 +32,18 @@
     (diagramStore.zoom < 0.55 || diagramStore.hasDeclutterFilter('HIDE_CLASSES')) && !isFocused
   );
 
+  let classPage = $state(0);
+  let totalClasses = $derived(component.classes?.length || 0);
+  let pageSize = $derived(totalClasses > 6 ? 5 : 6);
+  let totalPages = $derived(Math.max(1, Math.ceil(totalClasses / pageSize)));
+
+  let displayedClasses = $derived.by(() => {
+    if (!component.classes) return [];
+    if (totalClasses <= 6) return component.classes.slice(0, 6);
+    const start = classPage * pageSize;
+    return component.classes.slice(start, start + pageSize);
+  });
+
   function getCrapColor(crapMu: number): string {
     if (crapMu <= 4) return '#10b981'; // Emerald
     if (crapMu <= 15) return '#f59e0b'; // Amber
@@ -211,9 +223,9 @@
         </text>
       </g>
     {:else}
-      <!-- Detailed Micro View with Class Rows -->
+      <!-- Detailed Micro View with Class Rows & Stepwise Paging -->
       <g transform="translate(10, 36)">
-        {#each component.classes.slice(0, 6) as cls, i}
+        {#each displayedClasses as cls, i (cls.id)}
           {@const crapCol = getCrapColor(cls.crap.mu)}
           {@const covCol = getCoverageColor(cls.coverage)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -266,10 +278,103 @@
             <circle cx={width - 22} cy="10" r="3.5" fill="#10b981" />
           </g>
         {/each}
-        {#if component.classes.length > 6}
-          <text x="10" y={6 * 24 + 14} class="fill-slate-500 text-[10px] italic pointer-events-none select-none">
-            + {component.classes.length - 6} more classes...
-          </text>
+
+        {#if totalClasses > 6}
+          <!-- Interactive Stepwise Pager & Inspector Link -->
+          <g transform="translate(0, 120)">
+            <!-- Prev Button -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <g
+              class="cursor-pointer group/prev"
+              onpointerdown={(e) => e.stopPropagation()}
+              onclick={(e) => {
+                e.stopPropagation();
+                classPage = (classPage - 1 + totalPages) % totalPages;
+              }}
+              aria-label="Previous classes"
+            >
+              <rect
+                x="0"
+                y="0"
+                width="22"
+                height="18"
+                rx="3"
+                class="fill-slate-800 hover:fill-slate-700 stroke-slate-700 hover:stroke-slate-500 transition-colors"
+                stroke-width="0.8"
+              />
+              <text
+                x="11"
+                y="13"
+                text-anchor="middle"
+                class="fill-slate-300 group-hover/prev:fill-white font-mono text-[12px] font-bold select-none"
+              >
+                ‹
+              </text>
+            </g>
+
+            <!-- Page Range & Inspector Trigger -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <g
+              class="cursor-pointer group/pager"
+              onpointerdown={(e) => e.stopPropagation()}
+              onclick={(e) => {
+                e.stopPropagation();
+                diagramStore.setFocusedNode(component.id);
+              }}
+            >
+              <title>Click to view complete class inventory in Inspector</title>
+              <rect
+                x="26"
+                y="0"
+                width={width - 20 - 52}
+                height="18"
+                rx="3"
+                class="fill-slate-800/80 hover:fill-blue-950/60 stroke-slate-700/80 hover:stroke-blue-500/50 transition-colors"
+                stroke-width="0.8"
+              />
+              <text
+                x={(width - 20) / 2}
+                y="12"
+                text-anchor="middle"
+                class="fill-slate-400 group-hover/pager:fill-blue-200 font-mono text-[9px] font-medium select-none"
+              >
+                {classPage * pageSize + 1}–{Math.min((classPage + 1) * pageSize, totalClasses)} of {totalClasses} (inspect ↗)
+              </text>
+            </g>
+
+            <!-- Next Button -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <g
+              class="cursor-pointer group/next"
+              onpointerdown={(e) => e.stopPropagation()}
+              onclick={(e) => {
+                e.stopPropagation();
+                classPage = (classPage + 1) % totalPages;
+              }}
+              aria-label="Next classes"
+            >
+              <rect
+                x={width - 20 - 22}
+                y="0"
+                width="22"
+                height="18"
+                rx="3"
+                class="fill-slate-800 hover:fill-slate-700 stroke-slate-700 hover:stroke-slate-500 transition-colors"
+                stroke-width="0.8"
+              />
+              <text
+                x={width - 20 - 11}
+                y="13"
+                text-anchor="middle"
+                class="fill-slate-300 group-hover/next:fill-white font-mono text-[12px] font-bold select-none"
+              >
+                ›
+              </text>
+            </g>
+          </g>
         {/if}
       </g>
     {/if}

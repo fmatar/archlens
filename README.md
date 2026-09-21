@@ -1,7 +1,7 @@
-# Clean Architecture Dynamic UML Workbench
+# Archlens — Clean Architecture Dynamic Workbench
 
 [![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/)
-[![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.19-blue.svg)](https://quarkus.io/)
+[![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.39-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](https://hub.docker.com/)
 [![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go-emerald.svg)](#polyglot-language-support)
@@ -34,24 +34,36 @@ We took Uncle Bob's core thesis and engineered a production-grade workbench buil
 ## Architecture at a Glance
 
 ```mermaid
-flowchart TD
-    User["Architect / Developer"] <-->|Interactive Canvas (Port 5173)| UI["Svelte 5 + Vite Frontend"]
-    UI <-->|REST & Server-Sent Events| Backend["Quarkus Backend (Java 21/25 - Port 8088)"]
-    
-    subgraph Engine ["Analysis Engine"]
-        Backend --> AST["JavaParser AST Scanner"]
-        Backend --> RuleEngine["Clean Architecture Level Engine"]
-        Backend --> MetricsEngine["CRAP Score & Mutation Analyzer"]
+flowchart LR
+    subgraph Client ["Developer Workspace"]
+        User["Architect / Developer"]
+        Browser["Archlens UI<br/>(Svelte 5 + Tailwind v4)"]
     end
 
-    subgraph Mailbox ["File IPC (.uml-viewer/)"]
-        UI -->|Write REGEN / REFACTOR| Outbox["to-agent.json"]
-        Inbox["to-viewer.json"] -->|Push Hot Reload| Backend
+    subgraph Runtime ["Archlens Container (Port 8088)"]
+        Server["Quarkus REST & SSE Server<br/>(Java 25 Runtime)"]
+        
+        subgraph Core ["Analysis & Governance Engine"]
+            Scanner["Polyglot AST Scanners<br/>(Java, TS, Python, Go, Rust)"]
+            Rules["Clean Architecture Rule Engine<br/>(Level Inversion Validator)"]
+            Metrics["Quality Metrics Engine<br/>(CRAP Score & Mutation Stats)"]
+        end
     end
 
-    Agent["Antigravity AI Agent / Subagent"] <--> Outbox
-    Agent -->|Refactor Source & Run mvn test| Code["Target Project src/main/java"]
-    Agent -->|Write Completion ACK| Inbox
+    subgraph Storage ["Target Project"]
+        Code["Source Codebase"]
+        Mailbox["Mailbox IPC<br/>(.uml-viewer/)"]
+    end
+
+    Agent["AI Agent / Companion<br/>(Antigravity / Cursor)"]
+
+    User <-->|Pan, Zoom & Inspect| Browser
+    Browser <-->|REST & Server-Sent Events| Server
+    Server --> Core
+    Scanner -->|Parse AST & Deps| Code
+    Server <-->|Queue Commands & Hot Reload| Mailbox
+    Agent <-->|Read Task & Write ACK| Mailbox
+    Agent -->|Refactor Code & Run Tests| Code
 ```
 
 ---

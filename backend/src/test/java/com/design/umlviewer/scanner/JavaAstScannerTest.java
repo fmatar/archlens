@@ -82,4 +82,38 @@ class JavaAstScannerTest {
     assertFalse(result.edges().isEmpty());
     assertTrue(result.edges().stream().anyMatch(e -> e.kind() == DependencyEdge.Kind.IMPLEMENTS));
   }
+
+  @Test
+  void testMultiModuleScanProject(@TempDir Path tempDir) throws IOException {
+    JavaAstScanner scanner = new JavaAstScanner();
+    try {
+      java.lang.reflect.Field field = JavaAstScanner.class.getDeclaredField("crapCalculator");
+      field.setAccessible(true);
+      field.set(scanner, new CrapScoreCalculator());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    // Create multi-module layout: module-api and module-core
+    Path apiSrc = tempDir.resolve("module-api/src/main/java/com/example/api");
+    Path coreSrc = tempDir.resolve("module-core/src/main/java/com/example/core");
+    Files.createDirectories(apiSrc);
+    Files.createDirectories(coreSrc);
+
+    Files.writeString(
+        apiSrc.resolve("UserApi.java"),
+        "package com.example.api;\npublic interface UserApi { void getUser(); }");
+    Files.writeString(
+        coreSrc.resolve("UserService.java"),
+        "package com.example.core;\nimport com.example.api.UserApi;\npublic class UserService implements UserApi { public void getUser() {} }");
+
+    // Scan from root directory without specifying submodule
+    JavaAstScanner.ScanResult result =
+        scanner.scanProject(tempDir.toString(), "src/main/java", "com.example");
+
+    assertEquals(2, result.classes().size());
+    assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("UserApi")));
+    assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("UserService")));
+    assertFalse(result.edges().isEmpty());
+  }
 }

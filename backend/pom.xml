@@ -4,14 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.design</groupId>
-        <artifactId>uml-viewer-parent</artifactId>
+        <groupId>com.slixes</groupId>
+        <artifactId>archlens</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>uml-viewer-backend</artifactId>
-    <name>Clean Architecture Dynamic UML Workbench :: Backend &amp; Server</name>
+    <artifactId>archlens-backend</artifactId>
+    <name>Archlens — Clean Architecture Dynamic Workbench :: Backend &amp; Server</name>
 
     <dependencies>
         <!-- Quarkus Reactive REST & SSE support -->

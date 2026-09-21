@@ -28,6 +28,7 @@
 
   let rankBadge = $derived(component.level !== null ? `Ring ${component.level}` : 'Unranked');
   let hasHalo = $derived(diagramStore.targetHaloNodeId === component.id);
+  let isCompactLOD = $derived(diagramStore.zoom < 0.55 && !isFocused);
 
   function getCrapColor(crapMu: number): string {
     if (crapMu <= 4) return '#10b981'; // Emerald
@@ -132,67 +133,142 @@
     {rankBadge}
   </text>
 
-  <!-- Contained Classes / Modules with Health Heatmap Badges -->
+  <!-- Contained Classes / Modules with Health Heatmap Badges OR Compact Semantic LOD -->
   {#if diagramStore.declutterMode !== 'CLASSES'}
-    <g transform="translate(10, 36)">
-      {#each component.classes.slice(0, 6) as cls, i}
-        {@const crapCol = getCrapColor(cls.crap.mu)}
-        {@const covCol = getCoverageColor(cls.coverage)}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <g
-          transform={`translate(0, ${i * 24})`}
-          class="cursor-pointer group/row"
-          onpointerdown={(e) => {
-            // Stop drag so user can click to inspect class
-            e.stopPropagation();
-          }}
-          onclick={(e) => {
-            e.stopPropagation();
-            diagramStore.selectedClass = cls;
-          }}
-        >
+    {#if isCompactLOD}
+      <!-- Compact Semantic LOD View (Zoom < 0.55) -->
+      {@const highCrapClasses = component.classes.filter((c) => c.crap.mu > 15)}
+      {@const avgCoverage = component.classes.length > 0 
+        ? Math.round((component.classes.reduce((acc, c) => acc + c.coverage, 0) / component.classes.length) * 100) 
+        : 100}
+      <g transform="translate(12, 40)" class="pointer-events-none select-none">
+        <!-- Class Count Banner -->
+        <rect
+          width={width - 24}
+          height="34"
+          rx="6"
+          class="fill-slate-900/80 stroke-slate-700/60"
+          stroke-width="1"
+        />
+        <text x="12" y="21" class="fill-slate-200 font-mono text-[12px] font-semibold">
+          {component.classes.length} {component.classes.length === 1 ? 'class' : 'classes'}
+        </text>
+
+        <!-- High CRAP Alert or Clean Health Pill -->
+        {#if highCrapClasses.length > 0}
           <rect
-            width={width - 20}
+            x={width - 128}
+            y="7"
+            width="92"
             height="20"
             rx="4"
-            class="fill-slate-900/60 hover:fill-blue-900/40 stroke-slate-750 stroke-[0.5] transition-colors"
-          />
-          <text x="8" y="14" class="fill-slate-200 group-hover/row:fill-blue-300 text-[11px] font-mono transition-colors">
-            {cls.name}
-          </text>
-
-          <!-- Dynamic CRAP Badge Indicator -->
-          <rect
-            x={width - 64}
-            y="4"
-            width="20"
-            height="12"
-            rx="2"
-            fill={crapCol}
-            opacity="0.25"
+            fill="#ef4444"
+            fill-opacity="0.2"
+            stroke="#ef4444"
+            stroke-width="1"
           />
           <text
-            x={width - 54}
-            y="13"
+            x={width - 82}
+            y="21"
             text-anchor="middle"
-            fill={crapCol}
-            class="text-[8px] font-mono font-bold select-none"
+            fill="#f87171"
+            class="font-mono text-[10px] font-bold"
           >
-            {Math.round(cls.crap.mu)}
+            {highCrapClasses.length} HIGH CRAP
           </text>
+        {:else}
+          <rect
+            x={width - 96}
+            y="7"
+            width="60"
+            height="20"
+            rx="4"
+            fill="#10b981"
+            fill-opacity="0.18"
+            stroke="#10b981"
+            stroke-width="1"
+          />
+          <text
+            x={width - 66}
+            y="21"
+            text-anchor="middle"
+            fill="#34d399"
+            class="font-mono text-[10px] font-bold"
+          >
+            HEALTHY
+          </text>
+        {/if}
 
-          <!-- Coverage Dot -->
-          <circle cx={width - 32} cy="10" r="3.5" fill={covCol} />
-
-          <!-- Mutation Indicator Dot -->
-          <circle cx={width - 22} cy="10" r="3.5" fill="#10b981" />
-        </g>
-      {/each}
-      {#if component.classes.length > 6}
-        <text x="10" y={6 * 24 + 14} class="fill-slate-500 text-[10px] italic pointer-events-none select-none">
-          + {component.classes.length - 6} more classes...
+        <!-- Macro Package Metadata -->
+        <text x="4" y="58" class="fill-slate-400 font-mono text-[11px]">
+          {component.packages?.[0] || component.label}
         </text>
-      {/if}
-    </g>
+        <text x="4" y="78" class="fill-slate-500 font-mono text-[10px]">
+          Avg Test Coverage: {avgCoverage}%
+        </text>
+      </g>
+    {:else}
+      <!-- Detailed Micro View with Class Rows -->
+      <g transform="translate(10, 36)">
+        {#each component.classes.slice(0, 6) as cls, i}
+          {@const crapCol = getCrapColor(cls.crap.mu)}
+          {@const covCol = getCoverageColor(cls.coverage)}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <g
+            transform={`translate(0, ${i * 24})`}
+            class="cursor-pointer group/row"
+            onpointerdown={(e) => {
+              // Stop drag so user can click to inspect class
+              e.stopPropagation();
+            }}
+            onclick={(e) => {
+              e.stopPropagation();
+              diagramStore.selectedClass = cls;
+            }}
+          >
+            <rect
+              width={width - 20}
+              height="20"
+              rx="4"
+              class="fill-slate-900/60 hover:fill-blue-900/40 stroke-slate-750 stroke-[0.5] transition-colors"
+            />
+            <text x="8" y="14" class="fill-slate-200 group-hover/row:fill-blue-300 text-[11px] font-mono transition-colors">
+              {cls.name}
+            </text>
+
+            <!-- Dynamic CRAP Badge Indicator -->
+            <rect
+              x={width - 64}
+              y="4"
+              width="20"
+              height="12"
+              rx="2"
+              fill={crapCol}
+              opacity="0.25"
+            />
+            <text
+              x={width - 54}
+              y="13"
+              text-anchor="middle"
+              fill={crapCol}
+              class="text-[8px] font-mono font-bold select-none"
+            >
+              {Math.round(cls.crap.mu)}
+            </text>
+
+            <!-- Coverage Dot -->
+            <circle cx={width - 32} cy="10" r="3.5" fill={covCol} />
+
+            <!-- Mutation Indicator Dot -->
+            <circle cx={width - 22} cy="10" r="3.5" fill="#10b981" />
+          </g>
+        {/each}
+        {#if component.classes.length > 6}
+          <text x="10" y={6 * 24 + 14} class="fill-slate-500 text-[10px] italic pointer-events-none select-none">
+            + {component.classes.length - 6} more classes...
+          </text>
+        {/if}
+      </g>
+    {/if}
   {/if}
 </g>

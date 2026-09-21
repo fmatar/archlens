@@ -142,4 +142,40 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     const resetBoxBounds = await firstBox.boundingBox();
     expect(Math.abs(resetBoxBounds!.x - initialBoxBounds!.x)).toBeLessThan(10);
   });
+
+  test('should display node frustum counter and transition to Semantic LOD on zoom out', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. Verify HUD nodes counter is visible (e.g., "7/7 nodes")
+    const nodesCounter = page.locator('div[title*="Frustum Culled Rendered Nodes"]');
+    await expect(nodesCounter).toBeVisible({ timeout: 10000 });
+    await expect(nodesCounter).toContainText('nodes');
+
+    // 2. Initially at 100% zoom, detailed class rows exist
+    const classRow = page.locator('svg g.group\\/row').first();
+    await expect(classRow).toBeVisible({ timeout: 10000 });
+
+    // 3. Zoom out below 55%
+    const zoomOutBtn = page.locator('button[aria-label="Zoom out"]');
+    await expect(zoomOutBtn).toBeVisible();
+    for (let i = 0; i < 7; i++) {
+      await zoomOutBtn.click();
+      await page.waitForTimeout(100);
+    }
+
+    // 4. Verify compact Semantic LOD appears (e.g. "classes" and "HEALTHY" or "HIGH CRAP")
+    const lodText = page.locator('svg text', { hasText: /classes|class/ }).first();
+    await expect(lodText).toBeVisible({ timeout: 5000 });
+
+    // 5. Detailed class rows are now omitted in compact mode to preserve 120 FPS
+    await expect(classRow).not.toBeVisible();
+
+    // 6. Reset view back to 100%
+    const resetZoomBtn = page.locator('button[aria-label="Reset zoom"]');
+    await expect(resetZoomBtn).toBeVisible();
+    await resetZoomBtn.click();
+
+    // 7. Detailed class rows re-appear
+    await expect(classRow).toBeVisible({ timeout: 5000 });
+  });
 });

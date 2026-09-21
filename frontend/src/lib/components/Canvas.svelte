@@ -54,6 +54,10 @@
 
   let sortedLevels = $derived(Array.from(levelMap.keys()).sort((a, b) => a - b));
 
+  // Container Dimensions for Viewport Frustum Culling
+  let containerWidth = $state(1920);
+  let containerHeight = $state(1080);
+
   // Directly derive layout coordinates from components and persistent offsets
   let positionedComponents = $derived.by(() => {
     const coords = new Map<string, { x: number; y: number; width: number; height: number; comp: ComponentNode }>();
@@ -69,6 +73,58 @@
     });
 
     return coords;
+  });
+
+  // Viewport Frustum Culling (Spatial Virtualization for 120 FPS on massive repos)
+  let viewportBounds = $derived.by(() => {
+    const margin = 250; // Pre-render buffer margin for seamless panning
+    const z = diagramStore.zoom || 1;
+    const minX = -diagramStore.panX / z - margin;
+    const minY = -diagramStore.panY / z - margin;
+    const maxX = (-diagramStore.panX + containerWidth) / z + margin;
+    const maxY = (-diagramStore.panY + containerHeight) / z + margin;
+    return { minX, minY, maxX, maxY };
+  });
+
+  function isBoxInViewport(x: number, y: number, width: number, height: number): boolean {
+    const vb = viewportBounds;
+    return !(x + width < vb.minX || x > vb.maxX || y + height < vb.minY || y > vb.maxY);
+  }
+
+  let visibleComponents = $derived.by(() => {
+    const list: Array<{ x: number; y: number; width: number; height: number; comp: ComponentNode }> = [];
+    for (const item of positionedComponents.values()) {
+      if (
+        draggedNodeId === item.comp.id ||
+        diagramStore.focusedNodeId === item.comp.id ||
+        diagramStore.targetHaloNodeId === item.comp.id ||
+        isBoxInViewport(item.x, item.y, item.width, item.height)
+      ) {
+        list.push(item);
+      }
+    }
+    return list;
+  });
+
+  let visibleEdges = $derived.by(() => {
+    if (diagramStore.declutterMode === 'REMOVE_ARROWS') return [];
+    const list: EdgeType[] = [];
+    for (const edge of edges) {
+      const fromNode = findNodeForClass(edge.from);
+      const toNode = findNodeForClass(edge.to);
+      if (!fromNode || !toNode || fromNode === toNode) continue;
+
+      const isFromVisible = isBoxInViewport(fromNode.x, fromNode.y, fromNode.width, fromNode.height);
+      const isToVisible = isBoxInViewport(toNode.x, toNode.y, toNode.width, toNode.height);
+      const isFocusedEdge = diagramStore.focusedNodeId
+        ? fromNode.comp.id === diagramStore.focusedNodeId || toNode.comp.id === diagramStore.focusedNodeId
+        : false;
+
+      if (isFromVisible || isToVisible || isFocusedEdge) {
+        list.push(edge);
+      }
+    }
+    return list;
   });
 
   // Radar Scanline Telemetry State
@@ -300,6 +356,8 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
   class="relative flex-1 h-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
+  bind:clientWidth={containerWidth}
+  bind:clientHeight={containerHeight}
   onmousedown={handleMouseDown}
   onwheel={handleWheel}
 >
@@ -363,6 +421,10 @@
     <div class="px-2 font-mono text-[10px] text-slate-400">
       {Math.round(diagramStore.zoom * 100)}%
     </div>
+    <div class="h-3 w-px bg-slate-800"></div>
+    <div class="px-2 font-mono text-[10px] text-slate-400" title="Frustum Culled Rendered Nodes">
+      {visibleComponents.length}/{components.length} nodes
+    </div>
   </div>
 
   <!-- SVG Graph Canvas -->
@@ -401,29 +463,31 @@
 
     <!-- Transformed Graph Group -->
     <g transform={`translate(${diagramStore.panX}, ${diagramStore.panY}) scale(${diagramStore.zoom})`}>
-      <!-- Concentric Architecture Tier Lanes Backdrop -->
+      <!-- Concentric Architecture Tier Lanes Backdrop (Culled to viewport) -->
       {#each sortedLevels as level, rowIdx}
         {@const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35}
         {@const height = BOX_HEIGHT + 70}
-        <g class="pointer-events-none select-none tier-backdrop">
-          <rect
-            x="-400"
-            y={y}
-            width="3200"
-            height={height}
-            rx="12"
-            class="fill-slate-900/35 stroke-slate-800/40"
-            stroke-width="1"
-            stroke-dasharray="8 6"
-          />
-          <text
-            x="-360"
-            y={y + 24}
-            class="fill-slate-500 font-mono text-[11px] font-semibold tracking-wider uppercase"
-          >
-            {getTierTitle(level)}
-          </text>
-        </g>
+        {#if !(y + height < viewportBounds.minY || y > viewportBounds.maxY)}
+          <g class="pointer-events-none select-none tier-backdrop">
+            <rect
+              x="-400"
+              y={y}
+              width="3200"
+              height={height}
+              rx="12"
+              class="fill-slate-900/35 stroke-slate-800/40"
+              stroke-width="1"
+              stroke-dasharray="8 6"
+            />
+            <text
+              x="-360"
+              y={y + 24}
+              class="fill-slate-500 font-mono text-[11px] font-semibold tracking-wider uppercase"
+            >
+              {getTierTitle(level)}
+            </text>
+          </g>
+        {/if}
       {/each}
 
       <!-- Agent Radar Scanline Overlay -->
@@ -449,9 +513,9 @@
         </g>
       {/if}
 
-      <!-- Animated Dependency Edges -->
+      <!-- Animated Dependency Edges (Frustum Culled) -->
       {#if diagramStore.declutterMode !== 'REMOVE_ARROWS'}
-        {#each edges as edge, i (edge.from + '->' + edge.to + ':' + edge.kind + ':' + i)}
+        {#each visibleEdges as edge, i (edge.from + '->' + edge.to + ':' + edge.kind + ':' + i)}
           {@const fromNode = findNodeForClass(edge.from)}
           {@const toNode = findNodeForClass(edge.to)}
           {#if fromNode && toNode && fromNode !== toNode}
@@ -477,8 +541,8 @@
         {/each}
       {/if}
 
-      <!-- Component Layer Boxes (Direct Reactive Positions & Focus Dimming) -->
-      {#each Array.from(positionedComponents.values()) as item, i (item.comp.id + ':' + i)}
+      <!-- Component Layer Boxes (Frustum Culled & Focus Highlighted) -->
+      {#each visibleComponents as item, i (item.comp.id + ':' + i)}
         {@const isFocused = diagramStore.focusedNodeId === item.comp.id}
         {@const isDimmed = connectedNodeIds ? !connectedNodeIds.has(item.comp.id) : false}
         {@const isDragging = draggedNodeId === item.comp.id}

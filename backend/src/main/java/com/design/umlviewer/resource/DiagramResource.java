@@ -31,11 +31,22 @@ public class DiagramResource {
     if (root == null || root.isBlank()) {
       return DEFAULT_PROJECT_ROOT;
     }
-    // ponytail: transparently map old repository folder name to archlens
-    if (root.contains("unclebob-design")) {
-      return root.replace("unclebob-design", "archlens");
+    String normalized = root;
+    // Map /workspace/labs/ to host /Users/fady/workspace/labs/ if present
+    if (normalized.startsWith("/workspace/labs/")) {
+      File hostLabs = new File("/Users/fady/workspace/labs");
+      if (hostLabs.exists() && hostLabs.isDirectory()) {
+        normalized = normalized.replace("/workspace/labs", "/Users/fady/workspace/labs");
+      }
     }
-    return root;
+    // Transparently map agentlens or unclebob-design to archlens
+    if (normalized.contains("agentlens")) {
+      normalized = normalized.replace("agentlens", "archlens");
+    }
+    if (normalized.contains("unclebob-design")) {
+      normalized = normalized.replace("unclebob-design", "archlens");
+    }
+    return normalized;
   }
 
   @GET
@@ -87,6 +98,19 @@ public class DiagramResource {
     File f = new File(filePath);
     // ponytail: resilient path fallback for renamed repository folders or relative paths
     if (!f.exists() || !f.isFile()) {
+      if (filePath.startsWith("/workspace/labs/")) {
+        File hostFallback =
+            new File(filePath.replace("/workspace/labs", "/Users/fady/workspace/labs"));
+        if (hostFallback.exists() && hostFallback.isFile()) {
+          f = hostFallback;
+        }
+      }
+      if (filePath.contains("agentlens")) {
+        File fallback = new File(filePath.replace("agentlens", "archlens"));
+        if (fallback.exists() && fallback.isFile()) {
+          f = fallback;
+        }
+      }
       if (filePath.contains("unclebob-design")) {
         File fallback = new File(filePath.replace("unclebob-design", "archlens"));
         if (fallback.exists() && fallback.isFile()) {

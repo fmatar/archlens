@@ -45,6 +45,59 @@ public class GraphCompiler {
         e.printStackTrace();
       }
     }
+
+    File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    File policyEdn = new File(root, "examples/uml-viewer.policy.edn");
+    if (policyEdn.exists()) {
+      return new ArchitecturePolicy(
+          "Uncle Bob UML Viewer",
+          "src",
+          "uml-viewer",
+          true,
+          List.of(
+              "domain",
+              "source",
+              "graph",
+              "clojure-language",
+              "engine",
+              "application",
+              "adapters",
+              "main"),
+          List.of(
+              List.of("domain", "source", "graph", "clojure-language"),
+              List.of("engine"),
+              List.of("application"),
+              List.of("adapters"),
+              List.of("main")),
+          List.of("quil", "javax.swing"),
+          List.of(
+              new Proposal(
+                  "clean-core",
+                  "Clean Architecture Standard",
+                  List.of(
+                      new Proposal.ProposalLayer(
+                          "domain",
+                          "Level 0: Domain & Interfaces",
+                          List.of("domain", "source", "graph", "clojure-language"),
+                          List.of()),
+                      new Proposal.ProposalLayer(
+                          "engine", "Level 1: Layout Engine", List.of("engine"), List.of()),
+                      new Proposal.ProposalLayer(
+                          "application",
+                          "Level 2: Application Use Cases",
+                          List.of("application"),
+                          List.of()),
+                      new Proposal.ProposalLayer(
+                          "adapters",
+                          "Level 3: Quil & UI Adapters",
+                          List.of("adapters"),
+                          List.of()),
+                      new Proposal.ProposalLayer(
+                          "main", "Level 4: Main Entrypoint", List.of("main"), List.of())),
+                  List.of())),
+          List.of());
+    }
+
     return new ArchitecturePolicy(
         "Default Project",
         "src/main/java",

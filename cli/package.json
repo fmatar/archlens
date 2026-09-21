@@ -1,0 +1,48 @@
+{
+  "name": "@fmatar/archlens-skill",
+  "version": "0.0.1-Alpha-02",
+  "description": "Cross-platform CLI and installer for Archlens Clean Architecture governance policies and AI assistant skills",
+  "main": "src/installer.js",
+  "type": "module",
+  "bin": {
+    "archlens-skill": "./bin/index.js",
+    "archlens-init": "./bin/index.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node bin/index.js"
+  },
+  "keywords": [
+    "archlens",
+    "clean-architecture",
+    "architecture-governance",
+    "dependency-inversion",
+    "claude-skill",
+    "gemini-skill",
+    "antigravity",
+    "npx-installer",
+    "scaffolder",
+    "code-analysis"
+  ],
+  "author": "Fady Matar",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmatar/archlens.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/fmatar/archlens/issues"
+  },
+  "homepage": "https://github.com/fmatar/archlens#readme"
+}

@@ -20,6 +20,7 @@
     <modules>
         <module>frontend</module>
         <module>backend</module>
+        <module>cli</module>
     </modules>
 
     <properties>

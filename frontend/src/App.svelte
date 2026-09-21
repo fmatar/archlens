@@ -7,7 +7,8 @@
   import ClassCard from './lib/components/ClassCard.svelte';
   import SourceModal from './lib/components/SourceModal.svelte';
   import CommandPalette from './lib/components/CommandPalette.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search } from '@lucide/svelte';
+  import OpenProjectModal from './lib/components/OpenProjectModal.svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -57,6 +58,13 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       diagramStore.isCommandPaletteOpen = !diagramStore.isCommandPaletteOpen;
+      return;
+    }
+
+    // Cmd+O / Ctrl+O for Open Project Folder
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'o') {
+      e.preventDefault();
+      diagramStore.isOpenProjectModalOpen = true;
       return;
     }
 
@@ -117,15 +125,59 @@
         Clean Architecture Workbench
       </div>
       <!-- Project Switcher -->
-      <select
-        value={diagramStore.projectRoot}
-        onchange={(e) => diagramStore.setProjectRoot((e.target as HTMLSelectElement).value)}
-        class="bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs rounded px-2.5 py-1 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer transition-colors"
-      >
-        <option value="/Users/fady/workspace/labs/archlens">📁 archlens (Workbench Self-Analysis)</option>
-        <option value="/Users/fady/workspace/rootine.ai">📁 rootine.ai (Autonomous Assistant)</option>
-        <option value="/Users/fady/workspace/labs/bogzee">📁 bogzee (Quarkus LangChain4j)</option>
-      </select>
+      <div class="flex items-center gap-1.5">
+        <select
+          value={diagramStore.projectRoot}
+          onchange={(e) => {
+            const val = (e.target as HTMLSelectElement).value;
+            if (val === '__OPEN_MODAL__') {
+              diagramStore.isOpenProjectModalOpen = true;
+              (e.target as HTMLSelectElement).value = diagramStore.projectRoot;
+            } else {
+              diagramStore.setProjectRoot(val);
+            }
+          }}
+          class="bg-slate-800 border border-slate-700 hover:border-slate-600 text-slate-200 text-xs rounded px-2.5 py-1 font-medium focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer transition-colors max-w-xs truncate"
+          title="Switch active repository"
+        >
+          <optgroup label="Active Workspace">
+            <option value=".">📁 Active Workspace (Local)</option>
+          </optgroup>
+
+          {#if diagramStore.availableProjects.length > 0}
+            <optgroup label="Discovered Local Projects">
+              {#each diagramStore.availableProjects as proj}
+                {#if proj.path !== '.'}
+                  <option value={proj.path}>📁 {proj.name}</option>
+                {/if}
+              {/each}
+            </optgroup>
+          {/if}
+
+          {#if diagramStore.recentProjects.length > 0}
+            <optgroup label="Recent Projects">
+              {#each diagramStore.recentProjects as proj}
+                {#if proj.path !== '.' && !diagramStore.availableProjects.some(p => p.path === proj.path)}
+                  <option value={proj.path}>🕒 {proj.name}</option>
+                {/if}
+              {/each}
+            </optgroup>
+          {/if}
+
+          <optgroup label="Actions">
+            <option value="__OPEN_MODAL__">➕ Open Project Folder... (⌘O)</option>
+          </optgroup>
+        </select>
+
+        <button
+          onclick={() => diagramStore.isOpenProjectModalOpen = true}
+          class="p-1 rounded bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+          title="Open Project / Directory (⌘O)"
+          aria-label="Open Project Folder"
+        >
+          <FolderOpen size={14} class="text-blue-400" />
+        </button>
+      </div>
       <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
         Java 25 &bull; Svelte 5 &bull; GSAP 3.15
       </span>
@@ -175,4 +227,5 @@
   <ClassCard />
   <SourceModal />
   <CommandPalette />
+  <OpenProjectModal />
 </div>

@@ -89,5 +89,14 @@ class DiagramResourceTest {
 
     // Test events stream
     assertNotNull(resource.streamEvents());
+
+    // Test listProjects
+    Map<String, Object> projects = resource.listProjects();
+    assertNotNull(projects);
+    assertTrue(projects.containsKey("current"));
+    assertTrue(projects.containsKey("discovered"));
+    @SuppressWarnings("unchecked")
+    List<Map<String, String>> discovered = (List<Map<String, String>>) projects.get("discovered");
+    assertFalse(discovered.isEmpty());
   }
 }

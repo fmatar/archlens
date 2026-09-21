@@ -116,4 +116,15 @@ describe('diagramStore state management', () => {
     diagramStore.clearDeclutterFilters();
     expect(diagramStore.hasDeclutterFilter('HIDE_CLASSES')).toBe(false);
   });
+
+  it('should manage recent projects and open project modal', () => {
+    expect(diagramStore.isOpenProjectModalOpen).toBe(false);
+    diagramStore.isOpenProjectModalOpen = true;
+    expect(diagramStore.isOpenProjectModalOpen).toBe(true);
+
+    diagramStore.saveRecentProject('/Users/dev/cool-project', 'cool-project');
+    expect(diagramStore.recentProjects.length).toBeGreaterThan(0);
+    expect(diagramStore.recentProjects[0].path).toBe('/Users/dev/cool-project');
+    expect(diagramStore.recentProjects[0].name).toBe('cool-project');
+  });
 });

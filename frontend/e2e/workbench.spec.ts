@@ -222,4 +222,33 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await compactToggle.click();
     await expect(compactToggle).toContainText('[ ]');
   });
+
+  test('should support dynamic project switching, URL synchronization, and open directory modal', async ({ page }) => {
+    // 1. Navigate to default root without query parameter
+    await page.goto('/');
+
+    // 2. Verify project dropdown defaults to Active Workspace
+    const projectSelect = page.locator('select[title="Switch active repository"]');
+    await expect(projectSelect).toBeVisible({ timeout: 10000 });
+    await expect(projectSelect).toHaveValue('.');
+
+    // 3. Open project modal via quick button
+    const openBtn = page.locator('button[aria-label="Open Project Folder"]');
+    await expect(openBtn).toBeVisible();
+    await openBtn.click();
+
+    // 4. Verify Open Project dialog is visible
+    const modalTitle = page.getByRole('heading', { name: 'Open Repository or Directory' });
+    await expect(modalTitle).toBeVisible({ timeout: 5000 });
+
+    // 5. Close dialog with Escape
+    await page.keyboard.press('Escape');
+    await expect(modalTitle).not.toBeVisible();
+
+    // 6. Open project modal via keyboard shortcut (Meta+O / Control+O)
+    await page.keyboard.press('Control+o');
+    await expect(modalTitle).toBeVisible({ timeout: 5000 });
+    await page.keyboard.press('Escape');
+    await expect(modalTitle).not.toBeVisible();
+  });
 });

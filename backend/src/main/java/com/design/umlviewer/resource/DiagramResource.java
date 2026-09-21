@@ -25,13 +25,17 @@ public class DiagramResource {
 
   @Inject FileMailboxService mailboxService;
 
-  private static final String DEFAULT_PROJECT_ROOT = "..";
+  private static final String DEFAULT_PROJECT_ROOT = ".";
 
   private String normalizeRoot(String root) {
     if (root == null || root.isBlank()) {
       return DEFAULT_PROJECT_ROOT;
     }
-    String normalized = root;
+    String normalized = root.trim();
+    // Expand home directory shorthand ~
+    if (normalized.startsWith("~")) {
+      normalized = System.getProperty("user.home") + normalized.substring(1);
+    }
     // Map /workspace/labs/ to host /Users/fady/workspace/labs/ if present
     if (normalized.startsWith("/workspace/labs/")) {
       File hostLabs = new File("/Users/fady/workspace/labs");
@@ -47,6 +51,53 @@ public class DiagramResource {
       normalized = normalized.replace("unclebob-design", "archlens");
     }
     return normalized;
+  }
+
+  @GET
+  @Path("/projects")
+  public Map<String, Object> listProjects() {
+    File cwd;
+    try {
+      cwd = new File(".").getCanonicalFile();
+    } catch (IOException e) {
+      cwd = new File(".").getAbsoluteFile();
+    }
+    String currentName = cwd.getName();
+
+    Map<String, String> current = Map.of("name", currentName + " (Active Workspace)", "path", ".");
+
+    java.util.List<Map<String, String>> discovered = new java.util.ArrayList<>();
+    discovered.add(current);
+
+    File parent = cwd.getParentFile();
+    if (parent != null && parent.exists() && parent.isDirectory()) {
+      File[] siblings = parent.listFiles();
+      if (siblings != null) {
+        java.util.Arrays.sort(siblings, java.util.Comparator.comparing(File::getName));
+        for (File sibling : siblings) {
+          if (sibling.isDirectory() && !sibling.getName().startsWith(".") && !sibling.equals(cwd)) {
+            boolean isProject =
+                new File(sibling, "pom.xml").exists()
+                    || new File(sibling, "package.json").exists()
+                    || new File(sibling, "go.mod").exists()
+                    || new File(sibling, "Cargo.toml").exists()
+                    || new File(sibling, "deps.edn").exists()
+                    || new File(sibling, ".git").exists()
+                    || new File(sibling, "src").exists();
+            if (isProject) {
+              discovered.add(
+                  Map.of(
+                      "name", sibling.getName(),
+                      "path", sibling.getAbsolutePath()));
+            }
+          }
+        }
+      }
+    }
+
+    return Map.of(
+        "current", current,
+        "discovered", discovered);
   }
 
   @GET

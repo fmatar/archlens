@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Search, Box, Code2, Sparkles, FolderTree, RefreshCw, Eye, Maximize2, X } from '@lucide/svelte';
+  import { Search, Box, Code2, Sparkles, FolderTree, RefreshCw, Eye, Maximize2, X, FolderOpen } from '@lucide/svelte';
   import type { ComponentNode, ClassNode } from '../types/diagram';
 
   let isOpen = $derived(diagramStore.isCommandPaletteOpen);
@@ -27,6 +27,43 @@
     const graph = diagramStore.graph;
 
     // 1. Actions
+    items.push({
+      id: 'act-open-project',
+      type: 'ACTION',
+      title: 'Open Project / Directory... (⌘O)',
+      subtitle: 'Type or choose a local repository path to analyze',
+      badge: 'Project',
+      action: () => {
+        diagramStore.isOpenProjectModalOpen = true;
+      }
+    });
+
+    if (diagramStore.projectRoot !== '.') {
+      items.push({
+        id: 'act-switch-active-workspace',
+        type: 'ACTION',
+        title: 'Switch to Active Workspace (Local)',
+        subtitle: 'Analyze the local Archlens repository',
+        badge: 'Project',
+        action: () => diagramStore.setProjectRoot('.')
+      });
+    }
+
+    if (diagramStore.availableProjects?.length) {
+      diagramStore.availableProjects.forEach((p) => {
+        if (p.path !== '.' && p.path !== diagramStore.projectRoot) {
+          items.push({
+            id: `act-proj-${p.path}`,
+            type: 'ACTION',
+            title: `Open Project: ${p.name}`,
+            subtitle: p.path,
+            badge: 'Project',
+            action: () => diagramStore.setProjectRoot(p.path)
+          });
+        }
+      });
+    }
+
     items.push({
       id: 'act-real',
       type: 'ACTION',
@@ -215,6 +252,8 @@
                 <Box size={16} class="text-sky-400 shrink-0" />
               {:else if item.type === 'CLASS'}
                 <Code2 size={16} class="text-emerald-400 shrink-0" />
+              {:else if item.badge === 'Project'}
+                <FolderOpen size={16} class="text-blue-400 shrink-0" />
               {:else}
                 <Sparkles size={16} class="text-amber-400 shrink-0" />
               {/if}

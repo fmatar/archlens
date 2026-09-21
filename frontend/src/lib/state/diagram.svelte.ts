@@ -66,12 +66,66 @@ class DiagramState {
   projectRoot = $state<string>(
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('projectRoot') 
       ? new URLSearchParams(window.location.search).get('projectRoot')! 
-      : '/Users/fady/workspace/labs/archlens'
+      : '.'
   );
 
-  async setProjectRoot(root: string) {
+  availableProjects = $state<{ name: string; path: string }[]>([]);
+  recentProjects = $state<{ name: string; path: string }[]>([]);
+  isOpenProjectModalOpen = $state<boolean>(false);
+
+  constructor() {
+    this.loadRecentProjects();
+    this.fetchProjects();
+  }
+
+  loadRecentProjects() {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('archlens_recent_projects');
+      if (raw) {
+        this.recentProjects = JSON.parse(raw);
+      }
+    } catch (_) {}
+  }
+
+  saveRecentProject(path: string, name?: string) {
+    if (typeof window === 'undefined' || !path || path === '.') return;
+    try {
+      const cleanPath = path.trim();
+      const displayName = name || cleanPath.split('/').filter(Boolean).pop() || cleanPath;
+      const filtered = this.recentProjects.filter(p => p.path !== cleanPath);
+      this.recentProjects = [{ name: displayName, path: cleanPath }, ...filtered].slice(0, 8);
+      localStorage.setItem('archlens_recent_projects', JSON.stringify(this.recentProjects));
+    } catch (_) {}
+  }
+
+  async fetchProjects() {
+    try {
+      const res = await fetch('/api/projects');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.discovered) {
+          this.availableProjects = data.discovered;
+        }
+      }
+    } catch (_) {}
+  }
+
+  async setProjectRoot(root: string, updateUrl = true) {
     this.projectRoot = root;
     this.activeProposalId = null;
+    if (root && root !== '.') {
+      this.saveRecentProject(root);
+    }
+    if (updateUrl && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (root === '.' || !root) {
+        url.searchParams.delete('projectRoot');
+      } else {
+        url.searchParams.set('projectRoot', root);
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
     await this.loadPolicy();
     await this.loadGraph();
   }

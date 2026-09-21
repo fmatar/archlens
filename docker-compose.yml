@@ -1,15 +1,15 @@
 services:
-  uml-workbench:
-    image: fmatar/uml-workbench:latest
-    container_name: uml-workbench
+  archlens:
+    image: ghcr.io/fmatar/archlens:latest
+    container_name: archlens
     ports:
       - "8088:8088"
     environment:
-      - PROJECT_ROOT=${PROJECT_ROOT:-/workspace/labs/unclebob-design}
+      - PROJECT_ROOT=${PROJECT_ROOT:-/workspace/labs/archlens}
       - JAVA_OPTS=-Xms128m -Xmx512m
     volumes:
       # Mount entire workspace root so any sibling project can be analyzed dynamically
       - ${WORKSPACE_ROOT:-/Users/fady/workspace}:/workspace:ro
       # Optional read-write mount for active project cache & mailbox queues
-      - ${ACTIVE_PROJECT_CACHE:-/Users/fady/workspace/labs/unclebob-design/.uml-viewer}:/workspace/labs/unclebob-design/.uml-viewer:rw
+      - ${ACTIVE_PROJECT_CACHE:-/Users/fady/workspace/labs/archlens/.uml-viewer}:/workspace/labs/archlens/.uml-viewer:rw
     restart: unless-stopped

@@ -40,7 +40,7 @@
       >
         <option value="/Users/fady/workspace/rootine.ai">📁 rootine.ai (Autonomous Assistant)</option>
         <option value="/Users/fady/workspace/labs/bogzee">📁 bogzee (Quarkus LangChain4j)</option>
-        <option value="/Users/fady/workspace/labs/unclebob-design">📁 unclebob-design (Workbench)</option>
+        <option value="/Users/fady/workspace/labs/archlens">📁 archlens (Workbench)</option>
       </select>
       <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
         Java 25 &bull; Svelte 5

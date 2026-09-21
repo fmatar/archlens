@@ -25,11 +25,14 @@
         );
 
         // Subtle stagger on method items
-        gsap.fromTo(
-          '.method-item',
-          { opacity: 0, x: -10 },
-          { opacity: 1, x: 0, duration: 0.2, stagger: 0.02, delay: 0.12, ease: 'power2.out' }
-        );
+        const methodItems = dialogEl?.querySelectorAll('.method-item');
+        if (methodItems && methodItems.length > 0) {
+          gsap.fromTo(
+            methodItems,
+            { opacity: 0, x: -10 },
+            { opacity: 1, x: 0, duration: 0.2, stagger: 0.02, delay: 0.12, ease: 'power2.out' }
+          );
+        }
       });
 
       return () => ctx.revert();

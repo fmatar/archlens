@@ -147,7 +147,7 @@
                 {@const lineNum = i + 1}
                 {@const isTarget = lineNum === modal.line}
                 <tr
-                  class={isTarget ? 'target-code-row bg-blue-950/60 border-l-4 border-blue-400 font-semibold text-blue-200' : 'hover:bg-slate-900/40 text-slate-300'}
+                  class={isTarget ? 'target-code-row bg-blue-900/35 text-blue-200 font-medium' : 'hover:bg-slate-900/40 text-slate-300'}
                 >
                   <td class="w-12 text-right pr-4 text-slate-600 select-none align-top">{lineNum}</td>
                   <td class="whitespace-pre font-mono">{line}</td>

@@ -100,7 +100,7 @@
   <!-- Top App Navigation -->
   <header class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-30 select-none">
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 font-bold text-sm tracking-wide bg-gradient-to-r from-blue-400 via-indigo-300 to-sky-400 bg-clip-text text-transparent">
+      <div class="flex items-center gap-2 font-semibold text-sm tracking-tight text-slate-100">
         <Network size={18} class="text-blue-400" />
         Clean Architecture Workbench
       </div>

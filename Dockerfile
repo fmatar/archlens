@@ -1,6 +1,6 @@
 # Multi-stage build for Clean Architecture Dynamic UML Workbench
 # Stage 1: Build Frontend and Backend into a single fast-jar
-FROM maven:3.9-eclipse-temurin-25 AS builder
+FROM --platform=$BUILDPLATFORM maven:3.9-eclipse-temurin-25 AS builder
 
 WORKDIR /build
 

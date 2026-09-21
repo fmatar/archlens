@@ -19,6 +19,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
+      - name: Enforce Branch Flow Policy
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "::error::Branch policy violation: Pull requests targeting 'main' must originate exclusively from 'develop'. Direct merges from feature branches into 'main' are forbidden."
+            exit 1
+          fi
+
       - name: Set up Java 25
         uses: actions/setup-java@v6
         with:

@@ -5,6 +5,7 @@ target
 node_modules/
 **/node_modules/
 frontend/node/
+cli/node/
 frontend/dist/
 .idea/
 .DS_Store

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+- **NPX Distribution Module (`@fmatar/archlens-skill`)**:
+  - Standalone zero-dependency npm CLI module (`cli/`) providing instant Clean Architecture policy scaffolding via `npx @fmatar/archlens-skill` (Closes #47).
+  - Polyglot codebase analysis supporting Java, Kotlin, TypeScript, JavaScript, Python, Rust, Go, and Clojure.
+  - Interactive terminal wizard with ANSI color diagnostics and ASCII branding.
+  - Multi-agent global installer deploying `archlens-install-policy` to Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
+  - Safe policy and skill updater (`archlens-skill update`) synchronizing new packages while preserving developer customizations.
+  - Full Maven integration declaring `cli` module with `frontend-maven-plugin` executing Node test suites during root builds.
+
 ## [0.0.1-Alpha-02] - 2026-09-21
 
 ### Added

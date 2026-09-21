@@ -149,6 +149,27 @@ npm run dev
 
 You can analyze any repository by placing an architectural policy file at the root of that project: `.uml-viewer/policy.json`.
 
+### Instant Policy & Skill Installation via NPX (`@fmatar/archlens-skill`)
+
+Initialize Clean Architecture governance in any codebase instantly with zero external dependencies using `npx`:
+
+```bash
+# Run interactive wizard in the current project:
+npx @fmatar/archlens-skill
+
+# Non-interactive / headless setup with default settings:
+npx @fmatar/archlens-skill --yes
+
+# Target a specific directory:
+npx @fmatar/archlens-skill --path /path/to/project --yes
+
+# Deploy the skill globally for Claude Code, Gemini CLI, and Antigravity:
+npx @fmatar/archlens-skill global
+
+# Update existing policy after adding new modules:
+npx @fmatar/archlens-skill update
+```
+
 ### Automated Policy Installation via Agent Skill (`archlens-install-policy`)
 
 You can install and configure the architectural policy in any codebase automatically using the **`archlens-install-policy`** skill for **Claude Code**, **Gemini CLI**, and **Google Antigravity**:
@@ -158,8 +179,10 @@ You can install and configure the architectural policy in any codebase automatic
    > *"Install the Archlens Clean Architecture policy in this project."*
 
 2. **Standalone Scaffolding Script**:
-   Execute the zero-dependency Python generator directly in your target repository:
+   Execute the cross-platform CLI directly via `npx` or run the bundled Python generator:
    ```bash
+   npx @fmatar/archlens-skill --path /path/to/target/project --yes
+   # or:
    python3 skills/archlens-install-policy/scripts/init_policy.py --path /path/to/target/project
    ```
 

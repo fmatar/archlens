@@ -19,6 +19,9 @@ docker run -d -p 8088:8088 -v $(pwd):/workspace ghcr.io/fmatar/archlens:latest
 ```
 Visit **`http://localhost:8088`** to interactively explore and validate your architecture.
 
+![Archlens Dynamic Workbench](media/archlens-canvas.png)
+*(A full walkthrough video is available at [`media/archlens-tour.mp4`](media/archlens-tour.mp4) or [`media/archlens-tour.webm`](media/archlens-tour.webm))*
+
 ---
 
 ## The Vision & Inspiration

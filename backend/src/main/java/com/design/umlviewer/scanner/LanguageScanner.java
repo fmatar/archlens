@@ -9,7 +9,12 @@ import java.util.List;
 /** Service Provider Interface (SPI) for language-specific AST and dependency scanners. */
 public interface LanguageScanner {
 
-  record ScanResult(List<ClassNode> classes, List<DependencyEdge> edges) {}
+  record ScanResult(List<ClassNode> classes, List<DependencyEdge> edges) {
+    public ScanResult {
+      classes = classes != null ? List.copyOf(classes) : List.of();
+      edges = edges != null ? List.copyOf(edges) : List.of();
+    }
+  }
 
   /** Unique identifier of the language handled by this scanner (e.g., "java", "python", "rust"). */
   String languageId();

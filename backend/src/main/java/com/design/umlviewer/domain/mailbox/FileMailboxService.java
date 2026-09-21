@@ -29,7 +29,11 @@ public class FileMailboxService {
       dir = new File("../" + MAILBOX_DIR);
     }
     if (!dir.exists()) {
-      dir.mkdirs();
+      try {
+        Files.createDirectories(dir.toPath());
+      } catch (IOException ignored) {
+        // ignore if concurrently created
+      }
     }
     return new File(dir, fileName);
   }
@@ -41,7 +45,7 @@ public class FileMailboxService {
     }
     try {
       return mapper.readValue(file, MailboxEnvelope.class);
-    } catch (Exception e) {
+    } catch (IOException e) {
       return new MailboxEnvelope(1, List.of());
     }
   }

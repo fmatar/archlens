@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added CI policy check ensuring pull requests targeting `main` originate exclusively from `develop` (PR #48).
   - Dedicated GitHub Actions workflow (`.github/workflows/enforce-branch-flow.yml`) with required status check `Enforce Merge From Develop Only` active on `main` branch protection (PR #51, PR #52).
 
+### Fixed
+- **Filesystem Path Modal Reactivity Cycle**:
+  - Isolated modal initialization in `OpenProjectModal.svelte` using Svelte 5's `untrack()` to eliminate reactive dependency cycles during typing and native folder selection.
+  - Activated macOS frontmost application state for native Finder folder dialogs.
+
 ## [0.0.1-Alpha-02] - 2026-09-21
 
 ### Added

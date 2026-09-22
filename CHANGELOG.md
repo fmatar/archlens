@@ -7,16 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.0.1-Alpha-03] - 2026-09-21
 
 ### Added
+- **Interactive Filesystem Directory Explorer & Native OS Folder Picker (`⌘O` / `Ctrl+O`)**:
+  - Direct integration with native operating system directory selection (Finder on macOS) via `Browse...` dialog action.
+  - Interactive in-modal filesystem explorer featuring clickable breadcrumb segments, instant directory filtering, quick jump shortcuts (`Home`, `Current Workspace`, `Labs`), and project classification badges (`Maven`, `Gradle`, `Node`, `Java`, `Git`) (Closes #41, PR #42).
+- **Universal Policy Installer Agent Skill (`archlens-install-policy`)**:
+  - Standards-compliant agent skill definition (`SKILL.md`) equipping Claude Code, Gemini CLI, and Google Antigravity with autonomous Clean Architecture policy generation capabilities (Closes #44, PR #45).
+  - Standalone zero-dependency Python generator `init_policy.py` for automated policy synthesis.
 - **NPX Distribution Module (`@fmatar/archlens-skill`)**:
-  - Standalone zero-dependency npm CLI module (`cli/`) providing instant Clean Architecture policy scaffolding via `npx @fmatar/archlens-skill` (Closes #47).
-  - Polyglot codebase analysis supporting Java, Kotlin, TypeScript, JavaScript, Python, Rust, Go, and Clojure.
+  - Dedicated zero-dependency npm CLI package (`cli/`) providing instant Clean Architecture governance scaffolding and updates via `npx @fmatar/archlens-skill` (Closes #47, PR #49).
+  - Polyglot codebase analyzer supporting Java, Kotlin, TypeScript, JavaScript, Python, Rust, Go, and Clojure.
   - Interactive terminal wizard with ANSI color diagnostics and ASCII branding.
-  - Multi-agent global installer deploying `archlens-install-policy` to Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
-  - Safe policy and skill updater (`archlens-skill update`) synchronizing new packages while preserving developer customizations.
-  - Full Maven integration declaring `cli` module with `frontend-maven-plugin` executing Node test suites during root builds.
+  - Concentric Clean Architecture tier classification (Domain Core, Application, Adapters, Infrastructure).
+  - Scaffolds `.uml-viewer/policy.json`, `.uml-viewer/workbench.config.json`, and injects mailbox companion protocols into `CLAUDE.md` and `AGENTS.md`.
+  - Global agent skill installer deploying to `~/.claude/skills/` and `~/.gemini/config/skills/`.
+  - Non-destructive updater synchronizing newly detected packages while preserving custom developer rules.
+  - Integrated into root Maven reactor (`cli/pom.xml`) with 13 automated unit tests executed during `mvn clean verify`.
+- **Strict Branch Flow Governance**:
+  - Added CI policy check ensuring pull requests targeting `main` originate exclusively from `develop` (PR #48).
+  - Dedicated GitHub Actions workflow (`.github/workflows/enforce-branch-flow.yml`) with required status check `Enforce Merge From Develop Only` active on `main` branch protection (PR #51, PR #52).
 
 ## [0.0.1-Alpha-02] - 2026-09-21
 

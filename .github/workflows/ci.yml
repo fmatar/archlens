@@ -34,6 +34,22 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Cache Node and Toolchain Binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            frontend/node
+            cli/node
+          key: ${{ runner.os }}-node-binaries-${{ hashFiles('pom.xml', 'frontend/pom.xml', 'cli/pom.xml') }}
+
+      - name: Cache PNPM Store
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Spotless & Enforcer Checks
         run: mvn -B -ntp spotless:check validate
 
@@ -47,3 +63,12 @@ jobs:
           name: jacoco-coverage
           path: backend/target/site/jacoco/
           retention-days: 14
+
+      - name: Upload CycloneDX SBOM
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cyclonedx-sbom
+          path: backend/target/bom.json
+          retention-days: 14
+

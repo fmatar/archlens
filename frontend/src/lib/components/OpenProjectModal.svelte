@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { diagramStore } from '../state/diagram.svelte';
   import {
     Folder,
@@ -57,6 +58,7 @@
   let quickNav = $state<QuickNav[]>([]);
   let directories = $state<DirectoryEntry[]>([]);
   let folderFilter = $state('');
+  let wasOpen = false;
 
   // Filtered directories matching search query
   let filteredDirectories = $derived(
@@ -67,10 +69,17 @@
 
   // Sync with current project when opened and load filesystem
   $effect(() => {
-    if (diagramStore.isOpenProjectModalOpen) {
-      inputPath = diagramStore.projectRoot === '.' ? '' : diagramStore.projectRoot;
-      validationError = null;
-      loadDirectories(inputPath || undefined);
+    const isOpen = diagramStore.isOpenProjectModalOpen;
+    if (isOpen && !wasOpen) {
+      wasOpen = true;
+      untrack(() => {
+        const initial = diagramStore.projectRoot === '.' ? '' : diagramStore.projectRoot;
+        inputPath = initial;
+        validationError = null;
+        loadDirectories(initial || undefined);
+      });
+    } else if (!isOpen) {
+      wasOpen = false;
     }
   });
 
@@ -95,12 +104,12 @@
         breadcrumbs = data.breadcrumbs || [];
         quickNav = data.quickNav || [];
         directories = data.directories || [];
-        if (!inputPath || inputPath === '.') {
-          inputPath = data.currentPath;
-        }
+      } else {
+        validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       }
     } catch (err) {
       console.error('Failed to load filesystem directories', err);
+      validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
     } finally {
       isLoadingFs = false;
     }
@@ -108,6 +117,7 @@
 
   async function handleNativePickDirectory() {
     isNativePickerLoading = true;
+    validationError = null;
     try {
       const res = await fetch('/api/fs/pick-directory', { method: 'POST' });
       if (res.ok) {
@@ -117,10 +127,15 @@
           await loadDirectories(data.path);
           return;
         }
+        if (data.error) {
+          validationError = `Native picker error: ${data.error}`;
+        }
+      } else {
+        validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       }
-      // If native picker cancelled or unsupported, keep explorer visible
       isExplorerOpen = true;
     } catch {
+      validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       isExplorerOpen = true;
     } finally {
       isNativePickerLoading = false;
@@ -184,7 +199,7 @@
   >
     <!-- Modal Card -->
     <div
-      class="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col font-sans animate-in zoom-in-95 duration-150"
+      class="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col font-sans animate-in zoom-in-95 duration-150 select-text"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
@@ -239,7 +254,7 @@
                 type="text"
                 bind:value={inputPath}
                 placeholder="e.g. ~/workspace/project or /path/to/repo"
-                class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3.5 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3.5 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors select-text"
                 autocomplete="off"
                 spellcheck="false"
                 onkeydown={(e) => {

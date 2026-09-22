@@ -95,12 +95,12 @@
         breadcrumbs = data.breadcrumbs || [];
         quickNav = data.quickNav || [];
         directories = data.directories || [];
-        if (!inputPath || inputPath === '.') {
-          inputPath = data.currentPath;
-        }
+      } else {
+        validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       }
     } catch (err) {
       console.error('Failed to load filesystem directories', err);
+      validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
     } finally {
       isLoadingFs = false;
     }
@@ -108,6 +108,7 @@
 
   async function handleNativePickDirectory() {
     isNativePickerLoading = true;
+    validationError = null;
     try {
       const res = await fetch('/api/fs/pick-directory', { method: 'POST' });
       if (res.ok) {
@@ -117,10 +118,15 @@
           await loadDirectories(data.path);
           return;
         }
+        if (data.error) {
+          validationError = `Native picker error: ${data.error}`;
+        }
+      } else {
+        validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       }
-      // If native picker cancelled or unsupported, keep explorer visible
       isExplorerOpen = true;
     } catch {
+      validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       isExplorerOpen = true;
     } finally {
       isNativePickerLoading = false;

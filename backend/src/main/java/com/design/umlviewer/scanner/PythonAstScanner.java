@@ -55,6 +55,70 @@ public class PythonAstScanner implements LanguageScanner {
         || new File(root, "Taskfile.yml").exists() && hasPythonFiles(root);
   }
 
+  private static final Set<String> DEFAULT_EXCLUDED_DIRS =
+      Set.of(
+          "node_modules",
+          "tests",
+          "test",
+          "venv",
+          ".venv",
+          "__pycache__",
+          "dist",
+          "build",
+          "target",
+          "site-packages");
+
+  private static final Set<String> PYTHON_STDLIB =
+      Set.of(
+          "abc",
+          "argparse",
+          "asyncio",
+          "base64",
+          "collections",
+          "contextlib",
+          "copy",
+          "csv",
+          "dataclasses",
+          "datetime",
+          "decimal",
+          "enum",
+          "functools",
+          "glob",
+          "gzip",
+          "hashlib",
+          "io",
+          "itertools",
+          "json",
+          "logging",
+          "math",
+          "os",
+          "pathlib",
+          "pickle",
+          "platform",
+          "pprint",
+          "random",
+          "re",
+          "shutil",
+          "signal",
+          "socket",
+          "sqlite3",
+          "string",
+          "subprocess",
+          "sys",
+          "tempfile",
+          "threading",
+          "time",
+          "traceback",
+          "types",
+          "typing",
+          "unittest",
+          "urllib",
+          "uuid",
+          "warnings",
+          "weakref",
+          "xml",
+          "zipfile");
+
   private boolean hasPythonFiles(File dir) {
     if (!dir.exists() || !dir.isDirectory()) {
       return false;
@@ -64,15 +128,56 @@ public class PythonAstScanner implements LanguageScanner {
       return false;
     }
     for (File f : files) {
-      if (f.isFile() && f.getName().endsWith(".py")) {
+      if (f.isFile() && f.getName().endsWith(".py") && !f.getName().startsWith("test_")) {
         return true;
       }
       if (f.isDirectory()
           && !f.getName().startsWith(".")
-          && !f.getName().equals("venv")
-          && !f.getName().equals("node_modules")) {
-        File[] sub = f.listFiles((d, name) -> name.endsWith(".py"));
+          && !DEFAULT_EXCLUDED_DIRS.contains(f.getName())) {
+        File[] sub = f.listFiles((d, name) -> name.endsWith(".py") && !name.startsWith("test_"));
         if (sub != null && sub.length > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static boolean isIgnored(Path path, Path rootPath, Set<String> omitPatterns) {
+    Path fn = path.getFileName();
+    if (fn == null) {
+      return false;
+    }
+    String fileName = fn.toString();
+    String rel = rootPath.relativize(path).toString().replace('\\', '/');
+
+    // Exclude hidden files, test files, and setup scripts
+    if (fileName.startsWith(".") || fileName.startsWith("test_") || fileName.endsWith("_test.py")) {
+      return true;
+    }
+
+    // Check directory path segments against defaults and hidden folders
+    String[] segments = rel.split("/");
+    for (int i = 0; i < segments.length - 1; i++) {
+      String seg = segments[i];
+      if (seg.startsWith(".") || DEFAULT_EXCLUDED_DIRS.contains(seg) || seg.endsWith(".egg-info")) {
+        return true;
+      }
+    }
+
+    // Check against architecture policy omit patterns
+    if (omitPatterns != null && !omitPatterns.isEmpty()) {
+      for (String pattern : omitPatterns) {
+        if (pattern == null || pattern.isBlank()) continue;
+        String clean = pattern.trim().replace('\\', '/');
+        if (clean.startsWith("/")) clean = clean.substring(1);
+        if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
+        if (clean.isBlank()) continue;
+
+        if (rel.equals(clean)
+            || rel.startsWith(clean + "/")
+            || rel.contains("/" + clean + "/")
+            || rel.endsWith("/" + clean)) {
           return true;
         }
       }
@@ -83,36 +188,32 @@ public class PythonAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
-    File rootDir = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    return scanProject(projectRoot, srcRelativePath, basePrefix, null);
+  }
+
+  @Override
+  public ScanResult scanProject(
+      String projectRoot, String srcRelativePath, String basePrefix, ArchitecturePolicy policy)
+      throws IOException {
     File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, null);
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }
 
-    List<ClassNode> classes = new ArrayList<>();
-    List<DependencyEdge> edges = new ArrayList<>();
+    Path rootPath =
+        new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".").toPath();
+    Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
+    List<Path> pyFiles = discoverPythonFiles(scanDir.toPath(), rootPath, omitPatterns);
+
     Map<String, String> internalModules = new HashMap<>(); // modulePath -> fullModuleId
-
-    List<Path> pyFiles;
-    try (Stream<Path> stream = Files.walk(scanDir.toPath())) {
-      pyFiles =
-          stream
-              .filter(p -> p.toString().endsWith(".py"))
-              .filter(
-                  p ->
-                      !p.toString().contains("/.")
-                          && !p.toString().contains("/venv/")
-                          && !p.toString().contains("/__pycache__/"))
-              .toList();
-    }
-
-    // Pass 1: Discover module ids
-    Path rootPath = rootDir.toPath();
     for (Path pyFile : pyFiles) {
       String rel = rootPath.relativize(pyFile).toString();
       String modId = toModuleId(rel);
       internalModules.put(modId, rel);
     }
+
+    List<ClassNode> classes = new ArrayList<>();
+    List<DependencyEdge> edges = new ArrayList<>();
 
     // Pass 2: Parse source contents
     for (Path pyFile : pyFiles) {
@@ -135,12 +236,15 @@ public class PythonAstScanner implements LanguageScanner {
         Matcher fromMatcher = FROM_IMPORT_PATTERN.matcher(line);
         if (fromMatcher.find()) {
           String fromMod = fromMatcher.group(1).trim();
+          String resolvedFromMod = resolvePythonImport(currentModule, packageName, fromMod);
           String importedItems = fromMatcher.group(2).trim();
-          importedModules.add(fromMod);
-          for (String item : importedItems.split(",")) {
-            String cleanItem = item.trim().split(" ")[0];
-            if (!cleanItem.isBlank()) {
-              importedModules.add(fromMod + "." + cleanItem);
+          if (resolvedFromMod != null && !isStdlib(resolvedFromMod)) {
+            importedModules.add(resolvedFromMod);
+            for (String item : importedItems.split(",")) {
+              String cleanItem = item.trim().split("\\s+")[0].replaceAll("[()#]", "").trim();
+              if (!cleanItem.isBlank() && Character.isJavaIdentifierStart(cleanItem.charAt(0))) {
+                importedModules.add(resolvedFromMod + "." + cleanItem);
+              }
             }
           }
           continue;
@@ -150,8 +254,10 @@ public class PythonAstScanner implements LanguageScanner {
         if (directMatcher.find()) {
           String mods = directMatcher.group(1).trim();
           for (String m : mods.split(",")) {
-            String cleanMod = m.trim().split(" ")[0];
-            if (!cleanMod.isBlank()) {
+            String cleanMod = m.trim().split("\\s+")[0].replaceAll("[()#]", "").trim();
+            if (!cleanMod.isBlank()
+                && Character.isJavaIdentifierStart(cleanMod.charAt(0))
+                && !isStdlib(cleanMod)) {
               importedModules.add(cleanMod);
             }
           }
@@ -216,7 +322,7 @@ public class PythonAstScanner implements LanguageScanner {
               new ClassNode(
                   currentModule + "." + cls,
                   cls,
-                  currentModule,
+                  packageName,
                   rel,
                   ClassNode.Stereotype.CLASS,
                   false,
@@ -238,6 +344,10 @@ public class PythonAstScanner implements LanguageScanner {
         boolean isForeign = matchedTarget == null;
         String targetId = isForeign ? imported : matchedTarget;
 
+        if (targetId.equals(currentModule) || targetId.isBlank() || isStdlib(targetId)) {
+          continue;
+        }
+
         edges.add(
             new DependencyEdge(
                 currentModule, targetId, DependencyEdge.Kind.DEPENDENCY, null, false));
@@ -245,6 +355,39 @@ public class PythonAstScanner implements LanguageScanner {
     }
 
     return new ScanResult(classes, edges);
+  }
+
+  static String resolvePythonImport(String currentModule, String packageName, String imported) {
+    if (imported == null || imported.isBlank()) {
+      return null;
+    }
+    if (imported.startsWith(".")) {
+      int dotCount = 0;
+      while (dotCount < imported.length() && imported.charAt(dotCount) == '.') {
+        dotCount++;
+      }
+      String rest = imported.substring(dotCount);
+      String[] pkgParts =
+          packageName == null || packageName.isBlank() ? new String[0] : packageName.split("\\.");
+      int targetPartsLen = pkgParts.length - (dotCount - 1);
+      if (targetPartsLen < 0) {
+        targetPartsLen = 0;
+      }
+      String base = String.join(".", java.util.Arrays.copyOfRange(pkgParts, 0, targetPartsLen));
+      if (base.isEmpty()) {
+        return rest;
+      }
+      return rest.isEmpty() ? base : base + "." + rest;
+    }
+    return imported;
+  }
+
+  static boolean isStdlib(String mod) {
+    if (mod == null || mod.isBlank()) {
+      return false;
+    }
+    String rootPkg = mod.split("\\.")[0];
+    return PYTHON_STDLIB.contains(rootPkg);
   }
 
   private String toModuleId(String relPath) {
@@ -275,5 +418,15 @@ public class PythonAstScanner implements LanguageScanner {
       }
     }
     return null;
+  }
+
+  private List<Path> discoverPythonFiles(Path scanPath, Path rootPath, Set<String> omitPatterns)
+      throws IOException {
+    try (Stream<Path> stream = Files.walk(scanPath)) {
+      return stream
+          .filter(p -> p.toString().endsWith(".py"))
+          .filter(p -> !isIgnored(p, rootPath, omitPatterns))
+          .toList();
+    }
   }
 }

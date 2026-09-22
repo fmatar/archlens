@@ -64,42 +64,31 @@ public class TypeScriptAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
-    File rootDir = new File(projectRoot != null ? projectRoot : ".");
+    return scanProject(projectRoot, srcRelativePath, basePrefix, null);
+  }
+
+  @Override
+  public ScanResult scanProject(
+      String projectRoot, String srcRelativePath, String basePrefix, ArchitecturePolicy policy)
+      throws IOException {
     File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }
 
-    List<ClassNode> classes = new ArrayList<>();
-    List<DependencyEdge> edges = new ArrayList<>();
+    Path rootPath = new File(projectRoot != null ? projectRoot : ".").toPath();
+    Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
+    List<Path> tsFiles = discoverTypeScriptFiles(scanDir.toPath(), rootPath, omitPatterns);
+
     Map<String, String> internalModules = new HashMap<>();
-
-    List<Path> tsFiles;
-    try (Stream<Path> stream = Files.walk(scanDir.toPath())) {
-      tsFiles =
-          stream
-              .filter(
-                  p -> {
-                    String s = p.toString();
-                    return (s.endsWith(".ts")
-                            || s.endsWith(".tsx")
-                            || s.endsWith(".js")
-                            || s.endsWith(".jsx"))
-                        && !s.endsWith(".d.ts")
-                        && !s.contains("/node_modules/")
-                        && !s.contains("/dist/")
-                        && !s.contains("/build/")
-                        && !s.contains("/.");
-                  })
-              .toList();
-    }
-
-    Path rootPath = rootDir.toPath();
     for (Path tsFile : tsFiles) {
       String rel = rootPath.relativize(tsFile).toString();
       String modId = toTsModuleId(rel);
       internalModules.put(modId, rel);
     }
+
+    List<ClassNode> classes = new ArrayList<>();
+    List<DependencyEdge> edges = new ArrayList<>();
 
     for (Path tsFile : tsFiles) {
       String rel = rootPath.relativize(tsFile).toString();
@@ -243,5 +232,43 @@ public class TypeScriptAstScanner implements LanguageScanner {
       }
     }
     return String.join("/", result);
+  }
+
+  private List<Path> discoverTypeScriptFiles(Path scanPath, Path rootPath, Set<String> omitPatterns)
+      throws IOException {
+    try (Stream<Path> stream = Files.walk(scanPath)) {
+      return stream
+          .filter(
+              p -> {
+                String s = p.toString().replace('\\', '/');
+                if (s.endsWith(".d.ts")
+                    || s.contains("/node_modules/")
+                    || s.contains("/dist/")
+                    || s.contains("/build/")
+                    || s.contains("/.")) {
+                  return false;
+                }
+                if (!omitPatterns.isEmpty()) {
+                  String rel = rootPath.relativize(p).toString().replace('\\', '/');
+                  for (String omit : omitPatterns) {
+                    if (omit == null || omit.isBlank()) continue;
+                    String clean = omit.trim().replace('\\', '/');
+                    if (clean.startsWith("/")) clean = clean.substring(1);
+                    if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
+                    if (rel.equals(clean)
+                        || rel.startsWith(clean + "/")
+                        || rel.contains("/" + clean + "/")
+                        || rel.endsWith("/" + clean)) {
+                      return false;
+                    }
+                  }
+                }
+                return s.endsWith(".ts")
+                    || s.endsWith(".tsx")
+                    || s.endsWith(".js")
+                    || s.endsWith(".jsx");
+              })
+          .toList();
+    }
   }
 }

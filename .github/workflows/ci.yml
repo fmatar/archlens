@@ -72,3 +72,19 @@ jobs:
           path: backend/target/bom.json
           retention-days: 14
 
+      - name: Generate Consolidated Full-Stack Report
+        if: always()
+        run: |
+          node scripts/generate-report.js
+          if [ -f reports/summary.md ]; then
+            cat reports/summary.md >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Consolidated Health Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: full-stack-health-report
+          path: reports/
+          retention-days: 14
+

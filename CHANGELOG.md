@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Consolidated Full-Stack Telemetry Report & GitHub Actions Step Summary**:
+  - Implemented standalone reporting engine `scripts/generate-report.js` aggregating JaCoCo, Vitest, Surefire, PMD, CPD, SpotBugs, and CycloneDX telemetry into an offline HTML dashboard (`reports/index.html`).
+  - Added GitHub Actions CI step summary integration appending formatted Markdown metrics directly to `$GITHUB_STEP_SUMMARY`.
+  - Configured `frontend/pom.xml` to execute `test:coverage` during standard Maven builds.
+  - Added unit test suite `scripts/test/generate-report.test.js` validating telemetry parsers and schemas.
 - **Build Provenance REST Endpoint & Version Synchronization Script**:
   - Implemented `/api/version` in `VersionResource.java` exposing semantic version, git commit SHA, branch, and build timestamp (Closes #63).
   - Integrated `git-commit-id-maven-plugin` to generate `git.properties` dynamically during build.

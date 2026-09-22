@@ -6,6 +6,15 @@
 
   let modal = $derived(diagramStore.sourceFileModal);
   let lines = $derived(modal?.content ? modal.content.split('\n') : []);
+  let displayPath = $derived.by(() => {
+    if (!modal?.filePath) return '';
+    const root = diagramStore.projectRoot;
+    if (root && modal.filePath.startsWith(root)) {
+      const rel = modal.filePath.slice(root.length);
+      return rel.startsWith('/') ? rel.slice(1) : rel;
+    }
+    return modal.filePath;
+  });
 
   let backdropEl: HTMLDivElement | null = $state(null);
   let dialogEl: HTMLDivElement | null = $state(null);
@@ -113,7 +122,7 @@
       <div class="p-3.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2 font-mono text-xs text-slate-200 min-w-0">
           <FileCode size={16} class="text-blue-400 shrink-0" />
-          <span class="font-medium text-slate-100 truncate">{modal.filePath}</span>
+          <span class="font-medium text-slate-100 truncate" title={modal.filePath}>{displayPath}</span>
           <span class="text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-800/50 shrink-0">
             : line {modal.line}
           </span>

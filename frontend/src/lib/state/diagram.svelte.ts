@@ -178,7 +178,8 @@ class DiagramState {
     };
     this.isSourceLoading = true;
     try {
-      const res = await fetch(`/api/source?filePath=${encodeURIComponent(filePath)}&line=${line}`);
+      const projectRootParam = this.projectRoot ? `&projectRoot=${encodeURIComponent(this.projectRoot)}` : '';
+      const res = await fetch(`/api/source?filePath=${encodeURIComponent(filePath)}&line=${line}${projectRootParam}`);
       if (res.ok) {
         const data = await res.json();
         this.sourceFileModal = {

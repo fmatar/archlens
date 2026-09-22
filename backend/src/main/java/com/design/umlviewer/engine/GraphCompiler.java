@@ -16,8 +16,11 @@ import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -157,14 +160,6 @@ public class GraphCompiler {
             ? scannerRegistry.resolveScanner(projectRoot, policy)
             : new com.design.umlviewer.scanner.JavaAstScanner();
 
-    LanguageScanner.ScanResult scan =
-        scanner != null
-            ? scanner.scanProject(
-                projectRoot,
-                policy.src() != null ? policy.src() : "",
-                policy.prefix() != null ? policy.prefix() : "")
-            : new LanguageScanner.ScanResult(List.of(), List.of());
-
     Proposal activeProposal = null;
     if (proposalId != null && policy.proposals() != null) {
       activeProposal =
@@ -174,6 +169,26 @@ public class GraphCompiler {
               .orElse(null);
     }
 
+    LanguageScanner.ScanResult scan =
+        scanner != null
+            ? scanner.scanProject(
+                projectRoot,
+                policy.src() != null ? policy.src() : "",
+                policy.prefix() != null ? policy.prefix() : "",
+                policy)
+            : new LanguageScanner.ScanResult(List.of(), List.of());
+
+    Set<String> omitPatterns = new HashSet<>();
+    if (policy.omit() != null) {
+      omitPatterns.addAll(policy.omit());
+    }
+    if (activeProposal != null && activeProposal.omit() != null) {
+      omitPatterns.addAll(activeProposal.omit());
+    }
+
+    List<ClassNode> validClasses =
+        scan.classes().stream().filter(c -> !matchesOmit(c, omitPatterns)).toList();
+
     DependencyRuleValidator validator =
         (activeProposal != null)
             ? DependencyRuleValidator.fromProposal(activeProposal)
@@ -181,7 +196,7 @@ public class GraphCompiler {
 
     // Group into components
     Map<String, List<ClassNode>> pkgMap =
-        scan.classes().stream().collect(Collectors.groupingBy(ClassNode::packageName));
+        validClasses.stream().collect(Collectors.groupingBy(ClassNode::packageName));
 
     List<ComponentNode> components = new ArrayList<>();
 
@@ -193,7 +208,10 @@ public class GraphCompiler {
           for (String pkg : layer.packages()) {
             pkgMap.forEach(
                 (k, v) -> {
-                  if (k.endsWith(pkg) || k.contains("." + pkg + ".") || k.equals(pkg)) {
+                  if (k.equals(pkg)
+                      || k.startsWith(pkg + ".")
+                      || k.endsWith("." + pkg)
+                      || k.contains("." + pkg + ".")) {
                     layerClasses.addAll(v);
                   }
                 });
@@ -201,7 +219,7 @@ public class GraphCompiler {
         }
         if (layer.classes() != null) {
           for (String cls : layer.classes()) {
-            scan.classes().stream()
+            validClasses.stream()
                 .filter(
                     c -> c.name().equals(cls) || c.id().endsWith("." + cls) || c.id().equals(cls))
                 .forEach(
@@ -229,8 +247,8 @@ public class GraphCompiler {
       if ((effectivePrefix == null
               || effectivePrefix.isBlank()
               || "com.design".equals(effectivePrefix))
-          && !scan.classes().isEmpty()) {
-        effectivePrefix = computeCommonPrefix(scan.classes());
+          && !validClasses.isEmpty()) {
+        effectivePrefix = computeCommonPrefix(validClasses);
       }
 
       for (Map.Entry<String, List<ClassNode>> entry : pkgMap.entrySet()) {
@@ -258,13 +276,130 @@ public class GraphCompiler {
                 List.of(pkgName),
                 entry.getValue()));
       }
+
+      if (policy.order() != null && !policy.order().isEmpty()) {
+        components.sort(
+            Comparator.comparingInt(
+                    (ComponentNode c) -> c.level() != null ? c.level() : Integer.MAX_VALUE)
+                .thenComparingInt(
+                    c -> {
+                      for (int i = 0; i < policy.order().size(); i++) {
+                        String ord = policy.order().get(i);
+                        if (c.id().equals(ord)
+                            || c.id().startsWith(ord + ".")
+                            || c.id().contains("." + ord)) {
+                          return i;
+                        }
+                      }
+                      return Integer.MAX_VALUE;
+                    })
+                .thenComparing(ComponentNode::id));
+      } else {
+        components.sort(
+            Comparator.comparingInt(
+                    (ComponentNode c) -> c.level() != null ? c.level() : Integer.MAX_VALUE)
+                .thenComparing(ComponentNode::id));
+      }
     }
 
-    // Stamp levels on classes & evaluate edge violations
+    Set<String> validIdentifiers = new HashSet<>();
+    for (ClassNode c : validClasses) {
+      validIdentifiers.add(c.id());
+      validIdentifiers.add(c.name());
+      if (c.packageName() != null && !c.packageName().isBlank()) {
+        validIdentifiers.add(c.packageName());
+      }
+    }
+    for (ComponentNode comp : components) {
+      validIdentifiers.add(comp.id());
+      if (comp.childPackageIds() != null) {
+        validIdentifiers.addAll(comp.childPackageIds());
+      }
+    }
+
+    // Filter edges against omit patterns, prune orphan edges, and evaluate violations
     List<DependencyEdge> evaluatedEdges =
-        scan.edges().stream().map(validator::evaluate).distinct().toList();
+        scan.edges().stream()
+            .filter(e -> !matchesOmit(e.from(), omitPatterns) && !matchesOmit(e.to(), omitPatterns))
+            .filter(
+                e ->
+                    isKnownNode(e.from(), validIdentifiers, policy.foreign())
+                        && isKnownNode(e.to(), validIdentifiers, policy.foreign()))
+            .map(validator::evaluate)
+            .distinct()
+            .toList();
 
     return new ArchitectureGraph(
         policy.title(), activeProposal != null, proposalId, components, evaluatedEdges, List.of());
+  }
+
+  private boolean isKnownNode(
+      String identifier, Set<String> validIdentifiers, List<String> foreignList) {
+    if (identifier == null || identifier.isBlank()) {
+      return false;
+    }
+    if (validIdentifiers.contains(identifier)) {
+      return true;
+    }
+    String simpleName =
+        identifier.contains(".")
+            ? identifier.substring(identifier.lastIndexOf('.') + 1)
+            : identifier;
+    if (validIdentifiers.contains(simpleName)) {
+      return true;
+    }
+    for (String id : validIdentifiers) {
+      if (identifier.startsWith(id + ".") || id.startsWith(identifier + ".")) {
+        return true;
+      }
+    }
+    if (foreignList != null) {
+      for (String foreign : foreignList) {
+        if (identifier.equals(foreign)
+            || identifier.startsWith(foreign + ".")
+            || foreign.startsWith(identifier + ".")) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private boolean matchesOmit(ClassNode c, Set<String> omitPatterns) {
+    if (omitPatterns == null || omitPatterns.isEmpty()) {
+      return false;
+    }
+    return matchesOmit(c.filePath(), omitPatterns)
+        || matchesOmit(c.packageName(), omitPatterns)
+        || matchesOmit(c.id(), omitPatterns);
+  }
+
+  private boolean matchesOmit(String value, Set<String> omitPatterns) {
+    if (value == null || value.isBlank() || omitPatterns == null || omitPatterns.isEmpty()) {
+      return false;
+    }
+    String normalized = value.replace('\\', '/');
+    for (String pattern : omitPatterns) {
+      if (pattern == null || pattern.isBlank()) continue;
+      String clean = pattern.trim().replace('\\', '/');
+      if (clean.startsWith("/")) clean = clean.substring(1);
+      if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
+      if (clean.isBlank()) continue;
+
+      if (normalized.equals(clean)
+          || normalized.startsWith(clean + "/")
+          || normalized.endsWith("/" + clean)
+          || normalized.contains("/" + clean + "/")) {
+        return true;
+      }
+      String dotPattern = clean.replace('/', '.');
+      if (normalized.equals(dotPattern)
+          || normalized.startsWith(dotPattern + ".")
+          || normalized.endsWith("." + dotPattern)
+          || normalized.contains("." + dotPattern + ".")) {
+        return true;
+      }
+    }
+    return false;
   }
 }

@@ -92,4 +92,6 @@ jobs:
           files: |
             backend/target/archlens-backend-*.jar
             backend/target/archlens-*-runner.tar.gz
+            backend/target/bom.json
+            backend/target/bom.xml
             media/archlens-teaser.mp4

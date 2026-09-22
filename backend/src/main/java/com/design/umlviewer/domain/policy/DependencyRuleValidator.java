@@ -86,7 +86,7 @@ public class DependencyRuleValidator {
 
     // Violating if both ends are ranked and rank(from) < rank(to)
     // (inner layer 0 depends on outer layer 1+)
-    boolean isViolating = (fromRank != null && toRank != null && fromRank < toRank);
+    boolean isViolating = fromRank != null && toRank != null && fromRank < toRank;
     return edge.withViolating(isViolating);
   }
 

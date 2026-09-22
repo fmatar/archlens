@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.slixes</groupId>
         <artifactId>archlens</artifactId>
-        <version>0.0.1-Alpha-03</version>
+        <version>0.0.1-Alpha-04</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -59,6 +59,16 @@
                         <phase>compile</phase>
                         <configuration>
                             <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>pnpm test</id>
+                        <goals>
+                            <goal>pnpm</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <arguments>run test:coverage</arguments>
                         </configuration>
                     </execution>
                 </executions>

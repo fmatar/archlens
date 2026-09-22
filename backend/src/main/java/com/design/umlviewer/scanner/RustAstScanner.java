@@ -1,7 +1,6 @@
 package com.design.umlviewer.scanner;
 
 import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.CrapScore;
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.domain.model.FieldNode;
 import com.design.umlviewer.domain.model.MethodNode;
@@ -56,23 +55,8 @@ public class RustAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
-    File rootDir = new File(projectRoot != null ? projectRoot : ".");
-    File scanDir = rootDir;
-    if (srcRelativePath != null
-        && !srcRelativePath.isBlank()
-        && !srcRelativePath.equals(".")
-        && !srcRelativePath.equals("/")) {
-      File targetDir = new File(rootDir, srcRelativePath);
-      if (targetDir.exists()) {
-        scanDir = targetDir;
-      }
-    } else {
-      File defaultSrc = new File(rootDir, "src");
-      if (defaultSrc.exists()) {
-        scanDir = defaultSrc;
-      }
-    }
-
+    File rootDir = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }
@@ -150,46 +134,15 @@ public class RustAstScanner implements LanguageScanner {
         }
       }
 
-      if (typeNames.isEmpty()) {
-        String simpleName = new File(rel).getName().replace(".rs", "");
-        classes.add(
-            new ClassNode(
-                currentModule,
-                simpleName,
-                packageName,
-                rel,
-                ClassNode.Stereotype.CLASS,
-                false,
-                null,
-                new CrapScore(1.0, 1.0, 0.0),
-                1.0,
-                1,
-                0,
-                0,
-                0,
-                fields,
-                methods));
-      } else {
-        for (String typeName : typeNames) {
-          classes.add(
-              new ClassNode(
-                  currentModule + "." + typeName,
-                  typeName,
-                  currentModule,
-                  rel,
-                  ClassNode.Stereotype.CLASS,
-                  false,
-                  null,
-                  new CrapScore(1.0, 1.0, 0.0),
-                  1.0,
-                  1,
-                  0,
-                  0,
-                  0,
-                  fields,
-                  methods));
-        }
-      }
+      LanguageScanner.addModuleOrTypeClasses(
+          classes,
+          typeNames,
+          new File(rel).getName().replace(".rs", ""),
+          currentModule,
+          packageName,
+          rel,
+          fields,
+          methods);
 
       for (String imported : importedPaths) {
         String normalized = imported.replace("crate::", "").replace("::", ".");
@@ -210,10 +163,8 @@ public class RustAstScanner implements LanguageScanner {
     if (mod.endsWith(".rs")) {
       mod = mod.substring(0, mod.length() - 3);
     }
-    if (mod.endsWith("/mod") || mod.equals("lib") || mod.equals("main")) {
-      if (mod.endsWith("/mod")) {
-        mod = mod.substring(0, mod.length() - 4);
-      }
+    if (mod.endsWith("/mod")) {
+      mod = mod.substring(0, mod.length() - 4);
     }
     return mod.replace('/', '.');
   }

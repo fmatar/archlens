@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+## [0.0.1-Alpha-04] - 2026-09-22
+
+### Added
+- **Consolidated Full-Stack Telemetry Report & GitHub Actions Step Summary**:
+  - Implemented standalone reporting engine `scripts/generate-report.js` aggregating JaCoCo, Vitest, Surefire, PMD, CPD, SpotBugs, and CycloneDX telemetry into an offline HTML dashboard (`reports/index.html`).
+  - Added GitHub Actions CI step summary integration appending formatted Markdown metrics directly to `$GITHUB_STEP_SUMMARY`.
+  - Configured `frontend/pom.xml` to execute `test:coverage` during standard Maven builds.
+  - Added unit test suite `scripts/test/generate-report.test.js` validating telemetry parsers and schemas.
+- **Build Provenance REST Endpoint & Version Synchronization Script**:
+  - Implemented `/api/version` in `VersionResource.java` exposing semantic version, git commit SHA, branch, and build timestamp (Closes #63).
+  - Integrated `git-commit-id-maven-plugin` to generate `git.properties` dynamically during build.
+  - Added cross-platform version synchronization script `scripts/set-version.sh` updating all 6 project descriptors atomically (Closes #63).
+- **CycloneDX Software Bill of Materials (SBOM)**:
+  - Integrated `cyclonedx-maven-plugin` to generate standards-compliant SBOM JSON and XML (`target/bom.json`) during packaging (Closes #62).
+  - Attached SBOM assets to GitHub release distribution artifacts and CI workflows (Closes #62).
+- **Quarkus GraalVM Native Image Profile (`-Pnative`)**:
+  - Configured native profile in parent and backend POMs for ahead-of-time compilation of standalone native executable binaries (Closes #61).
+- **GitHub Actions Dependency & Toolchain Caching**:
+  - Configured caching for `~/.local/share/pnpm/store` and `frontend-maven-plugin` Node/PNPM binaries in `.github/workflows/ci.yml` (Closes #60).
+- **Frontend Vitest Integration in Maven Reactor**:
+  - Bound `pnpm test` execution to Maven's `test` phase in `frontend/pom.xml`, ensuring `mvn test` exercises frontend unit tests alongside backend suites (Closes #59).
+  - Calibrated Vitest coverage thresholds and added `diagram_extra.test.ts` for extended diagram store coverage (Closes #59).
+- **Strict Zero-Regression Quality Gates**:
+  - Enforced `failOnViolation=true` for PMD/CPD and `failOnError=true` for SpotBugs/FindSecBugs in `backend/pom.xml` (Closes #58).
+
+### Changed
+- **AST Scanner Consolidation & Refactoring**:
+  - Extracted shared source directory resolution (`LanguageScanner.resolveScanDirectory`) across Go, Python, Rust, and TypeScript AST scanners.
+  - Consolidated baseline module and class node generation (`LanguageScanner.addModuleOrTypeClasses`) across Rust and TypeScript AST scanners, eliminating duplicated AST traversal and model construction logic.
+- **Frontend Vite Proxy Endpoint Configuration**:
+  - Replaced `http://localhost:8088` with explicit IPv4 `http://127.0.0.1:8088` in `frontend/vite.config.ts` to prevent Node.js 18+ Happy Eyeballs IPv6 loopback connection delays and proxy `ECONNREFUSED` errors.
+
+### Fixed
+- **Dynamic Dependency Edge Badge Tracking & GSAP Pulse Isolation**:
+  - Resolved SVG translation coordinate pinning where continuous GSAP matrix scale animations on `badgeEl` clobbered reactive Bezier midpoint translations during card dragging (PR #67).
+  - Replaced the GSAP scale tween with GPU-accelerated CSS keyframe animations configured with `transform-box: fill-box` and `transform-origin: center` on an inner `<g class="edge-badge-pulsing">`, ensuring uninterrupted coordinate synchronization (PR #67).
+- **Cross-Workspace Polyglot Source Code Resolution**:
+  - Added `projectRoot` query parameter handling to `/api/source` in `DiagramResource.java` to support external workspace paths (PR #67).
+  - Stored absolute file paths on `ClassNode` across `PythonAstScanner` and `TypeScriptAstScanner` (PR #67).
+  - Derived clean relative `displayPath` in `SourceModal.svelte` for header presentation while preserving full path tooltips and clipboard copy (PR #67).
+- **Python AST Package Grouping, Omission Filters & Orphan Edge Pruning**:
+  - Resolved browser rendering freezes on large Python codebases by correcting `PythonAstScanner` package assignment to group classes by directory package namespace rather than individual file module, preventing component explosion (Closes #66, PR #67).
+  - Added exclusion of default non-production directories (`tests`, `test`, `venv`, `.venv`, `__pycache__`, `dist`, `build`, `target`, `node_modules`, `site-packages`) and test files (`test_*.py`, `*_test.py`) in `PythonAstScanner` (Closes #66, PR #67).
+  - Resolved relative Python imports (`.` and `..`) against active package context and filtered standard library modules and multi-line parenthesis tokens from dependency edges (Closes #66, PR #67).
+  - Implemented bidirectional orphan edge pruning in `GraphCompiler`, eliminating unresolvable dependency paths targeting omitted classes or undeclared components (Closes #66, PR #67).
+  - Added policy-level omit filtering across `LanguageScanner`, `PythonAstScanner`, and `TypeScriptAstScanner` to honor root and proposal `omit` patterns (Closes #66, PR #67).
+  - Sorted component nodes by architectural rank and declared policy order for deterministic canvas layout (Closes #66, PR #67).
+- **Static Analysis & Code Quality Violations (PMD, CPD, SpotBugs)**:
+  - Resolved 11 PMD violations: eliminated useless parentheses, collapsed nested `if` statements, removed redundant package qualifiers, and cleaned up unused method parameters and local variables across backend scanners and resources (PR #55).
+  - Resolved 3 CPD (Copy/Paste Detector) duplication blocks through scanner helper consolidation in `LanguageScanner` (PR #55).
+  - Resolved 8 SpotBugs warnings: enforced explicit `Locale.ROOT` in case conversions, constrained exception handling to specific checked exceptions (`IOException | InterruptedException`), and modernized home directory resolution (PR #55).
+
 ## [0.0.1-Alpha-03] - 2026-09-21
 
 ### Added

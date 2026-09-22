@@ -1,7 +1,6 @@
 package com.design.umlviewer.scanner;
 
 import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.CrapScore;
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.domain.model.FieldNode;
 import com.design.umlviewer.domain.model.MethodNode;
@@ -65,57 +64,31 @@ public class TypeScriptAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
-    File rootDir = new File(projectRoot != null ? projectRoot : ".");
-    File scanDir = rootDir;
-    if (srcRelativePath != null
-        && !srcRelativePath.isBlank()
-        && !srcRelativePath.equals(".")
-        && !srcRelativePath.equals("/")) {
-      File targetDir = new File(rootDir, srcRelativePath);
-      if (targetDir.exists()) {
-        scanDir = targetDir;
-      }
-    } else {
-      File defaultSrc = new File(rootDir, "src");
-      if (defaultSrc.exists()) {
-        scanDir = defaultSrc;
-      }
-    }
+    return scanProject(projectRoot, srcRelativePath, basePrefix, null);
+  }
 
+  @Override
+  public ScanResult scanProject(
+      String projectRoot, String srcRelativePath, String basePrefix, ArchitecturePolicy policy)
+      throws IOException {
+    File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }
 
-    List<ClassNode> classes = new ArrayList<>();
-    List<DependencyEdge> edges = new ArrayList<>();
+    Path rootPath = new File(projectRoot != null ? projectRoot : ".").toPath();
+    Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
+    List<Path> tsFiles = discoverTypeScriptFiles(scanDir.toPath(), rootPath, omitPatterns);
+
     Map<String, String> internalModules = new HashMap<>();
-
-    List<Path> tsFiles;
-    try (Stream<Path> stream = Files.walk(scanDir.toPath())) {
-      tsFiles =
-          stream
-              .filter(
-                  p -> {
-                    String s = p.toString();
-                    return (s.endsWith(".ts")
-                            || s.endsWith(".tsx")
-                            || s.endsWith(".js")
-                            || s.endsWith(".jsx"))
-                        && !s.endsWith(".d.ts")
-                        && !s.contains("/node_modules/")
-                        && !s.contains("/dist/")
-                        && !s.contains("/build/")
-                        && !s.contains("/.");
-                  })
-              .toList();
-    }
-
-    Path rootPath = rootDir.toPath();
     for (Path tsFile : tsFiles) {
       String rel = rootPath.relativize(tsFile).toString();
       String modId = toTsModuleId(rel);
       internalModules.put(modId, rel);
     }
+
+    List<ClassNode> classes = new ArrayList<>();
+    List<DependencyEdge> edges = new ArrayList<>();
 
     for (Path tsFile : tsFiles) {
       String rel = rootPath.relativize(tsFile).toString();
@@ -196,49 +169,18 @@ public class TypeScriptAstScanner implements LanguageScanner {
         }
       }
 
-      if (typeNames.isEmpty()) {
-        String simpleName = new File(rel).getName().replaceAll("\\.[a-z]+$", "");
-        classes.add(
-            new ClassNode(
-                currentModule,
-                simpleName,
-                packageName,
-                rel,
-                ClassNode.Stereotype.CLASS,
-                false,
-                null,
-                new CrapScore(1.0, 1.0, 0.0),
-                1.0,
-                1,
-                0,
-                0,
-                0,
-                fields,
-                methods));
-      } else {
-        for (String typeName : typeNames) {
-          classes.add(
-              new ClassNode(
-                  currentModule + "." + typeName,
-                  typeName,
-                  currentModule,
-                  rel,
-                  ClassNode.Stereotype.CLASS,
-                  false,
-                  null,
-                  new CrapScore(1.0, 1.0, 0.0),
-                  1.0,
-                  1,
-                  0,
-                  0,
-                  0,
-                  fields,
-                  methods));
-        }
-      }
+      LanguageScanner.addModuleOrTypeClasses(
+          classes,
+          typeNames,
+          new File(rel).getName().replaceAll("\\.[a-z]+$", ""),
+          currentModule,
+          packageName,
+          tsFile.toAbsolutePath().toString(),
+          fields,
+          methods);
 
       for (String imported : importedPaths) {
-        String resolvedModule = resolveTsImport(currentModule, imported, internalModules);
+        String resolvedModule = resolveTsImport(currentModule, imported);
         edges.add(
             new DependencyEdge(
                 currentModule, resolvedModule, DependencyEdge.Kind.DEPENDENCY, null, false));
@@ -265,14 +207,12 @@ public class TypeScriptAstScanner implements LanguageScanner {
     return idx > 0 ? moduleId.substring(0, idx) : moduleId;
   }
 
-  private String resolveTsImport(
-      String currentModule, String importPath, Map<String, String> internalModules) {
+  private String resolveTsImport(String currentModule, String importPath) {
     if (importPath.startsWith(".")) {
       // Relative import resolution
       String currentPkg = getPackageName(currentModule);
       String combined = currentPkg.isEmpty() ? importPath : currentPkg + "/" + importPath;
-      String normalized = normalizePath(combined).replace('/', '.');
-      return normalized;
+      return normalizePath(combined).replace('/', '.');
     }
     if (importPath.startsWith("@/") || importPath.startsWith("~/")) {
       return importPath.substring(2).replace('/', '.');
@@ -292,5 +232,43 @@ public class TypeScriptAstScanner implements LanguageScanner {
       }
     }
     return String.join("/", result);
+  }
+
+  private List<Path> discoverTypeScriptFiles(Path scanPath, Path rootPath, Set<String> omitPatterns)
+      throws IOException {
+    try (Stream<Path> stream = Files.walk(scanPath)) {
+      return stream
+          .filter(
+              p -> {
+                String s = p.toString().replace('\\', '/');
+                if (s.endsWith(".d.ts")
+                    || s.contains("/node_modules/")
+                    || s.contains("/dist/")
+                    || s.contains("/build/")
+                    || s.contains("/.")) {
+                  return false;
+                }
+                if (!omitPatterns.isEmpty()) {
+                  String rel = rootPath.relativize(p).toString().replace('\\', '/');
+                  for (String omit : omitPatterns) {
+                    if (omit == null || omit.isBlank()) continue;
+                    String clean = omit.trim().replace('\\', '/');
+                    if (clean.startsWith("/")) clean = clean.substring(1);
+                    if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
+                    if (rel.equals(clean)
+                        || rel.startsWith(clean + "/")
+                        || rel.contains("/" + clean + "/")
+                        || rel.endsWith("/" + clean)) {
+                      return false;
+                    }
+                  }
+                }
+                return s.endsWith(".ts")
+                    || s.endsWith(".tsx")
+                    || s.endsWith(".js")
+                    || s.endsWith(".jsx");
+              })
+          .toList();
+    }
   }
 }

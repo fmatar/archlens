@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **AST Scanner Consolidation & Refactoring**:
+  - Extracted shared source directory resolution (`LanguageScanner.resolveScanDirectory`) across Go, Python, Rust, and TypeScript AST scanners.
+  - Consolidated baseline module and class node generation (`LanguageScanner.addModuleOrTypeClasses`) across Rust and TypeScript AST scanners, eliminating duplicated AST traversal and model construction logic.
+- **Frontend Vite Proxy Endpoint Configuration**:
+  - Replaced `http://localhost:8088` with explicit IPv4 `http://127.0.0.1:8088` in `frontend/vite.config.ts` to prevent Node.js 18+ Happy Eyeballs IPv6 loopback connection delays and proxy `ECONNREFUSED` errors.
+
+### Fixed
+- **Static Analysis & Code Quality Violations (PMD, CPD, SpotBugs)**:
+  - Resolved 11 PMD violations: eliminated useless parentheses, collapsed nested `if` statements, removed redundant package qualifiers, and cleaned up unused method parameters and local variables across backend scanners and resources (PR #55).
+  - Resolved 3 CPD (Copy/Paste Detector) duplication blocks through scanner helper consolidation in `LanguageScanner` (PR #55).
+  - Resolved 8 SpotBugs warnings: enforced explicit `Locale.ROOT` in case conversions, constrained exception handling to specific checked exceptions (`IOException | InterruptedException`), and modernized home directory resolution (PR #55).
+
 ## [0.0.1-Alpha-03] - 2026-09-21
 
 ### Added

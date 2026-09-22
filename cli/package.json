@@ -1,6 +1,6 @@
 {
   "name": "@fmatar/archlens-skill",
-  "version": "0.0.1-Alpha-02",
+  "version": "0.0.1-Alpha-03",
   "description": "Cross-platform CLI and installer for Archlens Clean Architecture governance policies and AI assistant skills",
   "main": "src/installer.js",
   "type": "module",

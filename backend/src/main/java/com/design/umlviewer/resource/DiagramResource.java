@@ -282,7 +282,9 @@ public class DiagramResource {
             new ProcessBuilder(
                 "osascript",
                 "-e",
-                "POSIX path of (choose folder with prompt \"Select Repository or Project Directory\")");
+                "tell application \"System Events\" to activate",
+                "-e",
+                "tell application \"System Events\" to return POSIX path of (choose folder with prompt \"Select Repository or Project Directory\")");
         Process p = pb.start();
         boolean finished = p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
         if (finished && p.exitValue() == 0) {

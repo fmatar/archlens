@@ -65,7 +65,7 @@ public class ClojureAstScanner implements LanguageScanner {
               root,
               srcRelativePath != null && !srcRelativePath.isBlank() ? srcRelativePath : "src");
       if (srcDir.exists()) {
-        scanClojureDirectory(root, srcDir, classes, edges);
+        scanClojureDirectory(srcDir, classes);
       }
     }
 
@@ -211,13 +211,12 @@ public class ClojureAstScanner implements LanguageScanner {
           fields.add(new FieldNode(varName, "Object", false));
         }
       }
-    } catch (Exception e) {
+    } catch (IOException ignored) {
       // Gracefully continue on unreadable files
     }
   }
 
-  private void scanClojureDirectory(
-      File root, File dir, List<ClassNode> classes, List<DependencyEdge> edges) {
+  private void scanClojureDirectory(File dir, List<ClassNode> classes) {
     try (var stream = Files.walk(dir.toPath())) {
       stream
           .filter(p -> p.toString().endsWith(".clj"))
@@ -247,7 +246,7 @@ public class ClojureAstScanner implements LanguageScanner {
                         fields,
                         methods));
               });
-    } catch (Exception ignored) {
+    } catch (IOException ignored) {
     }
   }
 

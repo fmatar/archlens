@@ -1,7 +1,6 @@
 package com.design.umlviewer.scanner;
 
 import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.CrapScore;
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.domain.model.FieldNode;
 import com.design.umlviewer.domain.model.MethodNode;
@@ -66,22 +65,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
     File rootDir = new File(projectRoot != null ? projectRoot : ".");
-    File scanDir = rootDir;
-    if (srcRelativePath != null
-        && !srcRelativePath.isBlank()
-        && !srcRelativePath.equals(".")
-        && !srcRelativePath.equals("/")) {
-      File targetDir = new File(rootDir, srcRelativePath);
-      if (targetDir.exists()) {
-        scanDir = targetDir;
-      }
-    } else {
-      File defaultSrc = new File(rootDir, "src");
-      if (defaultSrc.exists()) {
-        scanDir = defaultSrc;
-      }
-    }
-
+    File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }
@@ -196,49 +180,18 @@ public class TypeScriptAstScanner implements LanguageScanner {
         }
       }
 
-      if (typeNames.isEmpty()) {
-        String simpleName = new File(rel).getName().replaceAll("\\.[a-z]+$", "");
-        classes.add(
-            new ClassNode(
-                currentModule,
-                simpleName,
-                packageName,
-                rel,
-                ClassNode.Stereotype.CLASS,
-                false,
-                null,
-                new CrapScore(1.0, 1.0, 0.0),
-                1.0,
-                1,
-                0,
-                0,
-                0,
-                fields,
-                methods));
-      } else {
-        for (String typeName : typeNames) {
-          classes.add(
-              new ClassNode(
-                  currentModule + "." + typeName,
-                  typeName,
-                  currentModule,
-                  rel,
-                  ClassNode.Stereotype.CLASS,
-                  false,
-                  null,
-                  new CrapScore(1.0, 1.0, 0.0),
-                  1.0,
-                  1,
-                  0,
-                  0,
-                  0,
-                  fields,
-                  methods));
-        }
-      }
+      LanguageScanner.addModuleOrTypeClasses(
+          classes,
+          typeNames,
+          new File(rel).getName().replaceAll("\\.[a-z]+$", ""),
+          currentModule,
+          packageName,
+          rel,
+          fields,
+          methods);
 
       for (String imported : importedPaths) {
-        String resolvedModule = resolveTsImport(currentModule, imported, internalModules);
+        String resolvedModule = resolveTsImport(currentModule, imported);
         edges.add(
             new DependencyEdge(
                 currentModule, resolvedModule, DependencyEdge.Kind.DEPENDENCY, null, false));
@@ -265,14 +218,12 @@ public class TypeScriptAstScanner implements LanguageScanner {
     return idx > 0 ? moduleId.substring(0, idx) : moduleId;
   }
 
-  private String resolveTsImport(
-      String currentModule, String importPath, Map<String, String> internalModules) {
+  private String resolveTsImport(String currentModule, String importPath) {
     if (importPath.startsWith(".")) {
       // Relative import resolution
       String currentPkg = getPackageName(currentModule);
       String combined = currentPkg.isEmpty() ? importPath : currentPkg + "/" + importPath;
-      String normalized = normalizePath(combined).replace('/', '.');
-      return normalized;
+      return normalizePath(combined).replace('/', '.');
     }
     if (importPath.startsWith("@/") || importPath.startsWith("~/")) {
       return importPath.substring(2).replace('/', '.');

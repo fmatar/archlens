@@ -57,18 +57,8 @@ public class GoAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
-    File rootDir = new File(projectRoot != null ? projectRoot : ".");
-    File scanDir = rootDir;
-    if (srcRelativePath != null
-        && !srcRelativePath.isBlank()
-        && !srcRelativePath.equals(".")
-        && !srcRelativePath.equals("/")) {
-      File targetDir = new File(rootDir, srcRelativePath);
-      if (targetDir.exists()) {
-        scanDir = targetDir;
-      }
-    }
-
+    File rootDir = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, null);
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }

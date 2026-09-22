@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
@@ -32,21 +33,22 @@ public class DiagramResource {
       return DEFAULT_PROJECT_ROOT;
     }
     String normalized = root.trim();
-    if (normalized.equals(".")) {
-      if (!new File(".", "pom.xml").exists()
-          && new File("/Users/fady/workspace/labs/archlens/pom.xml").exists()) {
-        return "/Users/fady/workspace/labs/archlens";
-      }
+    String userHome = System.getProperty("user.home", "");
+    String labsPath = userHome + "/workspace/labs";
+    if (normalized.equals(".")
+        && !new File(".", "pom.xml").exists()
+        && new File(labsPath, "archlens/pom.xml").exists()) {
+      return labsPath + "/archlens";
     }
     // Expand home directory shorthand ~
     if (normalized.startsWith("~")) {
-      normalized = System.getProperty("user.home") + normalized.substring(1);
+      normalized = userHome + normalized.substring(1);
     }
-    // Map /workspace/labs/ to host /Users/fady/workspace/labs/ if present
+    // Map /workspace/labs/ to host userHome/workspace/labs/ if present
     if (normalized.startsWith("/workspace/labs/")) {
-      File hostLabs = new File("/Users/fady/workspace/labs");
+      File hostLabs = new File(labsPath);
       if (hostLabs.exists() && hostLabs.isDirectory()) {
-        normalized = normalized.replace("/workspace/labs", "/Users/fady/workspace/labs");
+        normalized = normalized.replace("/workspace/labs", labsPath);
       }
     }
     // Transparently map agentlens or unclebob-design to archlens
@@ -175,7 +177,7 @@ public class DiagramResource {
     }
     for (File f : hierarchy) {
       String name = f.getName();
-      if (name == null || name.isEmpty()) {
+      if (name.isEmpty()) {
         name = f.getPath();
       }
       breadcrumbs.add(Map.of("name", name, "path", f.getAbsolutePath()));
@@ -212,7 +214,8 @@ public class DiagramResource {
     File[] children = targetDir.listFiles(File::isDirectory);
     if (children != null) {
       java.util.Arrays.sort(
-          children, java.util.Comparator.comparing(f -> f.getName().toLowerCase()));
+          children,
+          java.util.Comparator.comparing(f -> f.getName().toLowerCase(java.util.Locale.ROOT)));
       for (File child : children) {
         String name = child.getName();
         if (name.startsWith(".")
@@ -246,7 +249,7 @@ public class DiagramResource {
         File[] subDirs = child.listFiles(File::isDirectory);
         boolean hasChildren = subDirs != null && subDirs.length > 0;
 
-        java.util.Map<String, Object> dirEntry = new java.util.HashMap<>();
+        Map<String, Object> dirEntry = new HashMap<>();
         dirEntry.put("name", name);
         dirEntry.put("path", child.getAbsolutePath());
         dirEntry.put("isProject", isProject);
@@ -258,7 +261,7 @@ public class DiagramResource {
       }
     }
 
-    java.util.Map<String, Object> response = new java.util.HashMap<>();
+    Map<String, Object> response = new HashMap<>();
     response.put("currentPath", canonicalCurrent);
     if (parentPath != null) {
       response.put("parentPath", parentPath);
@@ -275,7 +278,7 @@ public class DiagramResource {
     if (Boolean.getBoolean("java.awt.headless") || Boolean.getBoolean("test.headless")) {
       return Map.of("success", false, "supported", false, "reason", "headless");
     }
-    String os = System.getProperty("os.name", "").toLowerCase();
+    String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
     if (os.contains("mac")) {
       try {
         ProcessBuilder pb =
@@ -299,7 +302,7 @@ public class DiagramResource {
           p.destroyForcibly();
         }
         return Map.of("success", false, "cancelled", true);
-      } catch (Exception e) {
+      } catch (IOException | InterruptedException e) {
         return Map.of("success", false, "error", e.getMessage());
       }
     }

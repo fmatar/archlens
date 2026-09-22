@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Build Provenance REST Endpoint & Version Synchronization Script**:
+  - Implemented `/api/version` in `VersionResource.java` exposing semantic version, git commit SHA, branch, and build timestamp (Closes #63).
+  - Integrated `git-commit-id-maven-plugin` to generate `git.properties` dynamically during build.
+  - Added cross-platform version synchronization script `scripts/set-version.sh` updating all 6 project descriptors atomically (Closes #63).
+- **CycloneDX Software Bill of Materials (SBOM)**:
+  - Integrated `cyclonedx-maven-plugin` to generate standards-compliant SBOM JSON and XML (`target/bom.json`) during packaging (Closes #62).
+  - Attached SBOM assets to GitHub release distribution artifacts and CI workflows (Closes #62).
+- **Quarkus GraalVM Native Image Profile (`-Pnative`)**:
+  - Configured native profile in parent and backend POMs for ahead-of-time compilation of standalone native executable binaries (Closes #61).
+- **GitHub Actions Dependency & Toolchain Caching**:
+  - Configured caching for `~/.local/share/pnpm/store` and `frontend-maven-plugin` Node/PNPM binaries in `.github/workflows/ci.yml` (Closes #60).
+- **Frontend Vitest Integration in Maven Reactor**:
+  - Bound `pnpm test` execution to Maven's `test` phase in `frontend/pom.xml`, ensuring `mvn test` exercises frontend unit tests alongside backend suites (Closes #59).
+  - Calibrated Vitest coverage thresholds and added `diagram_extra.test.ts` for extended diagram store coverage (Closes #59).
+- **Strict Zero-Regression Quality Gates**:
+  - Enforced `failOnViolation=true` for PMD/CPD and `failOnError=true` for SpotBugs/FindSecBugs in `backend/pom.xml` (Closes #58).
+
 ### Changed
 - **AST Scanner Consolidation & Refactoring**:
   - Extracted shared source directory resolution (`LanguageScanner.resolveScanDirectory`) across Go, Python, Rust, and TypeScript AST scanners.

@@ -77,7 +77,7 @@ public class JavaAstScanner implements LanguageScanner {
         return dirs;
       }
       File direct = new File(srcRelativePath);
-      if (direct.exists() && direct.isDirectory()) {
+      if (direct.isAbsolute() && direct.exists() && direct.isDirectory()) {
         dirs.add(direct);
         return dirs;
       }
@@ -201,9 +201,9 @@ public class JavaAstScanner implements LanguageScanner {
                 ClassNode.Stereotype stereotype =
                     decl.isInterface()
                         ? ClassNode.Stereotype.INTERFACE
-                        : (decl.isAbstract()
+                        : decl.isAbstract()
                             ? ClassNode.Stereotype.ABSTRACT
-                            : ClassNode.Stereotype.CLASS);
+                            : ClassNode.Stereotype.CLASS;
 
                 List<FieldNode> fields = extractFields(decl);
                 List<MethodNode> methods = extractMethods(decl);

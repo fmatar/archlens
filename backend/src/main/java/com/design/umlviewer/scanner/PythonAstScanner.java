@@ -83,18 +83,8 @@ public class PythonAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
-    File rootDir = new File(projectRoot != null ? projectRoot : ".");
-    File scanDir = rootDir;
-    if (srcRelativePath != null
-        && !srcRelativePath.isBlank()
-        && !srcRelativePath.equals(".")
-        && !srcRelativePath.equals("/")) {
-      File targetDir = new File(rootDir, srcRelativePath);
-      if (targetDir.exists()) {
-        scanDir = targetDir;
-      }
-    }
-
+    File rootDir = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, null);
     if (!scanDir.exists()) {
       return new ScanResult(List.of(), List.of());
     }
@@ -192,7 +182,6 @@ public class PythonAstScanner implements LanguageScanner {
 
         Matcher defMatcher = DEF_PATTERN.matcher(line);
         if (defMatcher.find()) {
-          String indent = defMatcher.group(1);
           String methodName = defMatcher.group(2);
           boolean isPrivate = methodName.startsWith("_") && !methodName.startsWith("__init__");
           int cc = 1; // baseline cyclomatic complexity

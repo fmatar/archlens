@@ -175,7 +175,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
           new File(rel).getName().replaceAll("\\.[a-z]+$", ""),
           currentModule,
           packageName,
-          rel,
+          tsFile.toAbsolutePath().toString(),
           fields,
           methods);
 

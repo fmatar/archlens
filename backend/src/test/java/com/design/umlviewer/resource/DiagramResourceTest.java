@@ -87,6 +87,12 @@ class DiagramResourceTest {
     assertEquals(2, source.get("targetLine"));
     assertTrue(((String) source.get("content")).contains("line 2"));
 
+    // Test getSource (relative path resolved against projectRoot)
+    Map<String, Object> relativeSource = resource.getSourceCode("Test.java", 2, tempDir.toString());
+    assertEquals("Test.java", relativeSource.get("fileName"));
+    assertEquals(2, relativeSource.get("targetLine"));
+    assertTrue(((String) relativeSource.get("content")).contains("line 2"));
+
     // Test events stream
     assertNotNull(resource.streamEvents());
 

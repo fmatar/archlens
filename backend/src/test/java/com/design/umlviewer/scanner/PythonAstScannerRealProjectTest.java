@@ -51,7 +51,26 @@ class PythonAstScannerRealProjectTest {
                         || id.startsWith("agent")
                         || id.startsWith("fastapi_server")));
 
+    // Verify test directories and omitted paths are excluded
+    assertTrue(compIds.stream().noneMatch(id -> id.contains("tests") || id.contains(".tests.")));
+    assertTrue(compIds.stream().noneMatch(id -> id.contains("node_modules")));
+    assertTrue(compIds.stream().noneMatch(id -> id.contains("frontend_web")));
+    assertTrue(compIds.stream().noneMatch(id -> id.contains("migrations")));
+
+    // Verify component count is concise and lightweight (far below 228)
+    assertTrue(
+        graph.components().size() <= 40,
+        "Components should be concise production modules, got: " + graph.components().size());
+
     // Verify edges were extracted
     assertFalse(graph.edges().isEmpty());
+
+    // Verify clean-arch-v1 proposal produces 4 clean concentric rings
+    ArchitectureGraph propGraph =
+        compiler.compileGraph(targetDir.getAbsolutePath(), "clean-arch-v1");
+    assertNotNull(propGraph);
+    assertTrue(propGraph.isProposal());
+    assertEquals("clean-arch-v1", propGraph.activeProposalId());
+    assertEquals(4, propGraph.components().size());
   }
 }

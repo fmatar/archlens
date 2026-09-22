@@ -347,46 +347,60 @@ public class DiagramResource {
     return mailboxService.appendCommand(normalizeRoot(projectRoot), true, op, target, payload);
   }
 
+  public Map<String, Object> getSourceCode(String filePath, int line) {
+    return getSourceCode(filePath, line, null);
+  }
+
   @GET
   @Path("/source")
   public Map<String, Object> getSourceCode(
-      @QueryParam("filePath") String filePath, @QueryParam("line") @DefaultValue("1") int line) {
+      @QueryParam("filePath") String filePath,
+      @QueryParam("line") @DefaultValue("1") int line,
+      @QueryParam("projectRoot") String projectRoot) {
     if (filePath == null || filePath.isBlank()) {
       return Map.of("error", "No filePath provided", "content", "");
     }
 
     File f = new File(filePath);
-    // ponytail: resilient path fallback for renamed repository folders or relative paths
+    // ponytail: resilient path fallback for external project roots and relative paths
     if (!f.exists() || !f.isFile()) {
-      if (filePath.startsWith("/workspace/labs/")) {
-        File hostFallback =
-            new File(filePath.replace("/workspace/labs", "/Users/fady/workspace/labs"));
-        if (hostFallback.exists() && hostFallback.isFile()) {
-          f = hostFallback;
-        }
-      }
-      if (filePath.contains("agentlens")) {
-        File fallback = new File(filePath.replace("agentlens", "archlens"));
-        if (fallback.exists() && fallback.isFile()) {
-          f = fallback;
-        }
-      }
-      if (filePath.contains("unclebob-design")) {
-        File fallback = new File(filePath.replace("unclebob-design", "archlens"));
-        if (fallback.exists() && fallback.isFile()) {
-          f = fallback;
+      if (projectRoot != null && !projectRoot.isBlank()) {
+        File projectFile = new File(projectRoot, filePath);
+        if (projectFile.exists() && projectFile.isFile()) {
+          f = projectFile;
         }
       }
       if (!f.exists() || !f.isFile()) {
-        File rel = new File(".", filePath);
-        if (rel.exists() && rel.isFile()) {
-          f = rel;
+        if (filePath.startsWith("/workspace/labs/")) {
+          File hostFallback =
+              new File(filePath.replace("/workspace/labs", "/Users/fady/workspace/labs"));
+          if (hostFallback.exists() && hostFallback.isFile()) {
+            f = hostFallback;
+          }
         }
-      }
-      if (!f.exists() || !f.isFile()) {
-        File parentRel = new File("..", filePath);
-        if (parentRel.exists() && parentRel.isFile()) {
-          f = parentRel;
+        if (filePath.contains("agentlens")) {
+          File fallback = new File(filePath.replace("agentlens", "archlens"));
+          if (fallback.exists() && fallback.isFile()) {
+            f = fallback;
+          }
+        }
+        if (filePath.contains("unclebob-design")) {
+          File fallback = new File(filePath.replace("unclebob-design", "archlens"));
+          if (fallback.exists() && fallback.isFile()) {
+            f = fallback;
+          }
+        }
+        if (!f.exists() || !f.isFile()) {
+          File rel = new File(".", filePath);
+          if (rel.exists() && rel.isFile()) {
+            f = rel;
+          }
+        }
+        if (!f.exists() || !f.isFile()) {
+          File parentRel = new File("..", filePath);
+          if (parentRel.exists() && parentRel.isFile()) {
+            f = parentRel;
+          }
         }
       }
     }

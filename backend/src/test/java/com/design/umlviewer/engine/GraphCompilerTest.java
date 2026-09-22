@@ -151,4 +151,67 @@ class GraphCompilerTest {
     assertEquals(
         "com.slixes.vanguard", GraphCompiler.computeCommonPrefix(java.util.List.of(c1, c2)));
   }
+
+  @Test
+  void testCompileGraphWithOmitAndSorting(@TempDir Path tempDir) throws IOException {
+    GraphCompiler compiler = new GraphCompiler();
+    JavaAstScanner scanner = new JavaAstScanner();
+
+    try {
+      java.lang.reflect.Field field1 = JavaAstScanner.class.getDeclaredField("crapCalculator");
+      field1.setAccessible(true);
+      field1.set(scanner, new CrapScoreCalculator());
+
+      com.design.umlviewer.scanner.LanguageScannerRegistry registry =
+          new com.design.umlviewer.scanner.LanguageScannerRegistry(java.util.List.of(scanner));
+
+      java.lang.reflect.Field field2 = GraphCompiler.class.getDeclaredField("scannerRegistry");
+      field2.setAccessible(true);
+      field2.set(compiler, registry);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    Path umlDir = tempDir.resolve(".uml-viewer");
+    Files.createDirectories(umlDir);
+    String policyJson =
+        """
+        {
+          "title": "Ordered Architecture",
+          "src": "src",
+          "prefix": "com.example",
+          "hierarchical": true,
+          "order": ["domain", "service"],
+          "levels": [["domain"], ["service"]],
+          "omit": ["omitted_pkg"]
+        }
+        """;
+    Files.writeString(umlDir.resolve("policy.json"), policyJson);
+
+    Path srcDomain = tempDir.resolve("src/com/example/domain");
+    Path srcService = tempDir.resolve("src/com/example/service");
+    Path srcOmitted = tempDir.resolve("src/com/example/omitted_pkg");
+    Files.createDirectories(srcDomain);
+    Files.createDirectories(srcService);
+    Files.createDirectories(srcOmitted);
+
+    Files.writeString(
+        srcDomain.resolve("DomainModel.java"),
+        "package com.example.domain; public class DomainModel {}");
+    Files.writeString(
+        srcService.resolve("AppService.java"),
+        "package com.example.service; public class AppService {}");
+    Files.writeString(
+        srcOmitted.resolve("Ignored.java"),
+        "package com.example.omitted_pkg; public class Ignored {}");
+
+    ArchitectureGraph graph = compiler.compileGraph(tempDir.toString(), null);
+    assertNotNull(graph);
+    // Ignored package must be filtered out
+    assertTrue(graph.components().stream().noneMatch(c -> c.id().contains("omitted_pkg")));
+    assertEquals(2, graph.components().size());
+    // Components must follow declared order
+    assertEquals("domain", graph.components().get(0).id());
+    assertEquals("service", graph.components().get(1).id());
+  }
 }

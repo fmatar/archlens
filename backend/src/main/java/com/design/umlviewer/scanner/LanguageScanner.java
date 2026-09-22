@@ -8,10 +8,20 @@ import com.design.umlviewer.domain.model.MethodNode;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /** Service Provider Interface (SPI) for language-specific AST and dependency scanners. */
 public interface LanguageScanner {
+
+  /** Extracts omit patterns from the architecture policy or returns an empty set. */
+  static Set<String> extractOmitPatterns(ArchitecturePolicy policy) {
+    if (policy != null && policy.omit() != null) {
+      return new HashSet<>(policy.omit());
+    }
+    return new HashSet<>();
+  }
 
   record ScanResult(List<ClassNode> classes, List<DependencyEdge> edges) {
     public ScanResult {
@@ -31,6 +41,16 @@ public interface LanguageScanner {
   /** Scans source files and generates AST nodes and dependency edges. */
   ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException;
+
+  /**
+   * Scans source files and generates AST nodes and dependency edges with architecture policy
+   * context.
+   */
+  default ScanResult scanProject(
+      String projectRoot, String srcRelativePath, String basePrefix, ArchitecturePolicy policy)
+      throws IOException {
+    return scanProject(projectRoot, srcRelativePath, basePrefix);
+  }
 
   /** Resolves project scan directory considering explicit or fallback relative paths. */
   static File resolveScanDirectory(
@@ -98,7 +118,7 @@ public interface LanguageScanner {
       for (String typeName : typeNames) {
         classes.add(
             createDefaultClassNode(
-                currentModule + "." + typeName, typeName, currentModule, relPath, fields, methods));
+                currentModule + "." + typeName, typeName, packageName, relPath, fields, methods));
       }
     }
   }

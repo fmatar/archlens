@@ -40,7 +40,6 @@
 
   let flowPathEl: SVGPathElement | null = $state(null);
   let glowPathEl: SVGPathElement | null = $state(null);
-  let badgeEl: SVGGElement | null = $state(null);
 
   // Compute smooth cubic Bezier control points
   let midY = $derived((y1 + y2) / 2);
@@ -78,16 +77,6 @@
             duration: 0.6,
             repeat: -1,
             ease: 'none'
-          });
-        }
-        if (badgeEl) {
-          gsap.to(badgeEl, {
-            scale: 1.15,
-            transformOrigin: 'center center',
-            duration: 0.7,
-            repeat: -1,
-            yoyo: true,
-            ease: 'sine.inOut'
           });
         }
       } else {
@@ -168,45 +157,48 @@
   />
 
   <!-- Bundled Pill Badge vs Single Edge Badges -->
-  {#if isBundled && bundleCount && bundleCount > 1}
+  {#if isBundled && bundleCount && bundleCount >= 1}
     <g
       transform={`translate(${midX}, ${midY})`}
       class="pointer-events-none select-none"
     >
-      <rect
-        x={edge.isViolating ? -26 : -18}
-        y="-10"
-        width={edge.isViolating ? 52 : 36}
-        height="20"
-        rx="10"
-        class={edge.isViolating
-          ? 'fill-rose-950/95 stroke-rose-500 stroke-[1.5] shadow-lg shadow-rose-950/80'
-          : 'fill-slate-900/95 stroke-slate-600 stroke-[1] shadow-md'}
-      />
-      <text
-        y="4"
-        text-anchor="middle"
-        class={edge.isViolating
-          ? 'fill-rose-200 font-bold text-[10px] font-mono'
-          : 'fill-slate-300 font-medium text-[10px] font-mono'}
-      >
-        {edge.isViolating ? `! ${violationCount}/${bundleCount}` : `${bundleCount}`}
-      </text>
+      <g class={edge.isViolating ? 'edge-badge-pulsing' : ''}>
+        <rect
+          x={edge.isViolating ? -26 : -18}
+          y="-10"
+          width={edge.isViolating ? 52 : 36}
+          height="20"
+          rx="10"
+          class={edge.isViolating
+            ? 'fill-rose-950/95 stroke-rose-500 stroke-[1.5] shadow-lg shadow-rose-950/80'
+            : 'fill-slate-900/95 stroke-slate-600 stroke-[1] shadow-md'}
+        />
+        <text
+          y="4"
+          text-anchor="middle"
+          class={edge.isViolating
+            ? 'fill-rose-200 font-bold text-[10px] font-mono'
+            : 'fill-slate-300 font-medium text-[10px] font-mono'}
+        >
+          {edge.isViolating ? `! ${violationCount}/${bundleCount}` : `${bundleCount}`}
+        </text>
+      </g>
     </g>
   {:else if edge.isViolating}
     <g
-      bind:this={badgeEl}
       transform={`translate(${midX}, ${midY})`}
       class="pointer-events-none"
     >
-      <circle r="9" class="fill-rose-950 stroke-rose-500 stroke-1.5 shadow-lg" />
-      <text
-        y="3.5"
-        text-anchor="middle"
-        class="fill-rose-300 font-bold text-[9px] font-mono select-none"
-      >
-        !
-      </text>
+      <g class="edge-badge-pulsing">
+        <circle r="9" class="fill-rose-950 stroke-rose-500 stroke-1.5 shadow-lg" />
+        <text
+          y="3.5"
+          text-anchor="middle"
+          class="fill-rose-300 font-bold text-[9px] font-mono select-none"
+        >
+          !
+        </text>
+      </g>
     </g>
   {:else if edge.label}
     <text
@@ -219,3 +211,22 @@
     </text>
   {/if}
 </g>
+
+<style>
+  @keyframes edge-pulse {
+    0%, 100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 2px rgba(244, 63, 94, 0.4));
+    }
+    50% {
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.85));
+    }
+  }
+
+  .edge-badge-pulsing {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: edge-pulse 1.2s ease-in-out infinite;
+  }
+</style>

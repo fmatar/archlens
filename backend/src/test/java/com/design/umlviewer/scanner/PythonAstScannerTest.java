@@ -147,4 +147,58 @@ class PythonAstScannerTest {
     assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("standalone_script")));
     assertTrue(result.classes().stream().anyMatch(c -> c.id().equals("mypackage")));
   }
+
+  @Test
+  void testExclusionOfNonProductionDirectoriesAndFiles(@TempDir Path tempDir) throws IOException {
+    Path srcDir = tempDir.resolve("app");
+    Path testDir = tempDir.resolve("tests");
+    Path nodeModulesDir = tempDir.resolve("node_modules/pkg");
+    Path venvDir = tempDir.resolve(".venv/lib");
+    Files.createDirectories(srcDir);
+    Files.createDirectories(testDir);
+    Files.createDirectories(nodeModulesDir);
+    Files.createDirectories(venvDir);
+
+    // Production source
+    Files.writeString(srcDir.resolve("service.py"), "class Service:\n    pass\n");
+    // Test in tests dir
+    Files.writeString(testDir.resolve("test_service.py"), "class TestService:\n    pass\n");
+    // Test file in src dir
+    Files.writeString(srcDir.resolve("test_helper.py"), "class TestHelper:\n    pass\n");
+    // Python file in node_modules
+    Files.writeString(nodeModulesDir.resolve("script.py"), "class ModuleClass:\n    pass\n");
+    // Python file in .venv
+    Files.writeString(venvDir.resolve("dep.py"), "class DepClass:\n    pass\n");
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
+    assertEquals(1, result.classes().size());
+    assertEquals("Service", result.classes().get(0).name());
+  }
+
+  @Test
+  void testPolicyOmitRespected(@TempDir Path tempDir) throws IOException {
+    Path srcDir = tempDir.resolve("app");
+    Path migrationsDir = tempDir.resolve("migrations");
+    Files.createDirectories(srcDir);
+    Files.createDirectories(migrationsDir);
+
+    Files.writeString(srcDir.resolve("model.py"), "class User:\n    pass\n");
+    Files.writeString(migrationsDir.resolve("m001.py"), "class Migration001:\n    pass\n");
+
+    com.design.umlviewer.domain.policy.ArchitecturePolicy policy =
+        new com.design.umlviewer.domain.policy.ArchitecturePolicy(
+            "Test",
+            ".",
+            "",
+            true,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of("migrations"));
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "", policy);
+    assertEquals(1, result.classes().size());
+    assertEquals("User", result.classes().get(0).name());
+  }
 }

@@ -98,4 +98,48 @@ class TypeScriptAstScannerTest {
                         && e.from().equals("services.orderService")
                         && e.to().equals("domain.order")));
   }
+
+  @Test
+  void testTypeScriptOmitAndImportResolution(@TempDir Path tempDir) throws IOException {
+    Path src = tempDir.resolve("src");
+    Path components = src.resolve("components");
+    Path ignoredTests = src.resolve("tests");
+    Files.createDirectories(components);
+    Files.createDirectories(ignoredTests);
+
+    Files.writeString(
+        components.resolve("button.tsx"),
+        """
+        import { Util } from '@/utils/helper';
+        import { Theme } from '~/styles/theme';
+
+        export class Button {
+          label: string;
+        }
+        """);
+
+    Files.writeString(
+        ignoredTests.resolve("button.test.ts"),
+        """
+        export class ButtonTest {}
+        """);
+
+    ArchitecturePolicy policy =
+        new ArchitecturePolicy(
+            "TS App",
+            "src",
+            "app",
+            true,
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of("tests"));
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "", policy);
+    assertEquals(1, result.classes().size());
+    assertEquals("Button", result.classes().get(0).name());
+    assertTrue(result.edges().stream().anyMatch(e -> e.to().equals("utils.helper")));
+    assertTrue(result.edges().stream().anyMatch(e -> e.to().equals("styles.theme")));
+  }
 }

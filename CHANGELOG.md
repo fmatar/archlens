@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **JavaParser Reflection Elimination in Native Image (Closes #78)**:
+  - Configured JavaParser with `LanguageLevel.RAW` in `JavaAstScanner.java`.
+  - Eliminates reflective calls to `PropertyMetaModel.getValue()` from semantic AST validators, resolving `NoSuchFieldError: variables` during native graph compilation.
 - **Quarkus Native Profile Configuration (Closes #76)**:
   - Corrected native packaging property from `quarkus.package.jar.type` to `quarkus.native.enabled=true` across root `pom.xml` and `backend/pom.xml`.
   - Resolves `IllegalArgumentException: Cannot convert native to enum class JarType` when executing `mvn package -Pnative`.

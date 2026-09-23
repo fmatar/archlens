@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-05] - 2026-09-23
+
 ### Fixed
 - **Component Card Header Geometry & Stroke Alignment (Closes #80)**:
   - Eliminated distorted quadratic Bezier banner path in `ComponentBox.svelte` causing misaligned corners and clipped strokes.

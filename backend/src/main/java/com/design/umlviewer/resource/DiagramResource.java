@@ -314,7 +314,21 @@ public class DiagramResource {
     response.put("breadcrumbs", breadcrumbs);
     response.put("quickNav", quickNav);
     response.put("directories", directories);
+    boolean isContainer = isContainerEnvironment();
+    response.put("isContainer", isContainer);
+    boolean isHeadless =
+        Boolean.getBoolean("java.awt.headless") || Boolean.getBoolean("test.headless");
+    boolean nativePickerSupported = isMacOs() && !isHeadless && !isContainer;
+    response.put("nativePickerSupported", nativePickerSupported);
     return response;
+  }
+
+  private boolean isMacOs() {
+    String os = System.getProperty("os.name", "");
+    return os.contains("Mac")
+        || os.contains("mac")
+        || os.contains("Darwin")
+        || os.contains("darwin");
   }
 
   @POST
@@ -323,8 +337,10 @@ public class DiagramResource {
     if (Boolean.getBoolean("java.awt.headless") || Boolean.getBoolean("test.headless")) {
       return Map.of("success", false, "supported", false, "reason", "headless");
     }
-    String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
-    if (os.contains("mac")) {
+    if (isContainerEnvironment()) {
+      return Map.of("success", false, "supported", false, "reason", "container");
+    }
+    if (isMacOs()) {
       try {
         ProcessBuilder pb =
             new ProcessBuilder(
@@ -351,10 +367,7 @@ public class DiagramResource {
         return Map.of("success", false, "error", e.getMessage());
       }
     }
-    String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
-    File containerWorkspace = new File(containerPath);
-    String reason = containerWorkspace.exists() ? "container" : "unsupported_os";
-    return Map.of("success", false, "supported", false, "reason", reason);
+    return Map.of("success", false, "supported", false, "reason", "unsupported_os");
   }
 
   @GET

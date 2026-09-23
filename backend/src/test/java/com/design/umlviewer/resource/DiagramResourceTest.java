@@ -104,5 +104,24 @@ class DiagramResourceTest {
     @SuppressWarnings("unchecked")
     List<Map<String, String>> discovered = (List<Map<String, String>>) projects.get("discovered");
     assertFalse(discovered.isEmpty());
+
+    // Test listDirectories includes container and native picker capability flags
+    Map<String, Object> dirs = resource.listDirectories(tempDir.toString());
+    assertNotNull(dirs);
+    assertTrue(dirs.containsKey("isContainer"));
+    assertTrue(dirs.containsKey("nativePickerSupported"));
+    assertTrue(dirs.get("isContainer") instanceof Boolean);
+    assertTrue(dirs.get("nativePickerSupported") instanceof Boolean);
+
+    // Test pickDirectory in headless mode
+    System.setProperty("test.headless", "true");
+    try {
+      Map<String, Object> picked = resource.pickDirectory();
+      assertNotNull(picked);
+      assertEquals(false, picked.get("supported"));
+      assertEquals("headless", picked.get("reason"));
+    } finally {
+      System.clearProperty("test.headless");
+    }
   }
 }

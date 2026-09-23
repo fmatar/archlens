@@ -43,6 +43,8 @@
     breadcrumbs: Breadcrumb[];
     quickNav: QuickNav[];
     directories: DirectoryEntry[];
+    isContainer?: boolean;
+    nativePickerSupported?: boolean;
   }
 
   let inputPath = $state('');
@@ -60,6 +62,10 @@
   let quickNav = $state<QuickNav[]>([]);
   let directories = $state<DirectoryEntry[]>([]);
   let folderFilter = $state('');
+  let isContainer = $state(false);
+  let nativePickerSupported = $state(true);
+  let isExplorerHighlighted = $state(false);
+  let filterInputRef = $state<HTMLInputElement | null>(null);
   let wasOpen = false;
 
   // Filtered directories matching search query
@@ -108,6 +114,14 @@
         breadcrumbs = data.breadcrumbs || [];
         quickNav = data.quickNav || [];
         directories = data.directories || [];
+        isContainer = data.isContainer ?? false;
+        if (data.nativePickerSupported !== undefined) {
+          nativePickerSupported = data.nativePickerSupported;
+        }
+        // Auto-populate inputPath when empty so user can immediately open active directory
+        if (!inputPath.trim() && data.currentPath) {
+          inputPath = data.currentPath;
+        }
       } else {
         validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       }
@@ -117,6 +131,20 @@
     } finally {
       isLoadingFs = false;
     }
+  }
+
+  function handleContainerBrowse() {
+    isExplorerOpen = true;
+    if (!inputPath.trim() && fsCurrentPath) {
+      inputPath = fsCurrentPath;
+    }
+    isExplorerHighlighted = true;
+    setTimeout(() => {
+      isExplorerHighlighted = false;
+    }, 1200);
+    setTimeout(() => {
+      filterInputRef?.focus();
+    }, 50);
   }
 
   async function handleNativePickDirectory() {
@@ -133,6 +161,8 @@
           return;
         }
         if (data.supported === false) {
+          nativePickerSupported = false;
+          isContainer = data.reason === 'container';
           if (data.reason === 'container' || data.reason === 'headless') {
             containerNotice =
               'Host OS folder picker is isolated inside container environments. Use the in-app folder explorer below.';
@@ -141,9 +171,13 @@
               'Native OS folder picker is not supported on this platform. Use the in-app folder explorer below.';
           }
           isExplorerOpen = true;
+          if (!inputPath.trim() && fsCurrentPath) {
+            inputPath = fsCurrentPath;
+          }
           if (fsCurrentPath) {
             await loadDirectories(fsCurrentPath);
           }
+          handleContainerBrowse();
           return;
         }
         if (data.error) {
@@ -289,22 +323,34 @@
               />
             </div>
 
-            <!-- Native OS Folder Picker Button -->
-            <button
-              type="button"
-              onclick={handleNativePickDirectory}
-              disabled={isNativePickerLoading}
-              title="Browse via native Finder folder dialog"
-              class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
-            >
-              {#if isNativePickerLoading}
-                <RefreshCw size={13} class="animate-spin text-blue-400" />
-                <span>Browsing...</span>
-              {:else}
-                <FolderOpen size={13} class="text-blue-400" />
-                <span>Browse...</span>
-              {/if}
-            </button>
+            <!-- Action Button: Native Picker or Container In-App Explorer -->
+            {#if nativePickerSupported}
+              <button
+                type="button"
+                onclick={handleNativePickDirectory}
+                disabled={isNativePickerLoading}
+                title="Browse via native Finder folder dialog"
+                class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-slate-600 text-slate-200 hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+              >
+                {#if isNativePickerLoading}
+                  <RefreshCw size={13} class="animate-spin text-blue-400" />
+                  <span>Browsing...</span>
+                {:else}
+                  <FolderOpen size={13} class="text-blue-400" />
+                  <span>Browse...</span>
+                {/if}
+              </button>
+            {:else}
+              <button
+                type="button"
+                onclick={handleContainerBrowse}
+                title="Explore container filesystem and mounted volumes"
+                class="px-3 py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-200 hover:text-white text-xs font-medium transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
+              >
+                <FolderTree size={13} class="text-blue-400" />
+                <span>Browse Folders</span>
+              </button>
+            {/if}
 
             <!-- Open Project Button -->
             <button
@@ -323,9 +369,28 @@
             </button>
           </div>
           <p class="text-[11px] text-slate-500 mt-1">
-            Tip: Use <code class="font-mono text-slate-400">Browse...</code> or navigate via the folder explorer below.
+            {#if isContainer}
+              Tip: Running in Docker. Browse mounted folders below or click <code class="font-mono text-slate-400">Open</code> to load {inputPath || '/workspace'}.
+            {:else}
+              Tip: Use <code class="font-mono text-slate-400">Browse...</code> or navigate via the folder explorer below.
+            {/if}
           </p>
         </div>
+
+        {#if isContainer}
+          <div class="p-3 rounded-lg bg-cyan-950/40 border border-cyan-800/50 text-cyan-200 text-xs flex items-start gap-2.5 animate-in fade-in duration-100">
+            <FolderTree size={16} class="shrink-0 text-cyan-400 mt-0.5" />
+            <div class="space-y-1">
+              <div class="font-medium text-cyan-100 flex items-center gap-2">
+                <span>Docker Container Filesystem</span>
+                <span class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-cyan-900/60 text-cyan-300 border border-cyan-700/50">Mounted: /workspace</span>
+              </div>
+              <p class="text-[11px] text-cyan-300/80 leading-relaxed">
+                Use the directory explorer below to navigate within the container. To inspect another host repository, mount it when starting the container: <code class="px-1 py-0.2 rounded bg-cyan-950 text-cyan-200 font-mono text-[10px]">docker run -v /your/path:/workspace ...</code>
+              </p>
+            </div>
+          </div>
+        {/if}
 
         {#if containerNotice}
           <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-start gap-2 animate-in fade-in duration-100">
@@ -343,7 +408,9 @@
 
         <!-- Interactive Directory Explorer Section -->
         {#if isExplorerOpen}
-          <div class="rounded-lg border border-slate-800 bg-slate-950/70 overflow-hidden space-y-2 p-3 animate-in fade-in duration-150">
+          <div
+            class="rounded-lg border bg-slate-950/70 overflow-hidden space-y-2 p-3 transition-all duration-300 animate-in fade-in duration-150 {isExplorerHighlighted ? 'border-blue-500 ring-2 ring-blue-500/30' : 'border-slate-800'}"
+          >
             <!-- Navigation Toolbar: Quick Jumps & Parent -->
             <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
               <!-- Quick Jump Shortcuts -->
@@ -411,6 +478,7 @@
             <div class="relative flex items-center">
               <Search size={12} class="absolute left-2.5 text-slate-500 pointer-events-none" />
               <input
+                bind:this={filterInputRef}
                 type="text"
                 bind:value={folderFilter}
                 placeholder="Filter folders in this directory..."
@@ -468,19 +536,18 @@
                       {/if}
                     </div>
 
-                    <div class="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100">
-                      {#if dir.isProject}
-                        <button
-                          type="button"
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            handleOpen(dir.path);
-                          }}
-                          class="px-2 py-0.5 rounded bg-blue-600/20 hover:bg-blue-600 border border-blue-500/40 hover:border-transparent text-blue-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer"
-                        >
-                          Open
-                        </button>
-                      {/if}
+                    <div class="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          handleOpen(dir.path);
+                        }}
+                        class="px-2 py-0.5 rounded bg-blue-600/20 hover:bg-blue-600 border border-blue-500/40 hover:border-transparent text-blue-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer {dir.isProject ? 'opacity-90 hover:opacity-100' : 'opacity-0 group-hover:opacity-100'}"
+                        title={`Open ${dir.name}`}
+                      >
+                        Open
+                      </button>
                       <ChevronRight size={12} class="text-slate-600 group-hover:text-slate-400" />
                     </div>
                   </div>

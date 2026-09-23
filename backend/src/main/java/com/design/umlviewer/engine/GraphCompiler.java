@@ -30,16 +30,44 @@ public class GraphCompiler {
 
   private final ObjectMapper mapper = new ObjectMapper();
 
-  public ArchitecturePolicy loadPolicy(String projectRoot) {
-    File policyFile = null;
+  private static final String PRIMARY_CONFIG_DIR = ".archlens";
+  private static final String LEGACY_CONFIG_DIR = ".uml-viewer";
+  private static final String POLICY_FILENAME = "policy.json";
+
+  private File resolvePolicyFile(String projectRoot) {
     if (projectRoot != null && !projectRoot.isBlank()) {
-      policyFile = new File(projectRoot, ".uml-viewer/policy.json");
-    } else if (new File(".uml-viewer/policy.json").exists()) {
-      policyFile = new File(".uml-viewer/policy.json");
-    } else if (new File("../.uml-viewer/policy.json").exists()) {
-      policyFile = new File("../.uml-viewer/policy.json");
+      File primary = new File(projectRoot, PRIMARY_CONFIG_DIR + "/" + POLICY_FILENAME);
+      if (primary.exists()) {
+        return primary;
+      }
+      File legacy = new File(projectRoot, LEGACY_CONFIG_DIR + "/" + POLICY_FILENAME);
+      if (legacy.exists()) {
+        return legacy;
+      }
+      return primary;
     }
-    if (policyFile != null && policyFile.exists()) {
+    File primaryLocal = new File(PRIMARY_CONFIG_DIR, POLICY_FILENAME);
+    if (primaryLocal.exists()) {
+      return primaryLocal;
+    }
+    File legacyLocal = new File(LEGACY_CONFIG_DIR, POLICY_FILENAME);
+    if (legacyLocal.exists()) {
+      return legacyLocal;
+    }
+    File primaryParent = new File("../" + PRIMARY_CONFIG_DIR, POLICY_FILENAME);
+    if (primaryParent.exists()) {
+      return primaryParent;
+    }
+    File legacyParent = new File("../" + LEGACY_CONFIG_DIR, POLICY_FILENAME);
+    if (legacyParent.exists()) {
+      return legacyParent;
+    }
+    return primaryLocal;
+  }
+
+  public ArchitecturePolicy loadPolicy(String projectRoot) {
+    File policyFile = resolvePolicyFile(projectRoot);
+    if (policyFile.exists()) {
       try {
         return mapper.readValue(policyFile, ArchitecturePolicy.class);
       } catch (Exception e) {

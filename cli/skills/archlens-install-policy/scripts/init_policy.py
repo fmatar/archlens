@@ -2,8 +2,8 @@
 """
 Archlens Policy & Companion Initialization Script
 Zero-dependency CLI tool to inspect any project codebase and scaffold:
-  1. .uml-viewer/policy.json (Clean Architecture concentric tiers)
-  2. .uml-viewer/workbench.config.json (Visual workbench service settings)
+  1. .archlens/policy.json (Clean Architecture concentric tiers)
+  2. .archlens/workbench.config.json (Visual workbench service settings)
   3. CLAUDE.md & AGENTS.md companion guidelines (Mailbox IPC protocol)
 """
 
@@ -209,16 +209,16 @@ def write_workbench_config(config_dir: Path, server_url: str = "http://localhost
     config_file.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
-def update_companion_markdown(file_path: Path) -> None:
-    companion_block = """
+def update_companion_markdown(file_path: Path, server_url: str = "http://localhost:8088") -> None:
+    companion_block = f"""
 ## Archlens Clean Architecture Workbench Companion Protocol
 
 This project is governed by the **Archlens Dynamic Clean Architecture Workbench**.
-- **Workbench UI & API**: `http://localhost:8088`
-- **Architectural Policy**: `.uml-viewer/policy.json`
+- **Workbench UI & API**: `{server_url}`
+- **Architectural Policy**: `.archlens/policy.json`
 - **Mailbox IPC**:
-  - Inbound queue: `.uml-viewer/to-agent.json`
-  - Outbound response: `.uml-viewer/to-viewer.json`
+  - Inbound queue: `.archlens/to-agent.json`
+  - Outbound response: `.archlens/to-viewer.json`
 
 ### Handling Mailbox Commands:
 1. **REGEN**: Re-index AST, evaluate package dependency rules, and acknowledge.
@@ -230,18 +230,55 @@ This project is governed by the **Archlens Dynamic Clean Architecture Workbench*
         return
 
     content = file_path.read_text(encoding="utf-8")
+    modified = False
+    if ".uml-viewer" in content:
+        content = content.replace(".uml-viewer", ".archlens")
+        modified = True
+
     if "Archlens Clean Architecture Workbench Companion Protocol" not in content:
-        file_path.write_text(content.rstrip() + "\n\n" + companion_block.strip() + "\n", encoding="utf-8")
+        content = content.rstrip() + "\n\n" + companion_block.strip() + "\n"
+        modified = True
+
+    if modified:
+        file_path.write_text(content, encoding="utf-8")
+
+
+def upgrade_project(root: Path, server_url: str = "http://localhost:8088") -> int:
+    legacy_dir = root / ".uml-viewer"
+    primary_dir = root / ".archlens"
+
+    if not legacy_dir.exists() and not primary_dir.exists():
+        print(f"Error: No configuration found in {root}. Run without --upgrade to initialize.", file=sys.stderr)
+        return 1
+
+    if legacy_dir.exists():
+        if not primary_dir.exists():
+            legacy_dir.rename(primary_dir)
+            print(f"Migrated legacy directory: {legacy_dir.name} -> {primary_dir.name}")
+        else:
+            for item in legacy_dir.iterdir():
+                target = primary_dir / item.name
+                if not target.exists():
+                    item.rename(target)
+            import shutil
+            shutil.rmtree(legacy_dir, ignore_errors=True)
+            print(f"Merged legacy files into: {primary_dir.name}")
+
+    update_companion_markdown(root / "CLAUDE.md", server_url)
+    update_companion_markdown(root / "AGENTS.md", server_url)
+    print("Updated companion files (CLAUDE.md, AGENTS.md)")
+    return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Initialize Archlens architectural policy (.uml-viewer/policy.json) and agent guidelines."
+        description="Initialize or upgrade Archlens architectural policy (.archlens/policy.json) and agent guidelines."
     )
     parser.add_argument("--path", "-p", default=".", help="Target project root directory (default: current directory)")
     parser.add_argument("--title", "-t", default=None, help="Custom project title")
     parser.add_argument("--prefix", default=None, help="Custom common package prefix")
     parser.add_argument("--server-url", default="http://localhost:8088", help="Archlens workbench server URL")
+    parser.add_argument("--upgrade", "-u", action="store_true", help="Upgrade legacy .uml-viewer configuration to .archlens")
     parser.add_argument("--force", "-f", action="store_true", help="Overwrite existing configuration files")
 
     args = parser.parse_args()
@@ -251,10 +288,20 @@ def main() -> int:
         print(f"Error: Target directory does not exist: {target_root}", file=sys.stderr)
         return 1
 
-    uml_dir = target_root / ".uml-viewer"
-    uml_dir.mkdir(parents=True, exist_ok=True)
+    if args.upgrade:
+        return upgrade_project(target_root, server_url=args.server_url)
 
-    policy_file = uml_dir / "policy.json"
+    archlens_dir = target_root / ".archlens"
+    legacy_dir = target_root / ".uml-viewer"
+
+    if not archlens_dir.exists() and legacy_dir.exists() and not args.force:
+        print(f"Notice: Found legacy {legacy_dir.name} configuration. Run with --upgrade to migrate to .archlens.")
+        target_config_dir = legacy_dir
+    else:
+        archlens_dir.mkdir(parents=True, exist_ok=True)
+        target_config_dir = archlens_dir
+
+    policy_file = target_config_dir / "policy.json"
     if policy_file.exists() and not args.force:
         print(f"Notice: Policy file already exists at {policy_file}. Use --force to regenerate.")
     else:
@@ -262,14 +309,14 @@ def main() -> int:
         policy_file.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
         print(f"Created architectural policy: {policy_file}")
 
-    write_workbench_config(uml_dir, server_url=args.server_url)
-    print(f"Created workbench config: {uml_dir / 'workbench.config.json'}")
+    write_workbench_config(target_config_dir, server_url=args.server_url)
+    print(f"Created workbench config: {target_config_dir / 'workbench.config.json'}")
 
-    update_companion_markdown(target_root / "CLAUDE.md")
-    update_companion_markdown(target_root / "AGENTS.md")
-    print(f"Configured companion guidelines in CLAUDE.md and AGENTS.md")
+    update_companion_markdown(target_root / "CLAUDE.md", server_url=args.server_url)
+    update_companion_markdown(target_root / "AGENTS.md", server_url=args.server_url)
+    print("Configured companion guidelines in CLAUDE.md and AGENTS.md")
 
-    print(f"\nArchlens initialization complete for: {target_root.name}")
+    print(f"\nArchlens configuration complete for: {target_root.name}")
     print(f"Run Archlens or visit {args.server_url}?projectRoot={target_root} to inspect architecture.")
     return 0
 

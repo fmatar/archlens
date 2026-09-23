@@ -214,4 +214,29 @@ class GraphCompilerTest {
     assertEquals("domain", graph.components().get(0).id());
     assertEquals("service", graph.components().get(1).id());
   }
+
+  @Test
+  void testArchlensPolicyPriorityOverLegacyUmlViewer(@TempDir Path tempDir) throws IOException {
+    Path legacyDir = tempDir.resolve(".uml-viewer");
+    Path primaryDir = tempDir.resolve(".archlens");
+    Files.createDirectories(legacyDir);
+    Files.createDirectories(primaryDir);
+
+    Files.writeString(
+        legacyDir.resolve("policy.json"),
+        """
+        {"title": "Legacy Policy", "src": "src", "prefix": "com.test", "hierarchical": true, "levels": []}
+        """);
+
+    Files.writeString(
+        primaryDir.resolve("policy.json"),
+        """
+        {"title": "Primary Archlens Policy", "src": "src", "prefix": "com.test", "hierarchical": true, "levels": []}
+        """);
+
+    GraphCompiler compiler = new GraphCompiler();
+    ArchitecturePolicy policy = compiler.loadPolicy(tempDir.toString());
+    assertNotNull(policy);
+    assertEquals("Primary Archlens Policy", policy.title());
+  }
 }

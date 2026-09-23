@@ -587,13 +587,13 @@
             No Architecture Components Found
           </h3>
           <p class="text-xs text-slate-400 mt-1.5 leading-relaxed">
-            Archlens scanned <code class="px-1.5 py-0.5 bg-slate-800 text-blue-300 rounded font-mono text-[11px]">{diagramStore.projectRoot}</code> but did not identify any classes or packages.
+            Archlens scanned <code class="px-1.5 py-0.5 bg-slate-800 text-blue-300 rounded font-mono text-[11px]">{diagramStore.projectRoot}</code> yet did not identify any classes or packages.
           </p>
         </div>
         <div class="p-3 bg-slate-800/50 rounded-lg text-left text-xs text-slate-300 space-y-1 font-mono text-[11px]">
           <div class="text-slate-400 font-sans font-medium text-[11px] mb-1">Common causes:</div>
           <div>• Source files located in nested modules</div>
-          <div>• Missing <span class="text-blue-300">.uml-viewer/policy.json</span></div>
+          <div>• Missing <span class="text-blue-300">.archlens/policy.json</span></div>
           <div>• Unsupported language or non-standard layout</div>
         </div>
         <div class="flex items-center justify-center gap-3 pt-2">

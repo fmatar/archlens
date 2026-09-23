@@ -21,10 +21,10 @@ ${COMPANION_PROTOCOL_HEADER}
 
 This project is governed by the **Archlens Dynamic Clean Architecture Workbench**.
 - **Workbench UI & API**: \`${serverUrl}\`
-- **Architectural Policy**: \`.uml-viewer/policy.json\`
+- **Architectural Policy**: \`.archlens/policy.json\`
 - **Mailbox IPC**:
-  - Inbound queue: \`.uml-viewer/to-agent.json\`
-  - Outbound response: \`.uml-viewer/to-viewer.json\`
+  - Inbound queue: \`.archlens/to-agent.json\`
+  - Outbound response: \`.archlens/to-viewer.json\`
 
 ### Handling Mailbox Commands:
 1. **REGEN**: Re-index AST, evaluate package dependency rules, and acknowledge.
@@ -43,15 +43,28 @@ export function installLocalPolicy(projectRoot, options = {}) {
     throw new Error(`Target directory does not exist: ${root}`);
   }
 
-  const umlDir = path.join(root, '.uml-viewer');
-  const policyFile = path.join(umlDir, 'policy.json');
-  const configFile = path.join(umlDir, 'workbench.config.json');
+  const primaryDir = path.join(root, '.archlens');
+  const legacyDir = path.join(root, '.uml-viewer');
+
+  const primaryPolicyFile = path.join(primaryDir, 'policy.json');
+  const legacyPolicyFile = path.join(legacyDir, 'policy.json');
+
+  let targetDir = primaryDir;
+  let policyFile = primaryPolicyFile;
+
+  // Honor legacy directory if present and primary does not exist yet
+  if (!fs.existsSync(primaryPolicyFile) && fs.existsSync(legacyPolicyFile)) {
+    targetDir = legacyDir;
+    policyFile = legacyPolicyFile;
+  }
+
+  const configFile = path.join(targetDir, 'workbench.config.json');
 
   let policyCreated = false;
   let policyData = null;
 
-  if (!dryRun && !fs.existsSync(umlDir)) {
-    fs.mkdirSync(umlDir, { recursive: true });
+  if (!dryRun && !fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
   }
 
   if (fs.existsSync(policyFile) && !force) {
@@ -100,7 +113,8 @@ export function installLocalPolicy(projectRoot, options = {}) {
 
   return {
     targetDir: root,
-    umlDir,
+    archlensDir: targetDir,
+    umlDir: targetDir,
     policyFile,
     configFile,
     policyCreated,

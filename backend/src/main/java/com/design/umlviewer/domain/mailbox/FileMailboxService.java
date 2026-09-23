@@ -15,18 +15,33 @@ import java.util.Map;
 public class FileMailboxService {
 
   private final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-  private static final String MAILBOX_DIR = ".uml-viewer";
+  private static final String PRIMARY_MAILBOX_DIR = ".archlens";
+  private static final String LEGACY_MAILBOX_DIR = ".uml-viewer";
   private static final String TO_AGENT = "to-agent.json";
   private static final String TO_VIEWER = "to-viewer.json";
 
   private File getFile(String projectRoot, String fileName) {
     File dir;
     if (projectRoot != null && !projectRoot.isBlank()) {
-      dir = new File(projectRoot, MAILBOX_DIR);
-    } else if (new File(MAILBOX_DIR).exists()) {
-      dir = new File(MAILBOX_DIR);
+      File primary = new File(projectRoot, PRIMARY_MAILBOX_DIR);
+      File legacy = new File(projectRoot, LEGACY_MAILBOX_DIR);
+      if (primary.exists()) {
+        dir = primary;
+      } else if (legacy.exists()) {
+        dir = legacy;
+      } else {
+        dir = primary;
+      }
+    } else if (new File(PRIMARY_MAILBOX_DIR).exists()) {
+      dir = new File(PRIMARY_MAILBOX_DIR);
+    } else if (new File(LEGACY_MAILBOX_DIR).exists()) {
+      dir = new File(LEGACY_MAILBOX_DIR);
+    } else if (new File("../" + PRIMARY_MAILBOX_DIR).exists()) {
+      dir = new File("../" + PRIMARY_MAILBOX_DIR);
+    } else if (new File("../" + LEGACY_MAILBOX_DIR).exists()) {
+      dir = new File("../" + LEGACY_MAILBOX_DIR);
     } else {
-      dir = new File("../" + MAILBOX_DIR);
+      dir = new File(PRIMARY_MAILBOX_DIR);
     }
     if (!dir.exists()) {
       try {

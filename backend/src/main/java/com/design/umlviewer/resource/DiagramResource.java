@@ -28,13 +28,35 @@ public class DiagramResource {
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  private String normalizeRoot(String root) {
+  private boolean isContainerEnvironment() {
+    boolean isExplicitTest = System.getProperty("archlens.container.workspace") != null;
+    boolean isContainerRuntime =
+        new File("/work/quarkus-run.jar").exists() || new File("/.dockerenv").exists();
+    return isExplicitTest || isContainerRuntime || !new File(".", "pom.xml").exists();
+  }
+
+  String normalizeRoot(String root) {
     if (root == null || root.isBlank()) {
       return DEFAULT_PROJECT_ROOT;
     }
     String normalized = root.trim();
     String userHome = System.getProperty("user.home", "");
     String labsPath = userHome + "/workspace/labs";
+    String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
+    File containerWorkspace = new File(containerPath);
+    if (normalized.equals(".")
+        && isContainerEnvironment()
+        && containerWorkspace.exists()
+        && containerWorkspace.isDirectory()) {
+      File[] contents = containerWorkspace.listFiles();
+      if (contents != null && contents.length > 0) {
+        try {
+          return containerWorkspace.getCanonicalPath();
+        } catch (IOException e) {
+          return containerWorkspace.getAbsolutePath();
+        }
+      }
+    }
     if (normalized.equals(".")
         && !new File(".", "pom.xml").exists()
         && new File(labsPath, "archlens/pom.xml").exists()) {
@@ -135,12 +157,24 @@ public class DiagramResource {
   @GET
   @Path("/fs/directories")
   public Map<String, Object> listDirectories(@QueryParam("path") String rawPath) {
+    String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
+    File containerWorkspace = new File(containerPath);
     File targetDir;
     if (rawPath == null || rawPath.isBlank() || rawPath.trim().equals(".")) {
-      try {
-        targetDir = new File(".").getCanonicalFile();
-      } catch (IOException e) {
-        targetDir = new File(".").getAbsoluteFile();
+      if (isContainerEnvironment()
+          && containerWorkspace.exists()
+          && containerWorkspace.isDirectory()) {
+        try {
+          targetDir = containerWorkspace.getCanonicalFile();
+        } catch (IOException e) {
+          targetDir = containerWorkspace.getAbsoluteFile();
+        }
+      } else {
+        try {
+          targetDir = new File(".").getCanonicalFile();
+        } catch (IOException e) {
+          targetDir = new File(".").getAbsoluteFile();
+        }
       }
     } else {
       String expanded = rawPath.trim();
@@ -196,6 +230,17 @@ public class DiagramResource {
               "icon",
               "briefcase"));
     } catch (IOException ignored) {
+    }
+
+    if (containerWorkspace.exists() && containerWorkspace.isDirectory()) {
+      String resolvedWorkspacePath;
+      try {
+        resolvedWorkspacePath = containerWorkspace.getCanonicalPath();
+      } catch (IOException e) {
+        resolvedWorkspacePath = containerWorkspace.getAbsolutePath();
+      }
+      quickNav.add(
+          Map.of("name", "Mounted Workspace", "path", resolvedWorkspacePath, "icon", "folder-git"));
     }
 
     File workspaceLabs = new File(userHome, "workspace/labs");
@@ -306,7 +351,10 @@ public class DiagramResource {
         return Map.of("success", false, "error", e.getMessage());
       }
     }
-    return Map.of("success", false, "supported", false);
+    String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
+    File containerWorkspace = new File(containerPath);
+    String reason = containerWorkspace.exists() ? "container" : "unsupported_os";
+    return Map.of("success", false, "supported", false, "reason", reason);
   }
 
   @GET

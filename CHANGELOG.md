@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Adaptive Container Browsing & Path Auto-Population in Docker Mode (Closes #72)**:
+  - Exposed `isContainer` and `nativePickerSupported` capability flags in `GET /api/fs/directories` response in `DiagramResource.java`.
+  - Added `OpenProjectModal.svelte` auto-population: automatically initializes `inputPath` with active container directory (`/workspace`) on load, enabling immediate one-click opening.
+  - Adapted browse action button to **"Browse Folders"** in container runtimes, automatically opening, focusing, and highlighting the in-app directory explorer.
+  - Added dedicated **Docker Container Filesystem** guidance card explaining mounted volumes and host volume mounting instructions.
+  - Added directory row hover action allowing any folder in the explorer to be opened with one click.
+  - Added Vitest component tests in `OpenProjectModal.test.ts` validating container adaptation and path auto-initialization.
 - **Docker Workspace Container Auto-Detection & Navigation (Closes #70)**:
   - Enabled automatic project root resolution to `/workspace` in `DiagramResource.java` when running inside containerized runtimes and no local project descriptor exists at `.`.
   - Added dedicated **Mounted Workspace** (`/workspace`) shortcut in directory explorer quick navigation bar.

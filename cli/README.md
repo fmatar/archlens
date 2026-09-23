@@ -6,7 +6,7 @@
 
 Zero-dependency CLI, policy scaffolder, and multi-agent skill installer for the **[Archlens Dynamic Clean Architecture Workbench](https://github.com/fmatar/archlens)**.
 
-Analyzes any project repository, detects programming languages and package hierarchies, classifies packages into concentric Clean Architecture tiers, scaffolds `.uml-viewer/policy.json`, and equips AI coding assistants (Claude Code, Gemini CLI, Google Antigravity) with mailbox refactoring protocols.
+Analyzes any project repository, detects programming languages and package hierarchies, classifies packages into concentric Clean Architecture tiers, scaffolds `.archlens/policy.json`, and equips AI coding assistants (Claude Code, Gemini CLI, Google Antigravity) with mailbox refactoring protocols.
 
 ---
 
@@ -39,6 +39,7 @@ archlens-skill
   - **Level 3 (Infrastructure)**: `infrastructure`, `config`, `db`, `web`, `server`, `client`
 - **Multi-Agent Skill Deployment**: Installs the `archlens-install-policy` skill globally into Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
 - **Safe Incremental Updates**: Re-scans codebases for newly introduced packages, updating `order` and `levels` while preserving user custom rules and configurations.
+- **Seamless Upgrade Migration**: Automatically migrates legacy `.uml-viewer/` folders and companion files to modern `.archlens/` via `archlens-skill upgrade`.
 - **Mailbox Protocol Integration**: Injects the Clean Architecture Companion Protocol into `CLAUDE.md` and `AGENTS.md` for seamless asynchronous mailbox refactoring (`to-agent.json`, `to-viewer.json`).
 
 ---
@@ -71,9 +72,15 @@ npx @fmatar/archlens-skill global
 ```
 
 #### 4. Synchronize Existing Policy
-Re-scans code after adding new modules or packages to incorporate them into `.uml-viewer/policy.json`:
+Re-scans code after adding new modules or packages to incorporate them into `.archlens/policy.json`:
 ```bash
 npx @fmatar/archlens-skill update
+```
+
+#### 5. Upgrade Legacy Configuration
+Migrates older `.uml-viewer/` directories and companions to the standard `.archlens/` layout:
+```bash
+npx @fmatar/archlens-skill upgrade
 ```
 
 ---
@@ -88,6 +95,7 @@ npx @fmatar/archlens-skill update
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
 | `--global` | `-g` | Install skill into global agent directories | `false` |
 | `--update` | `-u` | Re-scan code and update existing policy | `false` |
+| `--upgrade` | | Migrate legacy `.uml-viewer` to `.archlens` | `false` |
 | `--force` | `-f` | Overwrite existing configuration files | `false` |
 | `--dry-run` | | Simulate execution without writing files | `false` |
 | `--yes` | `-y` | Accept defaults automatically (non-interactive) | `false` |
@@ -102,7 +110,7 @@ Running the installer creates the following governance structure:
 
 ```text
 my-project/
-├── .uml-viewer/
+├── .archlens/
 │   ├── policy.json             # Clean Architecture concentric tiers & rules
 │   └── workbench.config.json   # Workbench endpoint and mailbox IPC configuration
 ├── CLAUDE.md                   # Clean Architecture Mailbox companion protocol

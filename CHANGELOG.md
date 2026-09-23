@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-05] - 2026-09-23
+
+### Fixed
+- **Component Card Header Geometry & Stroke Alignment (Closes #80)**:
+  - Eliminated distorted quadratic Bezier banner path in `ComponentBox.svelte` causing misaligned corners and clipped strokes.
+  - Implemented an SVG `<clipPath>` matching the outer card border radius (`rx="8"`), guaranteeing mathematical precision on all card corners.
+  - Added dedicated 1px horizontal header separator line (`y="30"`), giving component headers a clean, defined bottom boundary.
+  - Layered stroked outer card rect on top with `fill="transparent"` to maintain consistent 1.5px stroke thickness across all edges.
+- **JavaParser Reflection Elimination in Native Image (Closes #78)**:
+  - Configured JavaParser with `LanguageLevel.RAW` in `JavaAstScanner.java`.
+  - Eliminates reflective calls to `PropertyMetaModel.getValue()` from semantic AST validators, resolving `NoSuchFieldError: variables` during native graph compilation.
+- **Quarkus Native Profile Configuration (Closes #76)**:
+  - Corrected native packaging property from `quarkus.package.jar.type` to `quarkus.native.enabled=true` across root `pom.xml` and `backend/pom.xml`.
+  - Resolves `IllegalArgumentException: Cannot convert native to enum class JarType` when executing `mvn package -Pnative`.
+
+### Added
+- **Migration to `.archlens` Configuration Directory & Automated Upgrade Task (Closes #80)**:
+  - Standardized project configuration and mailbox IPC directory from `.uml-viewer/` to `.archlens/`.
+  - Added priority resolution in backend `GraphCompiler.java` and `FileMailboxService.java`, checking `.archlens/` first with fallback to legacy `.uml-viewer/` for seamless backward compatibility.
+  - Implemented automated CLI upgrade task (`archlens-skill upgrade` / `--upgrade`) and `upgrader.js` module migrating legacy directories and updating companion files (`CLAUDE.md`, `AGENTS.md`).
+  - Added `--upgrade` flag to standalone Python initialization script `init_policy.py`.
+  - Updated skills (`SKILL.md`), CLI tests, `docker-compose.yml`, and documentation across the platform.
+- **Recursive Multi-Project Auto-Discovery in Mounted Container Workspaces (Closes #74)**:
+  - Enhanced `listProjects()` in `DiagramResource.java` to recursively scan mounted container workspaces (`/workspace` or configurable via `archlens.container.workspace`).
+  - Added recursive project discovery identifying nested repositories and monorepos (such as `labs/archlens`, `labs/unclebob-design`, `fluo`, `datarobot`) and their immediate submodules (`backend`, `frontend`).
+  - Implemented directory cycle prevention, build folder exclusion (`target`, `node_modules`, `build`, `dist`), and canonical path deduplication.
+  - Automatically populates the top-bar repository switcher, the `⌘K` Command Palette, and modal quick-access chips upon mounting container volumes.
+  - Added unit test suite `testContainerWorkspaceMultiProjectDiscovery` and `testSingleRepoMountedContainerWorkspace` in `DiagramResourceTest.java`.
+- **Adaptive Container Browsing & Path Auto-Population in Docker Mode (Closes #72)**:
+  - Exposed `isContainer` and `nativePickerSupported` capability flags in `GET /api/fs/directories` response in `DiagramResource.java`.
+  - Added `OpenProjectModal.svelte` auto-population: automatically initializes `inputPath` with active container directory (`/workspace`) on load, enabling immediate one-click opening.
+  - Adapted browse action button to **"Browse Folders"** in container runtimes, automatically opening, focusing, and highlighting the in-app directory explorer.
+  - Added dedicated **Docker Container Filesystem** guidance card explaining mounted volumes and host volume mounting instructions.
+  - Added directory row hover action allowing any folder in the explorer to be opened with one click.
+  - Added Vitest component tests in `OpenProjectModal.test.ts` validating container adaptation and path auto-initialization.
+- **Docker Workspace Container Auto-Detection & Navigation (Closes #70)**:
+  - Enabled automatic project root resolution to `/workspace` in `DiagramResource.java` when running inside containerized runtimes and no local project descriptor exists at `.`.
+  - Added dedicated **Mounted Workspace** (`/workspace`) shortcut in directory explorer quick navigation bar.
+  - Added container environment detection and graceful fallback guidance in `OpenProjectModal.svelte`: when native OS dialogs are isolated in headless/container runtimes, an informative banner informs the user and automatically focuses the in-app folder explorer.
+
 ## [0.0.1-Alpha-04] - 2026-09-22
 
 ### Added

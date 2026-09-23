@@ -14,6 +14,7 @@ import * as ui from '../src/ui.js';
 import { detectProjectLanguage, detectSourceRoot, findCommonPackagePrefix } from '../src/analyzer.js';
 import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
+import { upgradeProject } from '../src/upgrader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,7 @@ ${ui.colors.bold}USAGE:${ui.colors.reset}
 ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   init                     Initialize Clean Architecture policy in target project (default)
   update                   Update existing policy with newly discovered packages and refresh skills
+  upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   global                   Install Archlens skills globally for AI coding assistants
 
 ${ui.colors.bold}OPTIONS:${ui.colors.reset}
@@ -50,6 +52,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
+  --upgrade                Upgrade mode: migrate .uml-viewer to .archlens
   -f, --force              Overwrite existing policy files
   --dry-run                Simulate actions without writing files to disk
   -y, --yes                Accept defaults automatically (non-interactive mode)
@@ -62,6 +65,9 @@ ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
 
   ${ui.colors.dim}# Initialize policy in current directory with default settings:${ui.colors.reset}
   npx @fmatar/archlens-skill --yes
+
+  ${ui.colors.dim}# Upgrade legacy .uml-viewer configuration to .archlens:${ui.colors.reset}
+  npx @fmatar/archlens-skill upgrade
 
   ${ui.colors.dim}# Install Archlens skill globally for Claude Code and Gemini CLI:${ui.colors.reset}
   npx @fmatar/archlens-skill global
@@ -80,6 +86,7 @@ function parseArgs(args) {
     serverUrl: 'http://localhost:8088',
     global: false,
     update: false,
+    upgrade: false,
     force: false,
     dryRun: false,
     yes: false,
@@ -100,6 +107,8 @@ function parseArgs(args) {
       parsed.global = true;
     } else if (arg === '--update' || arg === '-u') {
       parsed.update = true;
+    } else if (arg === '--upgrade') {
+      parsed.upgrade = true;
     } else if (arg === '--force' || arg === '-f') {
       parsed.force = true;
     } else if (arg === '--dry-run') {
@@ -121,7 +130,7 @@ function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'update', 'global', 'help', 'version'].includes(cmd)) {
+    if (['init', 'update', 'upgrade', 'global', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -131,6 +140,7 @@ function parseArgs(args) {
   if (parsed.command === 'help') parsed.help = true;
   if (parsed.command === 'version') parsed.version = true;
   if (parsed.command === 'update') parsed.update = true;
+  if (parsed.command === 'upgrade') parsed.upgrade = true;
   if (parsed.command === 'global') parsed.global = true;
 
   return parsed;
@@ -156,7 +166,7 @@ async function runInteractive(options) {
     {
       value: 'init_local',
       label: `${ui.colors.bold}Initialize Archlens Policy locally${ui.colors.reset}`,
-      description: 'Scaffolds .uml-viewer/policy.json and AI companion protocols'
+      description: 'Scaffolds .archlens/policy.json and AI companion protocols'
     },
     {
       value: 'install_global',
@@ -172,6 +182,11 @@ async function runInteractive(options) {
       value: 'update',
       label: `${ui.colors.bold}Update Existing Policy & Skills${ui.colors.reset}`,
       description: 'Re-scans code for new packages and updates installed agent skills'
+    },
+    {
+      value: 'upgrade',
+      label: `${ui.colors.bold}Upgrade Legacy Config (.uml-viewer -> .archlens)${ui.colors.reset}`,
+      description: 'Migrate configuration and mailbox directories to modern .archlens layout'
     }
   ];
 
@@ -201,6 +216,10 @@ async function runInteractive(options) {
 
   if (selectedAction === 'update') {
     executeUpdate(targetRoot, execOptions);
+  }
+
+  if (selectedAction === 'upgrade') {
+    executeUpgrade(targetRoot, execOptions);
   }
 
   printCompletionMessage(targetRoot, execOptions.serverUrl);
@@ -243,6 +262,27 @@ function executeGlobalInstall(options) {
     for (const inst of result.installed) {
       ui.success(`Installed skill for ${inst.agent}: ${inst.path}${modeSuffix}`);
     }
+  }
+}
+
+function executeUpgrade(targetRoot, options) {
+  const modeSuffix = options.dryRun ? ' (dry run)' : '';
+  ui.step(1, 1, `Migrating Configuration to .archlens${modeSuffix}`);
+  const result = upgradeProject(targetRoot, options);
+
+  if (result.migrated) {
+    ui.success(
+      `Migrated legacy directory: ${path.relative(targetRoot, result.legacyDir)} -> ${path.relative(targetRoot, result.primaryDir)}`
+    );
+    if (result.migratedFiles.length > 0) {
+      ui.info(`Files moved: ${result.migratedFiles.join(', ')}`);
+    }
+  } else {
+    ui.info('Project is already aligned with .archlens configuration standard.');
+  }
+
+  if (result.updatedCompanions.length > 0) {
+    ui.success(`Updated companion references in: ${result.updatedCompanions.join(', ')}`);
   }
 }
 
@@ -296,7 +336,8 @@ async function main() {
     !options.dryRun &&
     !options.command &&
     !options.global &&
-    !options.update
+    !options.update &&
+    !options.upgrade
   );
 
   if (isInteractive) {
@@ -313,7 +354,9 @@ async function main() {
   const targetRoot = path.resolve(options.path || '.');
 
   try {
-    if (options.update) {
+    if (options.upgrade) {
+      executeUpgrade(targetRoot, options);
+    } else if (options.update) {
       executeUpdate(targetRoot, options);
     } else if (options.global && !options.command) {
       executeGlobalInstall(options);

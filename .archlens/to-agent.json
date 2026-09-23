@@ -1,0 +1,463 @@
+{
+  "nextId" : 52,
+  "queue" : [ {
+    "id" : 1,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 2,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 3,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 4,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 5,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 6,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : "clean-core"
+    }
+  }, {
+    "id" : 7,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 8,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 9,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 10,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 11,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 12,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 13,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 14,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 15,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 16,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 17,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 18,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 19,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 20,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 21,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 22,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 23,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 24,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 25,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : "clean-core"
+    }
+  }, {
+    "id" : 26,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 27,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 28,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 29,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 30,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 31,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 32,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 33,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 34,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 35,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 36,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 37,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 38,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 39,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 40,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 41,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 42,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 43,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 44,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 45,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 46,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 47,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 48,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 49,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 50,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 51,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  } ]
+}

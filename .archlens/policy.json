@@ -1,0 +1,26 @@
+{
+  "title": "Archlens Workbench",
+  "lang": "java",
+  "src": "backend/src/main/java",
+  "prefix": "com.design.umlviewer",
+  "hierarchical": true,
+  "order": ["domain", "scanner", "engine", "metrics", "mailbox", "resource"],
+  "levels": [
+    ["domain"],
+    ["scanner", "engine", "metrics"],
+    ["mailbox"],
+    ["resource"]
+  ],
+  "proposals": [
+    {
+      "id": "clean-core",
+      "name": "Clean Architecture Standard",
+      "layers": [
+        { "id": "domain", "label": "Level 0: Domain Entities & Rules", "packages": ["domain"] },
+        { "id": "application", "label": "Level 1: Scanners & Graph Engine", "packages": ["scanner", "engine", "metrics"] },
+        { "id": "infrastructure", "label": "Level 2: REST API & Mailbox Adapters", "packages": ["mailbox", "resource"] }
+      ],
+      "omit": []
+    }
+  ]
+}

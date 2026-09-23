@@ -11,5 +11,5 @@ services:
       # Mount entire workspace root so any sibling project can be analyzed dynamically
       - ${WORKSPACE_ROOT:-/Users/fady/workspace}:/workspace:ro
       # Optional read-write mount for active project cache & mailbox queues
-      - ${ACTIVE_PROJECT_CACHE:-/Users/fady/workspace/labs/archlens/.uml-viewer}:/workspace/labs/archlens/.uml-viewer:rw
+      - ${ACTIVE_PROJECT_CACHE:-/Users/fady/workspace/labs/archlens/.archlens}:/workspace/labs/archlens/.archlens:rw
     restart: unless-stopped

@@ -1,0 +1,6 @@
+{
+  "serviceUrl": "http://localhost:8088",
+  "uiUrl": "http://localhost:8088",
+  "mailboxDir": ".uml-viewer",
+  "autoReloadOnAck": true
+}

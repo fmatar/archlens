@@ -37,7 +37,7 @@ We took Uncle Bob's core thesis and engineered a production-grade workbench buil
 3. **Multi-Project Architecture Governance**: Point the workbench at any repository on your machine—from standalone services to large multi-module codebases—to validate architectural boundaries against version-controlled policies.
 4. **Hierarchical Edge Bundling & Spatial Virtualization**: Catmull-Rom spline clustering, viewport frustum culling, and Semantic Macro LOD maintaining 60 FPS performance on complex dependency meshes.
 5. **Tactile Interaction & Loading Telemetry**: Canvas radar scrim, optimistic source modals with code skeleton shimmers, and autonomous agent sonar sweeps during refactoring passes.
-6. **Agent Refactoring Loop**: Agnostic file-based mailbox protocol (`.uml-viewer/`) allowing autonomous AI agents (such as Google Antigravity) to receive refactoring commands, fix violations, run tests, and push hot-reloads to the canvas.
+6. **Agent Refactoring Loop**: Agnostic file-based mailbox protocol (`.archlens/`) allowing autonomous AI agents (such as Google Antigravity) to receive refactoring commands, fix violations, run tests, and push hot-reloads to the canvas.
 7. **Single-Container Deployment**: Fully packaged as an all-in-one container serving both the embedded Svelte 5 SPA and Quarkus REST/SSE backend on port `8088`.
 
 ---
@@ -63,7 +63,7 @@ flowchart LR
 
     subgraph Storage ["Target Project"]
         Code["Source Codebase"]
-        Mailbox["Mailbox IPC<br/>(.uml-viewer/)"]
+        Mailbox["Mailbox IPC<br/>(.archlens/)"]
     end
 
     Agent["AI Agent / Companion<br/>(Antigravity / Cursor)"]
@@ -86,7 +86,7 @@ Switch between local repositories without restarting the server:
 - **Native OS Directory Picker (`Browse...`)**: Launch your operating system's native folder selection dialog (macOS Finder) with a single click.
 - **Interactive Directory Explorer**: Navigate folders visually with clickable breadcrumbs, quick jump bookmarks (`Home`, `Current Workspace`, `Labs`), instant folder filtering, and automatic project framework classification badges (`Maven`, `Gradle`, `Node`, `Java`, `Git`).
 - **Recursive Multi-Module Source Discovery**: Mono-repos and multi-module projects are scanned automatically across all nested module paths (`**/src/main/java`).
-- **Dynamic Package Deduction**: If a project lacks `.uml-viewer/policy.json`, Archlens deduces the common package prefix and project title on-the-fly.
+- **Dynamic Package Deduction**: If a project lacks `.archlens/policy.json` (or `.uml-viewer/policy.json`), Archlens deduces the common package prefix and project title on-the-fly.
 
 ### 2. Hierarchical Edge Bundling (`B`) & Violation X-Ray (`V`)
 Tame dense dependency webs. Edge bundling routes connections along concentric radial paths using smooth Catmull-Rom splines, reducing visual noise. Toggle Violation X-Ray (`V`) to fade compliant dependencies into the background and isolate rule violations in bold crimson.
@@ -147,7 +147,7 @@ npm run dev
 
 ## Enforcing Clean Architecture in Your Projects
 
-You can analyze any repository by placing an architectural policy file at the root of that project: `.uml-viewer/policy.json`.
+You can analyze any repository by placing an architectural policy file at the root of that project: `.archlens/policy.json` (legacy `.uml-viewer/policy.json` files are also supported with backward compatibility).
 
 ### Instant Policy & Skill Installation via NPX (`@fmatar/archlens-skill`)
 
@@ -162,6 +162,9 @@ npx @fmatar/archlens-skill --yes
 
 # Target a specific directory:
 npx @fmatar/archlens-skill --path /path/to/project --yes
+
+# Upgrade an existing repository from .uml-viewer to .archlens:
+npx @fmatar/archlens-skill upgrade
 
 # Deploy the skill globally for Claude Code, Gemini CLI, and Antigravity:
 npx @fmatar/archlens-skill global
@@ -187,15 +190,15 @@ You can install and configure the architectural policy in any codebase automatic
    ```
 
 3. **What It Configures**:
-   - **`.uml-viewer/policy.json`**: Inspects build files (`pom.xml`, `build.gradle`, `package.json`, etc.), computes common package prefixes, and organizes packages into concentric rings:
+   - **`.archlens/policy.json`**: Inspects build files (`pom.xml`, `build.gradle`, `package.json`, etc.), computes common package prefixes, and organizes packages into concentric rings:
      - **Level 0 (Domain Core)**: Entities, domain models, and business logic
      - **Level 1 (Application)**: Use cases, interactor services, and ports
      - **Level 2 (Adapters)**: Controllers, REST endpoints, presenters, and repositories
      - **Level 3 (Infrastructure)**: Databases, frameworks, external drivers, and network clients
-   - **`.uml-viewer/workbench.config.json`**: Configures the local Archlens server endpoint (`http://localhost:8088`).
+   - **`.archlens/workbench.config.json`**: Configures the local Archlens server endpoint (`http://localhost:8088`).
    - **Agent Companion Protocols (`CLAUDE.md` & `AGENTS.md`)**: Configures Claude Code, Gemini, and Antigravity to process refactoring mailbox tasks (`REGEN`, `APPLY_PROPOSAL`, `REFRESH_CRAP`) and enforce inward dependency rules.
 
-### Manual Configuration Example (`.uml-viewer/policy.json`)
+### Manual Configuration Example (`.archlens/policy.json`)
 
 ```json
 {
@@ -247,9 +250,9 @@ Archlens provides full bidirectional integration with autonomous coding assistan
 - **Claude Code**: Guidelines and mailbox protocol defined in [`CLAUDE.md`](CLAUDE.md).
 - **Google Antigravity & Gemini**: Companion skills located in [`.agents/skills/uml-workbench-companion/SKILL.md`](.agents/skills/uml-workbench-companion/SKILL.md) and [`skills/archlens-install-policy/SKILL.md`](skills/archlens-install-policy/SKILL.md).
 
-### Mailbox Protocol (`.uml-viewer/`)
+### Mailbox Protocol (`.archlens/`)
 When you click **Regen (Wake Agent)** in the UI:
-1. The workbench posts a command to `.uml-viewer/to-agent.json`.
+1. The workbench posts a command to `.archlens/to-agent.json`.
 2. The AI agent evaluates red dependency violations, refactors code (e.g. introducing interfaces or applying the Dependency Inversion Principle), runs unit tests, and signals the viewer.
 3. The UI automatically hot-reloads the new architecture diagram.
 

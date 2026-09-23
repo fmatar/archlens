@@ -64,10 +64,29 @@ class FileMailboxServiceTest {
     assertEquals(1, viewerBox.nextId());
 
     // 7. Verify handling of corrupted JSON file (triggers catch block)
-    File corruptedFile = new File(new File(root, ".uml-viewer"), "to-agent.json");
+    File corruptedFile = new File(new File(root, ".archlens"), "to-agent.json");
     java.nio.file.Files.writeString(corruptedFile.toPath(), "invalid-non-json-content");
     MailboxEnvelope recovered = service.readMailbox(root, true);
     assertEquals(1, recovered.nextId());
     assertTrue(recovered.queue().isEmpty());
+  }
+
+  @Test
+  void testLegacyUmlViewerMailboxFallback(@TempDir Path tempDir) throws IOException {
+    String root = tempDir.toString();
+    File legacyDir = new File(root, ".uml-viewer");
+    java.nio.file.Files.createDirectories(legacyDir.toPath());
+
+    // When .uml-viewer exists, operations should target .uml-viewer
+    MailboxEnvelope.MailboxCommand cmd =
+        service.appendCommand(root, true, "REGEN", Map.of(), Map.of());
+    assertEquals(1, cmd.id());
+
+    File legacyFile = new File(legacyDir, "to-agent.json");
+    assertTrue(legacyFile.exists());
+
+    MailboxEnvelope envelope = service.readMailbox(root, true);
+    assertEquals(2, envelope.nextId());
+    assertEquals(1, envelope.queue().size());
   }
 }

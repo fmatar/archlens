@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.slixes</groupId>
     <artifactId>archlens</artifactId>
-    <version>0.0.1-Alpha-04</version>
+    <version>0.0.1-Alpha-05</version>
     <packaging>pom</packaging>
     <name>Archlens — Clean Architecture Dynamic Workbench :: Parent</name>
 
@@ -187,7 +187,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.jar.type>native</quarkus.package.jar.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
 

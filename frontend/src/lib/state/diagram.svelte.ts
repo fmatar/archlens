@@ -41,7 +41,7 @@ class DiagramState {
       id: 'init-1',
       timestamp: '00:01:15',
       type: 'INFO',
-      message: 'Archlens IPC mailbox initialized at .uml-viewer/',
+      message: 'Archlens IPC mailbox initialized at .archlens/',
       details: 'Watching to-agent.json and to-viewer.json'
     },
     {
@@ -225,7 +225,7 @@ class DiagramState {
   async triggerRegen() {
     this.isRegenerating = true;
     this.regenNotice = "Agent notified: updating policy & recalculating graph...";
-    this.addTelemetryEvent('TASK', 'Dispatched refactoring directive to .uml-viewer/to-agent.json', 'Target: AST scan & Clean Architecture validation');
+    this.addTelemetryEvent('TASK', 'Dispatched refactoring directive to .archlens/to-agent.json', 'Target: AST scan & Clean Architecture validation');
 
     try {
       const params = new URLSearchParams();

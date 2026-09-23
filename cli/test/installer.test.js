@@ -25,7 +25,9 @@ test('installLocalPolicy scaffolds policy and workbench configs', () => {
 
     assert.equal(result.policyCreated, true);
     assert.ok(fs.existsSync(result.policyFile));
+    assert.ok(result.policyFile.endsWith(path.join('.archlens', 'policy.json')));
     assert.ok(fs.existsSync(result.configFile));
+    assert.ok(result.configFile.endsWith(path.join('.archlens', 'workbench.config.json')));
 
     const policy = JSON.parse(fs.readFileSync(result.policyFile, 'utf8'));
     assert.equal(policy.title, 'Test Service');

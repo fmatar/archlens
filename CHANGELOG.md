@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Docker Workspace Container Auto-Detection & Navigation (Closes #70)**:
+  - Enabled automatic project root resolution to `/workspace` in `DiagramResource.java` when running inside containerized runtimes and no local project descriptor exists at `.`.
+  - Added dedicated **Mounted Workspace** (`/workspace`) shortcut in directory explorer quick navigation bar.
+  - Added container environment detection and graceful fallback guidance in `OpenProjectModal.svelte`: when native OS dialogs are isolated in headless/container runtimes, an informative banner informs the user and automatically focuses the in-app folder explorer.
+
 ## [0.0.1-Alpha-04] - 2026-09-22
 
 ### Added

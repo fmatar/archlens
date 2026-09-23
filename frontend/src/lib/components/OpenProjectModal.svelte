@@ -14,7 +14,8 @@
     Home,
     ChevronRight,
     CornerLeftUp,
-    RefreshCw
+    RefreshCw,
+    Info
   } from '@lucide/svelte';
 
   interface Breadcrumb {
@@ -46,6 +47,7 @@
 
   let inputPath = $state('');
   let validationError = $state<string | null>(null);
+  let containerNotice = $state<string | null>(null);
   let isTesting = $state(false);
 
   // Directory explorer state
@@ -76,6 +78,7 @@
         const initial = diagramStore.projectRoot === '.' ? '' : diagramStore.projectRoot;
         inputPath = initial;
         validationError = null;
+        containerNotice = null;
         loadDirectories(initial || undefined);
       });
     } else if (!isOpen) {
@@ -86,6 +89,7 @@
   function close() {
     diagramStore.isOpenProjectModalOpen = false;
     validationError = null;
+    containerNotice = null;
     folderFilter = '';
   }
 
@@ -118,6 +122,7 @@
   async function handleNativePickDirectory() {
     isNativePickerLoading = true;
     validationError = null;
+    containerNotice = null;
     try {
       const res = await fetch('/api/fs/pick-directory', { method: 'POST' });
       if (res.ok) {
@@ -125,6 +130,20 @@
         if (data.success && data.path) {
           inputPath = data.path;
           await loadDirectories(data.path);
+          return;
+        }
+        if (data.supported === false) {
+          if (data.reason === 'container' || data.reason === 'headless') {
+            containerNotice =
+              'Host OS folder picker is isolated inside container environments. Use the in-app folder explorer below.';
+          } else {
+            containerNotice =
+              'Native OS folder picker is not supported on this platform. Use the in-app folder explorer below.';
+          }
+          isExplorerOpen = true;
+          if (fsCurrentPath) {
+            await loadDirectories(fsCurrentPath);
+          }
           return;
         }
         if (data.error) {
@@ -253,7 +272,11 @@
                 id="project-path-input"
                 type="text"
                 bind:value={inputPath}
-                placeholder="e.g. ~/workspace/project or /path/to/repo"
+                oninput={() => {
+                  validationError = null;
+                  containerNotice = null;
+                }}
+                placeholder="e.g. /workspace or ~/workspace/project"
                 class="w-full bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-lg px-3.5 py-2 text-xs font-mono text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors select-text"
                 autocomplete="off"
                 spellcheck="false"
@@ -300,9 +323,16 @@
             </button>
           </div>
           <p class="text-[11px] text-slate-500 mt-1">
-            Tip: Click <code class="font-mono text-slate-400">Browse...</code> to pick a folder in Finder, or navigate below.
+            Tip: Use <code class="font-mono text-slate-400">Browse...</code> or navigate via the folder explorer below.
           </p>
         </div>
+
+        {#if containerNotice}
+          <div class="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-start gap-2 animate-in fade-in duration-100">
+            <Info size={15} class="shrink-0 text-blue-400 mt-0.5" />
+            <span>{containerNotice}</span>
+          </div>
+        {/if}
 
         {#if validationError}
           <div class="p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2 animate-in fade-in duration-100">
@@ -329,6 +359,8 @@
                   >
                     {#if nav.name === 'Home'}
                       <Home size={10} class="text-blue-400" />
+                    {:else if nav.name === 'Mounted Workspace'}
+                      <FolderTree size={10} class="text-emerald-400" />
                     {:else}
                       <Folder size={10} class="text-amber-400" />
                     {/if}

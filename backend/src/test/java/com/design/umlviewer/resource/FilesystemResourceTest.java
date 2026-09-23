@@ -123,4 +123,55 @@ class FilesystemResourceTest {
       System.clearProperty("test.headless");
     }
   }
+
+  @Test
+  void testContainerWorkspaceDetection(@TempDir Path tempDir) throws IOException {
+    Path projectFile = tempDir.resolve("pom.xml");
+    Files.writeString(projectFile, "<project></project>");
+
+    System.setProperty("archlens.container.workspace", tempDir.toString());
+    try {
+      DiagramResource resource = new DiagramResource();
+
+      // Test normalizeRoot defaults to container workspace
+      String resolved = resource.normalizeRoot(".");
+      assertEquals(tempDir.toRealPath().toString(), resolved);
+
+      // Test listDirectories defaults to container workspace
+      Map<String, Object> result = resource.listDirectories(null);
+      assertNotNull(result);
+      assertEquals(tempDir.toRealPath().toString(), result.get("currentPath"));
+
+      // Verify quickNav contains Mounted Workspace
+      @SuppressWarnings("unchecked")
+      List<Map<String, String>> quickNav = (List<Map<String, String>>) result.get("quickNav");
+      assertNotNull(quickNav);
+      Map<String, String> workspaceNav =
+          quickNav.stream()
+              .filter(n -> "Mounted Workspace".equals(n.get("name")))
+              .findFirst()
+              .orElseThrow();
+      assertEquals(tempDir.toRealPath().toString(), workspaceNav.get("path"));
+    } finally {
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
+
+  @Test
+  void testPickDirectoryContainerReason(@TempDir Path tempDir) {
+    String originalOs = System.getProperty("os.name");
+    System.setProperty("archlens.container.workspace", tempDir.toString());
+    System.setProperty("os.name", "Linux");
+    try {
+      DiagramResource resource = new DiagramResource();
+      Map<String, Object> response = resource.pickDirectory();
+      assertNotNull(response);
+      assertFalse((Boolean) response.get("success"));
+      assertFalse((Boolean) response.get("supported"));
+      assertEquals("container", response.get("reason"));
+    } finally {
+      System.setProperty("os.name", originalOs);
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
 }

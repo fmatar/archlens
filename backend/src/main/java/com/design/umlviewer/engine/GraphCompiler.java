@@ -67,7 +67,7 @@ public class GraphCompiler {
 
   public ArchitecturePolicy loadPolicy(String projectRoot) {
     File policyFile = resolvePolicyFile(projectRoot);
-    if (policyFile != null && policyFile.exists()) {
+    if (policyFile.exists()) {
       try {
         return mapper.readValue(policyFile, ArchitecturePolicy.class);
       } catch (Exception e) {

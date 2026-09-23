@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Quarkus Native Profile Configuration (Closes #76)**:
+  - Corrected native packaging property from `quarkus.package.jar.type` to `quarkus.native.enabled=true` across root `pom.xml` and `backend/pom.xml`.
+  - Resolves `IllegalArgumentException: Cannot convert native to enum class JarType` when executing `mvn package -Pnative`.
+
 ### Added
 - **Recursive Multi-Project Auto-Discovery in Mounted Container Workspaces (Closes #74)**:
   - Enhanced `listProjects()` in `DiagramResource.java` to recursively scan mounted container workspaces (`/workspace` or configurable via `archlens.container.workspace`).

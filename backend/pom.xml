@@ -271,7 +271,7 @@
                 </property>
             </activation>
             <properties>
-                <quarkus.package.jar.type>native</quarkus.package.jar.type>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
             </properties>
         </profile>
     </profiles>

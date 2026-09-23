@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Component Card Header Geometry & Stroke Alignment (Closes #80)**:
+  - Eliminated distorted quadratic Bezier banner path in `ComponentBox.svelte` causing misaligned corners and clipped strokes.
+  - Implemented an SVG `<clipPath>` matching the outer card border radius (`rx="8"`), guaranteeing mathematical precision on all card corners.
+  - Added dedicated 1px horizontal header separator line (`y="30"`), giving component headers a clean, defined bottom boundary.
+  - Layered stroked outer card rect on top with `fill="transparent"` to maintain consistent 1.5px stroke thickness across all edges.
 - **JavaParser Reflection Elimination in Native Image (Closes #78)**:
   - Configured JavaParser with `LanguageLevel.RAW` in `JavaAstScanner.java`.
   - Eliminates reflective calls to `PropertyMetaModel.getValue()` from semantic AST validators, resolving `NoSuchFieldError: variables` during native graph compilation.
@@ -18,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resolves `IllegalArgumentException: Cannot convert native to enum class JarType` when executing `mvn package -Pnative`.
 
 ### Added
+- **Migration to `.archlens` Configuration Directory & Automated Upgrade Task (Closes #80)**:
+  - Standardized project configuration and mailbox IPC directory from `.uml-viewer/` to `.archlens/`.
+  - Added priority resolution in backend `GraphCompiler.java` and `FileMailboxService.java`, checking `.archlens/` first with fallback to legacy `.uml-viewer/` for seamless backward compatibility.
+  - Implemented automated CLI upgrade task (`archlens-skill upgrade` / `--upgrade`) and `upgrader.js` module migrating legacy directories and updating companion files (`CLAUDE.md`, `AGENTS.md`).
+  - Added `--upgrade` flag to standalone Python initialization script `init_policy.py`.
+  - Updated skills (`SKILL.md`), CLI tests, `docker-compose.yml`, and documentation across the platform.
 - **Recursive Multi-Project Auto-Discovery in Mounted Container Workspaces (Closes #74)**:
   - Enhanced `listProjects()` in `DiagramResource.java` to recursively scan mounted container workspaces (`/workspace` or configurable via `archlens.container.workspace`).
   - Added recursive project discovery identifying nested repositories and monorepos (such as `labs/archlens`, `labs/unclebob-design`, `fluo`, `datarobot`) and their immediate submodules (`backend`, `frontend`).

@@ -48,7 +48,7 @@
       </div>
       <Terminal size={14} class="text-blue-400" />
       <span class="font-bold text-slate-100">Agent Mailbox Telemetry</span>
-      <span class="text-[10px] text-slate-500">(.uml-viewer/ IPC)</span>
+      <span class="text-[10px] text-slate-500">(.archlens/ IPC)</span>
 
       {#if !isOpen && events.length > 0}
         <span class="text-slate-500 mx-2">&bull;</span>

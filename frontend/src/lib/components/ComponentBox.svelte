@@ -98,28 +98,65 @@
     />
   {/if}
 
-  <!-- Outer Box Card Surface (Entire card is draggable) -->
+  <defs>
+    <clipPath id={`card-clip-${component.id}`}>
+      <rect width={width} height={height} rx="8" />
+    </clipPath>
+  </defs>
+
+  <!-- Clipped Card Surface & Header Interior -->
+  <g clip-path={`url(#card-clip-${component.id})`}>
+    <!-- Base Card Fill -->
+    <rect
+      width={width}
+      height={height}
+      class={`fill-slate-800/90 transition-colors ${
+        isDragging ? 'fill-slate-800' : isFocused ? 'fill-slate-800' : ''
+      }`}
+    />
+
+    <!-- Component Header Banner (Clipped cleanly by card-clip for perfect top corners) -->
+    <rect
+      x="0"
+      y="0"
+      width={width}
+      height="30"
+      class={`transition-colors ${
+        isDragging
+          ? 'fill-slate-900 cursor-grabbing'
+          : 'fill-slate-900/95 group-hover:fill-slate-850 cursor-grab'
+      }`}
+      onpointerdown={(e) => {
+        if (e.button === 0) onStartDrag?.(e);
+      }}
+    />
+
+    <!-- Header Bottom Divider Edge -->
+    <line
+      x1="0"
+      y1="30"
+      x2={width}
+      y2="30"
+      class="stroke-slate-700/80"
+      stroke-width="1"
+    />
+  </g>
+
+  <!-- Outer Box Card Surface (Drawn on top with pointer-events="all" for crisp, unbroken edges and dragging) -->
   <rect
     data-testid="component-card"
     width={width}
     height={height}
     rx="8"
-    class={`fill-slate-800/90 transition-colors ${
+    fill="transparent"
+    pointer-events="all"
+    class={`transition-colors ${
       isDragging
-        ? 'stroke-sky-400 stroke-2 fill-slate-800 cursor-grabbing'
+        ? 'stroke-sky-400 stroke-2 cursor-grabbing'
         : isFocused
-          ? 'stroke-blue-400 stroke-2 fill-slate-800 cursor-grab'
+          ? 'stroke-blue-400 stroke-2 cursor-grab'
           : 'stroke-slate-600 group-hover:stroke-blue-400 stroke-[1.5] cursor-grab'
     }`}
-    onpointerdown={(e) => {
-      if (e.button === 0) onStartDrag?.(e);
-    }}
-  />
-
-  <!-- Component Title Banner -->
-  <path
-    d={`M 0 8 Q 0 0 8 0 L ${width - 8} 0 Q ${width} 0 ${width} 8 L ${width} 28 L 0 28 Z`}
-    class={`transition-colors ${isDragging ? 'fill-slate-900 cursor-grabbing' : 'fill-slate-900/90 group-hover:fill-slate-850 cursor-grab'}`}
     onpointerdown={(e) => {
       if (e.button === 0) onStartDrag?.(e);
     }}
@@ -141,11 +178,11 @@
     x={width - 64}
     y="6"
     width="52"
-    height="16"
+    height="18"
     rx="4"
-    class="fill-slate-700/90 cursor-grab pointer-events-none"
+    class="fill-slate-800/90 stroke-slate-700/70 stroke-[0.75] cursor-grab pointer-events-none"
   />
-  <text x={width - 38} y="18" text-anchor="middle" class="fill-slate-300 font-mono text-[10px] font-medium pointer-events-none select-none">
+  <text x={width - 38} y="19" text-anchor="middle" class="fill-slate-300 font-mono text-[10px] font-medium pointer-events-none select-none">
     {rankBadge}
   </text>
 

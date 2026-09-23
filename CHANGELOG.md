@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Recursive Multi-Project Auto-Discovery in Mounted Container Workspaces (Closes #74)**:
+  - Enhanced `listProjects()` in `DiagramResource.java` to recursively scan mounted container workspaces (`/workspace` or configurable via `archlens.container.workspace`).
+  - Added recursive project discovery identifying nested repositories and monorepos (such as `labs/archlens`, `labs/unclebob-design`, `fluo`, `datarobot`) and their immediate submodules (`backend`, `frontend`).
+  - Implemented directory cycle prevention, build folder exclusion (`target`, `node_modules`, `build`, `dist`), and canonical path deduplication.
+  - Automatically populates the top-bar repository switcher, the `⌘K` Command Palette, and modal quick-access chips upon mounting container volumes.
+  - Added unit test suite `testContainerWorkspaceMultiProjectDiscovery` and `testSingleRepoMountedContainerWorkspace` in `DiagramResourceTest.java`.
 - **Adaptive Container Browsing & Path Auto-Population in Docker Mode (Closes #72)**:
   - Exposed `isContainer` and `nativePickerSupported` capability flags in `GET /api/fs/directories` response in `DiagramResource.java`.
   - Added `OpenProjectModal.svelte` auto-population: automatically initializes `inputPath` with active container directory (`/workspace`) on load, enabling immediate one-click opening.

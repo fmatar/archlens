@@ -124,4 +124,105 @@ class DiagramResourceTest {
       System.clearProperty("test.headless");
     }
   }
+
+  @Test
+  void testContainerWorkspaceMultiProjectDiscovery(@TempDir Path tempDir) throws IOException {
+    DiagramResource resource = new DiagramResource();
+
+    Path workspaceDir = tempDir.resolve("workspace");
+    Files.createDirectories(workspaceDir);
+
+    // Create root-level projects
+    Path fluo = workspaceDir.resolve("fluo");
+    Files.createDirectories(fluo);
+    Files.writeString(fluo.resolve("pom.xml"), "<project></project>");
+
+    Path datarobot = workspaceDir.resolve("datarobot");
+    Files.createDirectories(datarobot);
+    Files.writeString(datarobot.resolve("go.mod"), "module datarobot\n");
+
+    // Create nested projects inside labs/
+    Path labs = workspaceDir.resolve("labs");
+    Path archlens = labs.resolve("archlens");
+    Files.createDirectories(archlens);
+    Files.writeString(archlens.resolve("pom.xml"), "<project></project>");
+
+    Path backend = archlens.resolve("backend");
+    Files.createDirectories(backend);
+    Files.writeString(backend.resolve("pom.xml"), "<project></project>");
+
+    Path frontend = archlens.resolve("frontend");
+    Files.createDirectories(frontend);
+    Files.writeString(frontend.resolve("package.json"), "{}");
+
+    Path unclebob = labs.resolve("unclebob-design");
+    Files.createDirectories(unclebob);
+    Files.writeString(unclebob.resolve("package.json"), "{}");
+
+    // Create ignored folder with target/pom.xml and hidden directory
+    Path ignored = workspaceDir.resolve("ignored_dir");
+    Path target = ignored.resolve("target");
+    Files.createDirectories(target);
+    Files.writeString(target.resolve("pom.xml"), "<project></project>");
+
+    Path hidden = workspaceDir.resolve(".hidden_repo");
+    Files.createDirectories(hidden);
+    Files.writeString(hidden.resolve("pom.xml"), "<project></project>");
+
+    System.setProperty("archlens.container.workspace", workspaceDir.toString());
+    try {
+      Map<String, Object> result = resource.listProjects();
+      assertNotNull(result);
+      @SuppressWarnings("unchecked")
+      List<Map<String, String>> discovered = (List<Map<String, String>>) result.get("discovered");
+      assertNotNull(discovered);
+
+      List<String> names = discovered.stream().map(m -> m.get("name")).toList();
+      assertTrue(names.contains("fluo"), "Should discover fluo");
+      assertTrue(names.contains("datarobot"), "Should discover datarobot");
+      assertTrue(names.contains("labs / archlens"), "Should discover nested labs / archlens");
+      assertTrue(names.contains("labs / archlens / backend"), "Should discover submodule backend");
+      assertTrue(
+          names.contains("labs / archlens / frontend"), "Should discover submodule frontend");
+      assertTrue(
+          names.contains("labs / unclebob-design"),
+          "Should discover nested labs / unclebob-design");
+
+      assertFalse(
+          names.stream().anyMatch(n -> n.contains(".hidden")), "Should ignore hidden directories");
+      assertFalse(
+          names.stream().anyMatch(n -> n.contains("ignored_dir / target")),
+          "Should ignore build targets");
+    } finally {
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
+
+  @Test
+  void testSingleRepoMountedContainerWorkspace(@TempDir Path tempDir) throws IOException {
+    DiagramResource resource = new DiagramResource();
+
+    Path repoDir = tempDir.resolve("my-app");
+    Files.createDirectories(repoDir);
+    Files.writeString(repoDir.resolve("pom.xml"), "<project></project>");
+
+    Path coreModule = repoDir.resolve("core");
+    Files.createDirectories(coreModule);
+    Files.writeString(coreModule.resolve("pom.xml"), "<project></project>");
+
+    System.setProperty("archlens.container.workspace", repoDir.toString());
+    try {
+      Map<String, Object> result = resource.listProjects();
+      assertNotNull(result);
+      @SuppressWarnings("unchecked")
+      List<Map<String, String>> discovered = (List<Map<String, String>>) result.get("discovered");
+      assertNotNull(discovered);
+
+      List<String> names = discovered.stream().map(m -> m.get("name")).toList();
+      assertTrue(names.contains("my-app"), "Should discover single repo root");
+      assertTrue(names.contains("my-app / core"), "Should discover submodule in single repo");
+    } finally {
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
 }

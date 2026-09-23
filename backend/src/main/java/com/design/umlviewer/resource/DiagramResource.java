@@ -13,8 +13,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 @Path("/api")
@@ -31,7 +35,9 @@ public class DiagramResource {
   private boolean isContainerEnvironment() {
     boolean isExplicitTest = System.getProperty("archlens.container.workspace") != null;
     boolean isContainerRuntime =
-        new File("/work/quarkus-run.jar").exists() || new File("/.dockerenv").exists();
+        new File("/work/quarkus-run.jar").exists()
+            || new File("/work/application").exists()
+            || new File("/.dockerenv").exists();
     return isExplicitTest || isContainerRuntime || !new File(".", "pom.xml").exists();
   }
 
@@ -83,6 +89,146 @@ public class DiagramResource {
     return normalized;
   }
 
+  private boolean isProjectDirectory(File dir) {
+    if (dir == null || !dir.isDirectory()) {
+      return false;
+    }
+    return new File(dir, "pom.xml").exists()
+        || new File(dir, "package.json").exists()
+        || new File(dir, "go.mod").exists()
+        || new File(dir, "Cargo.toml").exists()
+        || new File(dir, "deps.edn").exists()
+        || new File(dir, "build.gradle").exists()
+        || new File(dir, "build.gradle.kts").exists()
+        || new File(dir, "pyproject.toml").exists()
+        || new File(dir, ".git").exists()
+        || new File(dir, "src").exists();
+  }
+
+  private boolean isIgnoredDirectory(File dir) {
+    if (dir == null) {
+      return true;
+    }
+    String name = dir.getName();
+    if (name.startsWith(".")) {
+      return true;
+    }
+    return name.equals("target")
+        || name.equals("node_modules")
+        || name.equals("build")
+        || name.equals("dist")
+        || name.equals("out")
+        || name.equals("vendor")
+        || name.equals("bin")
+        || name.equals("obj");
+  }
+
+  private boolean isSubProjectDirectory(File dir) {
+    if (dir == null || !dir.isDirectory()) {
+      return false;
+    }
+    String name = dir.getName();
+    if (isIgnoredDirectory(dir)
+        || name.equals("src")
+        || name.equals("test")
+        || name.equals("tests")
+        || name.equals("docs")
+        || name.equals("assets")
+        || name.equals("public")) {
+      return false;
+    }
+    return new File(dir, "pom.xml").exists()
+        || new File(dir, "package.json").exists()
+        || new File(dir, "go.mod").exists()
+        || new File(dir, "Cargo.toml").exists()
+        || new File(dir, "deps.edn").exists()
+        || new File(dir, "build.gradle").exists()
+        || new File(dir, "build.gradle.kts").exists()
+        || new File(dir, "src/main/java").exists()
+        || new File(dir, "src/main").exists();
+  }
+
+  private void addDiscoveredProject(
+      File dir, String displayName, List<Map<String, String>> discovered, Set<String> seenPaths) {
+    try {
+      String canonical = dir.getCanonicalPath();
+      if (seenPaths.add(canonical)) {
+        discovered.add(Map.of("name", displayName, "path", canonical));
+      }
+    } catch (IOException e) {
+      String abs = dir.getAbsolutePath();
+      if (seenPaths.add(abs)) {
+        discovered.add(Map.of("name", displayName, "path", abs));
+      }
+    }
+  }
+
+  private void registerSubProjects(
+      File projectDir,
+      String projectDisplayName,
+      List<Map<String, String>> discovered,
+      Set<String> seenPaths) {
+    File[] subFiles = projectDir.listFiles();
+    if (subFiles == null) {
+      return;
+    }
+    java.util.Arrays.sort(subFiles, java.util.Comparator.comparing(File::getName));
+    for (File sub : subFiles) {
+      if (isSubProjectDirectory(sub)) {
+        addDiscoveredProject(
+            sub, projectDisplayName + " / " + sub.getName(), discovered, seenPaths);
+      }
+    }
+  }
+
+  private void scanDirectoryForProjects(
+      File dir,
+      String displayPrefix,
+      List<Map<String, String>> discovered,
+      Set<String> seenPaths,
+      Set<String> visitedDirs,
+      int depthRemaining) {
+    if (dir == null || !dir.exists() || !dir.isDirectory() || depthRemaining < 0) {
+      return;
+    }
+
+    String canonicalPath;
+    try {
+      canonicalPath = dir.getCanonicalPath();
+    } catch (IOException e) {
+      canonicalPath = dir.getAbsolutePath();
+    }
+    if (!visitedDirs.add(canonicalPath)) {
+      return;
+    }
+
+    boolean isProject = isProjectDirectory(dir);
+    if (isProject) {
+      String displayName = displayPrefix.isEmpty() ? dir.getName() : displayPrefix;
+      addDiscoveredProject(dir, displayName, discovered, seenPaths);
+      registerSubProjects(dir, displayName, discovered, seenPaths);
+      return;
+    }
+
+    if (depthRemaining == 0) {
+      return;
+    }
+
+    File[] children = dir.listFiles();
+    if (children == null) {
+      return;
+    }
+    java.util.Arrays.sort(children, java.util.Comparator.comparing(File::getName));
+    for (File child : children) {
+      if (child.isDirectory() && !isIgnoredDirectory(child)) {
+        String nextPrefix =
+            displayPrefix.isEmpty() ? child.getName() : displayPrefix + " / " + child.getName();
+        scanDirectoryForProjects(
+            child, nextPrefix, discovered, seenPaths, visitedDirs, depthRemaining - 1);
+      }
+    }
+  }
+
   @GET
   @Path("/projects")
   public Map<String, Object> listProjects() {
@@ -96,57 +242,39 @@ public class DiagramResource {
 
     Map<String, String> current = Map.of("name", currentName + " (Active Workspace)", "path", ".");
 
-    java.util.List<Map<String, String>> discovered = new java.util.ArrayList<>();
+    List<Map<String, String>> discovered = new ArrayList<>();
     discovered.add(current);
 
+    Set<String> seenPaths = new HashSet<>();
+    try {
+      seenPaths.add(cwd.getCanonicalPath());
+    } catch (IOException e) {
+      seenPaths.add(cwd.getAbsolutePath());
+    }
+
+    Set<String> visitedDirs = new HashSet<>();
+
     File parent = cwd.getParentFile();
-    if (parent != null && parent.exists() && parent.isDirectory()) {
+    if (parent != null
+        && parent.exists()
+        && parent.isDirectory()
+        && !parent.getAbsolutePath().equals("/")) {
       File[] siblings = parent.listFiles();
       if (siblings != null) {
         java.util.Arrays.sort(siblings, java.util.Comparator.comparing(File::getName));
         for (File sibling : siblings) {
-          if (sibling.isDirectory() && !sibling.getName().startsWith(".") && !sibling.equals(cwd)) {
-            boolean isProject =
-                new File(sibling, "pom.xml").exists()
-                    || new File(sibling, "package.json").exists()
-                    || new File(sibling, "go.mod").exists()
-                    || new File(sibling, "Cargo.toml").exists()
-                    || new File(sibling, "deps.edn").exists()
-                    || new File(sibling, ".git").exists()
-                    || new File(sibling, "src").exists();
-            if (isProject) {
-              discovered.add(
-                  Map.of(
-                      "name", sibling.getName(),
-                      "path", sibling.getAbsolutePath()));
-
-              File[] subFiles = sibling.listFiles();
-              if (subFiles != null) {
-                java.util.Arrays.sort(subFiles, java.util.Comparator.comparing(File::getName));
-                for (File sub : subFiles) {
-                  if (sub.isDirectory() && !sub.getName().startsWith(".")) {
-                    boolean isSubProject =
-                        new File(sub, "pom.xml").exists()
-                            || new File(sub, "package.json").exists()
-                            || new File(sub, "src/main/java").exists();
-                    if (isSubProject
-                        && !sub.getName().equals("target")
-                        && !sub.getName().equals("node_modules")
-                        && !sub.getName().equals("build")) {
-                      discovered.add(
-                          Map.of(
-                              "name",
-                              sibling.getName() + " / " + sub.getName(),
-                              "path",
-                              sub.getAbsolutePath()));
-                    }
-                  }
-                }
-              }
-            }
+          if (sibling.isDirectory() && !isIgnoredDirectory(sibling) && !sibling.equals(cwd)) {
+            scanDirectoryForProjects(
+                sibling, sibling.getName(), discovered, seenPaths, visitedDirs, 1);
           }
         }
       }
+    }
+
+    String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
+    File containerWorkspace = new File(containerPath);
+    if (containerWorkspace.exists() && containerWorkspace.isDirectory()) {
+      scanDirectoryForProjects(containerWorkspace, "", discovered, seenPaths, visitedDirs, 3);
     }
 
     return Map.of(
@@ -202,8 +330,8 @@ public class DiagramResource {
     File parentFile = targetDir.getParentFile();
     String parentPath = parentFile != null ? parentFile.getAbsolutePath() : null;
 
-    java.util.List<Map<String, String>> breadcrumbs = new java.util.ArrayList<>();
-    java.util.List<File> hierarchy = new java.util.ArrayList<>();
+    List<Map<String, String>> breadcrumbs = new ArrayList<>();
+    List<File> hierarchy = new ArrayList<>();
     File cur = targetDir;
     while (cur != null) {
       hierarchy.add(0, cur);
@@ -217,7 +345,7 @@ public class DiagramResource {
       breadcrumbs.add(Map.of("name", name, "path", f.getAbsolutePath()));
     }
 
-    java.util.List<Map<String, String>> quickNav = new java.util.ArrayList<>();
+    List<Map<String, String>> quickNav = new ArrayList<>();
     String userHome = System.getProperty("user.home");
     quickNav.add(Map.of("name", "Home", "path", userHome, "icon", "home"));
     try {
@@ -255,7 +383,7 @@ public class DiagramResource {
       }
     }
 
-    java.util.List<Map<String, Object>> directories = new java.util.ArrayList<>();
+    List<Map<String, Object>> directories = new ArrayList<>();
     File[] children = targetDir.listFiles(File::isDirectory);
     if (children != null) {
       java.util.Arrays.sort(

@@ -38,7 +38,7 @@ public class JavaAstScanner implements LanguageScanner {
   private final JavaParser javaParser =
       new JavaParser(
           new com.github.javaparser.ParserConfiguration()
-              .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.JAVA_21));
+              .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.RAW));
 
   @Override
   public String languageId() {

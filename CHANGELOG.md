@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-06] - 2026-09-24
+
 ### Fixed
 - **Fault-Tolerant Filesystem Traversal & Special File Immunity (Closes #83)**:
   - Introduced centralized `FileScannerUtil` in `com.design.umlviewer.scanner` using `Files.walkFileTree` with proactive subtree pruning.

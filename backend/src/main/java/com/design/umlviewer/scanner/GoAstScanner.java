@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class GoAstScanner implements LanguageScanner {
@@ -69,14 +68,10 @@ public class GoAstScanner implements LanguageScanner {
     List<DependencyEdge> edges = new ArrayList<>();
     Map<String, String> internalPackages = new HashMap<>();
 
-    List<Path> goFiles;
-    try (Stream<Path> stream = Files.walk(scanDir.toPath())) {
-      goFiles =
-          stream
-              .filter(p -> p.toString().endsWith(".go") && !p.toString().endsWith("_test.go"))
-              .filter(p -> !p.toString().contains("/vendor/") && !p.toString().contains("/."))
-              .toList();
-    }
+    List<Path> goFiles =
+        FileScannerUtil.findFiles(
+            scanDir.toPath(),
+            p -> p.toString().endsWith(".go") && !p.toString().endsWith("_test.go"));
 
     Path rootPath = rootDir.toPath();
     for (Path goFile : goFiles) {

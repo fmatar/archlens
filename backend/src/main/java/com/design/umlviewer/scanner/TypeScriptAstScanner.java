@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class TypeScriptAstScanner implements LanguageScanner {
@@ -234,41 +233,19 @@ public class TypeScriptAstScanner implements LanguageScanner {
     return String.join("/", result);
   }
 
-  private List<Path> discoverTypeScriptFiles(Path scanPath, Path rootPath, Set<String> omitPatterns)
-      throws IOException {
-    try (Stream<Path> stream = Files.walk(scanPath)) {
-      return stream
-          .filter(
-              p -> {
-                String s = p.toString().replace('\\', '/');
-                if (s.endsWith(".d.ts")
-                    || s.contains("/node_modules/")
-                    || s.contains("/dist/")
-                    || s.contains("/build/")
-                    || s.contains("/.")) {
-                  return false;
-                }
-                if (!omitPatterns.isEmpty()) {
-                  String rel = rootPath.relativize(p).toString().replace('\\', '/');
-                  for (String omit : omitPatterns) {
-                    if (omit == null || omit.isBlank()) continue;
-                    String clean = omit.trim().replace('\\', '/');
-                    if (clean.startsWith("/")) clean = clean.substring(1);
-                    if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
-                    if (rel.equals(clean)
-                        || rel.startsWith(clean + "/")
-                        || rel.contains("/" + clean + "/")
-                        || rel.endsWith("/" + clean)) {
-                      return false;
-                    }
-                  }
-                }
-                return s.endsWith(".ts")
-                    || s.endsWith(".tsx")
-                    || s.endsWith(".js")
-                    || s.endsWith(".jsx");
-              })
-          .toList();
-    }
+  private List<Path> discoverTypeScriptFiles(
+      Path scanPath, Path rootPath, Set<String> omitPatterns) {
+    return FileScannerUtil.findFiles(
+        scanPath,
+        p -> {
+          String s = p.toString().replace('\\', '/');
+          if (s.endsWith(".d.ts")) {
+            return false;
+          }
+          if (LanguageScanner.matchesOmitPattern(rootPath.relativize(p).toString(), omitPatterns)) {
+            return false;
+          }
+          return s.endsWith(".ts") || s.endsWith(".tsx") || s.endsWith(".js") || s.endsWith(".jsx");
+        });
   }
 }

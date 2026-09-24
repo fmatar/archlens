@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-06] - 2026-09-24
+
+### Fixed
+- **Fault-Tolerant Filesystem Traversal & Special File Immunity (Closes #83)**:
+  - Introduced centralized `FileScannerUtil` in `com.design.umlviewer.scanner` using `Files.walkFileTree` with proactive subtree pruning.
+  - Automatically skips hidden directories (`.*` including `.git/`, `.archlens/`, `.idea/`, etc.) and dependency/build folders (`target/`, `build/`, `node_modules/`, `vendor/`, `__pycache__/`) before traversing into them.
+  - Gracefully handles special files, Unix domain sockets (e.g. `.git/fsmonitor--daemon.ipc`), broken symlinks, and transient files via `visitFileFailed()`, preventing `UncheckedIOException` and `NoSuchFileException` during graph compilation and scanner resolution.
+  - Standardized source discovery across all polyglot scanners (`JavaAstScanner`, `GoAstScanner`, `RustAstScanner`, `PythonAstScanner`, `TypeScriptAstScanner`, and `ClojureAstScanner`).
+  - Extracted shared `LanguageScanner.matchesOmitPattern()` to eliminate cross-scanner duplicate omit logic.
+
 ## [0.0.1-Alpha-05] - 2026-09-23
 
 ### Fixed

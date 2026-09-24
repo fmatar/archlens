@@ -1,6 +1,7 @@
-# Archlens — Clean Architecture Dynamic Workbench
+# Archlens — Dynamic Clean Architecture Workbench
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
+[![Publish Docker Image & Release](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/release.yml)
 [![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/)
 [![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.39-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
@@ -11,38 +12,108 @@
 > *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
 > — **Robert C. Martin (Uncle Bob)**
 
-An interactive, real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and agent-driven refactoring platform for modern software systems.
-
-```bash
-# Instant Quickstart via Container (analyzing your current project)
-docker run -d -p 8088:8088 -v $(pwd):/workspace ghcr.io/fmatar/archlens:latest
-```
-Visit **`http://localhost:8088`** to interactively explore and validate your architecture.
+An interactive real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and autonomous AI refactoring studio for modern software systems.
 
 ![Archlens Clean Architecture Dynamic Workbench](media/archlens-canvas.png)  
-*(Full HD 1080p Video Teaser: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) &bull; Extended Journey: [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) &bull; Animated Preview: [`media/archlens-teaser.gif`](media/archlens-teaser.gif))*
+*(High Definition Video: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) &bull; Extended Tour: [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) &bull; Animated Preview: [`media/archlens-teaser.gif`](media/archlens-teaser.gif))*
 
 ---
 
-## The Vision & Inspiration
+## ⚡ 3-Step Quickstart
 
-Robert C. Martin’s writings have been a foundational reference point throughout modern software engineering. *Clean Code*, *Clean Architecture*, and the SOLID principles established how we protect core business policies from the volatility of frameworks, delivery mechanisms, and external databases.
+Experience real-time Clean Architecture governance on any repository in three direct steps:
 
-When Uncle Bob open-sourced [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), the vision was captivating: transforming the Dependency Rule from an abstract diagram in a book into a living, tangible feedback loop right on our screens. Seeing that experimental prototype sparked an immediate ambition: *bring this exact philosophy into the heart of modern polyglot enterprise environments.*
+### 1. Equip Your Repository (Install Skills & Policy)
 
-We took Uncle Bob's core thesis and engineered a production-grade workbench built from the ground up:
+Scaffold architectural policies and agent refactoring protocols directly into your project:
 
-1. **Polyglot AST Engine (SPI)**: Pluggable AST and dependency scanners supporting **Java 25**, **Python**, **Rust**, **TypeScript / JavaScript**, **Go**, and **Clojure**.
-2. **Fluid Reactive Architecture Canvas**: Svelte 5 and SVG rendering capable of dynamically visualizing and decluttering hundreds of classes across concentric layers with bidirectional dependency arrows.
-3. **Multi-Project Architecture Governance**: Point the workbench at any repository on your machine—from standalone services to large multi-module codebases—to validate architectural boundaries against version-controlled policies.
-4. **Hierarchical Edge Bundling & Spatial Virtualization**: Catmull-Rom spline clustering, viewport frustum culling, and Semantic Macro LOD maintaining 60 FPS performance on complex dependency meshes.
-5. **Tactile Interaction & Loading Telemetry**: Canvas radar scrim, optimistic source modals with code skeleton shimmers, and autonomous agent sonar sweeps during refactoring passes.
-6. **Agent Refactoring Loop**: Agnostic file-based mailbox protocol (`.archlens/`) allowing autonomous AI agents (such as Google Antigravity) to receive refactoring commands, fix violations, run tests, and push hot-reloads to the canvas.
-7. **Single-Container Deployment**: Fully packaged as an all-in-one container serving both the embedded Svelte 5 SPA and Quarkus REST/SSE backend on port `8088`.
+```bash
+# Run interactive wizard via npx (zero external dependencies)
+npx @fmatar/archlens-skill
+
+# Non-interactive / headless setup accepting defaults
+npx @fmatar/archlens-skill --yes
+
+# Target a specific repository directory
+npx @fmatar/archlens-skill --path /path/to/my-project --yes
+```
+
+*Or install globally via npm:*
+```bash
+npm install -g @fmatar/archlens-skill
+archlens-skill
+```
+
+*Or install from a local repository clone:*
+```bash
+npm install -g ./cli
+archlens-skill
+```
+
+*Or instruct your AI assistant (Claude Code, Gemini CLI, Google Antigravity):*
+> *"Install the Archlens Clean Architecture policy in this project."*
+
+This creates:
+- `.archlens/policy.json`: Concentric Clean Architecture tiers (Domain Core $\rightarrow$ Application $\rightarrow$ Adapters $\rightarrow$ Infrastructure).
+- `.archlens/workbench.config.json`: Local workbench connection and mailbox configuration.
+- `CLAUDE.md` & `AGENTS.md`: Mailbox refactoring protocols for autonomous coding companions.
 
 ---
 
-## Architecture at a Glance
+### 2. Launch the Studio (Run Container)
+
+Start the all-in-one container, mounting your local workspace:
+
+```bash
+docker run -d -p 8088:8088 \
+  -v "$HOME/workspace:/workspace" \
+  ghcr.io/fmatar/archlens:latest
+```
+
+Open **`http://localhost:8088`** in your browser.
+
+---
+
+### 3. Inspect, X-Ray & Refactor
+
+1. **Browse Projects (`⌘O` / `Ctrl+O`)**: Press `⌘O` to open the visual filesystem explorer. Select any repository mounted in `/workspace` with automatic build framework detection (`Maven`, `Gradle`, `Node`, `Go`, `Cargo`).
+2. **Violation X-Ray (`V`)**: Press `V` to isolate illegal outward dependency violations in neon crimson while compliant inward flows gently fade into the background.
+3. **Hierarchical Edge Bundling (`B`)**: Press `B` to route dense cross-package connections along smooth Catmull-Rom spline corridors.
+4. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
+
+---
+
+## 🧭 Keyboard & Interaction Shortcuts
+
+| Key | Action | Description |
+| :--- | :--- | :--- |
+| `⌘O` / `Ctrl+O` | **Project Switcher** | Open native folder browser to switch active repositories |
+| `V` | **Violation X-Ray** | Toggle isolation of illicit outward dependency violations |
+| `B` | **Edge Bundling** | Route connections along concentric Catmull-Rom spline corridors |
+| `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
+| `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
+| `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
+| `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |
+| `+` / `-` / `0` | **Zoom & Pan** | Zoom in, zoom out, or reset canvas viewport |
+
+---
+
+## 🌐 Polyglot Language Support
+
+Archlens features a modular Service Provider Interface (SPI) for language scanners:
+
+| Language | Ecosystem & AST Engine | File Extensions | Capabilities |
+| :--- | :--- | :--- | :--- |
+| **Java 25** | JavaParser 3.26 | `.java` | Records, Sealed Types, Interfaces, Class Hierarchies, Inward Rules |
+| **Python** | Python AST Visitor | `.py` | Modules, Classes, Functions, Imports, Relative Imports |
+| **TypeScript / JS** | Babel AST / Regex Scanner | `.ts`, `.tsx`, `.js`, `.jsx` | Classes, Interfaces, Named Imports, ESM Re-exports |
+| **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths |
+| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions |
+| **Clojure** | EDN & Regex AST Scanner | `.clj`, `.cljs`, `.edn` | Namespaces (`ns`), `(:require ...)`, `def`, `defn`, Protocols |
+
+---
+
+## 🏛️ System Architecture
 
 ```mermaid
 flowchart LR
@@ -66,7 +137,7 @@ flowchart LR
         Mailbox["Mailbox IPC<br/>(.archlens/)"]
     end
 
-    Agent["AI Agent / Companion<br/>(Antigravity / Cursor)"]
+    Agent["AI Agent / Companion<br/>(Antigravity / Claude)"]
 
     User <-->|Pan, Zoom, Drag & Filter| Browser
     Browser <-->|REST & Server-Sent Events| Server
@@ -79,223 +150,85 @@ flowchart LR
 
 ---
 
-## Key Workstation Capabilities
+## 🤖 AI Agent Mailbox Protocol
 
-### 1. Dynamic Project Switcher & Filesystem Explorer (`⌘O` / `Ctrl+O`)
-Switch between local repositories without restarting the server:
-- **Native OS Directory Picker (`Browse...`)**: Launch your operating system's native folder selection dialog (macOS Finder) with a single click.
-- **Interactive Directory Explorer**: Navigate folders visually with clickable breadcrumbs, quick jump bookmarks (`Home`, `Current Workspace`, `Labs`), instant folder filtering, and automatic project framework classification badges (`Maven`, `Gradle`, `Node`, `Java`, `Git`).
-- **Recursive Multi-Module Source Discovery**: Mono-repos and multi-module projects are scanned automatically across all nested module paths (`**/src/main/java`).
-- **Dynamic Package Deduction**: If a project lacks `.archlens/policy.json` (or `.uml-viewer/policy.json`), Archlens deduces the common package prefix and project title on-the-fly.
+Archlens provides seamless bidirectional integration with autonomous coding assistants:
 
-### 2. Hierarchical Edge Bundling (`B`) & Violation X-Ray (`V`)
-Tame dense dependency webs. Edge bundling routes connections along concentric radial paths using smooth Catmull-Rom splines, reducing visual noise. Toggle Violation X-Ray (`V`) to fade compliant dependencies into the background and isolate rule violations in bold crimson.
-
-### 3. Stepwise Node Class Micro-Pagination
-Component cards display a clean 5-class window with intuitive navigation chevrons (`1–5 of N`). Selecting any class instantly highlights dependencies and centers the class in the Inspector drawer.
-
-### 4. Semantic Macro LOD & Frustum Virtualization (`C`)
-Large codebases remain responsive through automatic viewport frustum culling and real-time node visibility counters. Zooming out smoothly collapses fine-grained component cards into Macro Level Badges to retain structural clarity.
-
-### 5. Tactile Feedback & Diagnostic Empty State
-- **Diagnostic Empty State Card**: When opening a repository without architectural components or prior to policy initialization, an interactive guidance card provides direct actions to switch workspaces or wake the refactoring companion.
-- **Canvas Radar Scrim**: Frosted glass overlay with animated pulse beacon while AST compilation and layout calculate.
-- **Optimistic Source Code Modal**: Instant modal opening with a multi-line skeleton shimmer during file retrieval.
-- **Agent Sonar Wave**: Animated cyan wave sweeps down the canvas while AI agents execute refactoring tasks.
-- **Inspector Filter**: Class search with instant match counter pill (`X / Y found`) and clear button.
+1. **Trigger Refactoring**: When clicking **Regen (Wake Agent)** in the workbench, Archlens posts a structured command into `.archlens/to-agent.json`.
+2. **Autonomous Execution**: AI assistants (Google Antigravity, Claude Code, Gemini CLI) read the payload, introduce domain interfaces, invert outward dependencies, and execute local test suites.
+3. **Hot-Reload Canvas**: The agent writes completion details to `.archlens/to-viewer.json`. Archlens detects the response through Server-Sent Events (SSE) and instantly updates the architecture diagram.
 
 ---
 
-## Polyglot Language Support
+## 🛠️ CLI Reference (`@fmatar/archlens-skill`)
 
-Archlens features a modular Service Provider Interface (SPI) for language scanners:
-
-| Language | Ecosystem & AST Engine | File Extensions | Capabilities |
+| Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
-| **Java 25** | JavaParser 3.26 | `.java` | Records, Sealed Types, Interfaces, Class Hierarchies, Inward Dependency Rules |
-| **Python** | Python AST Visitor | `.py` | Modules, Classes, Functions, Imports, Relative Imports |
-| **TypeScript / JS** | Babel AST / Regex Scanner | `.ts`, `.tsx`, `.js`, `.jsx` | Classes, Interfaces, Named Imports, ESM Re-exports |
-| **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths |
-| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions |
-| **Clojure** | EDN & Regex AST Scanner | `.clj`, `.cljs`, `.edn` | Namespaces (`ns`), `(:require ...)`, `def`, `defn`, Protocols |
+| `--path <DIR>` | `-p` | Target repository directory | `.` (current directory) |
+| `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
+| `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
+| `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
+| `--global` | `-g` | Install skill into global agent directories | `false` |
+| `--update` | `-u` | Re-scan code and update existing policy | `false` |
+| `--upgrade` | | Migrate legacy `.uml-viewer` to standard `.archlens` | `false` |
+| `--force` | `-f` | Overwrite existing configuration files | `false` |
+| `--dry-run` | | Simulate execution without writing files | `false` |
+| `--yes` | `-y` | Accept defaults automatically (non-interactive) | `false` |
+| `--version` | `-v` | Display package version | |
+| `--help` | `-h` | Display help reference | |
 
 ---
 
-## Quick Start
+## 💡 The Vision & Inspiration
+
+Robert C. Martin’s writings have been a foundational reference point throughout modern software engineering. *Clean Code*, *Clean Architecture*, and the SOLID principles established how we protect core business policies from the volatility of frameworks, delivery mechanisms, and external databases.
+
+When Uncle Bob open-sourced [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), the vision was captivating: transforming the Dependency Rule from an abstract diagram in a book into a living, tangible feedback loop right on our screens. Seeing that experimental prototype sparked an immediate ambition: bring this exact philosophy into modern polyglot enterprise environments.
+
+Archlens takes Uncle Bob's core thesis and expands it into a comprehensive architecture governance and refactoring workbench supporting six languages, hierarchical edge routing, and autonomous agent collaboration.
+
+---
+
+## 💻 Building from Source
+
+For developers wishing to build and test Archlens locally:
 
 ### Prerequisites
-* Java 21 or Java 25 (OpenJDK / GraalVM)
-* Apache Maven 3.9+
-* Node.js 18+ and pnpm / npm
+- Java 25 (OpenJDK / GraalVM)
+- Apache Maven 3.9+
+- Node.js 22+ and npm
 
-### 1. Start the Backend
 ```bash
+# 1. Start the Backend
 cd backend
 ./mvnw clean quarkus:dev
-```
-* Backend starts at `http://localhost:8088`.
 
-### 2. Start the Frontend
-```bash
-cd frontend
+# 2. Start the Frontend
+cd ../frontend
 npm install
 npm run dev
-```
-* Open `http://localhost:5173` in your browser.
 
----
-
-## Enforcing Clean Architecture in Your Projects
-
-You can analyze any repository by placing an architectural policy file at the root of that project: `.archlens/policy.json` (legacy `.uml-viewer/policy.json` files are also supported with backward compatibility).
-
-### Instant Policy & Skill Installation via NPX (`@fmatar/archlens-skill`)
-
-Initialize Clean Architecture governance in any codebase instantly with zero external dependencies using `npx`:
-
-```bash
-# Run interactive wizard in the current project:
-npx @fmatar/archlens-skill
-
-# Non-interactive / headless setup with default settings:
-npx @fmatar/archlens-skill --yes
-
-# Target a specific directory:
-npx @fmatar/archlens-skill --path /path/to/project --yes
-
-# Upgrade an existing repository from .uml-viewer to .archlens:
-npx @fmatar/archlens-skill upgrade
-
-# Deploy the skill globally for Claude Code, Gemini CLI, and Antigravity:
-npx @fmatar/archlens-skill global
-
-# Update existing policy after adding new modules:
-npx @fmatar/archlens-skill update
-```
-
-### Automated Policy Installation via Agent Skill (`archlens-install-policy`)
-
-You can install and configure the architectural policy in any codebase automatically using the **`archlens-install-policy`** skill for **Claude Code**, **Gemini CLI**, and **Google Antigravity**:
-
-1. **Invoke via AI Agent**:
-   Instruct your agent:
-   > *"Install the Archlens Clean Architecture policy in this project."*
-
-2. **Standalone Scaffolding Script**:
-   Execute the cross-platform CLI directly via `npx` or run the bundled Python generator:
-   ```bash
-   npx @fmatar/archlens-skill --path /path/to/target/project --yes
-   # or:
-   python3 skills/archlens-install-policy/scripts/init_policy.py --path /path/to/target/project
-   ```
-
-3. **What It Configures**:
-   - **`.archlens/policy.json`**: Inspects build files (`pom.xml`, `build.gradle`, `package.json`, etc.), computes common package prefixes, and organizes packages into concentric rings:
-     - **Level 0 (Domain Core)**: Entities, domain models, and business logic
-     - **Level 1 (Application)**: Use cases, interactor services, and ports
-     - **Level 2 (Adapters)**: Controllers, REST endpoints, presenters, and repositories
-     - **Level 3 (Infrastructure)**: Databases, frameworks, external drivers, and network clients
-   - **`.archlens/workbench.config.json`**: Configures the local Archlens server endpoint (`http://localhost:8088`).
-   - **Agent Companion Protocols (`CLAUDE.md` & `AGENTS.md`)**: Configures Claude Code, Gemini, and Antigravity to process refactoring mailbox tasks (`REGEN`, `APPLY_PROPOSAL`, `REFRESH_CRAP`) and enforce inward dependency rules.
-
-### Manual Configuration Example (`.archlens/policy.json`)
-
-```json
-{
-  "title": "Core Banking Platform",
-  "src": "src/main/java",
-  "prefix": "com.enterprise.banking",
-  "hierarchical": true,
-  "proposals": [
-    {
-      "id": "clean-architecture",
-      "name": "Hexagonal Clean Core",
-      "layers": [
-        { 
-          "id": "domain", 
-          "label": "Level 0: Domain Entities & Core Rules", 
-          "classes": ["com.enterprise.banking.domain.*"] 
-        },
-        { 
-          "id": "application", 
-          "label": "Level 1: Application Services & Use Cases", 
-          "classes": ["com.enterprise.banking.usecase.*"] 
-        },
-        { 
-          "id": "adapters", 
-          "label": "Level 2: Gateways, Persistence & REST", 
-          "classes": ["com.enterprise.banking.adapter.*"] 
-        }
-      ]
-    }
-  ]
-}
-```
-
-### Navigating Projects in the Workbench
-Pass the target project root via URL parameter or select it from the header dropdown / project switcher:
-```text
-http://localhost:5173/?projectRoot=/path/to/your/repository
-```
-
-* **Inward Dependencies (Valid)**: Subtle dashed/solid links pointing from outer rings (adapters) to inner rings (application/domain).
-* **Outward Violations (Red)**: Any reference from an inner layer to an outer layer is immediately flagged with a bold red directional arrow and status badge alert.
-* **Virtual Proposals**: Evaluate alternative package reorganizations ("What-If" scenarios) in the UI before modifying a single line of source code.
-
----
-
-## AI Agent Integration (Claude Code & Gemini / Antigravity)
-
-Archlens provides full bidirectional integration with autonomous coding assistants:
-- **Claude Code**: Guidelines and mailbox protocol defined in [`CLAUDE.md`](CLAUDE.md).
-- **Google Antigravity & Gemini**: Companion skills located in [`.agents/skills/uml-workbench-companion/SKILL.md`](.agents/skills/uml-workbench-companion/SKILL.md) and [`skills/archlens-install-policy/SKILL.md`](skills/archlens-install-policy/SKILL.md).
-
-### Mailbox Protocol (`.archlens/`)
-When you click **Regen (Wake Agent)** in the UI:
-1. The workbench posts a command to `.archlens/to-agent.json`.
-2. The AI agent evaluates red dependency violations, refactors code (e.g. introducing interfaces or applying the Dependency Inversion Principle), runs unit tests, and signals the viewer.
-3. The UI automatically hot-reloads the new architecture diagram.
-
----
-
-## Verification & Quality Gates
-
-Run the comprehensive quality suite locally:
-
-```bash
-# Backend Quality Gates & Unit Tests
+# 3. Run Quality Verification & Tests
 mvn clean verify
-
-# Frontend Unit Tests & Svelte Diagnostic Checks
 npm --prefix frontend run check
 npm --prefix frontend run test
-
-# Playwright End-to-End Regression Suite
 npm --prefix frontend run test:e2e
 ```
 
 ---
 
-## Documentation
+## 📚 Documentation & Resources
 
-* [Inspiration and Vision](docs/guide/INSPIRATION_AND_VISION.md)
-* [Comprehensive User Guide](docs/guide/USER_GUIDE.md)
-* [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)
-* [JaCoCo Test Coverage Report](docs/specs/JACOCO_COVERAGE_REPORT.md)
-* [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
-* [Changelog](CHANGELOG.md)
-
----
-
-## Contributing
-
-We welcome contributions from the community! Check out our [Contributing Guide](CONTRIBUTING.md) to get started with local development, quality standards, and PR workflows.
-
-Please also review our [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).
+- [User Guide](docs/guide/USER_GUIDE.md)
+- [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)
+- [Inspiration & Vision](docs/guide/INSPIRATION_AND_VISION.md)
+- [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
+- [Changelog](CHANGELOG.md)
+- [Development Guide](CONTRIBUTING.md)
 
 ---
 
-## License
+## 📄 License
 
 Licensed under the [Apache License, Version 2.0](LICENSE).  
 See the [NOTICE](NOTICE) file for attribution and acknowledgements.

@@ -12,18 +12,27 @@ Analyzes any project repository, detects programming languages and package hiera
 
 ## ⚡ Quickstart
 
-Run directly with `npx` (no installation required):
-
+### Option A: Run via NPX
 ```bash
 npx @fmatar/archlens-skill
 ```
 
-Or install globally via npm:
-
+### Option B: Install Globally via NPM
 ```bash
 npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
+
+### Option C: Run from Local Repository Clone
+```bash
+# Install globally from the local repository:
+npm install -g ./cli
+archlens-skill
+
+# Or execute directly with Node:
+node ./cli/bin/index.js
+```
+
 
 ---
 

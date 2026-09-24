@@ -116,4 +116,38 @@ class JavaAstScannerTest {
     assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("UserService")));
     assertFalse(result.edges().isEmpty());
   }
+
+  @Test
+  void testSocketInGitIgnored(@TempDir Path tempDir) throws IOException {
+    JavaAstScanner scanner = new JavaAstScanner();
+
+    Path gitDir = tempDir.resolve(".git");
+    Files.createDirectories(gitDir);
+    Path socketPath = gitDir.resolve("fsmonitor--daemon.ipc");
+    java.nio.channels.ServerSocketChannel channel = null;
+    try {
+      java.net.UnixDomainSocketAddress addr = java.net.UnixDomainSocketAddress.of(socketPath);
+      channel = java.nio.channels.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX);
+      channel.bind(addr);
+    } catch (Throwable ignored) {
+      if (!Files.exists(socketPath)) {
+        Files.writeString(socketPath, "ipc");
+      }
+    }
+
+    try {
+      // Must safely complete without throwing UncheckedIOException or NoSuchFileException
+      boolean supported = scanner.supports(tempDir.toString(), null);
+      assertFalse(supported);
+      var dirs = scanner.resolveSourceDirs(tempDir.toString(), null);
+      assertTrue(dirs.isEmpty());
+    } finally {
+      if (channel != null) {
+        try {
+          channel.close();
+        } catch (IOException ignored) {
+        }
+      }
+    }
+  }
 }

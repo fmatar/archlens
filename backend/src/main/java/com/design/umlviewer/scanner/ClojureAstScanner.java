@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -217,36 +218,32 @@ public class ClojureAstScanner implements LanguageScanner {
   }
 
   private void scanClojureDirectory(File dir, List<ClassNode> classes) {
-    try (var stream = Files.walk(dir.toPath())) {
-      stream
-          .filter(p -> p.toString().endsWith(".clj"))
-          .forEach(
-              path -> {
-                File file = path.toFile();
-                String name = file.getName().replace(".clj", "");
-                List<MethodNode> methods = new ArrayList<>();
-                List<FieldNode> fields = new ArrayList<>();
-                extractClojureMembers(file, methods, fields);
+    List<Path> cljFiles =
+        FileScannerUtil.findFiles(dir.toPath(), p -> p.toString().endsWith(".clj"));
+    for (Path path : cljFiles) {
+      File file = path.toFile();
+      String name = file.getName().replace(".clj", "");
+      List<MethodNode> methods = new ArrayList<>();
+      List<FieldNode> fields = new ArrayList<>();
+      extractClojureMembers(file, methods, fields);
 
-                classes.add(
-                    new ClassNode(
-                        name,
-                        name,
-                        "clojure",
-                        file.getAbsolutePath(),
-                        ClassNode.Stereotype.CLASS,
-                        false,
-                        0,
-                        CrapScore.zero(),
-                        0.85,
-                        methods.size(),
-                        0,
-                        0,
-                        0,
-                        fields,
-                        methods));
-              });
-    } catch (IOException ignored) {
+      classes.add(
+          new ClassNode(
+              name,
+              name,
+              "clojure",
+              file.getAbsolutePath(),
+              ClassNode.Stereotype.CLASS,
+              false,
+              0,
+              CrapScore.zero(),
+              0.85,
+              methods.size(),
+              0,
+              0,
+              0,
+              fields,
+              methods));
     }
   }
 

@@ -20,7 +20,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +27,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class JavaAstScanner implements LanguageScanner {
@@ -92,27 +90,18 @@ public class JavaAstScanner implements LanguageScanner {
 
     // 3. Multi-module discovery: look for nested **/src/main/java
     if (root.exists() && root.isDirectory()) {
-      try (Stream<Path> stream = Files.walk(root.toPath(), 4)) {
-        List<File> subModuleDirs =
-            stream
-                .filter(p -> p.endsWith("src/main/java"))
-                .map(Path::toFile)
-                .filter(File::isDirectory)
-                .filter(
-                    f -> {
-                      String p = f.getAbsolutePath();
-                      return !p.contains("/target/")
-                          && !p.contains("/build/")
-                          && !p.contains("/node_modules/")
-                          && !p.contains("/.git/");
-                    })
-                .toList();
-        for (File d : subModuleDirs) {
-          if (!dirs.contains(d)) {
-            dirs.add(d);
-          }
+      List<Path> subModuleDirs =
+          FileScannerUtil.findDirectories(
+              root.toPath(),
+              6,
+              p ->
+                  p.endsWith(Path.of("src", "main", "java"))
+                      || p.toString().replace('\\', '/').endsWith("/src/main/java"));
+      for (Path p : subModuleDirs) {
+        File d = p.toFile();
+        if (d.isDirectory() && !dirs.contains(d)) {
+          dirs.add(d);
         }
-      } catch (IOException ignored) {
       }
     }
 
@@ -142,10 +131,8 @@ public class JavaAstScanner implements LanguageScanner {
 
     List<Path> javaFiles = new ArrayList<>();
     for (File sDir : sourceDirs) {
-      try (Stream<Path> paths = Files.walk(sDir.toPath())) {
-        javaFiles.addAll(paths.filter(p -> p.toString().endsWith(".java")).toList());
-      } catch (IOException ignored) {
-      }
+      javaFiles.addAll(
+          FileScannerUtil.findFiles(sDir.toPath(), p -> p.toString().endsWith(".java")));
     }
 
     if (javaFiles.isEmpty()) {

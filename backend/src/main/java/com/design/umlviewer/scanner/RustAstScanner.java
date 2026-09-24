@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class RustAstScanner implements LanguageScanner {
@@ -65,14 +64,8 @@ public class RustAstScanner implements LanguageScanner {
     List<DependencyEdge> edges = new ArrayList<>();
     Map<String, String> internalModules = new HashMap<>();
 
-    List<Path> rsFiles;
-    try (Stream<Path> stream = Files.walk(scanDir.toPath())) {
-      rsFiles =
-          stream
-              .filter(p -> p.toString().endsWith(".rs"))
-              .filter(p -> !p.toString().contains("/target/") && !p.toString().contains("/."))
-              .toList();
-    }
+    List<Path> rsFiles =
+        FileScannerUtil.findFiles(scanDir.toPath(), p -> p.toString().endsWith(".rs"));
 
     Path rootPath = rootDir.toPath();
     for (Path rsFile : rsFiles) {

@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class PythonAstScanner implements LanguageScanner {
@@ -166,23 +165,7 @@ public class PythonAstScanner implements LanguageScanner {
     }
 
     // Check against architecture policy omit patterns
-    if (omitPatterns != null && !omitPatterns.isEmpty()) {
-      for (String pattern : omitPatterns) {
-        if (pattern == null || pattern.isBlank()) continue;
-        String clean = pattern.trim().replace('\\', '/');
-        if (clean.startsWith("/")) clean = clean.substring(1);
-        if (clean.endsWith("/")) clean = clean.substring(0, clean.length() - 1);
-        if (clean.isBlank()) continue;
-
-        if (rel.equals(clean)
-            || rel.startsWith(clean + "/")
-            || rel.contains("/" + clean + "/")
-            || rel.endsWith("/" + clean)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return LanguageScanner.matchesOmitPattern(rel, omitPatterns);
   }
 
   @Override
@@ -420,13 +403,8 @@ public class PythonAstScanner implements LanguageScanner {
     return null;
   }
 
-  private List<Path> discoverPythonFiles(Path scanPath, Path rootPath, Set<String> omitPatterns)
-      throws IOException {
-    try (Stream<Path> stream = Files.walk(scanPath)) {
-      return stream
-          .filter(p -> p.toString().endsWith(".py"))
-          .filter(p -> !isIgnored(p, rootPath, omitPatterns))
-          .toList();
-    }
+  private List<Path> discoverPythonFiles(Path scanPath, Path rootPath, Set<String> omitPatterns) {
+    return FileScannerUtil.findFiles(
+        scanPath, p -> p.toString().endsWith(".py") && !isIgnored(p, rootPath, omitPatterns));
   }
 }

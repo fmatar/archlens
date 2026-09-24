@@ -23,6 +23,36 @@ public interface LanguageScanner {
     return new HashSet<>();
   }
 
+  /** Determines if a relative path matches any configured omit pattern. */
+  static boolean matchesOmitPattern(String relPath, Set<String> omitPatterns) {
+    if (omitPatterns == null || omitPatterns.isEmpty() || relPath == null) {
+      return false;
+    }
+    String normalized = relPath.replace('\\', '/');
+    for (String pattern : omitPatterns) {
+      if (pattern == null || pattern.isBlank()) {
+        continue;
+      }
+      String clean = pattern.trim().replace('\\', '/');
+      if (clean.startsWith("/")) {
+        clean = clean.substring(1);
+      }
+      if (clean.endsWith("/")) {
+        clean = clean.substring(0, clean.length() - 1);
+      }
+      if (clean.isBlank()) {
+        continue;
+      }
+      if (normalized.equals(clean)
+          || normalized.startsWith(clean + "/")
+          || normalized.contains("/" + clean + "/")
+          || normalized.endsWith("/" + clean)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   record ScanResult(List<ClassNode> classes, List<DependencyEdge> edges) {
     public ScanResult {
       classes = classes != null ? List.copyOf(classes) : List.of();

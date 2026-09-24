@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-07] - 2026-09-24
+
 ### Added
 - **Automated NPM Package Publishing Pipeline**:
   - Added `npm-release` job in `.github/workflows/release.yml` to automatically test and publish `@fmatar/archlens-skill` to the public npm registry upon release tags.
-- **Dynamic 17-Second Hero Animation & Preview Assets**:
-  - Generated fresh, high-definition 1080p video (`media/archlens-teaser.mp4`), palette-optimized lightweight GIF (`media/archlens-teaser.gif`), and freeze-frame canvas screenshot (`media/archlens-canvas.png`) displaying live `.archlens/` telemetry, smooth Catmull-Rom Bezier curves, and project switcher integration.
+- **Dynamic Micro-Level Code Inspection Hero Animation & Preview Assets**:
+  - Generated fresh, high-definition 1080p video (`media/archlens-teaser.mp4`), palette-optimized lightweight GIF (`media/archlens-teaser.gif`), and freeze-frame canvas screenshot (`media/archlens-canvas.png`) displaying live class method contracts, cyclomatic complexity pills, and syntax-highlighted source code inspection.
 
 ### Documentation
 - **Intuitive 3-Step Quickstart Flow (Closes #87)**:

@@ -290,9 +290,40 @@ class DiagramResourceTest {
     assertNotNull(snapshot);
     assertEquals("TestApp", snapshot.title());
 
-    // 4. Test getSnapshot fallback when snapshot does not exist
+    // 4. Test getSnapshot reading from .archlens/cache/{id}.json
+    Path cacheDir = tempDir.resolve(".archlens/cache");
+    Files.createDirectories(cacheDir);
+    Files.writeString(
+        cacheDir.resolve("cached-v1.json"),
+        "{\"title\":\"CachedApp\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
+    ArchitectureGraph cachedSnapshot = resource.getSnapshot("cached-v1", tempDir.toString());
+    assertNotNull(cachedSnapshot);
+    assertEquals("CachedApp", cachedSnapshot.title());
+
+    // 5. Test path traversal rejection
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("../secret", tempDir.toString()));
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("sub/dir", tempDir.toString()));
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("sub\\dir", tempDir.toString()));
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("   ", tempDir.toString()));
+
+    // 6. Test getSnapshot fallback when snapshot does not exist
     ArchitectureGraph fallback = resource.getSnapshot("non-existent", tempDir.toString());
     assertNotNull(fallback);
     assertEquals("Graph", fallback.title());
+
+    // 7. Test listSnapshots with git directory fallback
+    Path gitRepoDir = tempDir.resolve("gitrepo");
+    Files.createDirectories(gitRepoDir.resolve(".git"));
+    Map<String, Object> gitRepoSnapshots = resource.listSnapshots(gitRepoDir.toString());
+    assertNotNull(gitRepoSnapshots);
+    assertTrue(gitRepoSnapshots.containsKey("snapshots"));
   }
 }

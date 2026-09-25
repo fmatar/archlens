@@ -261,7 +261,14 @@ describe('diagramStore state management', () => {
       expect(diagramStore.snapshotGraph).not.toBeNull();
 
       // Check diff metrics calculation
-      expect(diagramStore.diffMetrics).not.toBeNull();
+      expect(diagramStore.diffMetrics).toEqual({
+        addedNodes: 3,
+        removedNodes: 1,
+        newViolations: 0,
+        fixedViolations: 1,
+        totalBefore: 1,
+        totalAfter: 0
+      });
 
       // Exit comparison
       await diagramStore.setComparisonTarget(null);

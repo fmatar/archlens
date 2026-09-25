@@ -106,6 +106,7 @@ Open **`http://localhost:8088`** in your browser.
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
+| `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |
 | `+` / `-` / `0` | **Zoom & Pan** | Zoom in, zoom out, or reset canvas viewport |
 

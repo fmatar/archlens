@@ -564,7 +564,10 @@ public class DiagramResource {
               }
             }
           }
-          process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+          boolean finished = process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+          if (!finished) {
+            process.destroyForcibly();
+          }
         } catch (Exception ignored) {
           // Gracefully continue with available list
         }
@@ -580,14 +583,29 @@ public class DiagramResource {
       @PathParam("snapshotId") String snapshotId,
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot)
       throws IOException {
+    if (snapshotId == null
+        || snapshotId.isBlank()
+        || snapshotId.contains("..")
+        || snapshotId.contains("/")
+        || snapshotId.contains("\\")) {
+      throw new jakarta.ws.rs.BadRequestException(
+          "Invalid snapshot ID: path traversal characters are forbidden.");
+    }
     String root = normalizeRoot(projectRoot);
+    File baseDir = new File(root, ".archlens");
     File snapshotFile = new File(root, ".archlens/snapshots/" + snapshotId + ".json");
     if (snapshotFile.exists() && snapshotFile.isFile()) {
+      if (!snapshotFile.getCanonicalPath().startsWith(baseDir.getCanonicalPath())) {
+        throw new jakarta.ws.rs.BadRequestException("Invalid snapshot path traversal.");
+      }
       return mapper.readValue(snapshotFile, ArchitectureGraph.class);
     }
 
     File cacheFile = new File(root, ".archlens/cache/" + snapshotId + ".json");
     if (cacheFile.exists() && cacheFile.isFile()) {
+      if (!cacheFile.getCanonicalPath().startsWith(baseDir.getCanonicalPath())) {
+        throw new jakarta.ws.rs.BadRequestException("Invalid snapshot path traversal.");
+      }
       return mapper.readValue(cacheFile, ArchitectureGraph.class);
     }
 

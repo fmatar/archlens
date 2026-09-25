@@ -74,6 +74,35 @@ class DiagramState {
   recentProjects = $state<{ name: string; path: string }[]>([]);
   isOpenProjectModalOpen = $state<boolean>(false);
 
+  // LLM Prompt Dossier Modal
+  isLlmPromptModalOpen = $state<boolean>(false);
+  llmPromptDossier = $state<string>('');
+  isLoadingLlmPrompt = $state<boolean>(false);
+
+  async openLlmPromptModal() {
+    this.isLlmPromptModalOpen = true;
+    await this.fetchLlmDossier();
+  }
+
+  async fetchLlmDossier() {
+    this.isLoadingLlmPrompt = true;
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      if (this.activeProposalId) params.set('proposalId', this.activeProposalId);
+      const res = await fetch(`/api/diagram/llm-dossier?${params.toString()}`);
+      if (res.ok) {
+        this.llmPromptDossier = await res.text();
+      } else {
+        this.llmPromptDossier = `# Error loading LLM Prompt Dossier\n\nHTTP ${res.status}: ${res.statusText}`;
+      }
+    } catch (e: any) {
+      this.llmPromptDossier = `# Error loading LLM Prompt Dossier\n\nNetwork or server error: ${e?.message || e}`;
+    } finally {
+      this.isLoadingLlmPrompt = false;
+    }
+  }
+
   constructor() {
     this.loadRecentProjects();
     this.fetchProjects();

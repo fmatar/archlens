@@ -2,6 +2,7 @@ package com.design.umlviewer.resource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
 import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
@@ -21,6 +22,7 @@ class DiagramResourceTest {
   void testDiagramResourceEndpoints(@TempDir Path tempDir) throws IOException {
     DiagramResource resource = new DiagramResource();
     FileMailboxService mailboxService = new FileMailboxService();
+    ArchitecturalDossierGenerator dossierGenerator = new ArchitecturalDossierGenerator();
 
     // Create a mock GraphCompiler
     GraphCompiler compiler =
@@ -46,6 +48,10 @@ class DiagramResourceTest {
       java.lang.reflect.Field field2 = DiagramResource.class.getDeclaredField("mailboxService");
       field2.setAccessible(true);
       field2.set(resource, mailboxService);
+
+      java.lang.reflect.Field field3 = DiagramResource.class.getDeclaredField("dossierGenerator");
+      field3.setAccessible(true);
+      field3.set(resource, dossierGenerator);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -54,6 +60,12 @@ class DiagramResourceTest {
     ArchitectureGraph graph = resource.getGraph(tempDir.toString(), "prop-1");
     assertEquals("Graph", graph.title());
     assertEquals("prop-1", graph.activeProposalId());
+
+    // Test getLlmDossier
+    String dossier = resource.getLlmDossier(tempDir.toString(), "prop-1");
+    assertNotNull(dossier);
+    assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — Graph"));
+    assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
 
     // Test getPolicy
     ArchitecturePolicy policy = resource.getPolicy(tempDir.toString());

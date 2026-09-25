@@ -127,4 +127,51 @@ describe('diagramStore state management', () => {
     expect(diagramStore.recentProjects[0].path).toBe('/Users/dev/cool-project');
     expect(diagramStore.recentProjects[0].name).toBe('cool-project');
   });
+
+  it('should manage LLM prompt modal state and fetch dossier', async () => {
+    expect(diagramStore.isLlmPromptModalOpen).toBe(false);
+    expect(diagramStore.llmPromptDossier).toBe('');
+
+    // Mock fetch
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any) => {
+      if (url.toString().includes('/api/diagram/llm-dossier')) {
+        return {
+          ok: true,
+          text: async () => '# Clean Architecture Optimization Dossier — Mock'
+        } as any;
+      }
+      return originalFetch(url);
+    };
+
+    try {
+      await diagramStore.openLlmPromptModal();
+      expect(diagramStore.isLlmPromptModalOpen).toBe(true);
+      expect(diagramStore.llmPromptDossier).toContain('# Clean Architecture Optimization Dossier');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('should handle LLM dossier fetch failure gracefully', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url: any) => {
+      if (url.toString().includes('/api/diagram/llm-dossier')) {
+        return {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error'
+        } as any;
+      }
+      return originalFetch(url);
+    };
+
+    try {
+      await diagramStore.fetchLlmDossier();
+      expect(diagramStore.llmPromptDossier).toContain('Error loading LLM Prompt Dossier');
+      expect(diagramStore.llmPromptDossier).toContain('500');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

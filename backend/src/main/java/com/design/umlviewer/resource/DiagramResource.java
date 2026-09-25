@@ -1,5 +1,6 @@
 package com.design.umlviewer.resource;
 
+import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
 import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
@@ -29,6 +30,8 @@ public class DiagramResource {
   @Inject GraphCompiler graphCompiler;
 
   @Inject FileMailboxService mailboxService;
+
+  @Inject ArchitecturalDossierGenerator dossierGenerator;
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
@@ -505,6 +508,19 @@ public class DiagramResource {
       @QueryParam("proposalId") String proposalId)
       throws IOException {
     return graphCompiler.compileGraph(normalizeRoot(projectRoot), proposalId);
+  }
+
+  @GET
+  @Path("/diagram/llm-dossier")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String getLlmDossier(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    String normalized = normalizeRoot(projectRoot);
+    ArchitectureGraph graph = graphCompiler.compileGraph(normalized, proposalId);
+    ArchitecturePolicy policy = graphCompiler.loadPolicy(normalized);
+    return dossierGenerator.generate(graph, policy);
   }
 
   @GET

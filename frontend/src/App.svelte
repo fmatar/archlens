@@ -8,7 +8,8 @@
   import SourceModal from './lib/components/SourceModal.svelte';
   import CommandPalette from './lib/components/CommandPalette.svelte';
   import OpenProjectModal from './lib/components/OpenProjectModal.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen } from '@lucide/svelte';
+  import LlmPromptModal from './lib/components/LlmPromptModal.svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -98,6 +99,9 @@
     } else if (e.key.toLowerCase() === 't') {
       e.preventDefault();
       diagramStore.isTelemetryDrawerOpen = !diagramStore.isTelemetryDrawerOpen;
+    } else if (e.key.toLowerCase() === 'l') {
+      e.preventDefault();
+      diagramStore.openLlmPromptModal();
     } else if (e.key === '0') {
       e.preventDefault();
       diagramStore.resetZoom();
@@ -206,6 +210,18 @@
         </kbd>
       </button>
 
+      <button
+        onclick={() => diagramStore.openLlmPromptModal()}
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 hover:text-white text-xs transition-colors cursor-pointer"
+        title="Export LLM Refactoring Prompt Dossier (L)"
+      >
+        <Bot size={13} class="text-indigo-400" />
+        <span class="text-[11px] font-medium">LLM Prompt</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
+          L
+        </kbd>
+      </button>
+
       {#if violatingCount > 0}
         <div
           bind:this={badgeEl}
@@ -237,4 +253,5 @@
   <SourceModal />
   <CommandPalette />
   <OpenProjectModal />
+  <LlmPromptModal />
 </div>

@@ -11,10 +11,16 @@ import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import * as ui from '../src/ui.js';
-import { detectProjectLanguage, detectSourceRoot, findCommonPackagePrefix } from '../src/analyzer.js';
+import {
+  detectProjectLanguage,
+  detectSourceRoot,
+  findCommonPackagePrefix,
+  generateLlmPrompt
+} from '../src/analyzer.js';
 import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
+import { spawnSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -44,12 +50,14 @@ ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   update                   Update existing policy with newly discovered packages and refresh skills
   upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   global                   Install Archlens skills globally for AI coding assistants
+  prompt                   Export Clean Architecture LLM Refactoring Prompt Dossier
 
 ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -p, --path <DIR>         Target repository path (default: current directory)
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
+  -c, --copy               Copy LLM prompt output directly to system clipboard
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
   --upgrade                Upgrade mode: migrate .uml-viewer to .archlens
@@ -60,6 +68,12 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -h, --help               Display this help guide
 
 ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
+  ${ui.colors.dim}# Export Clean Architecture LLM Refactoring Prompt to stdout:${ui.colors.reset}
+  npx @fmatar/archlens-skill prompt
+
+  ${ui.colors.dim}# Copy prompt directly to system clipboard:${ui.colors.reset}
+  npx @fmatar/archlens-skill prompt --copy
+
   ${ui.colors.dim}# Interactive setup wizard:${ui.colors.reset}
   npx @fmatar/archlens-skill
 
@@ -84,6 +98,8 @@ function parseArgs(args) {
     title: null,
     prefix: null,
     serverUrl: 'http://localhost:8088',
+    copy: false,
+    prompt: false,
     global: false,
     update: false,
     upgrade: false,
@@ -109,6 +125,10 @@ function parseArgs(args) {
       parsed.update = true;
     } else if (arg === '--upgrade') {
       parsed.upgrade = true;
+    } else if (arg === '--prompt') {
+      parsed.prompt = true;
+    } else if (arg === '--copy' || arg === '-c') {
+      parsed.copy = true;
     } else if (arg === '--force' || arg === '-f') {
       parsed.force = true;
     } else if (arg === '--dry-run') {
@@ -130,7 +150,7 @@ function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'update', 'upgrade', 'global', 'help', 'version'].includes(cmd)) {
+    if (['init', 'update', 'upgrade', 'global', 'prompt', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -142,6 +162,7 @@ function parseArgs(args) {
   if (parsed.command === 'update') parsed.update = true;
   if (parsed.command === 'upgrade') parsed.upgrade = true;
   if (parsed.command === 'global') parsed.global = true;
+  if (parsed.command === 'prompt') parsed.prompt = true;
 
   return parsed;
 }
@@ -316,6 +337,26 @@ function printCompletionMessage(targetRoot, serverUrl) {
   console.log(`  3. Or press ${ui.colors.bold}⌘O / Ctrl+O${ui.colors.reset} inside Archlens to select this workspace.\n`);
 }
 
+function copyToSystemClipboard(text) {
+  try {
+    if (process.platform === 'darwin') {
+      spawnSync('pbcopy', { input: text, encoding: 'utf8' });
+      return true;
+    } else if (process.platform === 'win32') {
+      spawnSync('clip', { input: text, encoding: 'utf8' });
+      return true;
+    } else {
+      const res = spawnSync('xclip', ['-selection', 'clipboard'], { input: text, encoding: 'utf8' });
+      if (res.error) {
+        spawnSync('wl-copy', { input: text, encoding: 'utf8' });
+      }
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
 
@@ -329,6 +370,27 @@ async function main() {
     process.exit(0);
   }
 
+  if (options.command === 'prompt' || options.prompt) {
+    const targetRoot = path.resolve(options.path || '.');
+    try {
+      const dossier = await generateLlmPrompt(targetRoot, options);
+      if (options.copy) {
+        const ok = copyToSystemClipboard(dossier);
+        if (ok) {
+          ui.success('Clean Architecture Refactoring Dossier copied to system clipboard!');
+        } else {
+          process.stdout.write(dossier);
+        }
+      } else {
+        process.stdout.write(dossier);
+      }
+      process.exit(0);
+    } catch (err) {
+      ui.error(err.message || String(err));
+      process.exit(1);
+    }
+  }
+
   const isInteractive = Boolean(
     process.stdin.isTTY &&
     process.stdout.isTTY &&
@@ -337,7 +399,8 @@ async function main() {
     !options.command &&
     !options.global &&
     !options.update &&
-    !options.upgrade
+    !options.upgrade &&
+    !options.prompt
   );
 
   if (isInteractive) {

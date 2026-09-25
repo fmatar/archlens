@@ -231,6 +231,8 @@ Archlens provides seamless bidirectional integration with autonomous coding assi
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
+| `--mcp` | `-m` | Auto-configure MCP client manifests (Claude, Antigravity, Cursor) | `false` |
+| `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
 | `--global` | `-g` | Install skill into global agent directories | `false` |
 | `--update` | `-u` | Re-scan code and update existing policy | `false` |
 | `--upgrade` | | Migrate legacy `.uml-viewer` to standard `.archlens` | `false` |
@@ -283,11 +285,12 @@ npm --prefix frontend run test:e2e
 ## 📚 Documentation & Resources
 
 - [User Guide](docs/guide/USER_GUIDE.md)
+- [Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)
 - [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)
 - [Inspiration & Vision](docs/guide/INSPIRATION_AND_VISION.md)
 - [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
 - [Changelog](CHANGELOG.md)
-- [Development Guide](CONTRIBUTING.md)
+- [Contribution Process](CONTRIBUTING.md)
 
 ---
 

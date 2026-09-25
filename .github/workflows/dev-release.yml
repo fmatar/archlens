@@ -1,0 +1,118 @@
+name: Development Track (Canary) Release
+
+on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - '**.md'
+      - 'media/**'
+      - 'docs/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+concurrency:
+  group: dev-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dev-docker:
+    name: Build & Publish Canary Docker Image (:dev)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Build Application Package
+        run: |
+          npm --prefix frontend install
+          npm --prefix frontend run build
+          mvn -B -ntp package -DskipTests
+
+      - name: Set up QEMU (Multi-Arch)
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Canary Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:dev
+            ghcr.io/${{ github.repository }}:dev-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  dev-npm:
+    name: Build & Publish Canary NPM Package (@dev)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Run CLI Tests
+        run: |
+          npm --prefix cli test
+
+      - name: Prepare Canary Prerelease Version
+        id: versioning
+        run: |
+          BASE_VERSION=$(node -p "require('./cli/package.json').version.split('-')[0]")
+          DEV_VERSION="${BASE_VERSION}-dev.${{ github.run_number }}"
+          echo "Setting package version to ${DEV_VERSION}"
+          npm --prefix cli version "${DEV_VERSION}" --no-git-tag-version
+          echo "canary_version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish Canary to GitHub Packages
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+          echo "@fmatar:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          npm --prefix cli publish --tag dev || echo "GitHub Packages canary already published."
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Canary to Public NPM Registry
+        run: |
+          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+            npm --prefix cli publish --access public --tag dev --provenance || echo "Notice: Canary already published or NPM error."
+          else
+            npm --prefix cli publish --access public --tag dev --provenance || echo "Notice: Set NPM_TOKEN or configure Trusted Publishing to publish canary to public npm."
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

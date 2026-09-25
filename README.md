@@ -28,8 +28,14 @@ Experience real-time Clean Architecture governance on any repository in three di
 Scaffold architectural policies and agent refactoring protocols directly into your project:
 
 ```bash
-# Run interactive wizard via npx (zero external dependencies)
+# Production Stable Track (default)
 npx @fmatar/archlens-skill
+
+# Canary / Development Preview (tracks latest develop commits)
+npx @fmatar/archlens-skill@dev
+
+# Direct GitHub Execution (zero registry dependencies)
+npx github:fmatar/archlens
 
 # Non-interactive / headless setup accepting defaults
 npx @fmatar/archlens-skill --yes
@@ -65,9 +71,15 @@ This creates:
 Start the all-in-one container, mounting your local workspace:
 
 ```bash
+# Production Stable
 docker run -d -p 8088:8088 \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:latest
+
+# Canary / Development Track
+docker run -d -p 8088:8088 \
+  -v "$HOME/workspace:/workspace" \
+  ghcr.io/fmatar/archlens:dev
 ```
 
 Open **`http://localhost:8088`** in your browser.

@@ -34,7 +34,7 @@ public class DiagramResource {
 
   @Inject ArchitecturalDossierGenerator dossierGenerator;
 
-  private final ObjectMapper mapper = new ObjectMapper();
+  @Inject ObjectMapper mapper = new ObjectMapper();
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 

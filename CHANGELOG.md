@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Native Model Context Protocol (MCP) Server & AI Client Auto-Installer (Closes #100)**:
+  - Added native MCP server support directly inside the Quarkus backend using `io.quarkiverse.mcp:quarkus-mcp-server-http:2.0.0` exposing Streamable HTTP and SSE at `/mcp` and `/mcp/sse`.
+  - Implemented `@ApplicationScoped ArchlensMcpService` with 4 declarative `@Tool` methods: `inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, and `getSnapshot`.
+  - Added `mcp-registry.js` to `@fmatar/archlens-skill` CLI for automated discovery and configuration of host AI client manifests: Claude Desktop (`claude_desktop_config.json`), Google Antigravity & Gemini CLI (`~/.gemini/antigravity/mcp/archlens/`), Claude Code (`.mcp.json`), Cursor (`.cursor/mcp.json`), and VS Code (`.vscode/mcp.json`).
+  - Added `docker-runner.js` providing on-demand container orchestration: verifies Quarkus health on port 8088, launches background container if offline and Docker is active, polls readiness, and provides graceful fallback to local offline JavaScript AST engine.
+  - Implemented `mcp-server.js` stdio JSON-RPC 2.0 transport bridge for AI assistants.
+  - Added `mcp` command (`npx @fmatar/archlens-skill mcp`) and `--mcp` flag on installer (`npx @fmatar/archlens-skill --mcp`).
 - **Canvas Hover Ergonomics, Git Architecture Comparator & Responsive Browsing (Closes #99)**:
   - Added 140ms hover intent debounce and 180ms graceful leave dismissal in `DependencyEdge.svelte` and `EdgeTooltip.svelte` to eliminate sticky popups from lingering across the canvas.
   - Implemented `GitVersionComparator.svelte` top-bar comparator enabling instant (< 15ms) architectural drift inspection against Git tags and release snapshots (`.archlens/snapshots/`) with live diff metrics (`+N breaches`, `✓N fixed`, `+N added`).

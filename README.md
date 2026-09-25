@@ -103,6 +103,47 @@ Open **`http://localhost:8088`** in your browser.
 
 ---
 
+### 4. Connect AI Assistants via Model Context Protocol (MCP)
+
+Archlens embeds a native **Model Context Protocol (MCP)** server directly in its unified Quarkus backend over HTTP/SSE (`/mcp` and `/mcp/sse`), accompanied by an on-demand container runner and stdio bridge. AI coding assistants (Claude Desktop, Google Antigravity, Claude Code, Cursor, VS Code) can query Clean Architecture metrics and refactoring dossiers autonomously.
+
+#### Automated 1-Command Setup:
+```bash
+# Auto-configures Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code:
+npx @fmatar/archlens-skill --mcp
+```
+
+#### Available Declarative Tools:
+- `inspectArchitecture`: Evaluates codebase concentric rings, computes instability metrics, and identifies outward dependency breaches.
+- `exportLlmDossier`: Produces an actionable refactoring prompt dossier diagnosing violations and prescribing concrete Dependency Inversion Principle (DIP) interface ports.
+- `listSnapshots`: Discovers pre-compiled snapshot files and historical Git release tags.
+- `getSnapshot`: Retrieves architecture graph models for specific historical releases.
+
+#### Manual AI Client Configurations:
+- **Cursor & VS Code (`.cursor/mcp.json` or `.vscode/mcp.json`)**:
+  ```json
+  {
+    "mcpServers": {
+      "archlens": {
+        "url": "http://localhost:8088/mcp/sse"
+      }
+    }
+  }
+  ```
+- **Claude Desktop (`claude_desktop_config.json`) & Claude Code (`.mcp.json`)**:
+  ```json
+  {
+    "mcpServers": {
+      "archlens": {
+        "command": "npx",
+        "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+      }
+    }
+  }
+  ```
+
+---
+
 ## 🧭 Keyboard & Interaction Shortcuts
 
 | Key | Action | Description |

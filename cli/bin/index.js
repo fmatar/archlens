@@ -20,6 +20,8 @@ import {
 import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
+import { installMcpConfigs } from '../src/mcp-registry.js';
+import { startMcpStdioServer } from '../src/mcp-server.js';
 import { spawnSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -51,12 +53,14 @@ ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   global                   Install Archlens skills globally for AI coding assistants
   prompt                   Export Clean Architecture LLM Refactoring Prompt Dossier
+  mcp                      Launch Model Context Protocol (MCP) stdio server for AI assistants
 
 ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -p, --path <DIR>         Target repository path (default: current directory)
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
+  -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)
   -c, --copy               Copy LLM prompt output directly to system clipboard
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
@@ -68,6 +72,12 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -h, --help               Display this help guide
 
 ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
+  ${ui.colors.dim}# Configure MCP manifests across Claude, Antigravity, and Cursor:${ui.colors.reset}
+  npx @fmatar/archlens-skill --mcp
+
+  ${ui.colors.dim}# Launch MCP stdio bridge server for AI coding assistants:${ui.colors.reset}
+  npx @fmatar/archlens-skill mcp
+
   ${ui.colors.dim}# Export Clean Architecture LLM Refactoring Prompt to stdout:${ui.colors.reset}
   npx @fmatar/archlens-skill prompt
 
@@ -103,6 +113,7 @@ function parseArgs(args) {
     global: false,
     update: false,
     upgrade: false,
+    mcp: false,
     force: false,
     dryRun: false,
     yes: false,
@@ -119,6 +130,8 @@ function parseArgs(args) {
       parsed.help = true;
     } else if (arg === '--version' || arg === '-v') {
       parsed.version = true;
+    } else if (arg === '--mcp' || arg === '-m') {
+      parsed.mcp = true;
     } else if (arg === '--global' || arg === '-g') {
       parsed.global = true;
     } else if (arg === '--update' || arg === '-u') {
@@ -150,7 +163,7 @@ function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'update', 'upgrade', 'global', 'prompt', 'help', 'version'].includes(cmd)) {
+    if (['init', 'update', 'upgrade', 'global', 'prompt', 'mcp', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -163,6 +176,7 @@ function parseArgs(args) {
   if (parsed.command === 'upgrade') parsed.upgrade = true;
   if (parsed.command === 'global') parsed.global = true;
   if (parsed.command === 'prompt') parsed.prompt = true;
+  if (parsed.command === 'mcp') parsed.mcp = true;
 
   return parsed;
 }
@@ -196,8 +210,13 @@ async function runInteractive(options) {
     },
     {
       value: 'both',
-      label: `${ui.colors.bold}Full Suite (Local Policy + Global Skills)${ui.colors.reset}`,
-      description: 'Configures current repository and installs global AI assistant skills'
+      label: `${ui.colors.bold}Full Suite (Local Policy + Global Skills + MCP)${ui.colors.reset}`,
+      description: 'Configures repository, global AI skills, and Model Context Protocol manifests'
+    },
+    {
+      value: 'mcp',
+      label: `${ui.colors.bold}Configure Model Context Protocol (MCP)${ui.colors.reset}`,
+      description: 'Register Archlens MCP tools into Claude Desktop, Antigravity, and Cursor'
     },
     {
       value: 'update',
@@ -235,6 +254,10 @@ async function runInteractive(options) {
     executeGlobalInstall(execOptions);
   }
 
+  if (selectedAction === 'mcp' || selectedAction === 'both') {
+    executeMcpInstall(execOptions);
+  }
+
   if (selectedAction === 'update') {
     executeUpdate(targetRoot, execOptions);
   }
@@ -244,6 +267,20 @@ async function runInteractive(options) {
   }
 
   printCompletionMessage(targetRoot, execOptions.serverUrl);
+}
+
+function executeMcpInstall(options) {
+  const modeSuffix = options.dryRun ? ' (dry run)' : '';
+  ui.step(3, 3, `Configuring Model Context Protocol (MCP) Clients${modeSuffix}`);
+  const result = installMcpConfigs(options);
+
+  if (result.configuredClients.length === 0) {
+    ui.warn('No active AI client configurations found (~/.claude, ~/.gemini). Use --force to deploy anyway.');
+  } else {
+    for (const client of result.configuredClients) {
+      ui.success(`Configured MCP for ${client.name} (${client.action}): ${client.path}${modeSuffix}`);
+    }
+  }
 }
 
 function executeLocalInit(targetRoot, options) {
@@ -391,6 +428,14 @@ async function main() {
     }
   }
 
+  if (options.command === 'mcp') {
+    startMcpStdioServer({
+      version: getPackageVersion(),
+      ...options
+    });
+    return;
+  }
+
   const isInteractive = Boolean(
     process.stdin.isTTY &&
     process.stdout.isTTY &&
@@ -400,7 +445,8 @@ async function main() {
     !options.global &&
     !options.update &&
     !options.upgrade &&
-    !options.prompt
+    !options.prompt &&
+    !options.mcp
   );
 
   if (isInteractive) {
@@ -428,6 +474,10 @@ async function main() {
       executeGlobalInstall(options);
     } else {
       executeLocalInit(targetRoot, options);
+    }
+
+    if (options.mcp) {
+      executeMcpInstall(options);
     }
 
     if (!options.dryRun) {

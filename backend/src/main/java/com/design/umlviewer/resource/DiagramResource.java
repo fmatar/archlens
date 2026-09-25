@@ -601,7 +601,7 @@ public class DiagramResource {
         || snapshotId.contains("..")
         || snapshotId.contains("/")
         || snapshotId.contains("\\")) {
-      throw new jakarta.ws.rs.BadRequestException(
+      throw new BadRequestException(
           "Invalid snapshot ID: path traversal characters are forbidden.");
     }
     String root = normalizeRoot(projectRoot);
@@ -609,7 +609,7 @@ public class DiagramResource {
     File snapshotFile = new File(root, ".archlens/snapshots/" + snapshotId + ".json");
     if (snapshotFile.exists() && snapshotFile.isFile()) {
       if (!snapshotFile.getCanonicalPath().startsWith(baseDir.getCanonicalPath())) {
-        throw new jakarta.ws.rs.BadRequestException("Invalid snapshot path traversal.");
+        throw new BadRequestException("Invalid snapshot path traversal.");
       }
       return mapper.readValue(snapshotFile, ArchitectureGraph.class);
     }
@@ -617,7 +617,7 @@ public class DiagramResource {
     File cacheFile = new File(root, ".archlens/cache/" + snapshotId + ".json");
     if (cacheFile.exists() && cacheFile.isFile()) {
       if (!cacheFile.getCanonicalPath().startsWith(baseDir.getCanonicalPath())) {
-        throw new jakarta.ws.rs.BadRequestException("Invalid snapshot path traversal.");
+        throw new BadRequestException("Invalid snapshot path traversal.");
       }
       return mapper.readValue(cacheFile, ArchitectureGraph.class);
     }

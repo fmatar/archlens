@@ -98,21 +98,29 @@ jobs:
           npm --prefix cli version "${DEV_VERSION}" --no-git-tag-version
           echo "canary_version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
 
+      - name: Pack Canary Package
+        id: pack
+        run: |
+          npm pack cli --pack-destination cli
+          TARBALL_PATH=$(ls cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
+
       - name: Publish Canary to GitHub Packages
         run: |
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
           echo "@fmatar:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          npm --prefix cli publish --tag dev || echo "GitHub Packages canary already published."
+          npm publish "${{ steps.pack.outputs.tarball }}" --tag dev || echo "GitHub Packages canary already published."
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Canary to Public NPM Registry
         run: |
+          echo "@fmatar:registry=https://registry.npmjs.org/" > ~/.npmrc
           if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-            npm --prefix cli publish --access public --tag dev --provenance || echo "Notice: Canary already published or NPM error."
+            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
+            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag dev --provenance || echo "Notice: Canary already published or NPM error."
           else
-            npm --prefix cli publish --access public --tag dev --provenance || echo "Notice: Set NPM_TOKEN or configure Trusted Publishing to publish canary to public npm."
+            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag dev --provenance || echo "Notice: Set NPM_TOKEN or configure Trusted Publishing to publish canary to public npm."
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

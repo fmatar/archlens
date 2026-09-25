@@ -20,4 +20,6 @@ playwright-report/
 **/playwright-report/
 reports/
 **/reports/
+*.tgz
+**/*.tgz
 

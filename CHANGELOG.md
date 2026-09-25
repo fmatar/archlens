@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Exhaustive Developer & Contributor Guide (Closes #102)**:
+  - Authored comprehensive `docs/guide/DEVELOPER_GUIDE.md` detailing Clean Architecture concentric rings, monorepo structure, toolchain prerequisites (Java 25, Node 22+, Maven 3.9+), and local development workflows.
+  - Provided step-by-step developer tutorial for implementing new polyglot language scanners via the `LanguageScanner` SPI and `FileScannerUtil`.
+  - Provided extension guide for declaring native Model Context Protocol (MCP) tools in Quarkus with client registry and offline AST fallbacks.
+  - Standardized Uncle Bob test craftsmanship guidelines, quality verification matrix (Spotless, PMD, SpotBugs, Vitest, Node test runner), and Dual-Gate coverage expectations.
+  - Modernized `CONTRIBUTING.md` with active repository layout and direct navigation links.
 - **Native Model Context Protocol (MCP) Server & AI Client Auto-Installer (Closes #100)**:
   - Added native MCP server support directly inside the Quarkus backend using `io.quarkiverse.mcp:quarkus-mcp-server-http:2.0.0` exposing Streamable HTTP and SSE at `/mcp` and `/mcp/sse`.
   - Implemented `@ApplicationScoped ArchlensMcpService` with 4 declarative `@Tool` methods: `inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, and `getSnapshot`.

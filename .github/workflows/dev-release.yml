@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
   id-token: write
 
@@ -46,6 +46,9 @@ jobs:
           npm --prefix frontend run build
           mvn -B -ntp package -DskipTests
 
+      - name: Set up QEMU (Multi-Arch)
+        uses: docker/setup-qemu-action@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -54,7 +57,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Build and Push Canary Docker Image
         uses: docker/build-push-action@v7

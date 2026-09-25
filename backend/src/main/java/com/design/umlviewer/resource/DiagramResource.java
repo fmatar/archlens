@@ -38,7 +38,7 @@ public class DiagramResource {
 
   public DiagramResource() {}
 
-  DiagramResource(
+  public DiagramResource(
       GraphCompiler graphCompiler,
       FileMailboxService mailboxService,
       ArchitecturalDossierGenerator dossierGenerator,

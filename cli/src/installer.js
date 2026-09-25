@@ -9,6 +9,9 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { generatePolicy } from './analyzer.js';
+import { installMcpConfigs } from './mcp-registry.js';
+
+export { installMcpConfigs };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,6 +114,11 @@ export function installLocalPolicy(projectRoot, options = {}) {
     }
   }
 
+  let mcpResult = null;
+  if (options.mcp) {
+    mcpResult = installMcpConfigs({ path: root, ...options });
+  }
+
   return {
     targetDir: root,
     archlensDir: targetDir,
@@ -120,6 +128,7 @@ export function installLocalPolicy(projectRoot, options = {}) {
     policyCreated,
     policyData,
     companionFiles: updatedCompanions,
+    mcpResult,
     dryRun
   };
 }

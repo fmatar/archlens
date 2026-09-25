@@ -113,6 +113,15 @@
       action: () => diagramStore.triggerRegen()
     });
 
+    items.push({
+      id: 'act-llm-prompt',
+      type: 'ACTION',
+      title: 'Export LLM Refactoring Prompt Dossier (L)',
+      subtitle: 'Generate copy-ready markdown with DIP prescriptions for LLM prompts',
+      badge: 'Export',
+      action: () => diagramStore.openLlmPromptModal()
+    });
+
     // 2. Components
     if (graph?.components) {
       graph.components.forEach((c: ComponentNode) => {

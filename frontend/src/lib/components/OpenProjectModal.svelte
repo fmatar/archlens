@@ -151,8 +151,16 @@
     isNativePickerLoading = true;
     validationError = null;
     containerNotice = null;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+
     try {
-      const res = await fetch('/api/fs/pick-directory', { method: 'POST' });
+      const res = await fetch('/api/fs/pick-directory', {
+        method: 'POST',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.path) {
@@ -163,35 +171,26 @@
         if (data.supported === false) {
           nativePickerSupported = false;
           isContainer = data.reason === 'container';
-          if (data.reason === 'container' || data.reason === 'headless') {
-            containerNotice =
-              'Host OS folder picker is isolated inside container environments. Use the in-app folder explorer below.';
-          } else {
-            containerNotice =
-              'Native OS folder picker is not supported on this platform. Use the in-app folder explorer below.';
-          }
-          isExplorerOpen = true;
-          if (!inputPath.trim() && fsCurrentPath) {
-            inputPath = fsCurrentPath;
-          }
-          if (fsCurrentPath) {
-            await loadDirectories(fsCurrentPath);
-          }
+          handleContainerBrowse();
+          return;
+        }
+        // When cancelled or skipped, smoothly transition to in-app explorer
+        if (data.cancelled) {
           handleContainerBrowse();
           return;
         }
         if (data.error) {
-          validationError = `Native picker error: ${data.error}`;
+          handleContainerBrowse();
+          return;
         }
-      } else {
-        validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
       }
-      isExplorerOpen = true;
+      handleContainerBrowse();
     } catch {
-      validationError = 'Unable to connect to Archlens backend server (http://localhost:8088). Please verify the backend is running.';
-      isExplorerOpen = true;
+      handleContainerBrowse();
     } finally {
+      clearTimeout(timeoutId);
       isNativePickerLoading = false;
+      isExplorerOpen = true;
     }
   }
 
@@ -372,7 +371,7 @@
             {#if isContainer}
               Tip: Running in Docker. Browse mounted folders below or click <code class="font-mono text-slate-400">Open</code> to load {inputPath || '/workspace'}.
             {:else}
-              Tip: Use <code class="font-mono text-slate-400">Browse...</code> or navigate via the folder explorer below.
+              Tip: Navigate folders using the directory explorer below, or select a discovered local project.
             {/if}
           </p>
         </div>

@@ -8,7 +8,9 @@
   import SourceModal from './lib/components/SourceModal.svelte';
   import CommandPalette from './lib/components/CommandPalette.svelte';
   import OpenProjectModal from './lib/components/OpenProjectModal.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen } from '@lucide/svelte';
+  import LlmPromptModal from './lib/components/LlmPromptModal.svelte';
+  import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -16,6 +18,7 @@
   onMount(async () => {
     await diagramStore.loadPolicy();
     await diagramStore.loadGraph();
+    await diagramStore.loadSnapshots();
 
     // SSE connection for live updates
     const eventSource = new EventSource('/api/events');
@@ -98,6 +101,16 @@
     } else if (e.key.toLowerCase() === 't') {
       e.preventDefault();
       diagramStore.isTelemetryDrawerOpen = !diagramStore.isTelemetryDrawerOpen;
+    } else if (e.key.toLowerCase() === 'l') {
+      e.preventDefault();
+      diagramStore.openLlmPromptModal();
+    } else if (e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      if (diagramStore.comparisonTargetId) {
+        diagramStore.setComparisonTarget(null);
+      } else if (diagramStore.availableSnapshots.length > 0) {
+        diagramStore.setComparisonTarget(diagramStore.availableSnapshots[0].id);
+      }
     } else if (e.key === '0') {
       e.preventDefault();
       diagramStore.resetZoom();
@@ -109,7 +122,10 @@
       diagramStore.zoom = Math.max(0.2, diagramStore.zoom * 0.85);
     } else if (e.key === 'Escape') {
       diagramStore.setFocusedNode(null);
-      diagramStore.activeEdgeTooltip = null;
+      diagramStore.clearEdgeTooltip();
+      if (diagramStore.comparisonTargetId) {
+        diagramStore.setComparisonTarget(null);
+      }
     }
   }
 </script>
@@ -181,6 +197,9 @@
       <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
         Java 25 &bull; Svelte 5 &bull; GSAP 3.15
       </span>
+
+      <!-- Git Release / Snapshot Comparator -->
+      <GitVersionComparator />
     </div>
 
     <!-- Live Architectural Status Badge & Quick Search -->
@@ -203,6 +222,18 @@
         <span class="text-[11px]">Quick Find</span>
         <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
           ⌘K
+        </kbd>
+      </button>
+
+      <button
+        onclick={() => diagramStore.openLlmPromptModal()}
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 hover:text-white text-xs transition-colors cursor-pointer"
+        title="Export LLM Refactoring Prompt Dossier (L)"
+      >
+        <Bot size={13} class="text-indigo-400" />
+        <span class="text-[11px] font-medium">LLM Prompt</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
+          L
         </kbd>
       </button>
 
@@ -237,4 +268,5 @@
   <SourceModal />
   <CommandPalette />
   <OpenProjectModal />
+  <LlmPromptModal />
 </div>

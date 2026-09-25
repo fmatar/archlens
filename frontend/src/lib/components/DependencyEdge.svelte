@@ -147,7 +147,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <g
   class="group cursor-pointer transition-opacity duration-300"
-  opacity={isDimmed ? 0.12 : 1.0}
+  opacity={isDimmed ? 0.35 : 1.0}
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
 >

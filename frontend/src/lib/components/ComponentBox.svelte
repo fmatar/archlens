@@ -68,7 +68,7 @@
   data-component-id={component.id}
   transform={`translate(${x}, ${y})`}
   class="group select-none"
-  opacity={isDimmed ? 0.18 : 1.0}
+  opacity={isDimmed ? 0.35 : 1.0}
   filter={isDragging ? 'url(#node-drag-shadow)' : undefined}
 >
   <!-- Spotlight Target Halo (Triggered by Command Palette) -->

@@ -717,7 +717,7 @@
           {@const isHighlighted = diagramStore.focusedNodeId
             ? (item.fromNode.comp.id === diagramStore.focusedNodeId || item.toNode.comp.id === diagramStore.focusedNodeId)
             : false}
-          {@const isDimmed = connectedNodeIds ? !isHighlighted : false}
+          {@const isDimmed = diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') && connectedNodeIds ? !isHighlighted : false}
           <DependencyEdge
             edge={item.edge}
             x1={item.fromNode.x + item.fromNode.width / 2 + (item.edge.isViolating ? -15 : 15)}
@@ -740,7 +740,7 @@
       <!-- Component Layer Boxes (Frustum Culled & Focus Highlighted) -->
       {#each visibleComponents as item, i (item.comp.id + ':' + i)}
         {@const isFocused = diagramStore.focusedNodeId === item.comp.id}
-        {@const isDimmed = connectedNodeIds ? !connectedNodeIds.has(item.comp.id) : false}
+        {@const isDimmed = diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') && connectedNodeIds ? !connectedNodeIds.has(item.comp.id) : false}
         {@const isDragging = draggedNodeId === item.comp.id}
         <ComponentBox
           component={item.comp}

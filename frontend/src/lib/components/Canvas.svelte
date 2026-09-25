@@ -309,6 +309,7 @@
     e.stopPropagation();
     if (e.button !== 0) return;
 
+    diagramStore.clearEdgeTooltip();
     draggedNodeId = id;
     dragHasMoved = false;
 
@@ -389,7 +390,7 @@
     const target = e.target as HTMLElement;
     if (target.tagName === 'svg' || target.tagName === 'DIV' || target.classList?.contains('tier-backdrop')) {
       diagramStore.setFocusedNode(null);
-      diagramStore.activeEdgeTooltip = null;
+      diagramStore.clearEdgeTooltip();
 
       isPanning = true;
       panStartX = e.clientX - diagramStore.panX;
@@ -441,6 +442,7 @@
 
   function handleWheel(e: WheelEvent) {
     e.preventDefault();
+    diagramStore.clearEdgeTooltip();
     const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
     diagramStore.zoom = Math.max(0.2, Math.min(3.0, diagramStore.zoom * zoomFactor));
   }

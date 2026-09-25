@@ -92,26 +92,55 @@
       }
     });
 
-    return () => ctx.revert();
+    return () => {
+      ctx.revert();
+      if (hoverTimeoutId) clearTimeout(hoverTimeoutId);
+    };
+  });
+
+  let hoverTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  let diffStatus = $derived.by<'none' | 'new-violation' | 'resolved' | 'added'>(() => {
+    if (!diagramStore.isComparing || !diagramStore.snapshotGraph) return 'none';
+    const wasInSnapshot = diagramStore.snapshotGraph.edges.find(
+      (e) => e.from === edge.from && e.to === edge.to
+    );
+    if (!wasInSnapshot) return 'added';
+    if (edge.isViolating && !wasInSnapshot.isViolating) return 'new-violation';
+    if (!edge.isViolating && wasInSnapshot.isViolating) return 'resolved';
+    return 'none';
   });
 
   function handleMouseEnter(e: MouseEvent) {
-    diagramStore.activeEdgeTooltip = {
-      edge,
-      fromLabel: fromLabel || edge.from,
-      toLabel: toLabel || edge.to,
-      fromLevel,
-      toLevel,
-      x: e.clientX,
-      y: e.clientY,
-      isBundled,
-      bundleCount,
-      violationCount
-    };
+    if (hoverTimeoutId) clearTimeout(hoverTimeoutId);
+    diagramStore.cancelDismissEdgeTooltip();
+
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+
+    hoverTimeoutId = setTimeout(() => {
+      diagramStore.showEdgeTooltip({
+        edge,
+        fromLabel: fromLabel || edge.from,
+        toLabel: toLabel || edge.to,
+        fromLevel,
+        toLevel,
+        x: clientX,
+        y: clientY,
+        isBundled,
+        bundleCount,
+        violationCount
+      });
+      hoverTimeoutId = null;
+    }, 140);
   }
 
   function handleMouseLeave() {
-    // slight delay or clear
+    if (hoverTimeoutId) {
+      clearTimeout(hoverTimeoutId);
+      hoverTimeoutId = null;
+    }
+    diagramStore.scheduleDismissEdgeTooltip(180);
   }
 </script>
 
@@ -120,9 +149,19 @@
   class="group cursor-pointer transition-opacity duration-300"
   opacity={isDimmed ? 0.12 : 1.0}
   onmouseenter={handleMouseEnter}
+  onmouseleave={handleMouseLeave}
 >
-  <!-- Red Violation Ambient Glow (if violating) -->
-  {#if edge.isViolating}
+  <!-- Invisible Wide Hit Target (Prevents missing thin lines and stabilizes hover) -->
+  <path
+    d={pathD}
+    fill="none"
+    stroke="transparent"
+    stroke-width="12"
+    class="cursor-pointer"
+  />
+
+  <!-- Red Violation Ambient Glow (if violating or new violation) -->
+  {#if edge.isViolating || diffStatus === 'new-violation'}
     <path
       bind:this={glowPathEl}
       d={pathD}
@@ -132,13 +171,22 @@
       stroke-opacity="0.3"
       filter="url(#violation-glow)"
     />
+  {:else if diffStatus === 'resolved'}
+    <path
+      d={pathD}
+      fill="none"
+      stroke="#10b981"
+      stroke-width={isHighlighted ? strokeThickness + 3 : strokeThickness + 2}
+      stroke-opacity="0.4"
+      filter="url(#violation-glow)"
+    />
   {/if}
 
   <!-- Base Solid Line -->
   <path
     d={pathD}
     fill="none"
-    stroke={edge.isViolating ? '#dc2626' : (isHighlighted ? '#60a5fa' : '#475569')}
+    stroke={diffStatus === 'new-violation' ? '#ef4444' : diffStatus === 'resolved' ? '#10b981' : (edge.isViolating ? '#dc2626' : (isHighlighted ? '#60a5fa' : '#475569'))}
     stroke-width={strokeThickness}
     marker-end={`url(#${markerId})`}
     class="group-hover:stroke-blue-400 transition-colors"
@@ -199,6 +247,20 @@
           !
         </text>
       </g>
+    </g>
+  {:else if diffStatus === 'resolved'}
+    <g
+      transform={`translate(${midX}, ${midY})`}
+      class="pointer-events-none select-none"
+    >
+      <circle r="9" class="fill-emerald-950 stroke-emerald-400 stroke-1.5 shadow-lg" />
+      <text
+        y="3.5"
+        text-anchor="middle"
+        class="fill-emerald-300 font-bold text-[9px] font-mono select-none"
+      >
+        ✓
+      </text>
     </g>
   {:else if edge.label}
     <text

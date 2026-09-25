@@ -237,4 +237,62 @@ class DiagramResourceTest {
       System.clearProperty("archlens.container.workspace");
     }
   }
+
+  @Test
+  void testSnapshotsEndpoints(@TempDir Path tempDir) throws IOException {
+    DiagramResource resource = new DiagramResource();
+
+    GraphCompiler compiler =
+        new GraphCompiler() {
+          @Override
+          public ArchitecturePolicy loadPolicy(String root) {
+            return new ArchitecturePolicy(
+                "Test", "src", "com", true, List.of(), List.of(), List.of(), List.of(), List.of());
+          }
+
+          @Override
+          public ArchitectureGraph compileGraph(String root, String proposalId) {
+            return new ArchitectureGraph(
+                "Graph", false, proposalId, List.of(), List.of(), List.of());
+          }
+        };
+
+    try {
+      java.lang.reflect.Field field1 = DiagramResource.class.getDeclaredField("graphCompiler");
+      field1.setAccessible(true);
+      field1.set(resource, compiler);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    // 1. When no snapshots dir, listSnapshots returns empty or git tags
+    Map<String, Object> emptyResult = resource.listSnapshots(tempDir.toString());
+    assertNotNull(emptyResult);
+    assertTrue(emptyResult.containsKey("snapshots"));
+
+    // 2. Create snapshot files in .archlens/snapshots
+    Path snapshotsDir = tempDir.resolve(".archlens/snapshots");
+    Files.createDirectories(snapshotsDir);
+    Files.writeString(
+        snapshotsDir.resolve("v1.0.0.json"),
+        "{\"title\":\"TestApp\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
+
+    Map<String, Object> populatedResult = resource.listSnapshots(tempDir.toString());
+    assertNotNull(populatedResult);
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> snapshots =
+        (List<Map<String, Object>>) populatedResult.get("snapshots");
+    assertEquals(1, snapshots.size());
+    assertEquals("v1.0.0", snapshots.get(0).get("id"));
+
+    // 3. Test getSnapshot reading from .archlens/snapshots/v1.0.0.json
+    ArchitectureGraph snapshot = resource.getSnapshot("v1.0.0", tempDir.toString());
+    assertNotNull(snapshot);
+    assertEquals("TestApp", snapshot.title());
+
+    // 4. Test getSnapshot fallback when snapshot does not exist
+    ArchitectureGraph fallback = resource.getSnapshot("non-existent", tempDir.toString());
+    assertNotNull(fallback);
+    assertEquals("Graph", fallback.title());
+  }
 }

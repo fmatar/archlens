@@ -31,6 +31,11 @@
   let isCompactLOD = $derived(
     (diagramStore.zoom < 0.55 || diagramStore.hasDeclutterFilter('HIDE_CLASSES')) && !isFocused
   );
+  let isAddedInComparison = $derived(
+    diagramStore.isComparing &&
+    diagramStore.snapshotGraph &&
+    !diagramStore.snapshotGraph.components.some((c) => c.id === component.id)
+  );
 
   let classPage = $state(0);
   let totalClasses = $derived(component.classes?.length || 0);
@@ -172,6 +177,26 @@
   >
     {component.label}
   </text>
+
+  <!-- Comparison Mode: New Component Badge -->
+  {#if isAddedInComparison}
+    <rect
+      x={width - 116}
+      y="6"
+      width="46"
+      height="18"
+      rx="4"
+      class="fill-emerald-950/90 stroke-emerald-500/70 stroke-[0.75] pointer-events-none"
+    />
+    <text
+      x={width - 93}
+      y="19"
+      text-anchor="middle"
+      class="fill-emerald-300 font-mono text-[9px] font-bold pointer-events-none select-none"
+    >
+      +NEW
+    </text>
+  {/if}
 
   <!-- Clean Architecture Ring Badge -->
   <rect

@@ -19,8 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 class DiagramResourceTest {
 
   @Test
-  void testDiagramResourceEndpoints(@TempDir Path tempDir) throws IOException {
-    DiagramResource resource = new DiagramResource();
+  void testDiagramResourceEndpoints(@TempDir Path tempDir) throws Exception {
     FileMailboxService mailboxService = new FileMailboxService();
     ArchitecturalDossierGenerator dossierGenerator = new ArchitecturalDossierGenerator();
 
@@ -40,21 +39,12 @@ class DiagramResourceTest {
           }
         };
 
-    try {
-      java.lang.reflect.Field field1 = DiagramResource.class.getDeclaredField("graphCompiler");
-      field1.setAccessible(true);
-      field1.set(resource, compiler);
-
-      java.lang.reflect.Field field2 = DiagramResource.class.getDeclaredField("mailboxService");
-      field2.setAccessible(true);
-      field2.set(resource, mailboxService);
-
-      java.lang.reflect.Field field3 = DiagramResource.class.getDeclaredField("dossierGenerator");
-      field3.setAccessible(true);
-      field3.set(resource, dossierGenerator);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    DiagramResource resource =
+        new DiagramResource(
+            compiler,
+            mailboxService,
+            dossierGenerator,
+            new com.fasterxml.jackson.databind.ObjectMapper());
 
     // Test getGraph
     ArchitectureGraph graph = resource.getGraph(tempDir.toString(), "prop-1");
@@ -239,9 +229,7 @@ class DiagramResourceTest {
   }
 
   @Test
-  void testSnapshotsEndpoints(@TempDir Path tempDir) throws IOException {
-    DiagramResource resource = new DiagramResource();
-
+  void testSnapshotsEndpoints(@TempDir Path tempDir) throws Exception {
     GraphCompiler compiler =
         new GraphCompiler() {
           @Override
@@ -257,13 +245,9 @@ class DiagramResourceTest {
           }
         };
 
-    try {
-      java.lang.reflect.Field field1 = DiagramResource.class.getDeclaredField("graphCompiler");
-      field1.setAccessible(true);
-      field1.set(resource, compiler);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    DiagramResource resource =
+        new DiagramResource(
+            compiler, null, null, new com.fasterxml.jackson.databind.ObjectMapper());
 
     // 1. When no snapshots dir, listSnapshots returns empty or git tags
     Map<String, Object> emptyResult = resource.listSnapshots(tempDir.toString());
@@ -321,9 +305,29 @@ class DiagramResourceTest {
 
     // 7. Test listSnapshots with git directory fallback
     Path gitRepoDir = tempDir.resolve("gitrepo");
-    Files.createDirectories(gitRepoDir.resolve(".git"));
+    Files.createDirectories(gitRepoDir);
+    new ProcessBuilder("git", "init").directory(gitRepoDir.toFile()).start().waitFor();
+    new ProcessBuilder("git", "config", "user.email", "ci@archlens.io")
+        .directory(gitRepoDir.toFile())
+        .start()
+        .waitFor();
+    new ProcessBuilder("git", "config", "user.name", "Archlens CI")
+        .directory(gitRepoDir.toFile())
+        .start()
+        .waitFor();
+    new ProcessBuilder("git", "commit", "--allow-empty", "-m", "Initial commit")
+        .directory(gitRepoDir.toFile())
+        .start()
+        .waitFor();
+    new ProcessBuilder("git", "tag", "v1.0.0").directory(gitRepoDir.toFile()).start().waitFor();
+
     Map<String, Object> gitRepoSnapshots = resource.listSnapshots(gitRepoDir.toString());
     assertNotNull(gitRepoSnapshots);
     assertTrue(gitRepoSnapshots.containsKey("snapshots"));
+    @SuppressWarnings("unchecked")
+    List<Map<String, String>> snapshotList =
+        (List<Map<String, String>>) gitRepoSnapshots.get("snapshots");
+    assertFalse(snapshotList.isEmpty());
+    assertEquals("v1.0.0", snapshotList.get(0).get("tag"));
   }
 }

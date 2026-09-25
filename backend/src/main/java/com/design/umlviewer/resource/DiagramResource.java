@@ -36,6 +36,19 @@ public class DiagramResource {
 
   @Inject ObjectMapper mapper = new ObjectMapper();
 
+  public DiagramResource() {}
+
+  DiagramResource(
+      GraphCompiler graphCompiler,
+      FileMailboxService mailboxService,
+      ArchitecturalDossierGenerator dossierGenerator,
+      ObjectMapper mapper) {
+    this.graphCompiler = graphCompiler;
+    this.mailboxService = mailboxService;
+    this.dossierGenerator = dossierGenerator;
+    this.mapper = mapper != null ? mapper : new ObjectMapper();
+  }
+
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
   private boolean isContainerEnvironment() {

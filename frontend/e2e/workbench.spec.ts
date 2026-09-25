@@ -387,7 +387,7 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await expect(menuTitle).toBeVisible({ timeout: 5000 });
 
     // 3. Select a release snapshot from the list
-    const releaseOption = page.locator('button', { hasText: /v0.0.1-Alpha-08|v0.0.1-Alpha-07|v0.0.1-Alpha-06|v0.0.1-Alpha-05/ }).first();
+    const releaseOption = page.locator('button', { hasText: /v0.0.1-Alpha-09|v0.0.1-Alpha-08|v0.0.1-Alpha-07|v0.0.1-Alpha-06|v0.0.1-Alpha-05/ }).first();
     await expect(releaseOption).toBeVisible({ timeout: 5000 });
     await releaseOption.click();
 

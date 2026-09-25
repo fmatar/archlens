@@ -179,7 +179,7 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
         },
         serverInfo: {
           name: 'archlens-mcp-server',
-          version: options.version || '0.0.1-Alpha-08'
+          version: options.version || '0.0.1-Alpha-09'
         }
       }
     };

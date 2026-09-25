@@ -72,18 +72,34 @@ This creates:
 
 ---
 
-### 2. Launch the Studio (Run Container)
+### 2. Launch the Studio (1-Command Container Lifecycle)
 
-Start the all-in-one container, mounting your local workspace:
+Start the all-in-one container and visual workbench with a single command:
+
+```bash
+# Launch container and automatically open workbench in browser:
+npx @fmatar/archlens-skill start --open
+
+# Launch container in background on default port 8088:
+npx @fmatar/archlens-skill start
+
+# Specify custom workspace path or port:
+npx @fmatar/archlens-skill start --path /path/to/my-project --port 8088 --open
+```
+
+> [!TIP]
+> **Automatic Lifecycle & Auto-Resurrection**: `archlens-skill start` automatically checks whether the container (`archlens-server`) is running. If it is stopped, offline, or killed, it immediately starts it again on demand. Furthermore, any time an AI assistant calls an Archlens MCP tool, the container automatically resurrects without manual intervention.
+
+*Alternatively, launch via Docker directly:*
 
 ```bash
 # Production Stable
-docker run -d -p 8088:8088 \
+docker run -d --name archlens-server -p 8088:8088 \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:latest
 
 # Canary / Development Track
-docker run -d -p 8088:8088 \
+docker run -d --name archlens-server -p 8088:8088 \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:dev
 ```
@@ -227,6 +243,9 @@ Archlens provides seamless bidirectional integration with autonomous coding assi
 
 | Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
+| `start` | | Start Archlens Workbench container (auto-resurrects on demand) | |
+| `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
+| `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` (current directory) |
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |

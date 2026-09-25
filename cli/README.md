@@ -122,12 +122,28 @@ npx @fmatar/archlens-skill --mcp
 npx @fmatar/archlens-skill mcp
 ```
 
+#### 8. Start Workbench Container & Auto-Resurrection
+Starts the Archlens container, mounts the workspace, verifies readiness, and optionally opens your browser. **If the container is killed or stopped, running `start` (or calling an MCP tool) automatically starts it again:**
+```bash
+# Start container and automatically open workbench in browser:
+npx @fmatar/archlens-skill start --open
+
+# Start container in background on default port 8088:
+npx @fmatar/archlens-skill start
+
+# Specify a custom port or target workspace directory:
+npx @fmatar/archlens-skill start --path /path/to/project --port 8088 --open
+```
+
 ---
 
 ### Command-Line Options
 
 | Flag | Shorthand | Description | Default |
 |------|-----------|-------------|---------|
+| `start` | | Start Archlens Workbench container (auto-resurrects on demand) | |
+| `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
+| `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` (current directory) |
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |

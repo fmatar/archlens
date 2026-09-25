@@ -56,6 +56,9 @@ Archlens is executed cross-platform via NPX or Node CLI:
 # Initialize Clean Architecture policy in target project:
 npx @fmatar/archlens-skill --path . --yes
 
+# Launch Workbench container (auto-resurrects on demand if stopped or killed):
+npx @fmatar/archlens-skill start --open
+
 # Export Clean Architecture LLM Refactoring Prompt Dossier:
 npx @fmatar/archlens-skill prompt --path .
 
@@ -74,6 +77,12 @@ npx @fmatar/archlens-skill --mcp
 # Launch Model Context Protocol (MCP) stdio server:
 npx @fmatar/archlens-skill mcp
 ```
+
+### Launching the Workbench & Auto-Resurrection
+When the user asks to start Archlens, launch the studio, or open the visual workbench:
+1. Run `npx @fmatar/archlens-skill start --open` (or `archlens-skill start`).
+2. The CLI inspects whether the container (`archlens-server`) is active. If stopped or killed, it immediately starts it again on demand and confirms readiness at `http://localhost:8088`.
+3. When using MCP tools (`inspectArchitecture`, `exportLlmDossier`), the stdio bridge also auto-resurrects the container if offline.
 
 ---
 

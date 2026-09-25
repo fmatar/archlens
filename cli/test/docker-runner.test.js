@@ -7,7 +7,9 @@ import {
   isContainerRunning,
   isContainerExisting,
   startContainer,
-  ensureServerRunning
+  ensureServerRunning,
+  openInBrowser,
+  executeStart
 } from '../src/docker-runner.js';
 
 test('checkServerHealth reports offline when port is unreachable', async () => {
@@ -139,3 +141,68 @@ test('ensureServerRunning launches container and polls readiness when server is 
   assert.equal(status.spawned, true);
   assert.equal(status.version, '0.0.1-Alpha-08');
 });
+
+test('openInBrowser delegates to platform opener command', () => {
+  const spawnedCommands = [];
+  const mockSpawn = (cmd, args) => {
+    spawnedCommands.push({ cmd, args });
+    return {};
+  };
+
+  const ok = openInBrowser('http://localhost:8088', mockSpawn);
+  assert.equal(ok, true);
+  assert.equal(spawnedCommands.length, 1);
+  if (process.platform === 'darwin') {
+    assert.equal(spawnedCommands[0].cmd, 'open');
+  } else if (process.platform === 'win32') {
+    assert.equal(spawnedCommands[0].cmd, 'cmd');
+  } else {
+    assert.equal(spawnedCommands[0].cmd, 'xdg-open');
+  }
+});
+
+test('executeStart runs container and launches browser when open option is set', async () => {
+  let openedUrl = null;
+  const mockOpener = (url) => {
+    openedUrl = url;
+    return true;
+  };
+
+  const mockRunner = async () => ({
+    status: 'running',
+    serverUrl: 'http://localhost:8088',
+    version: '0.0.1-Alpha-08',
+    spawned: true
+  });
+
+  const res = await executeStart(
+    { open: true, port: '8088' },
+    {
+      ensureServerRunning: mockRunner,
+      openInBrowser: mockOpener
+    }
+  );
+
+  assert.equal(res.status, 'running');
+  assert.equal(res.port, '8088');
+  assert.equal(res.serverUrl, 'http://localhost:8088');
+  assert.equal(openedUrl, 'http://localhost:8088');
+});
+
+test('executeStart handles custom port and offline states', async () => {
+  const mockRunner = async ({ serverUrl }) => ({
+    status: 'offline',
+    serverUrl,
+    message: 'Docker is unavailable'
+  });
+
+  const res = await executeStart(
+    { port: '9099' },
+    { ensureServerRunning: mockRunner }
+  );
+
+  assert.equal(res.status, 'offline');
+  assert.equal(res.port, '9099');
+  assert.equal(res.serverUrl, 'http://localhost:9099');
+});
+

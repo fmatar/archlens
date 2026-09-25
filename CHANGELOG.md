@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **1-Command Workbench Container Lifecycle & Auto-Resurrection (`start`)**:
+  - Added dedicated `start` command to `@fmatar/archlens-skill` CLI (`npx @fmatar/archlens-skill start`) with `--open` (`-o`) and `--port` flags.
+  - Automatically verifies whether the Quarkus container (`archlens-server`) is running on port 8088; if stopped, offline, or killed, it immediately starts and resurrects it on demand.
+  - Integrated `openInBrowser` for cross-platform visual workbench launching across macOS, Linux, and Windows.
+  - Updated `README.md`, `cli/README.md`, and agent skill definitions (`archlens`) to document automatic container lifecycle management and auto-resurrection.
+
 ## [0.0.1-Alpha-08] - 2026-09-25
 
 ### Added

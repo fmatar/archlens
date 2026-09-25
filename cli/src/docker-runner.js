@@ -169,3 +169,47 @@ export async function ensureServerRunning(options = {}, deps = {}) {
     message: 'Archlens container launched; service is warming up.'
   };
 }
+
+export function openInBrowser(url, customSpawn = spawnSync) {
+  try {
+    if (process.platform === 'darwin') {
+      customSpawn('open', [url], { stdio: 'ignore' });
+      return true;
+    }
+    if (process.platform === 'win32') {
+      customSpawn('cmd', ['/c', 'start', '""', url], { stdio: 'ignore' });
+      return true;
+    }
+    customSpawn('xdg-open', [url], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function executeStart(options = {}, deps = {}) {
+  const runner = deps.ensureServerRunning || ensureServerRunning;
+  const opener = deps.openInBrowser || openInBrowser;
+  const port = options.port || '8088';
+  const serverUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://localhost:${port}`);
+  const workspace = path.resolve(options.path || options.workspace || '.');
+
+  const status = await runner({
+    serverUrl,
+    workspace,
+    port,
+    ...options
+  }, deps);
+
+  if (status.status === 'running' && options.open) {
+    opener(serverUrl, deps.spawnSync || spawnSync);
+  }
+
+  return {
+    ...status,
+    port,
+    serverUrl
+  };
+}
+
+

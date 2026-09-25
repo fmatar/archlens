@@ -22,6 +22,7 @@ import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
 import { installMcpConfigs } from '../src/mcp-registry.js';
 import { startMcpStdioServer } from '../src/mcp-server.js';
+import { executeStart, DEFAULT_CONTAINER_NAME, DEFAULT_SERVER_URL } from '../src/docker-runner.js';
 import { spawnSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +50,7 @@ ${ui.colors.bold}USAGE:${ui.colors.reset}
 
 ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   init                     Initialize Clean Architecture policy in target project (default)
+  start                    Start Archlens Workbench container (auto-resurrects on demand)
   update                   Update existing policy with newly discovered packages and refresh skills
   upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   global                   Install Archlens skills globally for AI coding assistants
@@ -60,6 +62,8 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
+  --port <PORT>            Workbench HTTP port (default: 8088)
+  -o, --open               Open visual workbench in default browser upon startup
   -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)
   -c, --copy               Copy LLM prompt output directly to system clipboard
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
@@ -72,6 +76,8 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -h, --help               Display this help guide
 
 ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
+  ${ui.colors.dim}# Start Archlens workbench container and open in browser:${ui.colors.reset}
+  npx @fmatar/archlens-skill start --open
   ${ui.colors.dim}# Configure MCP manifests across Claude, Antigravity, and Cursor:${ui.colors.reset}
   npx @fmatar/archlens-skill --mcp
 
@@ -108,6 +114,9 @@ function parseArgs(args) {
     title: null,
     prefix: null,
     serverUrl: 'http://localhost:8088',
+    port: '8088',
+    open: false,
+    start: false,
     copy: false,
     prompt: false,
     global: false,
@@ -130,6 +139,10 @@ function parseArgs(args) {
       parsed.help = true;
     } else if (arg === '--version' || arg === '-v') {
       parsed.version = true;
+    } else if (arg === '--open' || arg === '-o') {
+      parsed.open = true;
+    } else if (arg === '--port') {
+      parsed.port = args[++i] || '8088';
     } else if (arg === '--mcp' || arg === '-m') {
       parsed.mcp = true;
     } else if (arg === '--global' || arg === '-g') {
@@ -163,7 +176,7 @@ function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'update', 'upgrade', 'global', 'prompt', 'mcp', 'help', 'version'].includes(cmd)) {
+    if (['init', 'start', 'update', 'upgrade', 'global', 'prompt', 'mcp', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -172,6 +185,7 @@ function parseArgs(args) {
 
   if (parsed.command === 'help') parsed.help = true;
   if (parsed.command === 'version') parsed.version = true;
+  if (parsed.command === 'start') parsed.start = true;
   if (parsed.command === 'update') parsed.update = true;
   if (parsed.command === 'upgrade') parsed.upgrade = true;
   if (parsed.command === 'global') parsed.global = true;
@@ -436,12 +450,41 @@ async function main() {
     return;
   }
 
+  if (options.command === 'start' || options.start) {
+    try {
+      const port = options.port || '8088';
+      const targetUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://localhost:${port}`);
+      ui.info(`Checking Archlens Workbench server on ${targetUrl}...`);
+      const status = await executeStart(options);
+      if (status.status === 'running') {
+        if (status.spawned) {
+          ui.success(`Archlens container (${DEFAULT_CONTAINER_NAME}) launched successfully!`);
+        } else {
+          ui.success(`Archlens Workbench server is active (${status.version || 'running'}).`);
+        }
+        console.log(`\n  ${ui.colors.bold}Workbench URL:${ui.colors.reset} ${ui.colors.cyan}${status.serverUrl}${ui.colors.reset}\n`);
+      } else if (status.status === 'offline') {
+        ui.warn(status.message || 'Archlens server is offline and Docker daemon is unavailable.');
+        console.log(`\n  ${ui.colors.dim}To run offline architecture analysis:${ui.colors.reset}`);
+        console.log(`  npx @fmatar/archlens-skill prompt\n`);
+      } else {
+        ui.error(status.message || 'Failed to start Archlens container.');
+        process.exit(1);
+      }
+      process.exit(0);
+    } catch (err) {
+      ui.error(err.message || String(err));
+      process.exit(1);
+    }
+  }
+
   const isInteractive = Boolean(
     process.stdin.isTTY &&
     process.stdout.isTTY &&
     !options.yes &&
     !options.dryRun &&
     !options.command &&
+    !options.start &&
     !options.global &&
     !options.update &&
     !options.upgrade &&

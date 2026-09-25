@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-08] - 2026-09-25
+
 ### Added
+- **Multi-Skill Agent Installation & Offline Tool Parity**:
+  - Enhanced `@fmatar/archlens-skill` installer to bundle and distribute all companion skills (`archlens`, `archlens-install-policy`, and `uml-workbench-companion`) into host AI agent directories (`~/.claude/skills`, `~/.gemini/config/skills`, and `~/.agents/skills`).
 - **Exhaustive Developer & Contributor Guide (Closes #102)**:
   - Authored comprehensive `docs/guide/DEVELOPER_GUIDE.md` detailing Clean Architecture concentric rings, monorepo structure, toolchain prerequisites (Java 25, Node 22+, Maven 3.9+), and local development workflows.
   - Provided step-by-step developer tutorial for implementing new polyglot language scanners via the `LanguageScanner` SPI and `FileScannerUtil`.

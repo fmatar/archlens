@@ -41,9 +41,17 @@
       isOpen = false;
     }
   }
+
+  function handleWindowPointerDown(e: PointerEvent) {
+    if (isOpen && dropdownRef) {
+      if (!(e.target instanceof Node) || !dropdownRef.contains(e.target)) {
+        isOpen = false;
+      }
+    }
+  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onpointerdown={handleWindowPointerDown} />
 
 <!-- Container with relative positioning for dropdown -->
 <div class="relative flex items-center gap-2" bind:this={dropdownRef}>
@@ -151,13 +159,6 @@
 
   <!-- Dropdown Popover Menu -->
   {#if isOpen}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="fixed inset-0 z-40"
-      onclick={() => (isOpen = false)}
-    ></div>
-
     <div
       class="absolute top-full right-0 mt-1.5 w-80 rounded-xl bg-slate-900 border border-slate-700/90 shadow-2xl backdrop-blur-md p-2.5 z-50 text-xs font-sans select-none animate-in fade-in slide-in-from-top-1 duration-150"
     >

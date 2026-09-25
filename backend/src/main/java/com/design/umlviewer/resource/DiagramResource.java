@@ -484,7 +484,7 @@ public class DiagramResource {
                 "-e",
                 "tell application \"System Events\" to return POSIX path of (choose folder with prompt \"Select Repository or Project Directory\")");
         Process p = pb.start();
-        boolean finished = p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+        boolean finished = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
         if (finished && p.exitValue() == 0) {
           String selectedPath =
               new String(p.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)

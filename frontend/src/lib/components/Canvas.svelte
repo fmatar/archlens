@@ -388,23 +388,27 @@
   function handleMouseDown(e: MouseEvent) {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
-    if (target.tagName === 'svg' || target.tagName === 'DIV' || target.classList?.contains('tier-backdrop')) {
-      diagramStore.setFocusedNode(null);
-      diagramStore.clearEdgeTooltip();
 
-      isPanning = true;
-      panStartX = e.clientX - diagramStore.panX;
-      panStartY = e.clientY - diagramStore.panY;
-      targetPanX = diagramStore.panX;
-      targetPanY = diagramStore.panY;
-
-      document.body.style.cursor = 'grabbing';
-      document.body.style.userSelect = 'none';
-
-      window.addEventListener('pointermove', onCanvasPanMove, { passive: false });
-      window.addEventListener('pointerup', onCanvasPanUp);
-      window.addEventListener('pointercancel', onCanvasPanUp);
+    // Do not initiate canvas panning if clicking an interactive node card, button, input, or link
+    if (target.closest('[data-component-id], button, input, select, textarea, a, [role="button"], [role="dialog"]')) {
+      return;
     }
+
+    diagramStore.setFocusedNode(null);
+    diagramStore.clearEdgeTooltip();
+
+    isPanning = true;
+    panStartX = e.clientX - diagramStore.panX;
+    panStartY = e.clientY - diagramStore.panY;
+    targetPanX = diagramStore.panX;
+    targetPanY = diagramStore.panY;
+
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+
+    window.addEventListener('pointermove', onCanvasPanMove, { passive: false });
+    window.addEventListener('pointerup', onCanvasPanUp);
+    window.addEventListener('pointercancel', onCanvasPanUp);
   }
 
   function onCanvasPanMove(e: PointerEvent) {

@@ -581,8 +581,10 @@ public class DiagramResource {
           if (!finished) {
             process.destroyForcibly();
           }
-        } catch (Exception ignored) {
+        } catch (IOException ignored) {
           // Gracefully continue with available list
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
         }
       }
     }

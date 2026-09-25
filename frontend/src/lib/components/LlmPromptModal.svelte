@@ -1,7 +1,7 @@
 <script lang="ts">
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
-  import { X, Copy, Check, Download, Bot, Sparkles, AlertTriangle, ShieldCheck } from '@lucide/svelte';
+  import { X, Copy, Check, Download, Bot, Sparkles } from '@lucide/svelte';
 
   let isOpen = $derived(diagramStore.isLlmPromptModalOpen);
   let dossier = $derived(diagramStore.llmPromptDossier);

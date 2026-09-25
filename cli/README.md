@@ -100,6 +100,16 @@ Migrates older `.uml-viewer/` directories and companions to the standard `.archl
 npx @fmatar/archlens-skill upgrade
 ```
 
+#### 6. Export LLM Refactoring Prompt Dossier
+Generates copy-ready architectural diagnostics and concrete Dependency Inversion Principle (DIP) instructions for Claude Code, Gemini, ChatGPT, or Antigravity:
+```bash
+# Print dossier to stdout
+npx @fmatar/archlens-skill prompt
+
+# Or copy directly to system clipboard
+npx @fmatar/archlens-skill prompt --copy
+```
+
 ---
 
 ### Command-Line Options
@@ -110,6 +120,7 @@ npx @fmatar/archlens-skill upgrade
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
+| `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
 | `--global` | `-g` | Install skill into global agent directories | `false` |
 | `--update` | `-u` | Re-scan code and update existing policy | `false` |
 | `--upgrade` | | Migrate legacy `.uml-viewer` to `.archlens` | `false` |

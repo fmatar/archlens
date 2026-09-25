@@ -13,8 +13,16 @@ Analyzes any project repository, detects programming languages and package hiera
 ## ⚡ Quickstart
 
 ### Option A: Run via NPX
+
 ```bash
+# Production Stable (recommended)
 npx @fmatar/archlens-skill
+
+# Canary / Development Preview (tracks latest develop branch)
+npx @fmatar/archlens-skill@dev
+
+# Direct GitHub Execution (zero registry dependencies)
+npx github:fmatar/archlens
 ```
 
 ### Option B: Install Globally via NPM

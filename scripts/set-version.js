@@ -64,6 +64,14 @@ const files = [
         /("name":\s*"@fmatar\/archlens-skill",[\s\S]*?"version":\s*")[^"]+(")/,
         `$1${newVersion}$2`
       )
+  },
+  {
+    path: path.join(rootDir, 'package.json'),
+    update: (content) =>
+      content.replace(
+        /("name":\s*"@fmatar\/archlens",[\s\S]*?"version":\s*")[^"]+(")/,
+        `$1${newVersion}$2`
+      )
   }
 ];
 

@@ -118,3 +118,30 @@ test('executeToolCall inspectArchitecture uses online backend when available', a
   const parsed = JSON.parse(result.content[0].text);
   assert.equal(parsed.title, 'OnlineGraph');
 });
+
+test('executeToolCall getSnapshot sanitizes snapshotId against directory traversal', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-snap-'));
+  try {
+    const snapshotsDir = path.join(tmpDir, '.archlens', 'snapshots');
+    fs.mkdirSync(snapshotsDir, { recursive: true });
+    fs.writeFileSync(path.join(snapshotsDir, 'v1.0.0.json'), JSON.stringify({ version: 'v1.0.0' }));
+
+    const deps = {
+      ensureServerRunning: async () => ({ status: 'offline' })
+    };
+
+    const result = await executeToolCall(
+      'getSnapshot',
+      { snapshotId: '../../v1.0.0', projectRoot: tmpDir },
+      {},
+      deps
+    );
+
+    assert.ok(result.content);
+    assert.equal(result.content[0].type, 'text');
+    const parsed = JSON.parse(result.content[0].text);
+    assert.equal(parsed.version, 'v1.0.0');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});

@@ -129,7 +129,8 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       }
     }
 
-    const snapshotFile = path.join(projectRoot, '.archlens', 'snapshots', `${snapshotId}.json`);
+    const safeSnapshotId = path.basename(snapshotId);
+    const snapshotFile = path.join(projectRoot, '.archlens', 'snapshots', `${safeSnapshotId}.json`);
     if (fs.existsSync(snapshotFile)) {
       const data = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
@@ -139,7 +140,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ error: `Snapshot not found: ${snapshotId}`, offline: true })
+          text: JSON.stringify({ error: `Snapshot not found: ${safeSnapshotId}`, offline: true })
         }
       ]
     };

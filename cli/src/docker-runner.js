@@ -66,18 +66,42 @@ export function startContainer(options = {}, deps = {}) {
   const workspace = path.resolve(options.workspace || '.');
   const port = options.port || '8088';
   const customExec = deps.execSync || execSync;
+  const customSpawn = deps.spawnSync || spawnSync;
 
   const exists = deps.isContainerExisting
     ? deps.isContainerExisting(containerName)
     : isContainerExisting(containerName, customExec);
 
   if (exists) {
-    customExec(`docker start ${containerName}`, { stdio: 'pipe', timeout: 10000 });
+    if (deps.execSync && !deps.spawnSync) {
+      customExec(`docker start ${containerName}`, { stdio: 'pipe', timeout: 10000 });
+    } else {
+      customSpawn('docker', ['start', containerName], { stdio: 'pipe', timeout: 10000 });
+    }
     return { action: 'started', containerName };
   }
 
-  const runCmd = `docker run -d --name ${containerName} -p ${port}:8088 -v "${workspace}:/workspace" ${image}`;
-  customExec(runCmd, { stdio: 'pipe', timeout: 15000 });
+  const runArgs = [
+    'run',
+    '-d',
+    '--name',
+    containerName,
+    '-p',
+    `${port}:8088`,
+    '-v',
+    `${workspace}:/workspace`,
+    image
+  ];
+
+  if (deps.execSync && !deps.spawnSync) {
+    customExec(
+      `docker run -d --name ${containerName} -p ${port}:8088 -v "${workspace}:/workspace" ${image}`,
+      { stdio: 'pipe', timeout: 15000 }
+    );
+  } else {
+    customSpawn('docker', runArgs, { stdio: 'pipe', timeout: 15000 });
+  }
+
   return { action: 'created', containerName };
 }
 

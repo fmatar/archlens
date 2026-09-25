@@ -144,3 +144,20 @@ export interface BundledEdge {
   isViolating: boolean;
   representativeEdge: DependencyEdge;
 }
+
+export interface SnapshotInfo {
+  id: string;
+  label: string;
+  date?: string;
+  tag?: string;
+  isLive?: boolean;
+}
+
+export interface DiffMetrics {
+  addedNodes: number;
+  removedNodes: number;
+  newViolations: number;
+  fixedViolations: number;
+  totalBefore: number;
+  totalAfter: number;
+}

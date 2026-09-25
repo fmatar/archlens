@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-08] - 2026-09-25
+
+### Added
+- **Multi-Skill Agent Installation & Offline Tool Parity**:
+  - Enhanced `@fmatar/archlens-skill` installer to bundle and distribute all companion skills (`archlens`, `archlens-install-policy`, and `uml-workbench-companion`) into host AI agent directories (`~/.claude/skills`, `~/.gemini/config/skills`, and `~/.agents/skills`).
+- **Exhaustive Developer & Contributor Guide (Closes #102)**:
+  - Authored comprehensive `docs/guide/DEVELOPER_GUIDE.md` detailing Clean Architecture concentric rings, monorepo structure, toolchain prerequisites (Java 25, Node 22+, Maven 3.9+), and local development workflows.
+  - Provided step-by-step developer tutorial for implementing new polyglot language scanners via the `LanguageScanner` SPI and `FileScannerUtil`.
+  - Provided extension guide for declaring native Model Context Protocol (MCP) tools in Quarkus with client registry and offline AST fallbacks.
+  - Standardized Uncle Bob test craftsmanship guidelines, quality verification matrix (Spotless, PMD, SpotBugs, Vitest, Node test runner), and Dual-Gate coverage expectations.
+  - Modernized `CONTRIBUTING.md` with active repository layout and direct navigation links.
+- **Native Model Context Protocol (MCP) Server & AI Client Auto-Installer (Closes #100)**:
+  - Added native MCP server support directly inside the Quarkus backend using `io.quarkiverse.mcp:quarkus-mcp-server-http:2.0.0` exposing Streamable HTTP and SSE at `/mcp` and `/mcp/sse`.
+  - Implemented `@ApplicationScoped ArchlensMcpService` with 4 declarative `@Tool` methods: `inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, and `getSnapshot`.
+  - Added `mcp-registry.js` to `@fmatar/archlens-skill` CLI for automated discovery and configuration of host AI client manifests: Claude Desktop (`claude_desktop_config.json`), Google Antigravity & Gemini CLI (`~/.gemini/antigravity/mcp/archlens/`), Claude Code (`.mcp.json`), Cursor (`.cursor/mcp.json`), and VS Code (`.vscode/mcp.json`).
+  - Added `docker-runner.js` providing on-demand container orchestration: verifies Quarkus health on port 8088, launches background container if offline and Docker is active, polls readiness, and provides graceful fallback to local offline JavaScript AST engine.
+  - Implemented `mcp-server.js` stdio JSON-RPC 2.0 transport bridge for AI assistants.
+  - Added `mcp` command (`npx @fmatar/archlens-skill mcp`) and `--mcp` flag on installer (`npx @fmatar/archlens-skill --mcp`).
+- **Canvas Hover Ergonomics, Git Architecture Comparator & Responsive Browsing (Closes #99)**:
+  - Added 140ms hover intent debounce and 180ms graceful leave dismissal in `DependencyEdge.svelte` and `EdgeTooltip.svelte` to eliminate sticky popups from lingering across the canvas.
+  - Implemented `GitVersionComparator.svelte` top-bar comparator enabling instant (< 15ms) architectural drift inspection against Git tags and release snapshots (`.archlens/snapshots/`) with live diff metrics (`+N breaches`, `✓N fixed`, `+N added`).
+  - Added `GET /api/snapshots` and `GET /api/snapshots/{snapshotId}` endpoints in backend `DiagramResource.java`.
+  - Resolved local dev mode thread blocking by reducing `osascript` process timeout to 3s with forcible process destruction and equipping `OpenProjectModal.svelte` with an `AbortController` timeout (3.5s) and automatic fallback to the in-app folder explorer.
+  - Preserved 100% component visibility upon node selection by guarding dimming behind the explicit `ISOLATE_NEIGHBORHOOD` filter (`F`).
+- **Clean Architecture LLM Refactoring Prompt Dossier (Closes #96)**:
+  - Added `ArchitecturalDossierGenerator` service and `GET /api/diagram/llm-dossier` REST endpoint producing copy-ready markdown formatted specifically for Large Language Models (Claude Code, Gemini, ChatGPT, Antigravity) to refactor code adhering to Uncle Bob's Dependency Rule.
+  - Generates concentric ring classification (Domain Core L0 -> Application L1 -> Adapters L2 -> Infrastructure L3), outward dependency rule violation diagnostics, and prioritized Dependency Inversion Principle (DIP) refactoring guidance proposing inner interface ports (`*Port`) and dependency injection wiring.
+  - Implemented `LlmPromptModal` Svelte 5 component with GSAP spring physics entrance animations, syntax-highlighted monospace viewer, one-click clipboard copying, and `.md` file download.
+  - Added header action button `🤖 LLM Prompt` and `L` keyboard shortcut in frontend workbench, plus Command Palette (`⌘K`) integration.
+  - Added `prompt` command to `@fmatar/archlens-skill` CLI (`npx @fmatar/archlens-skill prompt`) supporting live backend queries, automatic offline local AST/policy analysis fallback, and `-c` / `--copy` clipboard copying.
+  - Documented prompt commands in `archlens-install-policy` skill and synchronized with active AI agent installations.
+
 ## [0.0.1-Alpha-07] - 2026-09-24
 
 ### Added

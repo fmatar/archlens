@@ -373,5 +373,31 @@ test.describe('Archlens Workbench & Source Inspection', () => {
     await page.keyboard.press('Escape');
     await expect(modalTitle).not.toBeVisible();
   });
+
+  test('should open git version comparator dropdown and toggle comparison mode', async ({ page }) => {
+    await page.goto('/');
+
+    // 1. Locate "Compare Release" button in header
+    const compareBtn = page.locator('button', { hasText: 'Compare Release' });
+    await expect(compareBtn).toBeVisible({ timeout: 10000 });
+    await compareBtn.click();
+
+    // 2. Verify comparator dropdown menu opens
+    const menuTitle = page.locator('span', { hasText: 'Git Release Comparator' });
+    await expect(menuTitle).toBeVisible({ timeout: 5000 });
+
+    // 3. Select a release snapshot from the list
+    const releaseOption = page.locator('button', { hasText: /v0.0.1-Alpha-08|v0.0.1-Alpha-07|v0.0.1-Alpha-06|v0.0.1-Alpha-05/ }).first();
+    await expect(releaseOption).toBeVisible({ timeout: 5000 });
+    await releaseOption.click();
+
+    // 4. Verify comparison pill appears in header
+    const exitDiffBtn = page.locator('button', { hasText: 'Exit' });
+    await expect(exitDiffBtn).toBeVisible({ timeout: 5000 });
+
+    // 5. Exit comparison mode
+    await exitDiffBtn.click();
+    await expect(compareBtn).toBeVisible({ timeout: 5000 });
+  });
 });
 

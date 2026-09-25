@@ -42,6 +42,12 @@ npx @fmatar/archlens-skill --yes
 
 # Target a specific repository directory
 npx @fmatar/archlens-skill --path /path/to/my-project --yes
+
+# Export Clean Architecture LLM refactoring prompt dossier
+npx @fmatar/archlens-skill prompt
+
+# Copy dossier directly to system clipboard
+npx @fmatar/archlens-skill prompt --copy
 ```
 
 *Or install globally via npm:*
@@ -91,7 +97,50 @@ Open **`http://localhost:8088`** in your browser.
 1. **Browse Projects (`⌘O` / `Ctrl+O`)**: Press `⌘O` to open the visual filesystem explorer. Select any repository mounted in `/workspace` with automatic build framework detection (`Maven`, `Gradle`, `Node`, `Go`, `Cargo`).
 2. **Violation X-Ray (`V`)**: Press `V` to isolate illegal outward dependency violations in neon crimson while compliant inward flows gently fade into the background.
 3. **Hierarchical Edge Bundling (`B`)**: Press `B` to route dense cross-package connections along smooth Catmull-Rom spline corridors.
-4. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
+4. **Git Release Comparator (`G`)**: Compare architecture against prior Git tags or pre-compiled snapshots with real-time delta badges (`+N breaches`, `✓N fixed`, `+N added`).
+5. **LLM Prompt Export (`L`)**: Export a copy-ready Clean Architecture refactoring prompt dossier for LLMs to generate abstractions and invert inward dependencies.
+6. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
+
+---
+
+### 4. Connect AI Assistants via Model Context Protocol (MCP)
+
+Archlens embeds a native **Model Context Protocol (MCP)** server directly in its unified Quarkus backend over HTTP/SSE (`/mcp` and `/mcp/sse`), accompanied by an on-demand container runner and stdio bridge. AI coding assistants (Claude Desktop, Google Antigravity, Claude Code, Cursor, VS Code) can query Clean Architecture metrics and refactoring dossiers autonomously.
+
+#### Automated 1-Command Setup:
+```bash
+# Auto-configures Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code:
+npx @fmatar/archlens-skill --mcp
+```
+
+#### Available Declarative Tools:
+- `inspectArchitecture`: Evaluates codebase concentric rings, computes instability metrics, and identifies outward dependency breaches.
+- `exportLlmDossier`: Produces an actionable refactoring prompt dossier diagnosing violations and prescribing concrete Dependency Inversion Principle (DIP) interface ports.
+- `listSnapshots`: Discovers pre-compiled snapshot files and historical Git release tags.
+- `getSnapshot`: Retrieves architecture graph models for specific historical releases.
+
+#### Manual AI Client Configurations:
+- **Cursor & VS Code (`.cursor/mcp.json` or `.vscode/mcp.json`)**:
+  ```json
+  {
+    "mcpServers": {
+      "archlens": {
+        "url": "http://localhost:8088/mcp/sse"
+      }
+    }
+  }
+  ```
+- **Claude Desktop (`claude_desktop_config.json`) & Claude Code (`.mcp.json`)**:
+  ```json
+  {
+    "mcpServers": {
+      "archlens": {
+        "command": "npx",
+        "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+      }
+    }
+  }
+  ```
 
 ---
 
@@ -105,6 +154,8 @@ Open **`http://localhost:8088`** in your browser.
 | `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
+| `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
+| `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |
 | `+` / `-` / `0` | **Zoom & Pan** | Zoom in, zoom out, or reset canvas viewport |
 
@@ -180,6 +231,8 @@ Archlens provides seamless bidirectional integration with autonomous coding assi
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
+| `--mcp` | `-m` | Auto-configure MCP client manifests (Claude, Antigravity, Cursor) | `false` |
+| `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
 | `--global` | `-g` | Install skill into global agent directories | `false` |
 | `--update` | `-u` | Re-scan code and update existing policy | `false` |
 | `--upgrade` | | Migrate legacy `.uml-viewer` to standard `.archlens` | `false` |
@@ -232,11 +285,12 @@ npm --prefix frontend run test:e2e
 ## 📚 Documentation & Resources
 
 - [User Guide](docs/guide/USER_GUIDE.md)
+- [Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)
 - [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)
 - [Inspiration & Vision](docs/guide/INSPIRATION_AND_VISION.md)
 - [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
 - [Changelog](CHANGELOG.md)
-- [Development Guide](CONTRIBUTING.md)
+- [Contribution Process](CONTRIBUTING.md)
 
 ---
 

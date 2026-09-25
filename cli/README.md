@@ -57,6 +57,8 @@ node ./cli/bin/index.js
 - **Multi-Agent Skill Deployment**: Installs the `archlens-install-policy` skill globally into Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
 - **Safe Incremental Updates**: Re-scans codebases for newly introduced packages, updating `order` and `levels` while preserving user custom rules and configurations.
 - **Seamless Upgrade Migration**: Automatically migrates legacy `.uml-viewer/` folders and companion files to modern `.archlens/` via `archlens-skill upgrade`.
+- **Model Context Protocol (MCP) Client Auto-Configuration**: Detects and configures host AI client manifests (Claude Desktop, Google Antigravity, Claude Code, Cursor, VS Code) in a single command (`--mcp`).
+- **On-Demand Container Orchestration & Stdio Bridge**: Automatically spins up the Archlens container when needed, bridges MCP over stdio (`mcp` command), and provides an instant offline AST fallback if Docker is unavailable.
 - **Mailbox Protocol Integration**: Injects the Clean Architecture Companion Protocol into `CLAUDE.md` and `AGENTS.md` for seamless asynchronous mailbox refactoring (`to-agent.json`, `to-viewer.json`).
 
 ---
@@ -100,6 +102,26 @@ Migrates older `.uml-viewer/` directories and companions to the standard `.archl
 npx @fmatar/archlens-skill upgrade
 ```
 
+#### 6. Export LLM Refactoring Prompt Dossier
+Generates copy-ready architectural diagnostics and concrete Dependency Inversion Principle (DIP) instructions for Claude Code, Gemini, ChatGPT, or Antigravity:
+```bash
+# Print dossier to stdout
+npx @fmatar/archlens-skill prompt
+
+# Or copy directly to system clipboard
+npx @fmatar/archlens-skill prompt --copy
+```
+
+#### 7. Model Context Protocol (MCP) Setup & Stdio Bridge
+Configures detected AI client manifests or launches an interactive stdio bridge:
+```bash
+# Auto-configure Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code
+npx @fmatar/archlens-skill --mcp
+
+# Launch MCP stdio transport bridge (spins up Docker container automatically when needed)
+npx @fmatar/archlens-skill mcp
+```
+
 ---
 
 ### Command-Line Options
@@ -110,6 +132,8 @@ npx @fmatar/archlens-skill upgrade
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
+| `--mcp` | `-m` | Auto-configure MCP client manifests (Claude, Antigravity, Cursor) | `false` |
+| `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
 | `--global` | `-g` | Install skill into global agent directories | `false` |
 | `--update` | `-u` | Re-scan code and update existing policy | `false` |
 | `--upgrade` | | Migrate legacy `.uml-viewer` to `.archlens` | `false` |

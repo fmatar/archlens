@@ -9,6 +9,9 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { generatePolicy } from './analyzer.js';
+import { installMcpConfigs } from './mcp-registry.js';
+
+export { installMcpConfigs };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,6 +114,11 @@ export function installLocalPolicy(projectRoot, options = {}) {
     }
   }
 
+  let mcpResult = null;
+  if (options.mcp) {
+    mcpResult = installMcpConfigs({ path: root, ...options });
+  }
+
   return {
     targetDir: root,
     archlensDir: targetDir,
@@ -120,62 +128,82 @@ export function installLocalPolicy(projectRoot, options = {}) {
     policyCreated,
     policyData,
     companionFiles: updatedCompanions,
+    mcpResult,
     dryRun
   };
 }
 
-export function getGlobalSkillDirectories() {
-  const home = os.homedir();
-  return [
+export function getGlobalSkillDirectories(home = os.homedir()) {
+  const bundledSkillsDir = path.resolve(__dirname, '..', 'skills');
+  let skillNames = ['archlens-install-policy'];
+  if (fs.existsSync(bundledSkillsDir)) {
+    try {
+      skillNames = fs.readdirSync(bundledSkillsDir, { withFileTypes: true })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
+    } catch {
+      // fallback
+    }
+  }
+
+  const agents = [
     {
       agent: 'Claude Code',
-      baseDir: path.join(home, '.claude', 'skills'),
-      targetDir: path.join(home, '.claude', 'skills', 'archlens-install-policy')
+      baseDir: path.join(home, '.claude', 'skills')
     },
     {
       agent: 'Gemini CLI & Google Antigravity',
-      baseDir: path.join(home, '.gemini', 'config', 'skills'),
-      targetDir: path.join(home, '.gemini', 'config', 'skills', 'archlens-install-policy')
+      baseDir: path.join(home, '.gemini', 'config', 'skills')
     },
     {
       agent: 'Generic Agents Workspace',
-      baseDir: path.join(home, '.agents', 'skills'),
-      targetDir: path.join(home, '.agents', 'skills', 'archlens-install-policy')
+      baseDir: path.join(home, '.agents', 'skills')
     }
   ];
+
+  const results = [];
+  for (const a of agents) {
+    for (const skillName of skillNames) {
+      results.push({
+        agent: a.agent,
+        skill: skillName,
+        baseDir: a.baseDir,
+        targetDir: path.join(a.baseDir, skillName)
+      });
+    }
+  }
+  return results;
 }
 
 export function installGlobalSkills(options = {}) {
   const dryRun = Boolean(options.dryRun);
   const force = Boolean(options.force);
-  const bundledSkillDir = path.resolve(__dirname, '..', 'skills', 'archlens-install-policy');
+  const bundledSkillsRoot = path.resolve(__dirname, '..', 'skills');
 
-  if (!fs.existsSync(bundledSkillDir)) {
-    throw new Error(`Bundled skill template directory not found at: ${bundledSkillDir}`);
-  }
-
-  const destinations = getGlobalSkillDirectories();
+  const destinations = getGlobalSkillDirectories(options.homedir);
   const installed = [];
 
   for (const dest of destinations) {
     // Install if parent agent directory exists or if force flag is enabled
     const agentHomeDir = path.dirname(dest.baseDir);
     const shouldInstall = force || fs.existsSync(agentHomeDir);
+    const sourceSkillDir = path.join(bundledSkillsRoot, dest.skill);
 
-    if (shouldInstall) {
+    if (shouldInstall && fs.existsSync(sourceSkillDir)) {
       if (!dryRun) {
         fs.mkdirSync(dest.targetDir, { recursive: true });
-        copyDirectorySync(bundledSkillDir, dest.targetDir);
+        copyDirectorySync(sourceSkillDir, dest.targetDir);
       }
       installed.push({
         agent: dest.agent,
+        skill: dest.skill,
         path: dest.targetDir
       });
     }
   }
 
   return {
-    sourceDir: bundledSkillDir,
+    sourceDir: bundledSkillsRoot,
     installed,
     dryRun
   };

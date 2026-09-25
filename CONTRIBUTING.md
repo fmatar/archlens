@@ -1,6 +1,9 @@
 # Contributing to Archlens
 
-Thank you for your interest in contributing to **Archlens**! We welcome contributions of all kinds: polyglot AST scanners, visualization enhancements, UI/UX polish, bug fixes, documentation improvements, and agent workflows.
+Thank you for your interest in contributing to **Archlens**! We welcome contributions of all kinds: polyglot AST scanners, visualization enhancements, UI/UX polish, Model Context Protocol (MCP) tooling, bug fixes, documentation improvements, and autonomous agent workflows.
+
+> [!TIP]
+> For an in-depth architectural breakdown, instructions on adding new polyglot language scanners, MCP server extension guides, and Uncle Bob test craftsmanship standards, see the **[Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)**.
 
 ---
 
@@ -14,20 +17,20 @@ Archlens has adopted the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 
 ### Prerequisites
 
-- **Java**: OpenJDK 21 or Java 25 (Java 25 recommended for local testing)
+- **Java**: Java 25 (Java 25 recommended for local testing)
 - **Maven**: Apache Maven 3.9+
-- **Node.js**: Node 18+ and `npm` or `pnpm`
-- **Docker**: (Optional) Docker Engine 24+ for container testing
+- **Node.js**: Node 20+ and `pnpm` (for frontend) / `npm` (for CLI)
+- **Docker**: (Optional) Docker Engine 24+ for container packaging
 
 ### Repository Layout
 
 ```text
 archlens/
-├── backend/            # Quarkus 3.x REST/SSE server, Polyglot AST Scanners, Rule Engine
+├── backend/            # Quarkus 3.x REST, SSE & native MCP server, Polyglot AST Scanners, Rule Engine
 ├── frontend/           # Svelte 5 + Tailwind CSS v4 dynamic visualization canvas
-├── docs/               # Architecture specs (C4), User Guide, Vision & Inspiration
-├── .agents/            # AI Agent companion skills and instructions
-├── .uml-viewer/        # Mailbox IPC directory and architectural policy definitions
+├── cli/                # Zero-dependency CLI (@fmatar/archlens-skill), MCP registry, stdio runner
+├── docs/               # Architecture specs (C4), User Guide, Developer Guide, Vision & Inspiration
+├── .archlens/          # Active architectural policy and mailbox IPC queue
 └── pom.xml             # Root reactor POM (com.slixes:archlens)
 ```
 
@@ -43,18 +46,26 @@ The backend provides hot-reload during development:
 cd backend
 ./mvnw quarkus:dev
 ```
-The REST API and SSE stream will start at `http://localhost:8088`.
+The REST API, SSE stream, and MCP endpoints start at `http://localhost:8088`.
 
 ### 2. Running the Frontend (Vite Dev Server)
 
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
-Open **`http://localhost:5173`** in your browser. The Vite development server proxies API requests to port `8088`.
+Open **`http://localhost:5173`** in your browser. The Vite development server proxies API and MCP requests to port `8088`.
 
-### 3. Running Containerized
+### 3. Running the CLI (`@fmatar/archlens-skill`)
+
+```bash
+cd cli
+npm test
+node bin/index.js --help
+```
+
+### 4. Running Containerized
 
 To test the multi-stage single-container distribution locally:
 
@@ -76,8 +87,18 @@ mvn spotless:apply
 # Run full reactor build, unit tests, and coverage checks
 mvn clean verify
 
-# Run frontend type and lint checks
-cd frontend && npm run check
+# Run backend PMD static analysis
+mvn -f backend/pom.xml pmd:check
+
+# Run backend SpotBugs security checks
+mvn -f backend/pom.xml compile spotbugs:check
+
+# Run CLI test suite (43+ tests)
+npm --prefix cli test
+
+# Run frontend unit tests and type checks
+npm --prefix frontend test
+npm --prefix frontend run check
 ```
 
 ---
@@ -93,7 +114,7 @@ cd frontend && npm run check
    ```
 2. **Commit Conventions**:
    We follow [Conventional Commits](https://www.conventionalcommits.org/):
-   - `feat:` A new feature or scanner
+   - `feat:` A new feature, scanner, or MCP tool
    - `fix:` A bug fix
    - `docs:` Documentation updates
    - `chore:` Build scripts, dependencies, or repository hygiene

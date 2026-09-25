@@ -92,3 +92,52 @@ test('getCompanionProtocolBlock produces valid markdown containing server URL', 
   assert.ok(block.includes('APPLY_PROPOSAL'));
   assert.ok(block.includes('REFRESH_CRAP'));
 });
+
+test('installLocalPolicy invokes MCP configuration when options.mcp is enabled', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-install-mcp-'));
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-install-home-'));
+
+  try {
+    fs.mkdirSync(path.join(tmpDir, 'src', 'domain'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}');
+
+    const result = installLocalPolicy(tmpDir, {
+      title: 'MCP Service',
+      mcp: true,
+      homedir: tmpHome,
+      force: true
+    });
+
+    assert.ok(result.mcpResult);
+    assert.equal(typeof result.mcpResult, 'object');
+    assert.ok(Array.isArray(result.mcpResult.configuredClients));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test('installGlobalSkills installs all bundled skills into global agent directories', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-global-skills-'));
+
+  try {
+    const res = installGlobalSkills({
+      force: true,
+      homedir: tmpHome
+    });
+
+    assert.ok(Array.isArray(res.installed));
+    assert.ok(res.installed.length >= 3);
+    const skillsInstalled = res.installed.map((item) => item.skill);
+    assert.ok(skillsInstalled.includes('archlens'));
+    assert.ok(skillsInstalled.includes('archlens-install-policy'));
+    assert.ok(skillsInstalled.includes('uml-workbench-companion'));
+
+    for (const item of res.installed) {
+      assert.ok(fs.existsSync(path.join(item.path, 'SKILL.md')));
+    }
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+

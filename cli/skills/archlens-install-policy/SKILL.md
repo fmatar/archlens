@@ -21,6 +21,8 @@ Trigger this skill whenever the user asks to:
 - "Upgrade Archlens config from .uml-viewer to .archlens"
 - "Connect repository to Archlens workbench"
 - "Prepare this repository for Archlens refactoring companion"
+- "Export LLM refactoring prompt / Clean Architecture diagnostic dossier"
+- "Generate prompt for Claude Code or LLM to fix Clean Architecture violations"
 
 ---
 
@@ -54,6 +56,12 @@ npx @fmatar/archlens-skill --path . --yes
 
 # Or upgrade an existing project from .uml-viewer to .archlens
 npx @fmatar/archlens-skill upgrade --path .
+
+# Or export LLM Refactoring Prompt Dossier (copy-ready markdown)
+npx @fmatar/archlens-skill prompt --path .
+
+# Copy LLM Refactoring Prompt directly to system clipboard
+npx @fmatar/archlens-skill prompt --path . --copy
 ```
 
 *Flags available:*

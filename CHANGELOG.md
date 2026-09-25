@@ -9,12 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-09] - 2026-09-25
+
 ### Added
 - **1-Command Workbench Container Lifecycle & Auto-Resurrection (`start`)**:
   - Added dedicated `start` command to `@fmatar/archlens-skill` CLI (`npx @fmatar/archlens-skill start`) with `--open` (`-o`) and `--port` flags.
   - Automatically verifies whether the Quarkus container (`archlens-server`) is running on port 8088; if stopped, offline, or killed, it immediately starts and resurrects it on demand.
   - Integrated `openInBrowser` for cross-platform visual workbench launching across macOS, Linux, and Windows.
   - Updated `README.md`, `cli/README.md`, and agent skill definitions (`archlens`) to document automatic container lifecycle management and auto-resurrection.
+
+### Changed
+- **Major Dependency Upgrades & Toolchain Maintenance**:
+  - Upgraded frontend build tooling and dependencies: `@lucide/svelte` to `^1.48.0`, `@sveltejs/vite-plugin-svelte` to `^7.3.1`, `vite` to `^8.3.1`, `vitest` to `^5.0.2`, `@vitest/coverage-v8` to `^5.0.2`, and verified `@typescript/native` with TypeScript 7 (`7.0.2`).
+  - Upgraded backend runtime and toolchain: Quarkus BOM (`quarkus.platform.version`) to `3.39.5`, `quarkus-mcp-server-http` to `2.0.1`, `cyclonedx-maven-plugin` to `2.9.3`, and `spotless-maven-plugin` to `3.10.3`.
 
 ## [0.0.1-Alpha-08] - 2026-09-25
 

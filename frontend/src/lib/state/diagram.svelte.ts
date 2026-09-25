@@ -301,14 +301,14 @@ class DiagramState {
         this.availableSnapshots = data.snapshots || [];
       } else {
         this.availableSnapshots = [
-          { id: 'v0.0.1-Alpha-08', label: 'v0.0.1-Alpha-08 (Latest Release)', tag: 'v0.0.1-Alpha-08' },
+          { id: 'v0.0.1-Alpha-09', label: 'v0.0.1-Alpha-09 (Latest Release)', tag: 'v0.0.1-Alpha-09' },
           { id: 'v0.0.1-Alpha-07', label: 'v0.0.1-Alpha-07', tag: 'v0.0.1-Alpha-07' },
           { id: 'v0.0.1-Alpha-06', label: 'v0.0.1-Alpha-06', tag: 'v0.0.1-Alpha-06' }
         ];
       }
     } catch (_) {
       this.availableSnapshots = [
-        { id: 'v0.0.1-Alpha-08', label: 'v0.0.1-Alpha-08 (Latest Release)', tag: 'v0.0.1-Alpha-08' },
+        { id: 'v0.0.1-Alpha-09', label: 'v0.0.1-Alpha-09 (Latest Release)', tag: 'v0.0.1-Alpha-09' },
         { id: 'v0.0.1-Alpha-07', label: 'v0.0.1-Alpha-07', tag: 'v0.0.1-Alpha-07' },
         { id: 'v0.0.1-Alpha-06', label: 'v0.0.1-Alpha-06', tag: 'v0.0.1-Alpha-06' }
       ];

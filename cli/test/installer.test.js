@@ -116,3 +116,28 @@ test('installLocalPolicy invokes MCP configuration when options.mcp is enabled',
     fs.rmSync(tmpHome, { recursive: true, force: true });
   }
 });
+
+test('installGlobalSkills installs all bundled skills into global agent directories', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-global-skills-'));
+
+  try {
+    const res = installGlobalSkills({
+      force: true,
+      homedir: tmpHome
+    });
+
+    assert.ok(Array.isArray(res.installed));
+    assert.ok(res.installed.length >= 3);
+    const skillsInstalled = res.installed.map((item) => item.skill);
+    assert.ok(skillsInstalled.includes('archlens'));
+    assert.ok(skillsInstalled.includes('archlens-install-policy'));
+    assert.ok(skillsInstalled.includes('uml-workbench-companion'));
+
+    for (const item of res.installed) {
+      assert.ok(fs.existsSync(path.join(item.path, 'SKILL.md')));
+    }
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+

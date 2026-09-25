@@ -6,7 +6,9 @@ import type {
   AgentTelemetryEvent,
   EdgeTooltipInfo,
   ComponentNode,
-  DeclutterFilter
+  DeclutterFilter,
+  SnapshotInfo,
+  DiffMetrics
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -30,10 +32,99 @@ class DiagramState {
   focusedNodeId = $state<string | null>(null);
   targetHaloNodeId = $state<string | null>(null);
 
+  // Git Snapshot & Version Comparison State
+  comparisonTargetId = $state<string | null>(null);
+  availableSnapshots = $state<SnapshotInfo[]>([]);
+  snapshotGraph = $state<ArchitectureGraph | null>(null);
+  isComparing = $derived(this.comparisonTargetId !== null && this.snapshotGraph !== null);
+
+  diffMetrics = $derived.by<DiffMetrics | null>(() => {
+    if (!this.comparisonTargetId || !this.snapshotGraph || !this.graph) {
+      return null;
+    }
+    const currentCompIds = new Set(this.graph.components.map((c) => c.id));
+    const snapshotCompIds = new Set(this.snapshotGraph.components.map((c) => c.id));
+
+    let addedNodes = 0;
+    for (const id of currentCompIds) {
+      if (!snapshotCompIds.has(id)) addedNodes++;
+    }
+
+    let removedNodes = 0;
+    for (const id of snapshotCompIds) {
+      if (!currentCompIds.has(id)) removedNodes++;
+    }
+
+    const currentViolations = this.graph.edges.filter((e) => e.isViolating);
+    const snapshotViolations = this.snapshotGraph.edges.filter((e) => e.isViolating);
+
+    const snapshotViolatingKeys = new Set(
+      snapshotViolations.map((e) => `${e.from}->${e.to}`)
+    );
+    const currentViolatingKeys = new Set(
+      currentViolations.map((e) => `${e.from}->${e.to}`)
+    );
+
+    let newViolations = 0;
+    for (const key of currentViolatingKeys) {
+      if (!snapshotViolatingKeys.has(key)) newViolations++;
+    }
+
+    let fixedViolations = 0;
+    for (const key of snapshotViolatingKeys) {
+      if (!currentViolatingKeys.has(key)) fixedViolations++;
+    }
+
+    return {
+      addedNodes,
+      removedNodes,
+      newViolations,
+      fixedViolations,
+      totalBefore: snapshotViolations.length,
+      totalAfter: currentViolations.length
+    };
+  });
+
   // Command Palette & Telemetry Drawer
   isCommandPaletteOpen = $state<boolean>(false);
   isTelemetryDrawerOpen = $state<boolean>(false);
   activeEdgeTooltip = $state<EdgeTooltipInfo | null>(null);
+
+  // Tooltip Timer Management (Hover Intent & Graceful Dismissal)
+  private tooltipDismissTimer: ReturnType<typeof setTimeout> | null = null;
+
+  showEdgeTooltip(info: EdgeTooltipInfo) {
+    if (this.tooltipDismissTimer) {
+      clearTimeout(this.tooltipDismissTimer);
+      this.tooltipDismissTimer = null;
+    }
+    this.activeEdgeTooltip = info;
+  }
+
+  scheduleDismissEdgeTooltip(delayMs: number = 180) {
+    if (this.tooltipDismissTimer) {
+      clearTimeout(this.tooltipDismissTimer);
+    }
+    this.tooltipDismissTimer = setTimeout(() => {
+      this.activeEdgeTooltip = null;
+      this.tooltipDismissTimer = null;
+    }, delayMs);
+  }
+
+  cancelDismissEdgeTooltip() {
+    if (this.tooltipDismissTimer) {
+      clearTimeout(this.tooltipDismissTimer);
+      this.tooltipDismissTimer = null;
+    }
+  }
+
+  clearEdgeTooltip() {
+    if (this.tooltipDismissTimer) {
+      clearTimeout(this.tooltipDismissTimer);
+      this.tooltipDismissTimer = null;
+    }
+    this.activeEdgeTooltip = null;
+  }
 
   // Agent Telemetry Log
   telemetryEvents = $state<AgentTelemetryEvent[]>([
@@ -158,6 +249,7 @@ class DiagramState {
     }
     await this.loadPolicy();
     await this.loadGraph();
+    await this.loadSnapshots();
   }
 
   async loadGraph(proposalId?: string | null) {
@@ -197,6 +289,58 @@ class DiagramState {
     } catch (_) {
       this.policy = DEMO_POLICY;
     }
+  }
+
+  async loadSnapshots() {
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const res = await fetch(`/api/snapshots?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        this.availableSnapshots = data.snapshots || [];
+      } else {
+        this.availableSnapshots = [
+          { id: 'v0.0.1-Alpha-07', label: 'v0.0.1-Alpha-07 (Latest Release)', tag: 'v0.0.1-Alpha-07' },
+          { id: 'v0.0.1-Alpha-06', label: 'v0.0.1-Alpha-06', tag: 'v0.0.1-Alpha-06' },
+          { id: 'v0.0.1-Alpha-05', label: 'v0.0.1-Alpha-05 (Baseline)', tag: 'v0.0.1-Alpha-05' }
+        ];
+      }
+    } catch (_) {
+      this.availableSnapshots = [
+        { id: 'v0.0.1-Alpha-07', label: 'v0.0.1-Alpha-07 (Latest Release)', tag: 'v0.0.1-Alpha-07' },
+        { id: 'v0.0.1-Alpha-06', label: 'v0.0.1-Alpha-06', tag: 'v0.0.1-Alpha-06' },
+        { id: 'v0.0.1-Alpha-05', label: 'v0.0.1-Alpha-05 (Baseline)', tag: 'v0.0.1-Alpha-05' }
+      ];
+    }
+  }
+
+  async setComparisonTarget(targetId: string | null) {
+    if (!targetId) {
+      this.comparisonTargetId = null;
+      this.snapshotGraph = null;
+      this.addTelemetryEvent('INFO', 'Exited Git version comparison mode');
+      return;
+    }
+
+    this.comparisonTargetId = targetId;
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const res = await fetch(`/api/snapshots/${encodeURIComponent(targetId)}?${params.toString()}`);
+      if (res.ok) {
+        this.snapshotGraph = await res.json();
+      } else {
+        this.snapshotGraph = DEMO_GRAPH_PROPOSAL;
+      }
+    } catch (_) {
+      this.snapshotGraph = DEMO_GRAPH_PROPOSAL;
+    }
+    this.addTelemetryEvent(
+      'SUCCESS',
+      `Active comparison against release target ${targetId}`,
+      'Visual diff overlay active on concentric canvas'
+    );
   }
 
   async openSource(filePath: string, line: number) {

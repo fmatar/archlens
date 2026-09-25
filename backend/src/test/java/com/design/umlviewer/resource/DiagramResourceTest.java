@@ -19,8 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 class DiagramResourceTest {
 
   @Test
-  void testDiagramResourceEndpoints(@TempDir Path tempDir) throws IOException {
-    DiagramResource resource = new DiagramResource();
+  void testDiagramResourceEndpoints(@TempDir Path tempDir) throws Exception {
     FileMailboxService mailboxService = new FileMailboxService();
     ArchitecturalDossierGenerator dossierGenerator = new ArchitecturalDossierGenerator();
 
@@ -40,21 +39,12 @@ class DiagramResourceTest {
           }
         };
 
-    try {
-      java.lang.reflect.Field field1 = DiagramResource.class.getDeclaredField("graphCompiler");
-      field1.setAccessible(true);
-      field1.set(resource, compiler);
-
-      java.lang.reflect.Field field2 = DiagramResource.class.getDeclaredField("mailboxService");
-      field2.setAccessible(true);
-      field2.set(resource, mailboxService);
-
-      java.lang.reflect.Field field3 = DiagramResource.class.getDeclaredField("dossierGenerator");
-      field3.setAccessible(true);
-      field3.set(resource, dossierGenerator);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    DiagramResource resource =
+        new DiagramResource(
+            compiler,
+            mailboxService,
+            dossierGenerator,
+            new com.fasterxml.jackson.databind.ObjectMapper());
 
     // Test getGraph
     ArchitectureGraph graph = resource.getGraph(tempDir.toString(), "prop-1");
@@ -236,5 +226,108 @@ class DiagramResourceTest {
     } finally {
       System.clearProperty("archlens.container.workspace");
     }
+  }
+
+  @Test
+  void testSnapshotsEndpoints(@TempDir Path tempDir) throws Exception {
+    GraphCompiler compiler =
+        new GraphCompiler() {
+          @Override
+          public ArchitecturePolicy loadPolicy(String root) {
+            return new ArchitecturePolicy(
+                "Test", "src", "com", true, List.of(), List.of(), List.of(), List.of(), List.of());
+          }
+
+          @Override
+          public ArchitectureGraph compileGraph(String root, String proposalId) {
+            return new ArchitectureGraph(
+                "Graph", false, proposalId, List.of(), List.of(), List.of());
+          }
+        };
+
+    DiagramResource resource =
+        new DiagramResource(
+            compiler, null, null, new com.fasterxml.jackson.databind.ObjectMapper());
+
+    // 1. When no snapshots dir, listSnapshots returns empty or git tags
+    Map<String, Object> emptyResult = resource.listSnapshots(tempDir.toString());
+    assertNotNull(emptyResult);
+    assertTrue(emptyResult.containsKey("snapshots"));
+
+    // 2. Create snapshot files in .archlens/snapshots
+    Path snapshotsDir = tempDir.resolve(".archlens/snapshots");
+    Files.createDirectories(snapshotsDir);
+    Files.writeString(
+        snapshotsDir.resolve("v1.0.0.json"),
+        "{\"title\":\"TestApp\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
+
+    Map<String, Object> populatedResult = resource.listSnapshots(tempDir.toString());
+    assertNotNull(populatedResult);
+    @SuppressWarnings("unchecked")
+    List<Map<String, Object>> snapshots =
+        (List<Map<String, Object>>) populatedResult.get("snapshots");
+    assertEquals(1, snapshots.size());
+    assertEquals("v1.0.0", snapshots.get(0).get("id"));
+
+    // 3. Test getSnapshot reading from .archlens/snapshots/v1.0.0.json
+    ArchitectureGraph snapshot = resource.getSnapshot("v1.0.0", tempDir.toString());
+    assertNotNull(snapshot);
+    assertEquals("TestApp", snapshot.title());
+
+    // 4. Test getSnapshot reading from .archlens/cache/{id}.json
+    Path cacheDir = tempDir.resolve(".archlens/cache");
+    Files.createDirectories(cacheDir);
+    Files.writeString(
+        cacheDir.resolve("cached-v1.json"),
+        "{\"title\":\"CachedApp\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
+    ArchitectureGraph cachedSnapshot = resource.getSnapshot("cached-v1", tempDir.toString());
+    assertNotNull(cachedSnapshot);
+    assertEquals("CachedApp", cachedSnapshot.title());
+
+    // 5. Test path traversal rejection
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("../secret", tempDir.toString()));
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("sub/dir", tempDir.toString()));
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("sub\\dir", tempDir.toString()));
+    assertThrows(
+        jakarta.ws.rs.BadRequestException.class,
+        () -> resource.getSnapshot("   ", tempDir.toString()));
+
+    // 6. Test getSnapshot fallback when snapshot does not exist
+    ArchitectureGraph fallback = resource.getSnapshot("non-existent", tempDir.toString());
+    assertNotNull(fallback);
+    assertEquals("Graph", fallback.title());
+
+    // 7. Test listSnapshots with git directory fallback
+    Path gitRepoDir = tempDir.resolve("gitrepo");
+    Files.createDirectories(gitRepoDir);
+    new ProcessBuilder("git", "init").directory(gitRepoDir.toFile()).start().waitFor();
+    new ProcessBuilder("git", "config", "user.email", "ci@archlens.io")
+        .directory(gitRepoDir.toFile())
+        .start()
+        .waitFor();
+    new ProcessBuilder("git", "config", "user.name", "Archlens CI")
+        .directory(gitRepoDir.toFile())
+        .start()
+        .waitFor();
+    new ProcessBuilder("git", "commit", "--allow-empty", "-m", "Initial commit")
+        .directory(gitRepoDir.toFile())
+        .start()
+        .waitFor();
+    new ProcessBuilder("git", "tag", "v1.0.0").directory(gitRepoDir.toFile()).start().waitFor();
+
+    Map<String, Object> gitRepoSnapshots = resource.listSnapshots(gitRepoDir.toString());
+    assertNotNull(gitRepoSnapshots);
+    assertTrue(gitRepoSnapshots.containsKey("snapshots"));
+    @SuppressWarnings("unchecked")
+    List<Map<String, String>> snapshotList =
+        (List<Map<String, String>>) gitRepoSnapshots.get("snapshots");
+    assertFalse(snapshotList.isEmpty());
+    assertEquals("v1.0.0", snapshotList.get(0).get("tag"));
   }
 }

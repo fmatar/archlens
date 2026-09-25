@@ -31,9 +31,13 @@
 
 {#if info}
   <!-- Floating Tooltip Container positioned near cursor/edge midpoint -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    role="tooltip"
     bind:this={cardEl}
-    style={`left: ${Math.min(window.innerWidth - 380, Math.max(20, info.x - 180))}px; top: ${Math.min(window.innerHeight - 240, Math.max(20, info.y + 16))}px;`}
+    onmouseenter={() => diagramStore.cancelDismissEdgeTooltip()}
+    onmouseleave={() => diagramStore.scheduleDismissEdgeTooltip(180)}
+    style={`left: ${Math.min(window.innerWidth - 400, Math.max(20, info.x - 190))}px; top: ${info.y + 260 > window.innerHeight ? Math.max(20, info.y - 250) : info.y + 16}px;`}
     class="fixed z-50 w-96 rounded-xl bg-slate-900/95 border border-slate-700/90 shadow-2xl backdrop-blur-md p-4 text-xs font-sans select-none pointer-events-auto"
   >
     <!-- Header -->
@@ -50,9 +54,22 @@
             {info.isBundled ? `CONFORMING CORRIDOR (${info.bundleCount || 1} DEPENDENCIES)` : 'CONFORMING DEPENDENCY'}
           </div>
         {/if}
+
+        {#if diagramStore.isComparing && diagramStore.snapshotGraph}
+          {@const wasInSnapshot = diagramStore.snapshotGraph.edges.find(e => e.from === info.edge.from && e.to === info.edge.to)}
+          {#if info.edge.isViolating && !wasInSnapshot?.isViolating}
+            <span class="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 font-mono text-[9px] font-bold border border-rose-500/40">
+              NEW BREACH
+            </span>
+          {:else if !info.edge.isViolating && wasInSnapshot?.isViolating}
+            <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] font-bold border border-emerald-500/40">
+              RESOLVED
+            </span>
+          {/if}
+        {/if}
       </div>
       <button
-        onclick={() => diagramStore.activeEdgeTooltip = null}
+        onclick={() => diagramStore.clearEdgeTooltip()}
         class="text-slate-400 hover:text-white p-0.5 rounded transition-colors"
       >
         <X size={14} />

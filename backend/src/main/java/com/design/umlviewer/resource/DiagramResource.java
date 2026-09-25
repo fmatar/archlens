@@ -6,6 +6,7 @@ import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.GraphCompiler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -32,6 +33,21 @@ public class DiagramResource {
   @Inject FileMailboxService mailboxService;
 
   @Inject ArchitecturalDossierGenerator dossierGenerator;
+
+  @Inject ObjectMapper mapper = new ObjectMapper();
+
+  public DiagramResource() {}
+
+  DiagramResource(
+      GraphCompiler graphCompiler,
+      FileMailboxService mailboxService,
+      ArchitecturalDossierGenerator dossierGenerator,
+      ObjectMapper mapper) {
+    this.graphCompiler = graphCompiler;
+    this.mailboxService = mailboxService;
+    this.dossierGenerator = dossierGenerator;
+    this.mapper = mapper != null ? mapper : new ObjectMapper();
+  }
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
@@ -481,7 +497,7 @@ public class DiagramResource {
                 "-e",
                 "tell application \"System Events\" to return POSIX path of (choose folder with prompt \"Select Repository or Project Directory\")");
         Process p = pb.start();
-        boolean finished = p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+        boolean finished = p.waitFor(3, java.util.concurrent.TimeUnit.SECONDS);
         if (finished && p.exitValue() == 0) {
           String selectedPath =
               new String(p.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
@@ -508,6 +524,105 @@ public class DiagramResource {
       @QueryParam("proposalId") String proposalId)
       throws IOException {
     return graphCompiler.compileGraph(normalizeRoot(projectRoot), proposalId);
+  }
+
+  @GET
+  @Path("/snapshots")
+  public Map<String, Object> listSnapshots(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
+    String root = normalizeRoot(projectRoot);
+    File snapshotsDir = new File(root, ".archlens/snapshots");
+    List<Map<String, Object>> snapshots = new ArrayList<>();
+
+    if (snapshotsDir.exists() && snapshotsDir.isDirectory()) {
+      File[] files = snapshotsDir.listFiles((dir, name) -> name.endsWith(".json"));
+      if (files != null) {
+        java.util.Arrays.sort(
+            files, java.util.Comparator.comparingLong(File::lastModified).reversed());
+        for (File f : files) {
+          String name = f.getName();
+          String id = name.substring(0, name.length() - 5);
+          snapshots.add(
+              Map.of(
+                  "id",
+                  id,
+                  "label",
+                  id,
+                  "tag",
+                  id,
+                  "date",
+                  new java.text.SimpleDateFormat("yyyy-MM-dd")
+                      .format(new java.util.Date(f.lastModified()))));
+        }
+      }
+    }
+
+    if (snapshots.isEmpty()) {
+      File gitDir = new File(root, ".git");
+      if (gitDir.exists()) {
+        try {
+          Process process =
+              new ProcessBuilder("git", "tag", "-l", "--sort=-creatordate")
+                  .directory(new File(root))
+                  .start();
+          try (java.io.BufferedReader reader =
+              new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))) {
+            String line;
+            int count = 0;
+            while ((line = reader.readLine()) != null && count < 10) {
+              String tag = line.trim();
+              if (!tag.isEmpty()) {
+                snapshots.add(Map.of("id", tag, "label", tag, "tag", tag));
+                count++;
+              }
+            }
+          }
+          boolean finished = process.waitFor(2, java.util.concurrent.TimeUnit.SECONDS);
+          if (!finished) {
+            process.destroyForcibly();
+          }
+        } catch (Exception ignored) {
+          // Gracefully continue with available list
+        }
+      }
+    }
+
+    return Map.of("snapshots", snapshots);
+  }
+
+  @GET
+  @Path("/snapshots/{snapshotId}")
+  public ArchitectureGraph getSnapshot(
+      @PathParam("snapshotId") String snapshotId,
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot)
+      throws IOException {
+    if (snapshotId == null
+        || snapshotId.isBlank()
+        || snapshotId.contains("..")
+        || snapshotId.contains("/")
+        || snapshotId.contains("\\")) {
+      throw new jakarta.ws.rs.BadRequestException(
+          "Invalid snapshot ID: path traversal characters are forbidden.");
+    }
+    String root = normalizeRoot(projectRoot);
+    File baseDir = new File(root, ".archlens");
+    File snapshotFile = new File(root, ".archlens/snapshots/" + snapshotId + ".json");
+    if (snapshotFile.exists() && snapshotFile.isFile()) {
+      if (!snapshotFile.getCanonicalPath().startsWith(baseDir.getCanonicalPath())) {
+        throw new jakarta.ws.rs.BadRequestException("Invalid snapshot path traversal.");
+      }
+      return mapper.readValue(snapshotFile, ArchitectureGraph.class);
+    }
+
+    File cacheFile = new File(root, ".archlens/cache/" + snapshotId + ".json");
+    if (cacheFile.exists() && cacheFile.isFile()) {
+      if (!cacheFile.getCanonicalPath().startsWith(baseDir.getCanonicalPath())) {
+        throw new jakarta.ws.rs.BadRequestException("Invalid snapshot path traversal.");
+      }
+      return mapper.readValue(cacheFile, ArchitectureGraph.class);
+    }
+
+    return graphCompiler.compileGraph(root, null);
   }
 
   @GET

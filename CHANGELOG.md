@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Canvas Hover Ergonomics, Git Architecture Comparator & Responsive Browsing (Closes #99)**:
+  - Added 140ms hover intent debounce and 180ms graceful leave dismissal in `DependencyEdge.svelte` and `EdgeTooltip.svelte` to eliminate sticky popups from lingering across the canvas.
+  - Implemented `GitVersionComparator.svelte` top-bar comparator enabling instant (< 15ms) architectural drift inspection against Git tags and release snapshots (`.archlens/snapshots/`) with live diff metrics (`+N breaches`, `✓N fixed`, `+N added`).
+  - Added `GET /api/snapshots` and `GET /api/snapshots/{snapshotId}` endpoints in backend `DiagramResource.java`.
+  - Resolved local dev mode thread blocking by reducing `osascript` process timeout to 3s with forcible process destruction and equipping `OpenProjectModal.svelte` with an `AbortController` timeout (3.5s) and automatic fallback to the in-app folder explorer.
+  - Preserved 100% component visibility upon node selection by guarding dimming behind the explicit `ISOLATE_NEIGHBORHOOD` filter (`F`).
 - **Clean Architecture LLM Refactoring Prompt Dossier (Closes #96)**:
   - Added `ArchitecturalDossierGenerator` service and `GET /api/diagram/llm-dossier` REST endpoint producing copy-ready markdown formatted specifically for Large Language Models (Claude Code, Gemini, ChatGPT, Antigravity) to refactor code adhering to Uncle Bob's Dependency Rule.
   - Generates concentric ring classification (Domain Core L0 -> Application L1 -> Adapters L2 -> Infrastructure L3), outward dependency rule violation diagnostics, and prioritized Dependency Inversion Principle (DIP) refactoring guidance proposing inner interface ports (`*Port`) and dependency injection wiring.

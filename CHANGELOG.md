@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Safe Automated Dependency Governance Toolchain (Closes #110)**:
+  - Added `scripts/update-dependencies.js` and `scripts/update-dependencies.sh` providing safe dependency audits and updates across Maven and NPM manifests.
+  - Implemented pre-release build filter excluding unstable candidate versions (`Alpha`, `Beta`, `CR`, `RC`, `dev`, `canary`).
+  - Added automated rollback recovering clean working tree state if any test suite fails during updates.
+  - Added root npm scripts `deps:check`, `deps:update`, and `deps:update:major`.
+  - Added scheduled GitHub Action `.github/workflows/dependency-pulse.yml` executing weekly automated dependency audits with automatic PR creation for verified safe upgrades.
+  - Added test suite `scripts/test/update-dependencies.test.js` validating version filtering, semver comparison, and manifest updating logic.
+
 ## [0.0.1-Alpha-09] - 2026-09-25
 
 ### Added

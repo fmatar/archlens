@@ -9,8 +9,11 @@
     "archlens-init": "./cli/bin/index.js"
   },
   "scripts": {
-    "test": "npm --prefix cli test",
-    "cli": "node ./cli/bin/index.js"
+    "test": "npm --prefix cli test && node --test scripts/test/*.test.js",
+    "cli": "node ./cli/bin/index.js",
+    "deps:check": "bash scripts/update-dependencies.sh --check",
+    "deps:update": "bash scripts/update-dependencies.sh --safe",
+    "deps:update:major": "bash scripts/update-dependencies.sh --safe --major"
   },
   "repository": {
     "type": "git",

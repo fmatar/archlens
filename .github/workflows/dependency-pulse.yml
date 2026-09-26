@@ -1,0 +1,96 @@
+name: Scheduled Dependency Pulse & Safe Upgrades
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # Runs every Monday at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      allow_major:
+        description: 'Allow major semver version updates'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  audit-and-update:
+    name: Audit & Safe Dependency Updates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout develop branch
+        uses: actions/checkout@v7
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.4.1
+
+      - name: Run Safe Dependency Governance Engine
+        id: update_deps
+        run: |
+          FLAGS="--safe"
+          if [ "${{ inputs.allow_major }}" = "true" ]; then
+            FLAGS="${FLAGS} --major"
+          fi
+          node scripts/update-dependencies.js $FLAGS
+
+      - name: Inspect Git Working Tree
+        id: git_status
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected across manifests."
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "Zero manifest changes detected. Dependencies remain up to date."
+          fi
+
+      - name: Create Pull Request for Safe Upgrades
+        if: steps.git_status.outputs.has_changes == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="chore/dependency-pulse-$(date +%Y%m%d%H%M%S)"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH_NAME"
+          git add pom.xml backend/pom.xml frontend/package.json frontend/pnpm-lock.yaml frontend/package-lock.json
+          git commit -m "chore(deps): safe dependency pulse updates" -m "Automated safe dependency governance update verified regression-free via Dual-Gate test suite."
+          git push origin "$BRANCH_NAME"
+
+          gh pr create \
+            --base develop \
+            --head "$BRANCH_NAME" \
+            --title "chore(deps): weekly safe dependency update" \
+            --body "## Safe Dependency Pulse Update Summary
+
+This automated pull request applies verified safe dependency updates across Maven and NPM manifests.
+
+### Verification Matrix
+- All updates were filtered to exclude unstable pre-release builds (Alpha, Beta, CR, RC, dev).
+- Full Dual-Gate verification suite passed regression-free prior to commit:
+  - Spotless code hygiene
+  - Svelte check & TypeScript diagnostics
+  - Vitest frontend tests
+  - JUnit backend tests
+  - Node CLI tests" \
+            --label "dependencies"

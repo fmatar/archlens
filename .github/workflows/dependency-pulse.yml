@@ -39,11 +39,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 12.4.1
-
       - name: Run Safe Dependency Governance Engine
         id: update_deps
         run: |
@@ -77,20 +72,25 @@ jobs:
           git commit -m "chore(deps): safe dependency pulse updates" -m "Automated safe dependency governance update verified regression-free via Dual-Gate test suite."
           git push origin "$BRANCH_NAME"
 
+          PR_BODY=$(cat << 'EOF_BODY'
+          ## Safe Dependency Pulse Update Summary
+
+          This automated pull request applies verified safe dependency updates across Maven and NPM manifests.
+
+          ### Verification Matrix
+          - All updates were filtered to exclude unstable pre-release builds (Alpha, Beta, CR, RC, dev).
+          - Full Dual-Gate verification suite passed regression-free prior to commit:
+            - Spotless code hygiene
+            - Svelte check & TypeScript diagnostics
+            - Vitest frontend tests
+            - JUnit backend tests
+            - Node CLI tests
+          EOF_BODY
+          )
+
           gh pr create \
             --base develop \
             --head "$BRANCH_NAME" \
             --title "chore(deps): weekly safe dependency update" \
-            --body "## Safe Dependency Pulse Update Summary
-
-This automated pull request applies verified safe dependency updates across Maven and NPM manifests.
-
-### Verification Matrix
-- All updates were filtered to exclude unstable pre-release builds (Alpha, Beta, CR, RC, dev).
-- Full Dual-Gate verification suite passed regression-free prior to commit:
-  - Spotless code hygiene
-  - Svelte check & TypeScript diagnostics
-  - Vitest frontend tests
-  - JUnit backend tests
-  - Node CLI tests" \
+            --body "$PR_BODY" \
             --label "dependencies"

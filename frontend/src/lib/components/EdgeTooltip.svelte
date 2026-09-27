@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
-  import { ShieldCheck, AlertTriangle, ArrowRight, Lightbulb, X } from '@lucide/svelte';
+  import { ShieldCheck, AlertTriangle, ArrowRight, Lightbulb, X, Sparkles } from '@lucide/svelte';
 
   let info = $derived(diagramStore.activeEdgeTooltip);
   let cardEl: HTMLDivElement | null = $state(null);
@@ -101,11 +101,20 @@
           Source layer (<strong>{info.fromLabel}</strong>) points outward to an outer ring (<strong>{info.toLabel}</strong>).
           In Clean Architecture, inner rings must have no knowledge of outer rings.
         </p>
-        <div class="flex items-start gap-1.5 text-amber-300/90 bg-amber-950/30 p-2 rounded border border-amber-900/40">
-          <Lightbulb size={14} class="shrink-0 mt-0.5 text-amber-400" />
-          <span>
-            <strong>DIP Fix:</strong> Declare an Interface in <em>{info.fromLabel}</em>'s ring and implement it in <em>{info.toLabel}</em>.
-          </span>
+        <div class="flex flex-col gap-2 bg-amber-950/30 p-2.5 rounded border border-amber-900/40">
+          <div class="flex items-start gap-1.5 text-amber-300/90">
+            <Lightbulb size={14} class="shrink-0 mt-0.5 text-amber-400" />
+            <span>
+              <strong>DIP Fix:</strong> Declare an Interface in <em>{info.fromLabel}</em>'s ring and implement it in <em>{info.toLabel}</em>.
+            </span>
+          </div>
+          <button
+            onclick={() => diagramStore.openDipInversion(info.edge.from, info.edge.to)}
+            class="w-full mt-1 py-1.5 px-2.5 rounded bg-rose-600 hover:bg-rose-500 text-white font-medium font-mono text-[10px] flex items-center justify-center gap-1.5 shadow-md shadow-rose-950/50 transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+          >
+            <Sparkles size={12} class="animate-pulse" />
+            ⚡ Invert Dependency (DIP)
+          </button>
         </div>
       {:else}
         <p class="text-slate-300">

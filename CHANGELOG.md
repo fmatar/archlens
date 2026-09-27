@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Surgical DIP Inverter ("One-Click Dependency Inversion")**:
+  - Implemented `DipInversionSynthesizer` in backend generating Clean Architecture interface ports, refactored adapter classes, and inverted caller injection points.
+  - Added REST endpoint `GET /api/violations/invert-plan` producing targeted refactoring plans for illicit outward violations.
+  - Implemented `InvertDipModal.svelte` interactive UI cockpit with GSAP animations, 1-click port code copying, before/after diffs, and surgical prompt export.
+  - Integrated `INVERT_DEPENDENCY` mailbox IPC operation into `.archlens/to-agent.json` allowing 1-click refactoring dispatch to autonomous coding agents.
+  - Added active breach triage panel to `Inspector.svelte` and quick-trigger button to `EdgeTooltip.svelte`.
 - **Safe Automated Dependency Governance Toolchain (Closes #110)**:
   - Added `scripts/update-dependencies.js` and `scripts/update-dependencies.sh` providing safe dependency audits and updates across Maven and NPM manifests.
   - Implemented pre-release build filter excluding unstable candidate versions (`Alpha`, `Beta`, `CR`, `RC`, `dev`, `canary`).

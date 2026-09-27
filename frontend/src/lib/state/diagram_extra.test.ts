@@ -88,4 +88,75 @@ describe('diagramStore extended coverage tests', () => {
     expect(() => diagramStore.panToComponent('comp-1')).not.toThrow();
     expect(diagramStore.focusedNodeId).toBe('comp-1');
   });
+
+  it('should initialize and close DIP inversion modal properly', async () => {
+    const originalFetch = globalThis.fetch;
+    const mockPlan = {
+      fromClass: 'com.example.OrderService',
+      toClass: 'com.example.PostgresRepo',
+      fromLevel: 1,
+      toLevel: 2,
+      portName: 'PostgresRepoPort',
+      portPackage: 'com.example.ports',
+      portFilePath: 'src/main/java/com/example/ports/PostgresRepoPort.java',
+      portInterfaceCode: 'public interface PostgresRepoPort {}',
+      adapterRefactorPreview: 'public class PostgresRepo implements PostgresRepoPort {}',
+      callerRefactorPreview: 'public class OrderService {}',
+      surgicalPrompt: '# DIP Directive'
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockPlan
+    } as any);
+
+    await diagramStore.openDipInversion('com.example.OrderService', 'com.example.PostgresRepo');
+
+    expect(diagramStore.isDipModalOpen).toBe(true);
+    expect(diagramStore.activeDipPlan).toEqual(mockPlan);
+
+    diagramStore.closeDipModal();
+    expect(diagramStore.isDipModalOpen).toBe(false);
+    expect(diagramStore.activeDipPlan).toBeNull();
+
+    globalThis.fetch = originalFetch;
+  });
+
+  it('should generate fallback DIP plan when server request fails', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Offline'));
+
+    await diagramStore.openDipInversion('com.example.app.OrderService', 'com.example.db.PostgresOrderRepoImpl');
+
+    expect(diagramStore.isDipModalOpen).toBe(true);
+    expect(diagramStore.activeDipPlan).not.toBeNull();
+    expect(diagramStore.activeDipPlan?.portName).toBe('PostgresOrderRepoPort');
+    expect(diagramStore.activeDipPlan?.portPackage).toBe('com.example.app.ports');
+    expect(diagramStore.activeDipPlan?.portInterfaceCode).toContain('PostgresOrderRepoPort');
+
+    diagramStore.closeDipModal();
+    globalThis.fetch = originalFetch;
+  });
+
+  it('should dispatch DIP inversion task to agent mailbox', async () => {
+    const originalFetch = globalThis.fetch;
+    const postMock = vi.fn().mockResolvedValue({ ok: true } as any);
+    globalThis.fetch = postMock;
+
+    const testPlan = diagramStore.createFallbackDipPlan('com.example.Service', 'com.example.Repo');
+    await diagramStore.dispatchDipToAgent(testPlan);
+
+    expect(postMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/mailbox/to-agent'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('INVERT_DEPENDENCY')
+      })
+    );
+    expect(diagramStore.telemetryEvents[0].type).toBe('TASK');
+    expect(diagramStore.telemetryEvents[0].message).toContain('Dispatched DIP Inversion task');
+
+    globalThis.fetch = originalFetch;
+  });
 });
+

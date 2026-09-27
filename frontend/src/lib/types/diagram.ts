@@ -161,3 +161,19 @@ export interface DiffMetrics {
   totalBefore: number;
   totalAfter: number;
 }
+
+export interface DipInversionPlan {
+  fromClass: string;
+  toClass: string;
+  fromLevel: number | null;
+  toLevel: number | null;
+  portName: string;
+  portPackage: string;
+  portFilePath: string;
+  portInterfaceCode: string;
+  adapterRefactorPreview: string;
+  callerRefactorPreview: string;
+  surgicalPrompt: string;
+  targetMethods?: string[];
+}
+

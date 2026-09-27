@@ -1,6 +1,8 @@
 package com.design.umlviewer.resource;
 
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
+import com.design.umlviewer.domain.dossier.DipInversionPlan;
+import com.design.umlviewer.domain.dossier.DipInversionSynthesizer;
 import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
@@ -34,6 +36,8 @@ public class DiagramResource {
 
   @Inject ArchitecturalDossierGenerator dossierGenerator;
 
+  @Inject DipInversionSynthesizer dipSynthesizer;
+
   @Inject ObjectMapper mapper = new ObjectMapper();
 
   public DiagramResource() {}
@@ -42,11 +46,21 @@ public class DiagramResource {
       GraphCompiler graphCompiler,
       FileMailboxService mailboxService,
       ArchitecturalDossierGenerator dossierGenerator,
-      ObjectMapper mapper) {
+      ObjectMapper mapper,
+      DipInversionSynthesizer dipSynthesizer) {
     this.graphCompiler = graphCompiler;
     this.mailboxService = mailboxService;
     this.dossierGenerator = dossierGenerator;
     this.mapper = mapper != null ? mapper : new ObjectMapper();
+    this.dipSynthesizer = dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer();
+  }
+
+  public DiagramResource(
+      GraphCompiler graphCompiler,
+      FileMailboxService mailboxService,
+      ArchitecturalDossierGenerator dossierGenerator,
+      ObjectMapper mapper) {
+    this(graphCompiler, mailboxService, dossierGenerator, mapper, new DipInversionSynthesizer());
   }
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
@@ -638,6 +652,23 @@ public class DiagramResource {
     ArchitectureGraph graph = graphCompiler.compileGraph(normalized, proposalId);
     ArchitecturePolicy policy = graphCompiler.loadPolicy(normalized);
     return dossierGenerator.generate(graph, policy);
+  }
+
+  @GET
+  @Path("/violations/invert-plan")
+  public DipInversionPlan getInvertPlan(
+      @QueryParam("from") String fromClass,
+      @QueryParam("to") String toClass,
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    if (fromClass == null || fromClass.isBlank() || toClass == null || toClass.isBlank()) {
+      throw new BadRequestException("Parameters 'from' and 'to' must not be blank.");
+    }
+    String normalized = normalizeRoot(projectRoot);
+    ArchitectureGraph graph = graphCompiler.compileGraph(normalized, proposalId);
+    ArchitecturePolicy policy = graphCompiler.loadPolicy(normalized);
+    return dipSynthesizer.synthesize(graph, policy, fromClass, toClass);
   }
 
   @GET

@@ -3,11 +3,13 @@ package com.design.umlviewer.resource;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
+import com.design.umlviewer.domain.dossier.DipInversionPlan;
 import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.GraphCompiler;
+import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,6 +58,22 @@ class DiagramResourceTest {
     assertNotNull(dossier);
     assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — Graph"));
     assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
+
+    // Test getInvertPlan
+    DipInversionPlan plan =
+        resource.getInvertPlan(
+            "com.example.OrderService", "com.example.PostgresRepo", tempDir.toString(), "prop-1");
+    assertNotNull(plan);
+    assertEquals("com.example.OrderService", plan.fromClass());
+    assertEquals("com.example.PostgresRepo", plan.toClass());
+
+    // Test getInvertPlan validation errors
+    assertThrows(
+        BadRequestException.class,
+        () -> resource.getInvertPlan("", "com.example.PostgresRepo", tempDir.toString(), null));
+    assertThrows(
+        BadRequestException.class,
+        () -> resource.getInvertPlan("com.example.OrderService", null, tempDir.toString(), null));
 
     // Test getPolicy
     ArchitecturePolicy policy = resource.getPolicy(tempDir.toString());

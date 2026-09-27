@@ -8,7 +8,8 @@ import type {
   ComponentNode,
   DeclutterFilter,
   SnapshotInfo,
-  DiffMetrics
+  DiffMetrics,
+  DipInversionPlan
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -191,6 +192,114 @@ class DiagramState {
       this.llmPromptDossier = `# Error loading LLM Prompt Dossier\n\nNetwork or server error: ${e?.message || e}`;
     } finally {
       this.isLoadingLlmPrompt = false;
+    }
+  }
+
+  // Surgical DIP Inversion State
+  isDipModalOpen = $state<boolean>(false);
+  activeDipPlan = $state<DipInversionPlan | null>(null);
+  isLoadingDipPlan = $state<boolean>(false);
+  isDispatchingDip = $state<boolean>(false);
+  dipDispatchNotice = $state<string | null>(null);
+
+  async openDipInversion(fromClass: string, toClass: string) {
+    this.clearEdgeTooltip();
+    this.isDipModalOpen = true;
+    this.isLoadingDipPlan = true;
+    this.activeDipPlan = null;
+    this.dipDispatchNotice = null;
+
+    try {
+      const params = new URLSearchParams();
+      params.set('from', fromClass);
+      params.set('to', toClass);
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      if (this.activeProposalId) params.set('proposalId', this.activeProposalId);
+
+      const res = await fetch(`/api/violations/invert-plan?${params.toString()}`);
+      if (res.ok) {
+        this.activeDipPlan = await res.json();
+      } else {
+        this.activeDipPlan = this.createFallbackDipPlan(fromClass, toClass);
+      }
+    } catch (_) {
+      this.activeDipPlan = this.createFallbackDipPlan(fromClass, toClass);
+    } finally {
+      this.isLoadingDipPlan = false;
+    }
+  }
+
+  closeDipModal() {
+    this.isDipModalOpen = false;
+    this.activeDipPlan = null;
+    this.dipDispatchNotice = null;
+  }
+
+  createFallbackDipPlan(fromClass: string, toClass: string): DipInversionPlan {
+    const toSimple = toClass.split('.').pop() || toClass;
+    const fromSimple = fromClass.split('.').pop() || fromClass;
+    const portName = toSimple.endsWith('Impl') ? toSimple.slice(0, -4) + 'Port' : toSimple + 'Port';
+    const callerPkg = fromClass.includes('.') ? fromClass.slice(0, fromClass.lastIndexOf('.')) : 'domain';
+    const portPackage = callerPkg + '.ports';
+    const portFilePath = `src/main/java/${portPackage.replace(/\./g, '/')}/${portName}.java`;
+
+    return {
+      fromClass,
+      toClass,
+      fromLevel: 1,
+      toLevel: 2,
+      portName,
+      portPackage,
+      portFilePath,
+      portInterfaceCode: `package ${portPackage};\n\n/**\n * Clean Architecture Port Synthesized by Archlens.\n */\npublic interface ${portName} {\n    // Extracted port methods for ${fromSimple}\n}\n`,
+      adapterRefactorPreview: `package ${toClass.includes('.') ? toClass.slice(0, toClass.lastIndexOf('.')) : 'adapters'};\n\nimport ${portPackage}.${portName};\n\npublic class ${toSimple} implements ${portName} {\n    // Concrete adapter implementation\n}`,
+      callerRefactorPreview: `package ${callerPkg};\n\nimport ${portPackage}.${portName};\n\npublic class ${fromSimple} {\n    private final ${portName} ${portName.charAt(0).toLowerCase() + portName.slice(1)};\n}`,
+      surgicalPrompt: `# Clean Architecture DIP Refactoring Directive\nInvert outward dependency from ${fromClass} to ${toClass} using ${portName}.`
+    };
+  }
+
+  async dispatchDipToAgent(plan: DipInversionPlan) {
+    this.isDispatchingDip = true;
+    this.dipDispatchNotice = `Queueing DIP refactoring for ${plan.portName}...`;
+
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/mailbox/to-agent?${params.toString()}` : '/api/mailbox/to-agent';
+
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          op: 'INVERT_DEPENDENCY',
+          target: { id: `violation:${plan.fromClass}->${plan.toClass}` },
+          payload: {
+            fromClass: plan.fromClass,
+            toClass: plan.toClass,
+            portName: plan.portName,
+            portPackage: plan.portPackage,
+            portFilePath: plan.portFilePath,
+            portInterfaceCode: plan.portInterfaceCode,
+            adapterRefactorPreview: plan.adapterRefactorPreview,
+            callerRefactorPreview: plan.callerRefactorPreview
+          }
+        })
+      });
+
+      this.addTelemetryEvent(
+        'TASK',
+        `Dispatched DIP Inversion task to .archlens/to-agent.json`,
+        `Synthesized ${plan.portName} in ${plan.portPackage}`
+      );
+      this.dipDispatchNotice = `Task dispatched to AI agent mailbox!`;
+      setTimeout(() => {
+        this.isDispatchingDip = false;
+        this.isDipModalOpen = false;
+        this.dipDispatchNotice = null;
+      }, 1200);
+    } catch (e: any) {
+      this.dipDispatchNotice = `Error dispatching task: ${e?.message || e}`;
+      this.isDispatchingDip = false;
     }
   }
 

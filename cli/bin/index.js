@@ -20,7 +20,7 @@ import {
 import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
-import { checkArchitecture } from '../src/checker.js';
+import { checkArchitecture, generateSarifReport, generateJsonReport } from '../src/checker.js';
 import { installMcpConfigs } from '../src/mcp-registry.js';
 import { startMcpStdioServer } from '../src/mcp-server.js';
 import { executeStart, DEFAULT_CONTAINER_NAME, DEFAULT_SERVER_URL } from '../src/docker-runner.js';
@@ -72,6 +72,8 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
   --upgrade                Upgrade mode: migrate .uml-viewer to .archlens
+  --format <FORMAT>        Output format: pretty (default), json, sarif
+  -O, --output <PATH>      Write audit report to specified file path
   -f, --force              Overwrite existing policy files
   --dry-run                Simulate actions without writing files to disk
   -y, --yes                Accept defaults automatically (non-interactive mode)
@@ -128,6 +130,8 @@ function parseArgs(args) {
     mcp: false,
     check: false,
     maxViolations: 0,
+    format: 'pretty',
+    output: null,
     force: false,
     dryRun: false,
     yes: false,
@@ -162,6 +166,10 @@ function parseArgs(args) {
       parsed.check = true;
     } else if (arg === '--max-violations') {
       parsed.maxViolations = Number(args[++i] || 0);
+    } else if (arg === '--format') {
+      parsed.format = (args[++i] || 'pretty').toLowerCase();
+    } else if (arg === '--output' || arg === '-O') {
+      parsed.output = args[++i];
     } else if (arg === '--copy' || arg === '-c') {
       parsed.copy = true;
     } else if (arg === '--force' || arg === '-f') {
@@ -454,12 +462,41 @@ async function main() {
 
   if (options.command === 'check' || options.check) {
     try {
-      ui.info(`Auditing Clean Architecture conformance for ${targetRoot}...`);
+      if (options.format === 'pretty') {
+        ui.info(`Auditing Clean Architecture conformance for ${targetRoot}...`);
+      }
       const report = await checkArchitecture(targetRoot, options);
       if (report.error) {
         ui.error(report.error);
         process.exit(1);
       }
+
+      let formattedOutput = null;
+      if (options.format === 'sarif') {
+        formattedOutput = generateSarifReport(report, { version: getPackageVersion() });
+      } else if (options.format === 'json') {
+        formattedOutput = generateJsonReport(report);
+      }
+
+      if (options.output) {
+        const outPath = path.resolve(options.output);
+        const dir = path.dirname(outPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(outPath, formattedOutput || generateJsonReport(report), 'utf8');
+        if (options.format === 'pretty') {
+          ui.success(`Architecture report written to ${options.output}`);
+        }
+      }
+
+      if (options.format === 'sarif' || options.format === 'json') {
+        if (!options.output) {
+          process.stdout.write(formattedOutput + '\n');
+        }
+        process.exit(report.passed ? 0 : 1);
+      }
+
       console.log(`\n  ${ui.colors.bold}Architecture Governance Results (${report.projectTitle}):${ui.colors.reset}`);
       console.log(`  - Source Files Analyzed: ${report.sourceFilesCount}`);
       console.log(`  - Governed Packages:     ${report.packagesCount}`);
@@ -471,7 +508,7 @@ async function main() {
       } else {
         ui.error(`Clean Architecture Gate FAILED (${report.violationsCount} violation(s) detected)!`);
         report.violations.forEach((v, idx) => {
-          console.log(`    [${idx + 1}] ${v.fromFile} (${v.fromTier}) -> ${v.toImport} (${v.toTier})`);
+          console.log(`    [${idx + 1}] ${v.fromFile}:${v.line || 1} (${v.fromTier}) -> ${v.toImport} (${v.toTier})`);
           console.log(`        Prescribed Port: ${v.portName}`);
         });
         process.exit(1);

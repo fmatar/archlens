@@ -57,7 +57,15 @@ jobs:
         run: mvn -B -ntp clean verify
 
       - name: Archlens Clean Architecture Conformance Gate
-        run: node cli/bin/index.js check --path . --max-violations 0
+        run: node cli/bin/index.js check --path . --max-violations 0 --format sarif --output archlens-results.sarif
+
+      - name: Upload Architecture SARIF Report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: archlens-sarif-report
+          path: archlens-results.sarif
+          retention-days: 14
 
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v7

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Changed
+- **Decompose DiagramResource God Controller into Focused Clean Architecture Resources (Issue #121)**:
+  - Extracted `WorkspacePathResolver` utility class to centralize directory traversal, project detection heuristics, home expansion, and container workspace mapping.
+  - Extracted `ProjectFilesystemResource` (`@Path("/api")`) handling `/projects`, `/fs/directories`, `/fs/pick-directory`, and `/source`.
+  - Extracted `SnapshotResource` (`@Path("/api/snapshots")`) managing architecture history listing and retrieval from `.archlens/snapshots`, `.archlens/cache`, and git tags.
+  - Extracted `MailboxResource` (`@Path("/api/mailbox")`) handling bidirectional IPC mailbox queues and command dispatching (`/mailbox/to-agent`).
+  - Streamlined `DiagramResource` from 818 lines down to 187 lines, focusing purely on graph compilation, policy evaluation, LLM refactoring dossiers, DIP inversion synthesis, and SSE event streaming.
+  - Preserved 100% backward-compatible delegate methods on `DiagramResource` and identical REST routes across all clients and MCP bridges.
+  - Added comprehensive test suites: `WorkspacePathResolverTest`, `SnapshotResourceTest`, and `MailboxResourceTest`, bringing total backend test suite to 81 tests passing with 0 failures.
+
 ## [0.0.1-Alpha-11] - 2026-09-28
 
 ### Added

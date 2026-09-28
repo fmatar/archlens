@@ -218,6 +218,24 @@
         </div>
       </div>
 
+      <!-- Acyclic Dependencies Principle (ADP) Cycle Alert -->
+      {#if diagramStore.hasCycles}
+        <div class="px-6 py-2 bg-amber-950/40 border-b border-amber-500/30 text-amber-200 text-xs flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <AlertTriangle size={14} class="text-amber-400 animate-pulse" />
+            <span class="font-semibold">ADP Cycle Alert:</span>
+            <span>{diagramStore.packageCycles.length} circular package {diagramStore.packageCycles.length === 1 ? 'dependency' : 'dependencies'} detected</span>
+          </div>
+          <div class="flex items-center gap-2 font-mono text-[11px] text-amber-300 overflow-x-auto max-w-xl py-0.5">
+            {#each diagramStore.packageCycles as cycle}
+              <span class="px-2 py-0.5 rounded bg-amber-900/50 border border-amber-700/50 shrink-0">
+                {cycle.packages.join(' ➔ ')}
+              </span>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
       <!-- Controls & Filter Toolbar -->
       <div class="px-6 py-2.5 bg-slate-900 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
         <!-- Tier Filter Buttons -->

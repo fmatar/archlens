@@ -5,8 +5,10 @@ import com.design.umlviewer.domain.model.ClassNode;
 import com.design.umlviewer.domain.model.ComponentNode;
 import com.design.umlviewer.domain.model.CrapScore;
 import com.design.umlviewer.domain.model.DependencyEdge;
+import com.design.umlviewer.domain.model.PackageCycle;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.domain.policy.DependencyRuleValidator;
+import com.design.umlviewer.domain.policy.PackageCycleDetector;
 import com.design.umlviewer.domain.policy.PolicyValidator;
 import com.design.umlviewer.domain.policy.Proposal;
 import com.design.umlviewer.scanner.LanguageScanner;
@@ -358,8 +360,24 @@ public class GraphCompiler implements ArchitectureCompiler {
             .distinct()
             .toList();
 
+    ArchitectureGraph rawGraph =
+        new ArchitectureGraph(
+            policy.title(),
+            activeProposal != null,
+            proposalId,
+            components,
+            evaluatedEdges,
+            List.of());
+    List<PackageCycle> cycles = PackageCycleDetector.detectCycles(rawGraph);
+
     return new ArchitectureGraph(
-        policy.title(), activeProposal != null, proposalId, components, evaluatedEdges, List.of());
+        policy.title(),
+        activeProposal != null,
+        proposalId,
+        components,
+        evaluatedEdges,
+        List.of(),
+        cycles);
   }
 
   private boolean isKnownNode(

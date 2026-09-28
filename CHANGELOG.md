@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-14] - 2026-09-28
+
+### Added
+- **Real-Time File System Watcher & Live SSE Synchronization (Issue #132 - Pillar 1)**:
+  - **Reactive NIO File Watcher**: Implemented `ProjectFileWatcher` in `com.design.umlviewer.engine` utilizing Java NIO `WatchService` with recursive subdirectory monitoring, intelligent directory exclusion (`.git`, `target`, `node_modules`, `.idea`), file extension filtering, and debounced callback dispatching.
+  - **Broadcast Event Streaming**: Integrated Mutiny `BroadcastProcessor` in `DiagramResource` broadcasting `graph-update` events over `@GET @Path("/events")` Server-Sent Events (SSE).
+  - **Frontend Live Sync State**: Extended `DiagramState` with `initLiveEvents()` and `handleLiveGraphUpdate()`, automatically synchronizing AST diagrams, telemetry logs, and metric overlays whenever source files change on disk.
+- **Robert C. Martin Acyclic Dependencies Principle (ADP) Cycle Analyzer (Issue #132 - Pillar 2)**:
+  - **Package Graph Cycle Detection**: Implemented `PackageCycleDetector` in `com.design.umlviewer.domain.policy` using recursive DFS cycle path discovery to identify circular package dependencies.
+  - **Architecture Graph Cycle Reporting**: Integrated `cycles` model into `ArchitectureGraph` with backward-compatible constructors and `@GET @Path("/cycles")` REST endpoint.
+  - **CLI Cycle Inspection & SARIF Diagnostic**: Added `--detect-cycles` / `--cycles` flag to `archlens check`, emitting `ARCH002: AcyclicDependenciesPrincipleRule` SARIF diagnostic notifications with severity level `error`.
+  - **Workbench UI ADP Warning Badge & Banner**: Added interactive cycle indicator badges to top workbench header and `MainSequenceModal`, rendering visual cycle paths with remediation guidance.
+- **Visual Architecture Policy Designer & Ring Editor (Issue #132 - Pillar 3)**:
+  - **Application Use Case (`SavePolicyUseCase`)**: Implemented atomic persistence, schema validation, and instant AST graph recompilation in `com.design.umlviewer.usecase.SavePolicyUseCase` exposed over `POST /api/policy`.
+  - **Frontend Concentric Ring Designer (`PolicyEditorModal.svelte`)**: Created interactive modal permitting visual concentric tier reassignments (Level 0 Domain through Level 3+ Infrastructure), package chip moves (inward/outward), unassigned package assignment, tier additions/deletions, and preset Clean Architecture ring layouts.
+  - **Workbench Navigation Integration**: Added header action button and keyboard access for rapid policy design.
+
 ## [0.0.1-Alpha-13] - 2026-09-28
 
 ### Added

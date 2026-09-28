@@ -3,9 +3,15 @@
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
   import { formatCrap, formatCoverage } from '../utils/colors';
-  import { X, Code, ShieldAlert, Cpu } from '@lucide/svelte';
+  import { X, Code, ShieldAlert, Cpu, FlaskConical } from '@lucide/svelte';
 
   let cls = $derived(diagramStore.selectedClass);
+  let originComponent = $derived(
+    cls ? (diagramStore.baseGraph?.components || []).find((c) => c.classes?.some((item) => item.id === cls.id)) : null
+  );
+  let currentTargetId = $derived(
+    cls ? diagramStore.stagedClassMoves.get(cls.id) || originComponent?.id || '' : ''
+  );
 
   let backdropEl: HTMLDivElement | null = $state(null);
   let dialogEl: HTMLDivElement | null = $state(null);
@@ -122,6 +128,37 @@
           Mutants: <span class="text-emerald-400 font-medium">{cls.killed} killed</span> / <span class="text-rose-400 font-medium">{cls.survived} survived</span>
         </div>
       </div>
+
+      <!-- Sandbox Reassignment Bar -->
+      {#if diagramStore.isSandboxActive && cls && originComponent}
+        <div class="px-4 py-2 bg-amber-950/40 border-b border-amber-500/30 flex items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-1.5 text-amber-300 font-mono">
+            <FlaskConical size={14} class="text-amber-400" />
+            <span class="font-semibold">Sandbox Reassign:</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400 font-mono text-[11px]">{originComponent.label} &rarr;</span>
+            <select
+              value={currentTargetId}
+              onchange={(e) => {
+                const targetId = (e.target as HTMLSelectElement).value;
+                if (targetId === originComponent?.id) {
+                  diagramStore.unstageClassMove(cls.id);
+                } else {
+                  diagramStore.stageClassMove(cls.id, targetId);
+                }
+              }}
+              class="bg-slate-900 border border-amber-500/50 text-amber-200 text-xs rounded px-2.5 py-1 font-mono focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+            >
+              {#each (diagramStore.baseGraph?.components || []) as comp}
+                <option value={comp.id}>
+                  {comp.label} (Ring {comp.level ?? '?'})
+                </option>
+              {/each}
+            </select>
+          </div>
+        </div>
+      {/if}
 
       <!-- Body: Fields & Methods -->
       <div class="p-4 overflow-y-auto flex-1 space-y-4">

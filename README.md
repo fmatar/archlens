@@ -171,6 +171,7 @@ npx @fmatar/archlens-skill --mcp
 | `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
+| `S` | **Sandbox "What-If"** | Enter or exit interactive architectural sandbox simulation |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |

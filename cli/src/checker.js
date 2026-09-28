@@ -61,6 +61,95 @@ export function loadProjectPolicy(projectRoot) {
   return null;
 }
 
+export const TECHNICAL_MARKERS = new Set([
+  'controller',
+  'controllers',
+  'service',
+  'services',
+  'dao',
+  'daos',
+  'repository',
+  'repositories',
+  'dto',
+  'dtos',
+  'model',
+  'models',
+  'entity',
+  'entities',
+  'util',
+  'utils',
+  'helper',
+  'helpers',
+  'common',
+  'infra',
+  'infrastructure',
+  'adapter',
+  'adapters',
+  'resource',
+  'resources',
+  'api',
+  'endpoint',
+  'endpoints',
+  'view',
+  'views',
+  'handler',
+  'handlers'
+]);
+
+export function calculateScreamingMetric(packages) {
+  if (!packages || packages.length === 0) {
+    return {
+      score: 1.0,
+      domainPackageCount: 0,
+      technicalPackageCount: 0,
+      totalPackageCount: 0,
+      classification: 'PACKAGE_BY_FEATURE',
+      domainPackages: [],
+      technicalPackages: []
+    };
+  }
+
+  const domainPackages = [];
+  const technicalPackages = [];
+
+  for (const pkg of packages) {
+    const lower = pkg.toLowerCase();
+    const leaf = lower.includes('.') ? lower.substring(lower.lastIndexOf('.') + 1) : lower;
+    if (TECHNICAL_MARKERS.has(leaf) || TECHNICAL_MARKERS.has(lower)) {
+      technicalPackages.push(pkg);
+    } else {
+      let isTech = false;
+      for (const segment of lower.split('.')) {
+        if (TECHNICAL_MARKERS.has(segment)) {
+          isTech = true;
+          break;
+        }
+      }
+      if (isTech) {
+        technicalPackages.push(pkg);
+      } else {
+        domainPackages.push(pkg);
+      }
+    }
+  }
+
+  const total = domainPackages.length + technicalPackages.length;
+  const score = total > 0 ? Math.round((domainPackages.length / total) * 100) / 100 : 1.0;
+  let classification = 'PACKAGE_BY_LAYER';
+  if (score >= 0.75) classification = 'PACKAGE_BY_FEATURE';
+  else if (score >= 0.40) classification = 'HYBRID';
+
+  return {
+    score,
+    domainPackageCount: domainPackages.length,
+    technicalPackageCount: technicalPackages.length,
+    totalPackageCount: total,
+    classification,
+    domainPackages,
+    technicalPackages
+  };
+}
+
 export async function checkArchitecture(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || '.');
   const policy = loadProjectPolicy(root);
@@ -148,9 +237,17 @@ export async function checkArchitecture(projectRoot, options = {}) {
     }
   }
 
+  const allKnownPackages = Array.from(pkgToLevel.keys());
+  const screaming = calculateScreamingMetric(allKnownPackages);
+  const screamingThreshold = options.screamingThreshold !== undefined ? Number(options.screamingThreshold) : null;
+  const failOnScreaming = screamingThreshold !== null && screaming.score < screamingThreshold;
+
   const cycles = detectPackageCycles(packageEdges);
   const failOnCycles = Boolean(options.detectCycles);
-  const passed = violations.length <= maxViolations && (!failOnCycles || cycles.length === 0);
+  const passed =
+    violations.length <= maxViolations &&
+    (!failOnCycles || cycles.length === 0) &&
+    !failOnScreaming;
 
   return {
     passed,
@@ -160,6 +257,8 @@ export async function checkArchitecture(projectRoot, options = {}) {
     violationsCount: violations.length,
     cyclesCount: cycles.length,
     maxViolations,
+    screamingThreshold,
+    screaming,
     violations,
     cycles
   };
@@ -243,6 +342,30 @@ export function generateSarifReport(report, options = {}) {
     });
   }
 
+  const screaming = report.screaming;
+  const failOnScreaming =
+    report.screamingThreshold !== null &&
+    report.screamingThreshold !== undefined &&
+    screaming &&
+    screaming.score < report.screamingThreshold;
+
+  if (failOnScreaming) {
+    rules.push({
+      id: 'ARCH003',
+      name: 'ScreamingArchitectureRule',
+      shortDescription: {
+        text: 'Screaming Architecture score below threshold (Uncle Bob Chapter 21 violation)'
+      },
+      fullDescription: {
+        text: 'The architecture should scream its business intent and domain use cases rather than framework delivery mechanisms or technical layers. Package-by-feature should predominate over package-by-layer.'
+      },
+      defaultConfiguration: {
+        level: 'error'
+      },
+      helpUri: 'https://github.com/fmatar/archlens#clean-architecture-rules'
+    });
+  }
+
   const sarifResults = violations.map((v) => ({
     ruleId: 'ARCH001',
     level: 'error',
@@ -269,6 +392,16 @@ export function generateSarifReport(report, options = {}) {
       level: 'error',
       message: {
         text: `Package Dependency Cycle (ADP Violation): Cyclic loop detected: ${c.formatted}. Invert dependencies to break the cycle.`
+      }
+    });
+  }
+
+  if (failOnScreaming) {
+    sarifResults.push({
+      ruleId: 'ARCH003',
+      level: 'error',
+      message: {
+        text: `Screaming Architecture Violation: Score ${screaming.score.toFixed(2)} is below required threshold ${report.screamingThreshold.toFixed(2)} (${screaming.classification}: ${screaming.technicalPackageCount} technical / ${screaming.totalPackageCount} total packages). Organize packages by domain feature.`
       }
     });
   }

@@ -8,6 +8,7 @@ import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.model.PackageCycle;
+import com.design.umlviewer.domain.model.ScreamingMetric;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import com.design.umlviewer.engine.ProjectFileWatcher;
@@ -26,6 +27,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 /**
@@ -38,6 +40,7 @@ import org.jboss.resteasy.reactive.RestStreamElementType;
 @Consumes(MediaType.APPLICATION_JSON)
 public class DiagramResource {
 
+  private static final Logger LOG = Logger.getLogger(DiagramResource.class);
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
   @Inject ArchitectureCompiler graphCompiler;
@@ -237,6 +240,16 @@ public class DiagramResource {
   }
 
   @GET
+  @Path("/screaming")
+  public ScreamingMetric getScreamingMetric(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    ArchitectureGraph graph = getGraph(projectRoot, proposalId);
+    return graph.screamingMetric() != null ? graph.screamingMetric() : ScreamingMetric.empty();
+  }
+
+  @GET
   @Path("/events")
   @Produces(MediaType.SERVER_SENT_EVENTS)
   @RestStreamElementType(MediaType.APPLICATION_JSON)
@@ -266,7 +279,8 @@ public class DiagramResource {
                         "event", "graph-update",
                         "path", path.toString(),
                         "timestamp", System.currentTimeMillis())));
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
       }
     }
   }

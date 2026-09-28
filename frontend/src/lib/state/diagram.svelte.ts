@@ -17,7 +17,8 @@ import type {
   StagedClassMove,
   MartinMetrics,
   ScatterPlotPoint,
-  PackageCycle
+  PackageCycle,
+  ScreamingMetric
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -55,6 +56,9 @@ class DiagramState {
   // Acyclic Dependencies Principle (ADP) Cycles
   packageCycles = $derived.by<PackageCycle[]>(() => this.graph?.cycles || []);
   hasCycles = $derived(this.packageCycles.length > 0);
+
+  // Screaming Architecture Metric (Uncle Bob Ch. 21)
+  screamingMetric = $derived.by<ScreamingMetric | null>(() => this.graph?.screamingMetric || null);
 
   // Policy Designer & Ring Editor Modal State
   isPolicyEditorOpen = $state<boolean>(false);

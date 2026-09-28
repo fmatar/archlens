@@ -9,7 +9,8 @@ import {
   loadProjectPolicy,
   generateSarifReport,
   generateJsonReport,
-  detectPackageCycles
+  detectPackageCycles,
+  calculateScreamingMetric
 } from '../src/checker.js';
 
 test('loadProjectPolicy detects .archlens/policy.json', (t) => {
@@ -200,6 +201,92 @@ test('checkArchitecture enforces ADP when detectCycles is true and generates ARC
     assert.equal(sarif.runs[0].results.length, 1);
     assert.equal(sarif.runs[0].results[0].ruleId, 'ARCH002');
     assert.ok(sarif.runs[0].results[0].message.text.includes('pkga -> pkgb -> pkga'));
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('calculateScreamingMetric correctly calculates SAS score and classification', () => {
+  // Empty
+  const empty = calculateScreamingMetric([]);
+  assert.equal(empty.score, 1.0);
+  assert.equal(empty.classification, 'PACKAGE_BY_FEATURE');
+
+  // Package by feature (domain packages)
+  const features = calculateScreamingMetric(['com.app.billing', 'com.app.shipping', 'com.app.inventory', 'com.app.auth']);
+  assert.equal(features.score, 1.0);
+  assert.equal(features.classification, 'PACKAGE_BY_FEATURE');
+  assert.equal(features.domainPackageCount, 4);
+  assert.equal(features.technicalPackageCount, 0);
+
+  // Package by layer (technical packages)
+  const layers = calculateScreamingMetric(['com.app.controllers', 'com.app.services', 'com.app.repositories', 'com.app.dtos']);
+  assert.equal(layers.score, 0.0);
+  assert.equal(layers.classification, 'PACKAGE_BY_LAYER');
+  assert.equal(layers.domainPackageCount, 0);
+  assert.equal(layers.technicalPackageCount, 4);
+
+  // Hybrid
+  const hybrid = calculateScreamingMetric(['com.app.orders', 'com.app.billing', 'com.app.controllers', 'com.app.repositories']);
+  assert.equal(hybrid.score, 0.5);
+  assert.equal(hybrid.classification, 'HYBRID');
+  assert.equal(hybrid.domainPackageCount, 2);
+  assert.equal(hybrid.technicalPackageCount, 2);
+});
+
+test('checkArchitecture enforces screamingThreshold and produces ARCH003 in SARIF', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-screaming-test-'));
+  try {
+    const archlensDir = path.join(tmpDir, '.archlens');
+    const srcDir = path.join(tmpDir, 'src');
+    const controllersDir = path.join(srcDir, 'controllers');
+    const servicesDir = path.join(srcDir, 'services');
+
+    fs.mkdirSync(archlensDir, { recursive: true });
+    fs.mkdirSync(controllersDir, { recursive: true });
+    fs.mkdirSync(servicesDir, { recursive: true });
+
+    // Technical layered architecture: score = 0.0
+    const policy = {
+      title: 'Layered App',
+      src: 'src',
+      order: ['services', 'controllers'],
+      levels: [['services'], ['controllers']]
+    };
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(policy), 'utf8');
+
+    fs.writeFileSync(
+      path.join(servicesDir, 'OrderService.java'),
+      'package services;\npublic class OrderService {}\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(controllersDir, 'OrderController.java'),
+      'package controllers;\nimport services.OrderService;\npublic class OrderController {}\n',
+      'utf8'
+    );
+
+    // Without threshold: passes (0 outward violations)
+    const passResult = await checkArchitecture(tmpDir);
+    assert.equal(passResult.passed, true);
+    assert.equal(passResult.screaming.score, 0.0);
+    assert.equal(passResult.screaming.classification, 'PACKAGE_BY_LAYER');
+
+    // With threshold 0.7: fails due to screaming threshold
+    const failResult = await checkArchitecture(tmpDir, { screamingThreshold: 0.7 });
+    assert.equal(failResult.passed, false);
+    assert.equal(failResult.screamingThreshold, 0.7);
+
+    // SARIF contains ARCH003
+    const sarif = JSON.parse(generateSarifReport(failResult, { version: '0.0.1-Alpha-14' }));
+    const arch003 = sarif.runs[0].results.find((r) => r.ruleId === 'ARCH003');
+    assert.ok(arch003, 'Should contain ARCH003 rule in results');
+    assert.ok(arch003.message.text.includes('Screaming Architecture Violation'));
+    assert.ok(arch003.message.text.includes('PACKAGE_BY_LAYER'));
+
+    const ruleDef = sarif.runs[0].tool.driver.rules.find((r) => r.id === 'ARCH003');
+    assert.ok(ruleDef, 'Should define ARCH003 rule in driver');
+    assert.equal(ruleDef.name, 'ScreamingArchitectureRule');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

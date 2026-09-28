@@ -88,3 +88,55 @@ Abstractness (A)
 ### 🟢 The Balanced Zone ($D \le 0.4$)
 - **Characteristics**: Components that track closely along the Main Sequence line.
 - **Outcome**: Concrete components are instable (easy to change, few dependents), and stable components are abstract (extensible via polymorphism).
+
+---
+
+## 📊 Interactive Main Sequence Scatter Plot & Quadrant Analyzer
+
+Archlens features a built-in 2D Cartesian SVG scatter plot modal to visually inspect your system's architecture against Uncle Bob's metrics in real time.
+
+```text
+                  Main Sequence (A + I = 1)
+                            \
+Abstractness (A)             \
+   1.0 +----------------------\------------------+
+       |   Zone of             \   Balanced       |
+       |   Uselessness          \  Corridor (±0.25)
+       |   (Amber)               \               |
+       |                          \              |
+       |                           \             |
+       |                            \            |
+       |                             \           |
+       |                              \  Zone of |
+       |                               \ Pain    |
+       |                                \(Crimson)|
+   0.0 +---------------------------------\--------+
+       0.0                                       1.0
+                         Instability (I)
+```
+
+### 1. Launching the Modal
+- **Keyboard Shortcut**: Press **`M`** anywhere in Archlens.
+- **Header Navigation**: Click the **`Main Sequence`** button in the top navigation bar.
+- **Sandbox Drawer**: Click **`Open Scatter Plot (M)`** inside the Sandbox Metrics dock.
+
+### 2. Visualization Features
+- **Uncle Bob's Ideal Line**: Rendered as a distinct green dashed line ($A + I = 1$).
+- **Balanced Corridor**: Shaded tolerance ribbon representing $|A + I - 1| \le 0.25$.
+- **Dynamic Node Radii**: Component bubble size scales proportionally with total class count ($N_c$), clamped between 6px and 22px for readability.
+- **Tier Color Coding**: Points inherit their concentric ring tier color (L0 Domain Core, L1 Application, L2 Adapters, L3 Frameworks/Infrastructure).
+
+### 3. Interactive Controls & Diagnostics
+- **Concentric Tier Filtering**: Filter plot points by tier (`All`, `Domain Core`, `Application`, `Adapters`, `Infrastructure`).
+- **Search Filtering**: Filter points by component name in real time.
+- **Telemetry Card & Diagnostics**: Hovering or clicking any node displays:
+  - Exact coordinates: Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I$), Abstractness ($A$), and Distance ($D$).
+  - Concrete vs. Abstract class breakdown ($N_a$ vs. $N_c$).
+  - Actionable Clean Architecture remediation advice (e.g., DIP inversion port suggestions for packages trapped in the Zone of Pain).
+- **1-Click Canvas Focus**: Click **`Focus Component on Canvas`** to smoothly center the selected package on the main architectural graph.
+
+### 4. Zero-Disk Sandbox Reactivity
+When Architectural Sandbox mode (**`S`**) is active:
+- The scatter plot automatically binds to the staged in-memory package layout.
+- Reassigning classes across packages or concentric rings causes component bubbles to glide across the quadrant in real time, giving instant feedback on whether your refactoring improves system balance!
+

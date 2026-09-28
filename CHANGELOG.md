@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.0.1-Alpha-12] - 2026-09-28
+
+### Added
+- **Phase 3 Clean Architecture Elevation (Issue #123)**:
+  - **Dependency Inversion Port in Engine**: Extracted `ArchitectureCompiler` interface in `com.design.umlviewer.engine`, implemented by `GraphCompiler`. Balances package abstractness ($N_a=1$) and drives `engine` Distance from Main Sequence into the optimal corridor ($D = 0.056$).
+  - **Level 1 Application Use Cases**: Introduced `com.design.umlviewer.usecase` with `ExportDossierUseCase` and `SynthesizeDipInversionUseCase`, cleanly separating business workflow orchestrations from REST transport and MCP delivery mechanisms.
+  - **Low-CRAP Dossier Modularization**: Extracted `DossierGenerator` interface in `domain.dossier` and decomposed `ArchitecturalDossierGenerator` into modular section builders, reducing cyclomatic complexity from 33 down to 3 and CRAP score to $< 4.0$.
+  - **Automated CLI Architecture Conformance Gate**: Implemented `archlens check` (with `--max-violations` flag) in `cli/src/checker.js`, enabling zero-violation enforcement in headless CI environments.
+  - **CI Quality Gate Integration**: Added automated `archlens check` step to `.github/workflows/ci.yml` verifying zero dependency rule violations on every PR and branch push.
+  - **Expanded Test Coverage**: Added `ExportDossierUseCaseTest`, `SynthesizeDipInversionUseCaseTest`, and `cli/test/checker.test.js` (83 backend tests, 50 CLI tests, 48 frontend tests passing).
+
+### Changed
+- **Decompose DiagramResource God Controller into Focused Clean Architecture Resources (Issue #121)**:
+  - Extracted `WorkspacePathResolver` utility class to centralize directory traversal, project detection heuristics, home expansion, and container workspace mapping.
+  - Extracted `ProjectFilesystemResource` (`@Path("/api")`) handling `/projects`, `/fs/directories`, `/fs/pick-directory`, and `/source`.
+  - Extracted `SnapshotResource` (`@Path("/api/snapshots")`) managing architecture history listing and retrieval from `.archlens/snapshots`, `.archlens/cache`, and git tags.
+  - Extracted `MailboxResource` (`@Path("/api/mailbox")`) handling bidirectional IPC mailbox queues and command dispatching (`/mailbox/to-agent`).
+  - Streamlined `DiagramResource` from 818 lines down to 187 lines, focusing purely on graph compilation, policy evaluation, LLM refactoring dossiers, DIP inversion synthesis, and SSE event streaming.
+  - Preserved 100% backward-compatible delegate methods on `DiagramResource` and identical REST routes across all clients and MCP bridges.
+  - Added comprehensive test suites: `WorkspacePathResolverTest`, `SnapshotResourceTest`, and `MailboxResourceTest`, bringing total backend test suite to 81 tests passing with 0 failures.
+
 ## [0.0.1-Alpha-11] - 2026-09-28
 
 ### Added

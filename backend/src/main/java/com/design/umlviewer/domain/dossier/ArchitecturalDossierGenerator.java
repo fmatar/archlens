@@ -11,25 +11,45 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Standard implementation of DossierGenerator. Decomposes markdown synthesis into cohesive,
+ * low-complexity section builders.
+ */
 @ApplicationScoped
-public class ArchitecturalDossierGenerator {
+public class ArchitecturalDossierGenerator implements DossierGenerator {
 
   private static final List<String> DEFAULT_TIER_NAMES =
       List.of("Domain Core (L0)", "Application (L1)", "Adapters (L2)", "Infrastructure (L3)");
 
+  @Override
   public String generate(ArchitectureGraph graph, ArchitecturePolicy policy) {
     if (graph == null) {
       return "# Clean Architecture Optimization Dossier\n\nNo architecture graph available.\n";
     }
 
     StringBuilder sb = new StringBuilder();
-    String title;
+    appendHeader(sb, graph, policy);
+    appendConcentricRings(sb, policy);
+
+    Map<String, ClassNode> classMap = indexClasses(graph);
+    List<DependencyEdge> allEdges = graph.edges() != null ? graph.edges() : List.of();
+    List<DependencyEdge> violations = filterViolations(allEdges);
+
+    int componentCount = graph.components() != null ? graph.components().size() : 0;
+    appendDiagnosticsSummary(
+        sb, componentCount, classMap.size(), allEdges.size(), violations.size());
+    appendViolationsBreakdown(sb, violations, classMap);
+    appendActionableInstructions(sb, violations);
+
+    return sb.toString();
+  }
+
+  private void appendHeader(StringBuilder sb, ArchitectureGraph graph, ArchitecturePolicy policy) {
+    String title = "Workspace";
     if (graph.title() != null && !graph.title().isBlank()) {
       title = graph.title();
     } else if (policy != null && policy.title() != null && !policy.title().isBlank()) {
       title = policy.title();
-    } else {
-      title = "Workspace";
     }
 
     sb.append("# Clean Architecture Optimization Dossier — ").append(title).append("\n\n");
@@ -39,8 +59,9 @@ public class ArchitecturalDossierGenerator {
     sb.append(
         "and concrete Dependency Inversion Principle (DIP) refactoring guidance for Large Language Models.\n\n");
     sb.append("---\n\n");
+  }
 
-    // 1. Concentric Tiers
+  private void appendConcentricRings(StringBuilder sb, ArchitecturePolicy policy) {
     sb.append("## 1. Clean Architecture Concentric Rings\n\n");
     sb.append("| Tier | Level | Packages |\n");
     sb.append("| :--- | :---: | :--- |\n");
@@ -62,8 +83,9 @@ public class ArchitecturalDossierGenerator {
           .append(" |\n");
     }
     sb.append("\n---\n\n");
+  }
 
-    // Index all classes for fast metadata lookup
+  private Map<String, ClassNode> indexClasses(ArchitectureGraph graph) {
     Map<String, ClassNode> classMap = new HashMap<>();
     if (graph.components() != null) {
       for (ComponentNode comp : graph.components()) {
@@ -81,98 +103,102 @@ public class ArchitecturalDossierGenerator {
         classMap.put(cls.name(), cls);
       }
     }
+    return classMap;
+  }
 
-    // 2. Diagnostics Summary
-    List<DependencyEdge> allEdges = graph.edges() != null ? graph.edges() : List.of();
+  private List<DependencyEdge> filterViolations(List<DependencyEdge> edges) {
     List<DependencyEdge> violations = new ArrayList<>();
-    for (DependencyEdge edge : allEdges) {
+    for (DependencyEdge edge : edges) {
       if (edge.isViolating()) {
         violations.add(edge);
       }
     }
+    return violations;
+  }
 
-    int componentCount = graph.components() != null ? graph.components().size() : 0;
-    int classCount = classMap.size();
-    int edgeCount = allEdges.size();
-
+  private void appendDiagnosticsSummary(
+      StringBuilder sb, int componentCount, int classCount, int edgeCount, int violationCount) {
     sb.append("## 2. Architectural Diagnostics Summary\n\n");
     sb.append("- **Total Components (Packages)**: ").append(componentCount).append("\n");
     sb.append("- **Total Classes / Types**: ").append(classCount).append("\n");
     sb.append("- **Total Dependency Edges**: ").append(edgeCount).append("\n");
 
-    if (violations.isEmpty()) {
+    if (violationCount == 0) {
       sb.append(
           "- **Clean Architecture Status**: ✅ **Conforming** (Zero outward dependency rule violations detected)\n\n");
     } else {
       sb.append("- **Clean Architecture Status**: 🚨 **")
-          .append(violations.size())
+          .append(violationCount)
           .append(" Dependency Rule Violation")
-          .append(violations.size() == 1 ? "" : "s")
+          .append(violationCount == 1 ? "" : "s")
           .append(" Detected**\n\n");
     }
     sb.append("---\n\n");
+  }
 
-    // 3. Violations Breakdown & DIP Guidance
+  private void appendViolationsBreakdown(
+      StringBuilder sb, List<DependencyEdge> violations, Map<String, ClassNode> classMap) {
     sb.append("## 3. Prioritized Architectural Violations & DIP Refactoring Prescriptions\n\n");
 
     if (violations.isEmpty()) {
       sb.append(
           "🎉 **No dependency violations found.** All source code dependencies adhere to Uncle Bob's Dependency Rule,\n");
       sb.append("pointing strictly inward toward higher-level domain policies.\n\n");
-    } else {
-      for (int i = 0; i < violations.size(); i++) {
-        DependencyEdge v = violations.get(i);
-        ClassNode fromCls = classMap.get(v.from());
-        ClassNode toCls = classMap.get(v.to());
+      return;
+    }
 
-        String fromLocation =
-            fromCls != null && fromCls.filePath() != null ? fromCls.filePath() : v.from();
-        String toLocation = toCls != null && toCls.filePath() != null ? toCls.filePath() : v.to();
+    for (int i = 0; i < violations.size(); i++) {
+      DependencyEdge v = violations.get(i);
+      ClassNode fromCls = classMap.get(v.from());
+      ClassNode toCls = classMap.get(v.to());
 
-        String fromTier = resolveTierName(fromCls != null ? fromCls.level() : null);
-        String toTier = resolveTierName(toCls != null ? toCls.level() : null);
+      String fromLocation =
+          fromCls != null && fromCls.filePath() != null ? fromCls.filePath() : v.from();
+      String toLocation = toCls != null && toCls.filePath() != null ? toCls.filePath() : v.to();
 
-        String portName = proposePortName(v.to());
+      String fromTier = resolveTierName(fromCls != null ? fromCls.level() : null);
+      String toTier = resolveTierName(toCls != null ? toCls.level() : null);
+      String portName = proposePortName(v.to());
 
-        sb.append("### Violation ")
-            .append(i + 1)
-            .append(": `")
-            .append(v.from())
-            .append("` ➔ `")
-            .append(v.to())
-            .append("`\n\n");
-        sb.append("- **Direction**: `")
-            .append(fromTier)
-            .append("` depends on `")
-            .append(toTier)
-            .append("`\n");
-        sb.append(
-            "- **Uncle Bob's Law**: Source code dependencies must point ONLY inward, toward higher-level policies.\n");
-        sb.append("- **Source File**: `").append(fromLocation).append("`\n");
-        sb.append("- **Target File**: `").append(toLocation).append("`\n");
-        sb.append("- **Prescribed Dependency Inversion Principle (DIP) Fix**:\n");
-        sb.append("  1. Define an interface port `")
-            .append(portName)
-            .append("` in the inner layer (`")
-            .append(fromTier)
-            .append("`).\n");
-        sb.append("  2. Change `")
-            .append(simpleName(v.from()))
-            .append("` to declare dependencies exclusively against `")
-            .append(portName)
-            .append("`.\n");
-        sb.append("  3. Make the outer concrete class `")
-            .append(simpleName(v.to()))
-            .append("` implement `")
-            .append(portName)
-            .append("`.\n");
-        sb.append(
-            "  4. Wire the concrete implementation at the infrastructure boundary using dependency injection.\n\n");
-      }
+      sb.append("### Violation ")
+          .append(i + 1)
+          .append(": `")
+          .append(v.from())
+          .append("` ➔ `")
+          .append(v.to())
+          .append("`\n\n");
+      sb.append("- **Direction**: `")
+          .append(fromTier)
+          .append("` depends on `")
+          .append(toTier)
+          .append("`\n");
+      sb.append(
+          "- **Uncle Bob's Law**: Source code dependencies must point ONLY inward, toward higher-level policies.\n");
+      sb.append("- **Source File**: `").append(fromLocation).append("`\n");
+      sb.append("- **Target File**: `").append(toLocation).append("`\n");
+      sb.append("- **Prescribed Dependency Inversion Principle (DIP) Fix**:\n");
+      sb.append("  1. Define an interface port `")
+          .append(portName)
+          .append("` in the inner layer (`")
+          .append(fromTier)
+          .append("`).\n");
+      sb.append("  2. Change `")
+          .append(simpleName(v.from()))
+          .append("` to declare dependencies exclusively against `")
+          .append(portName)
+          .append("`.\n");
+      sb.append("  3. Make the outer concrete class `")
+          .append(simpleName(v.to()))
+          .append("` implement `")
+          .append(portName)
+          .append("`.\n");
+      sb.append(
+          "  4. Wire the concrete implementation at the infrastructure boundary using dependency injection.\n\n");
     }
     sb.append("---\n\n");
+  }
 
-    // 4. Actionable LLM Instructions
+  private void appendActionableInstructions(StringBuilder sb, List<DependencyEdge> violations) {
     sb.append("## 4. Actionable LLM Refactoring Instructions\n\n");
     sb.append("```markdown\n");
     sb.append(
@@ -197,8 +223,6 @@ public class ArchitecturalDossierGenerator {
       sb.append("4. Keep public contracts stable and regression-free.\n");
     }
     sb.append("```\n");
-
-    return sb.toString();
   }
 
   private String resolveTierName(Integer level) {

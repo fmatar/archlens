@@ -25,7 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
-public class GraphCompiler {
+public class GraphCompiler implements ArchitectureCompiler {
 
   @Inject LanguageScannerRegistry scannerRegistry;
 

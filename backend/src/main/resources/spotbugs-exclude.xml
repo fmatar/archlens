@@ -46,7 +46,7 @@
         <Bug pattern="REC_CATCH_EXCEPTION"/>
     </Match>
     <Match>
-        <Class name="com.design.umlviewer.resource.DiagramResource"/>
+        <Package name="com.design.umlviewer.resource"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
 </FindBugsFilter>

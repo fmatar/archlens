@@ -20,6 +20,7 @@ import {
 import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
+import { checkArchitecture } from '../src/checker.js';
 import { installMcpConfigs } from '../src/mcp-registry.js';
 import { startMcpStdioServer } from '../src/mcp-server.js';
 import { executeStart, DEFAULT_CONTAINER_NAME, DEFAULT_SERVER_URL } from '../src/docker-runner.js';
@@ -51,6 +52,7 @@ ${ui.colors.bold}USAGE:${ui.colors.reset}
 ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   init                     Initialize Clean Architecture policy in target project (default)
   start                    Start Archlens Workbench container (auto-resurrects on demand)
+  check                    Audit repository against Clean Architecture policy rules
   update                   Update existing policy with newly discovered packages and refresh skills
   upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   global                   Install Archlens skills globally for AI coding assistants
@@ -60,6 +62,7 @@ ${ui.colors.bold}COMMANDS:${ui.colors.reset}
 ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -p, --path <DIR>         Target repository path (default: current directory)
   -t, --title <NAME>       Project title displayed in Archlens workbench
+  --max-violations <NUM>   Maximum allowable outward dependency violations (default: 0)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
@@ -123,6 +126,8 @@ function parseArgs(args) {
     update: false,
     upgrade: false,
     mcp: false,
+    check: false,
+    maxViolations: 0,
     force: false,
     dryRun: false,
     yes: false,
@@ -153,6 +158,10 @@ function parseArgs(args) {
       parsed.upgrade = true;
     } else if (arg === '--prompt') {
       parsed.prompt = true;
+    } else if (arg === '--check') {
+      parsed.check = true;
+    } else if (arg === '--max-violations') {
+      parsed.maxViolations = Number(args[++i] || 0);
     } else if (arg === '--copy' || arg === '-c') {
       parsed.copy = true;
     } else if (arg === '--force' || arg === '-f') {
@@ -176,7 +185,7 @@ function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'start', 'update', 'upgrade', 'global', 'prompt', 'mcp', 'help', 'version'].includes(cmd)) {
+    if (['init', 'start', 'update', 'upgrade', 'global', 'prompt', 'mcp', 'check', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -190,6 +199,7 @@ function parseArgs(args) {
   if (parsed.command === 'upgrade') parsed.upgrade = true;
   if (parsed.command === 'global') parsed.global = true;
   if (parsed.command === 'prompt') parsed.prompt = true;
+  if (parsed.command === 'check') parsed.check = true;
   if (parsed.command === 'mcp') parsed.mcp = true;
 
   return parsed;
@@ -410,6 +420,7 @@ function copyToSystemClipboard(text) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
+  const targetRoot = path.resolve(options.path || '.');
 
   if (options.help) {
     printHelp();
@@ -422,7 +433,6 @@ async function main() {
   }
 
   if (options.command === 'prompt' || options.prompt) {
-    const targetRoot = path.resolve(options.path || '.');
     try {
       const dossier = await generateLlmPrompt(targetRoot, options);
       if (options.copy) {
@@ -436,6 +446,36 @@ async function main() {
         process.stdout.write(dossier);
       }
       process.exit(0);
+    } catch (err) {
+      ui.error(err.message || String(err));
+      process.exit(1);
+    }
+  }
+
+  if (options.command === 'check' || options.check) {
+    try {
+      ui.info(`Auditing Clean Architecture conformance for ${targetRoot}...`);
+      const report = await checkArchitecture(targetRoot, options);
+      if (report.error) {
+        ui.error(report.error);
+        process.exit(1);
+      }
+      console.log(`\n  ${ui.colors.bold}Architecture Governance Results (${report.projectTitle}):${ui.colors.reset}`);
+      console.log(`  - Source Files Analyzed: ${report.sourceFilesCount}`);
+      console.log(`  - Governed Packages:     ${report.packagesCount}`);
+      console.log(`  - Detected Violations:   ${report.violationsCount} (threshold: ${report.maxViolations})\n`);
+
+      if (report.passed) {
+        ui.success(`Clean Architecture Gate PASSED (0 violations exceeding threshold).`);
+        process.exit(0);
+      } else {
+        ui.error(`Clean Architecture Gate FAILED (${report.violationsCount} violation(s) detected)!`);
+        report.violations.forEach((v, idx) => {
+          console.log(`    [${idx + 1}] ${v.fromFile} (${v.fromTier}) -> ${v.toImport} (${v.toTier})`);
+          console.log(`        Prescribed Port: ${v.portName}`);
+        });
+        process.exit(1);
+      }
     } catch (err) {
       ui.error(err.message || String(err));
       process.exit(1);
@@ -503,8 +543,6 @@ async function main() {
   }
 
   // Non-interactive or flag-driven execution
-  const targetRoot = path.resolve(options.path || '.');
-
   try {
     if (options.upgrade) {
       executeUpgrade(targetRoot, options);

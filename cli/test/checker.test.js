@@ -95,7 +95,7 @@ test('checkArchitecture detects outward violations and fails when exceeding maxV
     assert.equal(lenientResult.passed, true);
 
     // SARIF Report generation test
-    const sarifString = generateSarifReport(strictResult, { version: '0.0.1-Alpha-12' });
+    const sarifString = generateSarifReport(strictResult, { version: '0.0.1-Alpha-13' });
     const sarif = JSON.parse(sarifString);
     assert.equal(sarif.version, '2.1.0');
     assert.equal(sarif.runs[0].tool.driver.name, 'archlens');

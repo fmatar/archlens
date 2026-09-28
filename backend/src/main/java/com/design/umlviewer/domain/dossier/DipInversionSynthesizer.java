@@ -64,7 +64,7 @@ public class DipInversionSynthesizer {
   }
 
   private ClassNode findClassNode(ArchitectureGraph graph, String qualifiedName) {
-    if (graph == null || qualifiedName == null || qualifiedName.isBlank()) {
+    if (graph == null || qualifiedName.isBlank()) {
       return null;
     }
     if (graph.components() != null) {
@@ -95,7 +95,7 @@ public class DipInversionSynthesizer {
     if (node != null && node.level() != null) {
       return node.level();
     }
-    if (policy != null && policy.levels() != null && className != null) {
+    if (policy != null && policy.levels() != null) {
       List<List<String>> levels = policy.levels();
       for (int i = 0; i < levels.size(); i++) {
         for (String pkg : levels.get(i)) {
@@ -326,7 +326,6 @@ public class DipInversionSynthesizer {
   }
 
   private String simpleName(String qualifiedName) {
-    if (qualifiedName == null) return "";
     int idx = qualifiedName.lastIndexOf('.');
     return idx >= 0 ? qualifiedName.substring(idx + 1) : qualifiedName;
   }

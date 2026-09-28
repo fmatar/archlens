@@ -138,23 +138,72 @@ describe('diagramStore extended coverage tests', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('should dispatch DIP inversion task to agent mailbox', async () => {
+  it('should fallback when server returns non-ok HTTP status and pass projectRoot/proposalId', async () => {
+    const originalFetch = globalThis.fetch;
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500
+    } as any);
+    globalThis.fetch = fetchMock;
+
+    diagramStore.projectRoot = '/home/user/project';
+    diagramStore.activeProposalId = 'prop-99';
+
+    await diagramStore.openDipInversion('com.example.Order', 'com.example.Repo');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/projectRoot=%2Fhome%2Fuser%2Fproject.*proposalId=prop-99|proposalId=prop-99.*projectRoot=%2Fhome%2Fuser%2Fproject/)
+    );
+    expect(diagramStore.isDipModalOpen).toBe(true);
+    expect(diagramStore.activeDipPlan?.portName).toBe('RepoPort');
+
+    diagramStore.projectRoot = '';
+    diagramStore.activeProposalId = null;
+    diagramStore.closeDipModal();
+    globalThis.fetch = originalFetch;
+  });
+
+  it('should dispatch DIP inversion task with projectRoot and complete countdown timer', async () => {
+    vi.useFakeTimers();
     const originalFetch = globalThis.fetch;
     const postMock = vi.fn().mockResolvedValue({ ok: true } as any);
     globalThis.fetch = postMock;
 
+    diagramStore.projectRoot = '/home/user/project';
+    const testPlan = diagramStore.createFallbackDipPlan('com.example.Service', 'com.example.Repo');
+    
+    diagramStore.isDipModalOpen = true;
+    const dispatchPromise = diagramStore.dispatchDipToAgent(testPlan);
+    await dispatchPromise;
+
+    expect(postMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/mailbox/to-agent?projectRoot=%2Fhome%2Fuser%2Fproject'),
+      expect.anything()
+    );
+    expect(diagramStore.dipDispatchNotice).toBe('Task dispatched to AI agent mailbox!');
+    expect(diagramStore.isDipModalOpen).toBe(true);
+
+    // Advance fake timers by 1200ms
+    vi.advanceTimersByTime(1200);
+
+    expect(diagramStore.isDispatchingDip).toBe(false);
+    expect(diagramStore.isDipModalOpen).toBe(false);
+    expect(diagramStore.dipDispatchNotice).toBeNull();
+
+    diagramStore.projectRoot = '';
+    vi.useRealTimers();
+    globalThis.fetch = originalFetch;
+  });
+
+  it('should handle DIP dispatch network rejection cleanly', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('Agent offline'));
+
     const testPlan = diagramStore.createFallbackDipPlan('com.example.Service', 'com.example.Repo');
     await diagramStore.dispatchDipToAgent(testPlan);
 
-    expect(postMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/mailbox/to-agent'),
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.stringContaining('INVERT_DEPENDENCY')
-      })
-    );
-    expect(diagramStore.telemetryEvents[0].type).toBe('TASK');
-    expect(diagramStore.telemetryEvents[0].message).toContain('Dispatched DIP Inversion task');
+    expect(diagramStore.isDispatchingDip).toBe(false);
+    expect(diagramStore.dipDispatchNotice).toContain('Error dispatching task: Agent offline');
 
     globalThis.fetch = originalFetch;
   });

@@ -1,5 +1,7 @@
-package com.design.umlviewer.domain.mailbox;
+package com.design.umlviewer.adapter.mailbox;
 
+import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
+import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -11,8 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Concrete filesystem mailbox adapter implementing the domain MailboxGateway port. Handles atomic
+ * JSON read/write operations for .archlens mailbox queues.
+ */
 @ApplicationScoped
-public class FileMailboxService {
+public class FileMailboxService implements MailboxGateway {
 
   private final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
   private static final String PRIMARY_MAILBOX_DIR = ".archlens";
@@ -53,6 +59,7 @@ public class FileMailboxService {
     return new File(dir, fileName);
   }
 
+  @Override
   public synchronized MailboxEnvelope readMailbox(String projectRoot, boolean isToAgent) {
     File file = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
     if (!file.exists()) {
@@ -65,6 +72,7 @@ public class FileMailboxService {
     }
   }
 
+  @Override
   public synchronized MailboxEnvelope.MailboxCommand appendCommand(
       String projectRoot,
       boolean isToAgent,
@@ -86,6 +94,7 @@ public class FileMailboxService {
     return cmd;
   }
 
+  @Override
   public synchronized MailboxEnvelope.MailboxCommand popOldest(
       String projectRoot, boolean isToAgent) throws IOException {
     File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);

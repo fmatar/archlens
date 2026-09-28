@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-10] - 2026-09-28
+
 ### Added
 - **Interactive Main Sequence Scatter Plot & Quadrant Analyzer (`M`)**:
   - Implemented 2D Cartesian SVG scatter plot (`MainSequenceModal.svelte`) plotting component Instability ($I \in [0, 1]$) against Abstractness ($A \in [0, 1]$).
@@ -41,6 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added root npm scripts `deps:check`, `deps:update`, and `deps:update:major`.
   - Added scheduled GitHub Action `.github/workflows/dependency-pulse.yml` executing weekly automated dependency audits with automatic PR creation for verified safe upgrades.
   - Added test suite `scripts/test/update-dependencies.test.js` validating version filtering, semver comparison, and manifest updating logic.
+
+### Fixed
+- **Package Containment Hierarchy Resolution in Dependency Rule Validator**:
+  - Reordered `resolveRank(id)` in `DependencyRuleValidator.java` so that enclosing package prefixes and directory containment hierarchy take priority over simple leaf filenames.
+  - Eliminates false-positive outward Clean Architecture dependency violations for nested modules (such as Pulumi IaC scripts like `infra/infra/fastapi_server.py`) that match outer/inner layer tokens.
 
 ## [0.0.1-Alpha-09] - 2026-09-25
 

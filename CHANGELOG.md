@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-13] - 2026-09-28
+
 ### Added
 - **Application Use Cases & CLI SARIF Exporter (Issue #128)**:
   - **Level 1 Application Use Cases**: Extracted `ManageSnapshotsUseCase` and `ResolveFilesystemUseCase` in `com.design.umlviewer.usecase`, fully relieving `SnapshotResource` and `ProjectFilesystemResource` from file system and git execution logic.

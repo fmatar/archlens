@@ -3,6 +3,7 @@ package com.design.umlviewer.mcp;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
+import com.design.umlviewer.domain.dossier.DipInversionPlan;
 import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
@@ -76,5 +77,18 @@ class ArchlensMcpServiceTest {
     ArchitectureGraph fallback = mcpService.getSnapshot("test-release", tempDir.toString());
     assertNotNull(fallback);
     assertEquals("McpGraph", fallback.title());
+  }
+
+  @Test
+  void testSynthesizeDipInversion(@TempDir Path tempDir) throws IOException {
+    DipInversionPlan plan =
+        mcpService.synthesizeDipInversion(
+            "com.example.OrderService", "com.example.PaymentGateway", tempDir.toString());
+    assertNotNull(plan);
+    assertEquals("com.example.OrderService", plan.fromClass());
+    assertEquals("com.example.PaymentGateway", plan.toClass());
+    assertEquals("PaymentGatewayPort", plan.portName());
+    assertNotNull(plan.portInterfaceCode());
+    assertNotNull(plan.surgicalPrompt());
   }
 }

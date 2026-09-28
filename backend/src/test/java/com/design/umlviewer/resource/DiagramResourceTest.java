@@ -2,10 +2,11 @@ package com.design.umlviewer.resource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.design.umlviewer.adapter.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
 import com.design.umlviewer.domain.dossier.DipInversionPlan;
-import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
+import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.GraphCompiler;
@@ -22,7 +23,7 @@ class DiagramResourceTest {
 
   @Test
   void testDiagramResourceEndpoints(@TempDir Path tempDir) throws Exception {
-    FileMailboxService mailboxService = new FileMailboxService();
+    MailboxGateway mailboxService = new FileMailboxService();
     ArchitecturalDossierGenerator dossierGenerator = new ArchitecturalDossierGenerator();
 
     // Create a mock GraphCompiler
@@ -48,16 +49,22 @@ class DiagramResourceTest {
             dossierGenerator,
             new com.fasterxml.jackson.databind.ObjectMapper());
 
-    // Test getGraph
+    // Test getGraph and getDiagram alias
     ArchitectureGraph graph = resource.getGraph(tempDir.toString(), "prop-1");
     assertEquals("Graph", graph.title());
     assertEquals("prop-1", graph.activeProposalId());
 
-    // Test getLlmDossier
+    ArchitectureGraph diagramAlias = resource.getDiagram(tempDir.toString(), "prop-1");
+    assertEquals("Graph", diagramAlias.title());
+
+    // Test getLlmDossier and alias
     String dossier = resource.getLlmDossier(tempDir.toString(), "prop-1");
     assertNotNull(dossier);
     assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — Graph"));
     assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
+
+    String dossierAlias = resource.getLlmDossierAlias(tempDir.toString(), "prop-1");
+    assertEquals(dossier, dossierAlias);
 
     // Test getInvertPlan
     DipInversionPlan plan =

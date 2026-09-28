@@ -85,7 +85,7 @@ test('startContainer invokes docker run when container does not exist', () => {
 });
 
 test('ensureServerRunning returns running immediately if server is already healthy', async () => {
-  const mockHealth = async () => ({ ok: true, version: '0.0.1-Alpha-10' });
+  const mockHealth = async () => ({ ok: true, version: '0.0.1-Alpha-11' });
 
   const status = await ensureServerRunning(
     { serverUrl: 'http://localhost:8088' },
@@ -93,7 +93,7 @@ test('ensureServerRunning returns running immediately if server is already healt
   );
 
   assert.equal(status.status, 'running');
-  assert.equal(status.version, '0.0.1-Alpha-10');
+  assert.equal(status.version, '0.0.1-Alpha-11');
   assert.equal(status.spawned, false);
 });
 
@@ -119,7 +119,7 @@ test('ensureServerRunning launches container and polls readiness when server is 
   const mockHealth = async () => {
     callCount++;
     if (callCount === 1) return { ok: false };
-    return { ok: true, version: '0.0.1-Alpha-10' };
+    return { ok: true, version: '0.0.1-Alpha-11' };
   };
 
   let containerStarted = false;
@@ -139,7 +139,7 @@ test('ensureServerRunning launches container and polls readiness when server is 
   assert.equal(containerStarted, true);
   assert.equal(status.status, 'running');
   assert.equal(status.spawned, true);
-  assert.equal(status.version, '0.0.1-Alpha-10');
+  assert.equal(status.version, '0.0.1-Alpha-11');
 });
 
 test('openInBrowser delegates to platform opener command', () => {
@@ -171,7 +171,7 @@ test('executeStart runs container and launches browser when open option is set',
   const mockRunner = async () => ({
     status: 'running',
     serverUrl: 'http://localhost:8088',
-    version: '0.0.1-Alpha-10',
+    version: '0.0.1-Alpha-11',
     spawned: true
   });
 

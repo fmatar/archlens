@@ -7,6 +7,7 @@ import com.design.umlviewer.domain.model.CrapScore;
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.domain.policy.DependencyRuleValidator;
+import com.design.umlviewer.domain.policy.PolicyValidator;
 import com.design.umlviewer.domain.policy.Proposal;
 import com.design.umlviewer.scanner.LanguageScanner;
 import com.design.umlviewer.scanner.LanguageScannerRegistry;
@@ -217,7 +218,7 @@ public class GraphCompiler {
     List<ClassNode> validClasses =
         scan.classes().stream().filter(c -> !matchesOmit(c, omitPatterns)).toList();
 
-    DependencyRuleValidator validator =
+    PolicyValidator validator =
         (activeProposal != null)
             ? DependencyRuleValidator.fromProposal(activeProposal)
             : DependencyRuleValidator.fromLevels(policy.levels());

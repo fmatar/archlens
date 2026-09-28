@@ -4,12 +4,12 @@
   "src": "backend/src/main/java",
   "prefix": "com.design.umlviewer",
   "hierarchical": true,
-  "order": ["domain", "scanner", "engine", "metrics", "mailbox", "resource"],
+  "order": ["domain", "scanner", "engine", "metrics", "adapter", "resource", "mcp"],
   "levels": [
     ["domain"],
     ["scanner", "engine", "metrics"],
-    ["mailbox"],
-    ["resource"]
+    ["adapter"],
+    ["resource", "mcp"]
   ],
   "proposals": [
     {
@@ -18,7 +18,7 @@
       "layers": [
         { "id": "domain", "label": "Level 0: Domain Entities & Rules", "packages": ["domain"] },
         { "id": "application", "label": "Level 1: Scanners & Graph Engine", "packages": ["scanner", "engine", "metrics"] },
-        { "id": "infrastructure", "label": "Level 2: REST API & Mailbox Adapters", "packages": ["mailbox", "resource"] }
+        { "id": "infrastructure", "label": "Level 2: REST API & Mailbox Adapters", "packages": ["adapter", "resource", "mcp"] }
       ],
       "omit": []
     }

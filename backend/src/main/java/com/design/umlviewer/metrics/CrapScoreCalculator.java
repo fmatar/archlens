@@ -4,7 +4,7 @@ import com.design.umlviewer.domain.model.CrapScore;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class CrapScoreCalculator {
+public class CrapScoreCalculator implements CrapCalculator {
 
   /** CRAP(m) = CC(m)^2 * (1 - Cov(m))^3 + CC(m) where Cov is a fraction between 0.0 and 1.0. */
   public double calculateMethodCrap(int cyclomaticComplexity, double coverage) {

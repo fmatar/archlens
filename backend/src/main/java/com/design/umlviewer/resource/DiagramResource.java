@@ -3,8 +3,8 @@ package com.design.umlviewer.resource;
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
 import com.design.umlviewer.domain.dossier.DipInversionPlan;
 import com.design.umlviewer.domain.dossier.DipInversionSynthesizer;
-import com.design.umlviewer.domain.mailbox.FileMailboxService;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
+import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.GraphCompiler;
@@ -32,7 +32,7 @@ public class DiagramResource {
 
   @Inject GraphCompiler graphCompiler;
 
-  @Inject FileMailboxService mailboxService;
+  @Inject MailboxGateway mailboxService;
 
   @Inject ArchitecturalDossierGenerator dossierGenerator;
 
@@ -44,7 +44,7 @@ public class DiagramResource {
 
   public DiagramResource(
       GraphCompiler graphCompiler,
-      FileMailboxService mailboxService,
+      MailboxGateway mailboxService,
       ArchitecturalDossierGenerator dossierGenerator,
       ObjectMapper mapper,
       DipInversionSynthesizer dipSynthesizer) {
@@ -57,7 +57,7 @@ public class DiagramResource {
 
   public DiagramResource(
       GraphCompiler graphCompiler,
-      FileMailboxService mailboxService,
+      MailboxGateway mailboxService,
       ArchitecturalDossierGenerator dossierGenerator,
       ObjectMapper mapper) {
     this(graphCompiler, mailboxService, dossierGenerator, mapper, new DipInversionSynthesizer());
@@ -541,6 +541,15 @@ public class DiagramResource {
   }
 
   @GET
+  @Path("/diagram")
+  public ArchitectureGraph getDiagram(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    return getGraph(projectRoot, proposalId);
+  }
+
+  @GET
   @Path("/snapshots")
   public Map<String, Object> listSnapshots(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
@@ -652,6 +661,16 @@ public class DiagramResource {
     ArchitectureGraph graph = graphCompiler.compileGraph(normalized, proposalId);
     ArchitecturePolicy policy = graphCompiler.loadPolicy(normalized);
     return dossierGenerator.generate(graph, policy);
+  }
+
+  @GET
+  @Path("/llm-dossier")
+  @Produces(MediaType.TEXT_PLAIN)
+  public String getLlmDossierAlias(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    return getLlmDossier(projectRoot, proposalId);
   }
 
   @GET

@@ -1,7 +1,8 @@
-package com.design.umlviewer.domain.mailbox;
+package com.design.umlviewer.adapter.mailbox;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;

@@ -37,7 +37,10 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
         if (args.proposalId) {
           query.set('proposalId', args.proposalId);
         }
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/llm-dossier?${query}`);
+        let res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram/llm-dossier?${query}`);
+        if (!res.ok) {
+          res = await (deps.fetch || fetch)(`${serverUrl}/api/llm-dossier?${query}`);
+        }
         if (res.ok) {
           const text = await res.text();
           return { content: [{ type: 'text', text }] };
@@ -60,7 +63,10 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram?${query}`);
+        let res = await (deps.fetch || fetch)(`${serverUrl}/api/graph?${query}`);
+        if (!res.ok) {
+          res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram?${query}`);
+        }
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };

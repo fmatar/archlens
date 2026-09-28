@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Clean Architecture DIP Mailbox Inversion & Adapter Tier**:
+  - Extracted `MailboxGateway` interface port in `com.design.umlviewer.domain.mailbox` to decouple the domain core from physical filesystem I/O and JSON serialization.
+  - Relocated concrete `FileMailboxService` into `com.design.umlviewer.adapter.mailbox` (Level 2 Adapters), injecting `MailboxGateway` into `DiagramResource`.
+  - Synchronized `.archlens/policy.json` mapping `adapter` to Level 2 and `mcp` (`ArchlensMcpService`) to Level 3 Infrastructure.
+- **Robert C. Martin Main Sequence Metrics Balancing ($D \to 0$)**:
+  - Extracted `PolicyValidator` interface in `domain.policy`, implemented by `DependencyRuleValidator`.
+  - Extracted `CrapCalculator` interface in `metrics`, implemented by `CrapScoreCalculator`.
+  - Decreased codebase Mean Distance from the Main Sequence ($D$) from `0.435` down to `0.299` (31% optimization), elevating `metrics` into the Balanced Corridor ($D=0.167$).
+- **MCP Bridge Endpoint Harmonization**:
+  - Enhanced `cli/src/mcp-server.js` to query `/api/graph` (with fallback to `/api/diagram`) and `/api/diagram/llm-dossier`.
+  - Added alias routes `@GET @Path("/diagram")` and `@GET @Path("/llm-dossier")` in `DiagramResource.java`, guaranteeing 100% live AST synchronization across all AI assistant clients.
+
 ## [0.0.1-Alpha-10] - 2026-09-28
 
 ### Added

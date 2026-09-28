@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
 /**
@@ -39,6 +40,7 @@ import org.jboss.resteasy.reactive.RestStreamElementType;
 @Consumes(MediaType.APPLICATION_JSON)
 public class DiagramResource {
 
+  private static final Logger LOG = Logger.getLogger(DiagramResource.class);
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
   @Inject ArchitectureCompiler graphCompiler;
@@ -277,7 +279,8 @@ public class DiagramResource {
                         "event", "graph-update",
                         "path", path.toString(),
                         "timestamp", System.currentTimeMillis())));
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
       }
     }
   }

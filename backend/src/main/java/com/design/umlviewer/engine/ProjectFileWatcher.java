@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import org.jboss.logging.Logger;
 
 /**
  * Background file system watcher (Level 1 Engine) that recursively monitors project source code and
@@ -16,6 +17,8 @@ import java.util.function.Consumer;
  */
 @ApplicationScoped
 public class ProjectFileWatcher {
+
+  private static final Logger LOG = Logger.getLogger(ProjectFileWatcher.class);
 
   private static final Set<String> EXCLUDED_DIRS =
       Set.of(
@@ -37,7 +40,7 @@ public class ProjectFileWatcher {
   private final AtomicBoolean running = new AtomicBoolean(false);
   private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
 
-  private WatchService watchService;
+  private volatile WatchService watchService;
   private Thread watcherThread;
   private ScheduledExecutorService debounceScheduler;
   private ScheduledFuture<?> pendingDebounceTask;
@@ -92,7 +95,8 @@ public class ProjectFileWatcher {
     if (watchService != null) {
       try {
         watchService.close();
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.debugf(e, "Error closing WatchService");
       }
     }
 
@@ -110,7 +114,11 @@ public class ProjectFileWatcher {
           @Override
           public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
               throws IOException {
-            String dirName = dir.getFileName() != null ? dir.getFileName().toString() : "";
+            Path fileName = dir.getFileName();
+            if (fileName == null) {
+              return FileVisitResult.CONTINUE;
+            }
+            String dirName = fileName.toString();
             if (EXCLUDED_DIRS.contains(dirName)
                 || (dirName.startsWith(".")
                     && !dirName.equals(".archlens")
@@ -199,7 +207,8 @@ public class ProjectFileWatcher {
             () -> {
               try {
                 onChange.accept(path);
-              } catch (Exception ignored) {
+              } catch (Exception e) {
+                LOG.debugf(e, "Error processing change for path: %s", path);
               }
             },
             debounceMs,
@@ -210,7 +219,11 @@ public class ProjectFileWatcher {
     if (path == null) {
       return false;
     }
-    String name = path.getFileName() != null ? path.getFileName().toString() : "";
+    Path fileName = path.getFileName();
+    if (fileName == null) {
+      return false;
+    }
+    String name = fileName.toString();
     if (name.equals("policy.json")) {
       return true;
     }

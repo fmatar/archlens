@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.0.1-Alpha-11] - 2026-09-28
 
 ### Added
 - **Clean Architecture DIP Mailbox Inversion & Adapter Tier**:

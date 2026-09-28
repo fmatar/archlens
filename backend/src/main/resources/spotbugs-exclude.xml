@@ -49,5 +49,9 @@
         <Package name="com.design.umlviewer.resource"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
+    <Match>
+        <Package name="com.design.umlviewer.usecase"/>
+        <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
+    </Match>
 </FindBugsFilter>
 

@@ -44,6 +44,14 @@
     })
   );
 
+  let tierCounts = $derived({
+    ALL: allPoints.length,
+    0: allPoints.filter((p) => p.level === 0).length,
+    1: allPoints.filter((p) => p.level === 1).length,
+    2: allPoints.filter((p) => p.level === 2).length,
+    3: allPoints.filter((p) => p.level === 3).length
+  });
+
   // Summary Metrics
   let totalCount = $derived(allPoints.length);
   let balancedCount = $derived(allPoints.filter((p) => p.zone === 'MAIN_SEQUENCE').length);
@@ -225,7 +233,7 @@
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
             }`}
           >
-            All
+            All <span class="ml-1 text-[10px] opacity-75 font-mono">({tierCounts.ALL})</span>
           </button>
           <button
             onclick={() => tierFilter = 0}
@@ -236,7 +244,7 @@
             }`}
           >
             <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-            Domain (L0)
+            Domain (L0) <span class="ml-1 text-[10px] opacity-75 font-mono">({tierCounts[0]})</span>
           </button>
           <button
             onclick={() => tierFilter = 1}
@@ -247,7 +255,7 @@
             }`}
           >
             <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-            App (L1)
+            App (L1) <span class="ml-1 text-[10px] opacity-75 font-mono">({tierCounts[1]})</span>
           </button>
           <button
             onclick={() => tierFilter = 2}
@@ -258,7 +266,7 @@
             }`}
           >
             <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-            Adapters (L2)
+            Adapters (L2) <span class="ml-1 text-[10px] opacity-75 font-mono">({tierCounts[2]})</span>
           </button>
           <button
             onclick={() => tierFilter = 3}
@@ -269,7 +277,7 @@
             }`}
           >
             <span class="w-2 h-2 rounded-full bg-purple-400"></span>
-            Frameworks (L3)
+            Frameworks (L3) <span class="ml-1 text-[10px] opacity-75 font-mono">({tierCounts[3]})</span>
           </button>
         </div>
 
@@ -530,6 +538,7 @@
                 role="button"
                 aria-label={`Component ${pt.label}: Instability ${pt.instability.toFixed(2)}, Abstractness ${pt.abstractness.toFixed(2)}`}
                 onclick={() => (selectedPoint = pt)}
+                ondblclick={() => focusComponentOnCanvas(pt.componentId)}
                 onmouseenter={() => (hoveredPoint = pt)}
                 onmouseleave={() => {
                   if (hoveredPoint?.componentId === pt.componentId) hoveredPoint = null;
@@ -588,6 +597,42 @@
                 </text>
               </g>
             {/each}
+
+            <!-- 7. Interactive Floating SVG Tooltip -->
+            {#if hoveredPoint}
+              {@const ttX = hoveredPoint.x > 340 ? hoveredPoint.x - 175 : hoveredPoint.x + 18}
+              {@const ttY = hoveredPoint.y > 380 ? hoveredPoint.y - 85 : hoveredPoint.y - 12}
+              {@const ttColor = getTierColor(hoveredPoint.level)}
+              <g
+                transform={`translate(${ttX}, ${ttY})`}
+                class="pointer-events-none select-none transition-all duration-150"
+              >
+                <rect
+                  x="0"
+                  y="0"
+                  width="160"
+                  height="72"
+                  rx="8"
+                  fill="#0b0f17"
+                  stroke={ttColor}
+                  stroke-width="1.5"
+                  opacity="0.95"
+                  class="filter drop-shadow-xl"
+                />
+                <text x="10" y="18" fill="#ffffff" font-size="11" font-weight="700" font-family="sans-serif">
+                  {hoveredPoint.label.length > 18 ? hoveredPoint.label.slice(0, 16) + '…' : hoveredPoint.label}
+                </text>
+                <text x="10" y="32" fill={ttColor} font-size="9" font-family="monospace">
+                  {getTierName(hoveredPoint.level)}
+                </text>
+                <text x="10" y="48" fill="#94a3b8" font-size="9" font-family="monospace">
+                  I: {hoveredPoint.instability.toFixed(2)} | A: {hoveredPoint.abstractness.toFixed(2)}
+                </text>
+                <text x="10" y="62" fill="#cbd5e1" font-size="9" font-family="monospace">
+                  Distance: {hoveredPoint.distance.toFixed(3)}
+                </text>
+              </g>
+            {/if}
           </svg>
         </div>
 

@@ -2,6 +2,7 @@
  * Archlens Architecture Conformance Checker
  * Audits repository against .archlens/policy.json Clean Architecture rules.
  * Enforces zero outward dependency violations and configurable thresholds for CI/CD gates.
+ * Generates human-readable, JSON, and SARIF 2.1.0 reports for GitHub Code Scanning.
  * Zero external dependencies.
  */
 
@@ -90,7 +91,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
   );
 
   const violations = [];
-  const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/g;
+  const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
 
   for (const file of sourceFiles) {
     try {
@@ -108,23 +109,28 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
       if (fileLevel === null) continue;
 
-      let match;
-      while ((match = importRegex.exec(content)) !== null) {
-        const imported = match[1];
-        const lowerImport = imported.toLowerCase();
-        for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
-          if (lowerImport.includes(targetPkg)) {
-            if (fileLevel < targetLvl) {
-              const baseName = path.basename(file, path.extname(file));
-              violations.push({
-                fromFile: relPath,
-                fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
-                toImport: imported,
-                toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
-                portName: `${baseName}Port`
-              });
+      const lines = content.split('\n');
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
+        const match = importRegex.exec(line);
+        if (match) {
+          const imported = match[1];
+          const lowerImport = imported.toLowerCase();
+          for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
+            if (lowerImport.includes(targetPkg)) {
+              if (fileLevel < targetLvl) {
+                const baseName = path.basename(file, path.extname(file));
+                violations.push({
+                  fromFile: relPath,
+                  fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
+                  toImport: imported,
+                  toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
+                  portName: `${baseName}Port`,
+                  line: lineIndex + 1
+                });
+              }
+              break;
             }
-            break;
           }
         }
       }
@@ -144,4 +150,73 @@ export async function checkArchitecture(projectRoot, options = {}) {
     maxViolations,
     violations
   };
+}
+
+/**
+ * Generate standard SARIF 2.1.0 JSON report representing architectural violations
+ * for GitHub Code Scanning and PR annotations.
+ */
+export function generateSarifReport(report, options = {}) {
+  const version = options.version || '0.0.1';
+  const violations = report.violations || [];
+
+  const sarif = {
+    $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
+    version: '2.1.0',
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: 'archlens',
+            version,
+            informationUri: 'https://github.com/fmatar/archlens',
+            rules: [
+              {
+                id: 'ARCH001',
+                name: 'CleanArchitectureOutwardDependencyRule',
+                shortDescription: {
+                  text: 'Clean Architecture concentric dependency rule violation'
+                },
+                fullDescription: {
+                  text: 'Inner layers (Domain, Application) must not depend outwardly on outer layers (Adapters, Infrastructure). Apply the Dependency Inversion Principle (DIP) to invert the dependency.'
+                },
+                defaultConfiguration: {
+                  level: 'error'
+                },
+                helpUri: 'https://github.com/fmatar/archlens#clean-architecture-rules'
+              }
+            ]
+          }
+        },
+        results: violations.map((v) => ({
+          ruleId: 'ARCH001',
+          level: 'error',
+          message: {
+            text: `Clean Architecture Violation: Inner tier '${v.fromTier}' (${v.fromFile}) depends outwardly on outer tier '${v.toTier}' via import '${v.toImport}'. Invert with interface '${v.portName}'.`
+          },
+          locations: [
+            {
+              physicalLocation: {
+                artifactLocation: {
+                  uri: v.fromFile
+                },
+                region: {
+                  startLine: v.line || 1
+                }
+              }
+            }
+          ]
+        }))
+      }
+    ]
+  };
+
+  return JSON.stringify(sarif, null, 2);
+}
+
+/**
+ * Generate structured JSON report
+ */
+export function generateJsonReport(report) {
+  return JSON.stringify(report, null, 2);
 }

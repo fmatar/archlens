@@ -316,8 +316,9 @@
         <!-- Policy Metadata Inputs -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950/60 p-3.5 rounded-lg border border-slate-800 text-xs">
           <div>
-            <label class="block text-slate-400 font-mono text-[11px] mb-1">Architecture Title</label>
+            <label for="policy-title" class="block text-slate-400 font-mono text-[11px] mb-1">Architecture Title</label>
             <input
+              id="policy-title"
               type="text"
               bind:value={localTitle}
               class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-blue-500 font-medium"
@@ -325,8 +326,9 @@
             />
           </div>
           <div>
-            <label class="block text-slate-400 font-mono text-[11px] mb-1">Source Path (src)</label>
+            <label for="policy-src" class="block text-slate-400 font-mono text-[11px] mb-1">Source Path (src)</label>
             <input
+              id="policy-src"
               type="text"
               bind:value={localSrc}
               class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-blue-500 font-medium font-mono text-[11px]"
@@ -334,8 +336,9 @@
             />
           </div>
           <div>
-            <label class="block text-slate-400 font-mono text-[11px] mb-1">Package Prefix</label>
+            <label for="policy-prefix" class="block text-slate-400 font-mono text-[11px] mb-1">Package Prefix</label>
             <input
+              id="policy-prefix"
               type="text"
               bind:value={localPrefix}
               class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-blue-500 font-medium font-mono text-[11px]"

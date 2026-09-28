@@ -608,7 +608,8 @@ class DiagramState {
         this.availableSnapshots = data.snapshots || [];
       } else {
         this.availableSnapshots = [
-          { id: 'v0.0.1-Alpha-10', label: 'v0.0.1-Alpha-10 (Latest Release)', tag: 'v0.0.1-Alpha-10' },
+          { id: 'v0.0.1-Alpha-11', label: 'v0.0.1-Alpha-11 (Latest Release)', tag: 'v0.0.1-Alpha-11' },
+          { id: 'v0.0.1-Alpha-10', label: 'v0.0.1-Alpha-10', tag: 'v0.0.1-Alpha-10' },
           { id: 'v0.0.1-Alpha-09', label: 'v0.0.1-Alpha-09', tag: 'v0.0.1-Alpha-09' },
           { id: 'v0.0.1-Alpha-07', label: 'v0.0.1-Alpha-07', tag: 'v0.0.1-Alpha-07' },
           { id: 'v0.0.1-Alpha-06', label: 'v0.0.1-Alpha-06', tag: 'v0.0.1-Alpha-06' }
@@ -616,7 +617,8 @@ class DiagramState {
       }
     } catch (_) {
       this.availableSnapshots = [
-        { id: 'v0.0.1-Alpha-10', label: 'v0.0.1-Alpha-10 (Latest Release)', tag: 'v0.0.1-Alpha-10' },
+        { id: 'v0.0.1-Alpha-11', label: 'v0.0.1-Alpha-11 (Latest Release)', tag: 'v0.0.1-Alpha-11' },
+        { id: 'v0.0.1-Alpha-10', label: 'v0.0.1-Alpha-10', tag: 'v0.0.1-Alpha-10' },
         { id: 'v0.0.1-Alpha-09', label: 'v0.0.1-Alpha-09', tag: 'v0.0.1-Alpha-09' },
         { id: 'v0.0.1-Alpha-07', label: 'v0.0.1-Alpha-07', tag: 'v0.0.1-Alpha-07' },
         { id: 'v0.0.1-Alpha-06', label: 'v0.0.1-Alpha-06', tag: 'v0.0.1-Alpha-06' }

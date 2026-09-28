@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Interactive Main Sequence Scatter Plot & Quadrant Analyzer (`M`)**:
+  - Implemented 2D Cartesian SVG scatter plot (`MainSequenceModal.svelte`) plotting component Instability ($I \in [0, 1]$) against Abstractness ($A \in [0, 1]$).
+  - Rendered Uncle Bob's ideal Main Sequence diagonal ($A + I = 1$), the Balanced Corridor ($\pm 0.25$), the Zone of Pain (bottom-left triangle), and the Zone of Uselessness (top-right triangle).
+  - Added concentric tier filtering (`Domain Core`, `Application`, `Adapters`, `Frameworks`), real-time search, interactive hover tooltips with coupling telemetry ($C_a, C_e, I, A, D$), and 1-click canvas focus.
+  - Bound to keyboard shortcut `M` and top header button `Main Sequence`.
+  - Integrated with `SandboxToolbar.svelte` metrics drawer to easily toggle between tabular metrics and 2D quadrant view.
 - **Interactive Architectural Sandbox ("What-If" Architecture Prototyping)**:
   - Added real-time "What-If" architectural simulation engine (`martinMetrics.ts`) allowing users to drag and reassign classes across concentric tiers without touching source files.
   - Implemented Robert C. Martin Architectural Metrics calculation: Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I = C_e / (C_a + C_e)$), Abstractness ($A = N_a / N_c$), Normalized Distance from Main Sequence ($D = |A + I - 1|$), and Zone classification (Main Sequence, Zone of Pain, Zone of Uselessness).

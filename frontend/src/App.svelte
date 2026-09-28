@@ -11,8 +11,9 @@
   import LlmPromptModal from './lib/components/LlmPromptModal.svelte';
   import InvertDipModal from './lib/components/InvertDipModal.svelte';
   import SandboxToolbar from './lib/components/SandboxToolbar.svelte';
+  import MainSequenceModal from './lib/components/MainSequenceModal.svelte';
   import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical } from '@lucide/svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -109,6 +110,9 @@
     } else if (e.key.toLowerCase() === 's') {
       e.preventDefault();
       diagramStore.toggleSandbox();
+    } else if (e.key.toLowerCase() === 'm') {
+      e.preventDefault();
+      diagramStore.toggleMainSequence();
     } else if (e.key.toLowerCase() === 'g') {
       e.preventDefault();
       if (diagramStore.comparisonTargetId) {
@@ -259,6 +263,23 @@
         </kbd>
       </button>
 
+      <!-- Main Sequence Scatter Plot Button -->
+      <button
+        onclick={() => diagramStore.toggleMainSequence()}
+        class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border ${
+          diagramStore.isMainSequenceOpen
+            ? 'bg-blue-600/30 border-blue-500/60 text-blue-200 shadow-sm shadow-blue-950/50'
+            : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-300 hover:text-white'
+        }`}
+        title="Toggle Robert C. Martin Main Sequence Scatter Plot (M)"
+      >
+        <Activity size={13} class="text-blue-400" />
+        <span class="text-[11px] font-medium">Main Sequence</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
+          M
+        </kbd>
+      </button>
+
       {#if violatingCount > 0}
         <div
           bind:this={badgeEl}
@@ -293,4 +314,5 @@
   <LlmPromptModal />
   <InvertDipModal />
   <SandboxToolbar />
+  <MainSequenceModal />
 </div>

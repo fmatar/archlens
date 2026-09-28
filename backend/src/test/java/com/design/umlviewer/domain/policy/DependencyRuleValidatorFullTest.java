@@ -62,6 +62,37 @@ class DependencyRuleValidatorFullTest {
   }
 
   @Test
+  void testEnclosingPackageTakesPrecedenceOverLeafToken() {
+    // fastapi_server is adapter (rank 2), infra is infrastructure (rank 3)
+    Map<String, Integer> ranks = Map.of("core", 0, "agent", 1, "fastapi_server", 2, "infra", 3);
+    DependencyRuleValidator v = new DependencyRuleValidator(ranks);
+
+    // infra.infra.fastapi_server is inside infra, so its rank must be 3 (infra), not 2
+    // (fastapi_server)
+    assertEquals(3, v.resolveRank("infra.infra.fastapi_server"));
+    assertEquals(3, v.resolveRank("infra.infra.agent"));
+    assertEquals(3, v.resolveRank("infra.infra.mcp_server"));
+    assertEquals(3, v.resolveRank("infra.infra._db_config"));
+
+    // Top-level packages resolve correctly
+    assertEquals(2, v.resolveRank("fastapi_server.routes.chat"));
+    assertEquals(1, v.resolveRank("agent.workflows.rag"));
+    assertEquals(0, v.resolveRank("core.models.user"));
+
+    // Dependency between two modules inside infra is intra-infra (3 -> 3, legal)
+    DependencyEdge intraInfra =
+        new DependencyEdge(
+            "infra.infra.fastapi_server",
+            "infra.infra._db_config",
+            DependencyEdge.Kind.DEPENDENCY,
+            null,
+            false);
+    assertFalse(
+        v.evaluate(intraInfra).isViolating(),
+        "Intra-infrastructure dependencies are not violations");
+  }
+
+  @Test
   void testFromProposal() {
     // Null proposal
     DependencyRuleValidator empty = DependencyRuleValidator.fromProposal(null);

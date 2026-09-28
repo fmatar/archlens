@@ -177,3 +177,34 @@ export interface DipInversionPlan {
   targetMethods?: string[];
 }
 
+export interface MartinMetrics {
+  ca: number; // Afferent Coupling
+  ce: number; // Efferent Coupling
+  instability: number; // I = Ce / (Ca + Ce)
+  abstractness: number; // A = Na / Nc
+  distance: number; // D = |A + I - 1|
+  zone: 'MAIN_SEQUENCE' | 'ZONE_OF_PAIN' | 'ZONE_OF_USELESSNESS';
+  totalClasses: number;
+  abstractClasses: number;
+}
+
+export interface StagedClassMove {
+  classId: string;
+  className: string;
+  sourceComponentId: string;
+  sourceComponentName: string;
+  targetComponentId: string;
+  targetComponentName: string;
+  timestamp: number;
+}
+
+export interface SandboxSimulationResult {
+  simulatedGraph: ArchitectureGraph;
+  baselineViolations: number;
+  simulatedViolations: number;
+  violationDelta: number; // negative = improvement
+  stagedMoves: StagedClassMove[];
+  componentMetrics: Record<string, MartinMetrics>;
+}
+
+

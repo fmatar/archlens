@@ -1,4 +1,5 @@
 import { DEMO_POLICY, DEMO_GRAPH_REAL, DEMO_GRAPH_PROPOSAL } from '../data/demoData';
+import { simulateSandboxGraph } from '../utils/martinMetrics';
 import type {
   ArchitectureGraph,
   ArchitecturePolicy,
@@ -9,14 +10,41 @@ import type {
   DeclutterFilter,
   SnapshotInfo,
   DiffMetrics,
-  DipInversionPlan
+  DipInversionPlan,
+  Proposal,
+  ProposalLayer,
+  SandboxSimulationResult,
+  StagedClassMove
 } from '../types/diagram';
 import gsap from 'gsap';
 
 export type DeclutterMode = 'NONE' | 'ARROWS' | 'REMOVE_ARROWS' | 'ELEMENTS' | 'CLASSES';
 
 class DiagramState {
-  graph = $state<ArchitectureGraph | null>(null);
+  baseGraph = $state<ArchitectureGraph | null>(null);
+
+  // Architectural Sandbox ("What-If" Prototyping) State
+  isSandboxActive = $state<boolean>(false);
+  stagedClassMoves = $state<Map<string, string>>(new Map());
+  isDispatchingSandboxProposal = $state<boolean>(false);
+  sandboxDispatchNotice = $state<string | null>(null);
+
+  activeSandboxSimulation = $derived.by<SandboxSimulationResult | null>(() => {
+    if (!this.isSandboxActive || !this.baseGraph) return null;
+    return simulateSandboxGraph(this.baseGraph, this.stagedClassMoves);
+  });
+
+  get graph(): ArchitectureGraph | null {
+    if (this.isSandboxActive && this.activeSandboxSimulation) {
+      return this.activeSandboxSimulation.simulatedGraph;
+    }
+    return this.baseGraph;
+  }
+
+  set graph(g: ArchitectureGraph | null) {
+    this.baseGraph = g;
+  }
+
   policy = $state<ArchitecturePolicy | null>(null);
   selectedClass = $state<ClassNode | null>(null);
   activeProposalId = $state<string | null>(null);
@@ -300,6 +328,144 @@ class DiagramState {
     } catch (e: any) {
       this.dipDispatchNotice = `Error dispatching task: ${e?.message || e}`;
       this.isDispatchingDip = false;
+    }
+  }
+
+  // Architectural Sandbox ("What-If" Prototyping) Actions
+  enterSandbox() {
+    this.isSandboxActive = true;
+    this.stagedClassMoves = new Map();
+    this.sandboxDispatchNotice = null;
+    this.addTelemetryEvent(
+      'INFO',
+      'Architectural Sandbox activated',
+      'Interactive What-If mode ready. Reassign classes across tiers to simulate impact.'
+    );
+  }
+
+  exitSandbox() {
+    this.isSandboxActive = false;
+    this.stagedClassMoves = new Map();
+    this.sandboxDispatchNotice = null;
+    this.addTelemetryEvent(
+      'INFO',
+      'Architectural Sandbox exited',
+      'Restored active architecture tree.'
+    );
+  }
+
+  toggleSandbox() {
+    if (this.isSandboxActive) {
+      this.exitSandbox();
+    } else {
+      this.enterSandbox();
+    }
+  }
+
+  stageClassMove(classId: string, targetComponentId: string) {
+    const next = new Map(this.stagedClassMoves);
+    next.set(classId, targetComponentId);
+    this.stagedClassMoves = next;
+
+    const targetComp = this.baseGraph?.components.find((c) => c.id === targetComponentId);
+    const targetName = targetComp?.label || targetComponentId;
+    this.addTelemetryEvent(
+      'TASK',
+      `Staged class move: ${classId}`,
+      `Reassigned to component: ${targetName}`
+    );
+  }
+
+  unstageClassMove(classId: string) {
+    const next = new Map(this.stagedClassMoves);
+    next.delete(classId);
+    this.stagedClassMoves = next;
+    this.addTelemetryEvent('INFO', `Removed staged move for ${classId}`);
+  }
+
+  resetSandbox() {
+    this.stagedClassMoves = new Map();
+    this.sandboxDispatchNotice = null;
+    this.addTelemetryEvent('INFO', 'Sandbox reset', 'All staged reassignments cleared.');
+  }
+
+  saveSandboxAsProposal(): string {
+    const sim = this.activeSandboxSimulation;
+    if (!sim) return '';
+
+    const proposalId = `sandbox-${Date.now()}`;
+    const proposalName = `Sandbox Reorganization (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+
+    const layers: ProposalLayer[] = sim.simulatedGraph.components.map((c) => ({
+      id: c.id,
+      label: c.label,
+      packages: c.packages || [c.id]
+    }));
+
+    const newProposal: Proposal = {
+      id: proposalId,
+      name: proposalName,
+      layers,
+      omit: []
+    };
+
+    if (this.policy) {
+      if (!this.policy.proposals) {
+        this.policy.proposals = [];
+      }
+      this.policy.proposals.push(newProposal);
+    }
+
+    this.activeProposalId = proposalId;
+    this.exitSandbox();
+    this.addTelemetryEvent(
+      'SUCCESS',
+      `Saved Sandbox as Proposal: ${proposalName}`,
+      `Layers: ${layers.length}, Violations: ${sim.simulatedViolations} (${sim.violationDelta >= 0 ? '+' : ''}${sim.violationDelta})`
+    );
+    return proposalId;
+  }
+
+  async dispatchSandboxToAgent() {
+    const sim = this.activeSandboxSimulation;
+    if (!sim || sim.stagedMoves.length === 0) return;
+
+    this.isDispatchingSandboxProposal = true;
+    this.sandboxDispatchNotice = 'Queueing APPLY_PROPOSAL task for AI agent...';
+
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/mailbox/to-agent?${params.toString()}` : '/api/mailbox/to-agent';
+
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          op: 'APPLY_PROPOSAL',
+          target: { id: `sandbox-reorganization-${Date.now()}` },
+          payload: {
+            moves: sim.stagedMoves,
+            baselineViolations: sim.baselineViolations,
+            simulatedViolations: sim.simulatedViolations,
+            violationDelta: sim.violationDelta
+          }
+        })
+      });
+
+      this.addTelemetryEvent(
+        'TASK',
+        `Dispatched APPLY_PROPOSAL task to .archlens/to-agent.json`,
+        `${sim.stagedMoves.length} staged reassignments queued`
+      );
+      this.sandboxDispatchNotice = 'Refactoring task dispatched to AI agent mailbox!';
+      setTimeout(() => {
+        this.isDispatchingSandboxProposal = false;
+        this.sandboxDispatchNotice = null;
+      }, 1500);
+    } catch (e: any) {
+      this.sandboxDispatchNotice = `Error dispatching task: ${e?.message || e}`;
+      this.isDispatchingSandboxProposal = false;
     }
   }
 

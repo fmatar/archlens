@@ -119,4 +119,20 @@ describe('Main Sequence Scatter Plot & State Integration', () => {
     const domainPt = simulatedPoints.find((p) => p.componentId === 'comp-domain')!;
     expect(domainPt.classCount).toBe(3); // was 2, now 3 classes
   });
+
+  it('should support tier filtering and accurate distance calculation', () => {
+    const points = diagramStore.activeScatterPlotPoints;
+    const domainOnly = points.filter((p) => p.level === 0);
+    const adaptersOnly = points.filter((p) => p.level === 2);
+
+    expect(domainOnly).toHaveLength(1);
+    expect(adaptersOnly).toHaveLength(1);
+
+    // Domain: I = 0, A = 0.5 -> D = |0.5 + 0 - 1| = 0.5
+    expect(domainOnly[0].distance).toBeCloseTo(0.5, 2);
+
+    // Adapters: I = 1, A = 0 -> D = |0 + 1 - 1| = 0
+    expect(adaptersOnly[0].distance).toBeCloseTo(0.0, 2);
+    expect(adaptersOnly[0].zone).toBe('MAIN_SEQUENCE');
+  });
 });

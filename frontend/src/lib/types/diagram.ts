@@ -72,6 +72,17 @@ export interface PackageCycle {
   packages: string[];
 }
 
+export interface ScreamingMetric {
+  score: number;
+  domainPackageCount: number;
+  technicalPackageCount: number;
+  totalPackageCount: number;
+  classification: 'PACKAGE_BY_FEATURE' | 'HYBRID' | 'PACKAGE_BY_LAYER' | string;
+  domainPackages: string[];
+  technicalPackages: string[];
+  frameworkGravityWarnings: string[];
+}
+
 export interface ArchitectureGraph {
   title: string;
   isProposal: boolean;
@@ -80,6 +91,7 @@ export interface ArchitectureGraph {
   edges: DependencyEdge[];
   unassigned: ClassNode[];
   cycles?: PackageCycle[];
+  screamingMetric?: ScreamingMetric;
 }
 
 export interface ProposalLayer {

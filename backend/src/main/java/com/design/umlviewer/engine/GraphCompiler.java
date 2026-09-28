@@ -6,11 +6,13 @@ import com.design.umlviewer.domain.model.ComponentNode;
 import com.design.umlviewer.domain.model.CrapScore;
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.domain.model.PackageCycle;
+import com.design.umlviewer.domain.model.ScreamingMetric;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.domain.policy.DependencyRuleValidator;
 import com.design.umlviewer.domain.policy.PackageCycleDetector;
 import com.design.umlviewer.domain.policy.PolicyValidator;
 import com.design.umlviewer.domain.policy.Proposal;
+import com.design.umlviewer.domain.screaming.ScreamingArchitectureAnalyzer;
 import com.design.umlviewer.scanner.LanguageScanner;
 import com.design.umlviewer.scanner.LanguageScannerRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -369,6 +371,8 @@ public class GraphCompiler implements ArchitectureCompiler {
             evaluatedEdges,
             List.of());
     List<PackageCycle> cycles = PackageCycleDetector.detectCycles(rawGraph);
+    ScreamingMetric screamingMetric =
+        new ScreamingArchitectureAnalyzer().analyze(components, evaluatedEdges);
 
     return new ArchitectureGraph(
         policy.title(),
@@ -377,7 +381,8 @@ public class GraphCompiler implements ArchitectureCompiler {
         components,
         evaluatedEdges,
         List.of(),
-        cycles);
+        cycles,
+        screamingMetric);
   }
 
   private boolean isKnownNode(

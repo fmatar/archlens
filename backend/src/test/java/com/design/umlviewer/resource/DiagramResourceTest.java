@@ -127,6 +127,9 @@ class DiagramResourceTest {
     // Test getCycles
     assertNotNull(resource.getCycles(tempDir.toString(), null));
 
+    // Test getScreamingMetric
+    assertNotNull(resource.getScreamingMetric(tempDir.toString(), null));
+
     // Test savePolicy
     ArchitecturePolicy validPolicy =
         new ArchitecturePolicy(

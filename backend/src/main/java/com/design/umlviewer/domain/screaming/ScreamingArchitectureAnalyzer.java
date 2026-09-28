@@ -1,0 +1,167 @@
+package com.design.umlviewer.domain.screaming;
+
+import com.design.umlviewer.domain.model.ClassNode;
+import com.design.umlviewer.domain.model.ComponentNode;
+import com.design.umlviewer.domain.model.DependencyEdge;
+import com.design.umlviewer.domain.model.ScreamingMetric;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+/**
+ * Domain Service (Level 0) evaluating Robert C. Martin's Screaming Architecture principle (Clean
+ * Architecture Chapter 21: "Screaming Architecture").
+ *
+ * <p>Scores systems based on whether package structures scream their business domain intent
+ * (Package-by-Feature) versus horizontal technical layers (Package-by-Layer anti-pattern).
+ */
+public class ScreamingArchitectureAnalyzer {
+
+  private static final Set<String> TECHNICAL_MARKERS =
+      Set.of(
+          "controller",
+          "controllers",
+          "service",
+          "services",
+          "dao",
+          "daos",
+          "repository",
+          "repositories",
+          "dto",
+          "dtos",
+          "model",
+          "models",
+          "entity",
+          "entities",
+          "util",
+          "utils",
+          "helper",
+          "helpers",
+          "common",
+          "infra",
+          "infrastructure",
+          "adapter",
+          "adapters",
+          "resource",
+          "resources",
+          "api",
+          "endpoint",
+          "endpoints",
+          "view",
+          "views",
+          "handler",
+          "handlers");
+
+  private static final List<String> FRAMEWORK_PREFIXES =
+      List.of(
+          "jakarta.",
+          "javax.",
+          "org.springframework.",
+          "io.quarkus.",
+          "com.google.inject.",
+          "org.hibernate.",
+          "io.micronaut.");
+
+  public ScreamingMetric analyze(List<ComponentNode> components, List<DependencyEdge> edges) {
+    if (components == null || components.isEmpty()) {
+      return ScreamingMetric.empty();
+    }
+
+    List<String> domainPackages = new ArrayList<>();
+    List<String> technicalPackages = new ArrayList<>();
+
+    for (ComponentNode comp : components) {
+      String id = comp.id() != null ? comp.id().toLowerCase(Locale.ROOT) : "";
+      String leaf = id.contains(".") ? id.substring(id.lastIndexOf('.') + 1) : id;
+
+      if (isTechnical(id, leaf)) {
+        technicalPackages.add(comp.id());
+      } else {
+        domainPackages.add(comp.id());
+      }
+    }
+
+    int domainCount = domainPackages.size();
+    int techCount = technicalPackages.size();
+    int totalCount = domainCount + techCount;
+
+    if (totalCount == 0) {
+      return ScreamingMetric.empty();
+    }
+
+    // Detect Framework Gravity Hotspots: Level 0 domain entities leaking framework dependencies
+    Set<String> frameworkHotspots = new HashSet<>();
+    Set<String> domainClassIds = new HashSet<>();
+    for (ComponentNode comp : components) {
+      if (comp.level() != null && comp.level() == 0 && comp.classes() != null) {
+        for (ClassNode cls : comp.classes()) {
+          domainClassIds.add(cls.id());
+        }
+      }
+    }
+
+    if (edges != null && !domainClassIds.isEmpty()) {
+      for (DependencyEdge edge : edges) {
+        if (domainClassIds.contains(edge.from()) && isFrameworkTarget(edge.to())) {
+          // Identify which component owns this class
+          for (ComponentNode comp : components) {
+            if (comp.classes() != null
+                && comp.classes().stream().anyMatch(c -> c.id().equals(edge.from()))) {
+              frameworkHotspots.add(comp.id());
+            }
+          }
+        }
+      }
+    }
+
+    List<String> hotspotsList = new ArrayList<>(frameworkHotspots);
+    double rawRatio = (double) domainCount / totalCount;
+    double penalty = hotspotsList.size() * 0.05;
+    double finalScore = Math.max(0.0, Math.min(1.0, rawRatio - penalty));
+    double roundedScore = Math.round(finalScore * 100.0) / 100.0;
+
+    String classification;
+    if (roundedScore >= 0.75) {
+      classification = "PACKAGE_BY_FEATURE";
+    } else if (roundedScore >= 0.40) {
+      classification = "HYBRID";
+    } else {
+      classification = "PACKAGE_BY_LAYER";
+    }
+
+    return new ScreamingMetric(
+        roundedScore,
+        domainCount,
+        techCount,
+        totalCount,
+        classification,
+        domainPackages,
+        technicalPackages,
+        hotspotsList);
+  }
+
+  private boolean isTechnical(String fullId, String leaf) {
+    if (TECHNICAL_MARKERS.contains(leaf) || TECHNICAL_MARKERS.contains(fullId)) {
+      return true;
+    }
+    String[] parts = fullId.split("\\.");
+    for (String part : parts) {
+      if (TECHNICAL_MARKERS.contains(part)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean isFrameworkTarget(String target) {
+    if (target == null) return false;
+    for (String prefix : FRAMEWORK_PREFIXES) {
+      if (target.startsWith(prefix)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}

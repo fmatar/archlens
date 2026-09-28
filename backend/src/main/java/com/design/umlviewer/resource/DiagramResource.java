@@ -8,6 +8,7 @@ import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.model.PackageCycle;
+import com.design.umlviewer.domain.model.ScreamingMetric;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import com.design.umlviewer.engine.ProjectFileWatcher;
@@ -234,6 +235,16 @@ public class DiagramResource {
       throws IOException {
     ArchitectureGraph graph = getGraph(projectRoot, proposalId);
     return graph.cycles() != null ? graph.cycles() : List.of();
+  }
+
+  @GET
+  @Path("/screaming")
+  public ScreamingMetric getScreamingMetric(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    ArchitectureGraph graph = getGraph(projectRoot, proposalId);
+    return graph.screamingMetric() != null ? graph.screamingMetric() : ScreamingMetric.empty();
   }
 
   @GET

@@ -64,6 +64,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --max-violations <NUM>   Maximum allowable outward dependency violations (default: 0)
   --detect-cycles          Enforce Robert C. Martin Acyclic Dependencies Principle (ADP)
+  --screaming-threshold <NUM> Enforce minimum Screaming Architecture score (0.0-1.0, Uncle Bob Ch. 21)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
@@ -132,6 +133,7 @@ function parseArgs(args) {
     check: false,
     maxViolations: 0,
     detectCycles: false,
+    screamingThreshold: null,
     format: 'pretty',
     output: null,
     force: false,
@@ -168,6 +170,8 @@ function parseArgs(args) {
       parsed.check = true;
     } else if (arg === '--detect-cycles' || arg === '--cycles' || arg === '--fail-on-cycles') {
       parsed.detectCycles = true;
+    } else if (arg === '--screaming-threshold' || arg === '--screaming') {
+      parsed.screamingThreshold = Number(args[++i] || 0.6);
     } else if (arg === '--max-violations') {
       parsed.maxViolations = Number(args[++i] || 0);
     } else if (arg === '--format') {
@@ -511,20 +515,31 @@ async function main() {
           console.log(`    [C${idx + 1}] ${c.formatted}`);
         });
       }
+      if (report.screaming) {
+        console.log(`  - Screaming Score (SAS): ${report.screaming.score.toFixed(2)} [${report.screaming.classification}] (${report.screaming.domainPackageCount} domain / ${report.screaming.totalPackageCount} packages)`);
+        if (report.screamingThreshold !== null) {
+          console.log(`  - Screaming Threshold:   ${report.screamingThreshold.toFixed(2)} (required minimum)`);
+        }
+      }
       console.log();
+
+      const failOnScreaming =
+        report.screamingThreshold !== null &&
+        report.screaming &&
+        report.screaming.score < report.screamingThreshold;
 
       if (report.passed) {
         ui.success(
           `Clean Architecture Gate PASSED (0 violations exceeding threshold${
             options.detectCycles ? ', 0 package cycles' : ''
-          }).`
+          }${report.screamingThreshold !== null ? `, screaming score ${report.screaming.score.toFixed(2)} >= ${report.screamingThreshold.toFixed(2)}` : ''}).`
         );
         process.exit(0);
       } else {
         ui.error(
           `Clean Architecture Gate FAILED (${report.violationsCount} violation(s), ${
             report.cyclesCount || 0
-          } cycle(s))!`
+          } cycle(s)${failOnScreaming ? ', screaming score below threshold' : ''})!`
         );
         report.violations.forEach((v, idx) => {
           console.log(
@@ -537,6 +552,11 @@ async function main() {
           report.cycles.forEach((c, idx) => {
             console.log(`    [C${idx + 1}] ${c.formatted}`);
           });
+        }
+        if (failOnScreaming) {
+          console.log(`\n    Screaming Architecture Violation:`);
+          console.log(`    Score ${report.screaming.score.toFixed(2)} is below required threshold ${report.screamingThreshold.toFixed(2)}.`);
+          console.log(`    Technical packages (${report.screaming.technicalPackages.length}): ${report.screaming.technicalPackages.join(', ')}`);
         }
         process.exit(1);
       }

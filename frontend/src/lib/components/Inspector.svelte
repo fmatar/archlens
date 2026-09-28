@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone } from '@lucide/svelte';
   import { calculateComponentMartinMetrics } from '../utils/martinMetrics';
   import type { MartinMetrics } from '../types/diagram';
 
@@ -317,6 +317,63 @@
         </button>
       </div>
     </div>
+
+    <!-- Screaming Architecture & Domain Cohesion (Uncle Bob Chapter 21) -->
+    {#if diagramStore.screamingMetric}
+      {@const sm = diagramStore.screamingMetric}
+      <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
+        <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
+          <span class="flex items-center gap-1.5 font-mono">
+            <Megaphone size={13} class="text-amber-400" />
+            Screaming Arch (Ch. 21)
+          </span>
+          <span
+            class="text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-rose-950/60 border-rose-500/40 text-rose-300'}"
+          >
+            {sm.classification === 'PACKAGE_BY_FEATURE' ? 'Feature-First' : sm.classification === 'HYBRID' ? 'Hybrid' : 'Layer-Heavy'}
+          </span>
+        </div>
+
+        <!-- Score Bar -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
+            <span>Score (SAS)</span>
+            <span class="font-bold text-slate-200">{(sm.score * 100).toFixed(0)}%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500 {sm.score >= 0.75 ? 'bg-emerald-500' : sm.score >= 0.40 ? 'bg-amber-500' : 'bg-rose-500'}"
+              style="width: {Math.max(4, Math.round(sm.score * 100))}%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Package Breakdown -->
+        <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono pt-1 border-t border-slate-800/80">
+          <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between" title="Domain / Feature Packages">
+            <span class="text-slate-400">Domain</span>
+            <span class="font-bold text-emerald-400">{sm.domainPackageCount}</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between" title="Technical / Framework Packages">
+            <span class="text-slate-400">Technical</span>
+            <span class="font-bold text-rose-400">{sm.technicalPackageCount}</span>
+          </div>
+        </div>
+
+        <!-- Framework Gravity Alerts -->
+        {#if sm.frameworkGravityWarnings && sm.frameworkGravityWarnings.length > 0}
+          <div class="p-2 rounded bg-amber-950/30 border border-amber-900/40 text-[10px] font-mono text-amber-300/90 space-y-1">
+            <div class="font-semibold flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400">
+              <AlertTriangle size={10} />
+              Framework Gravity
+            </div>
+            {#each sm.frameworkGravityWarnings.slice(0, 3) as w}
+              <div class="truncate text-[9px] text-amber-200/80" title={w}>&bull; {w}</div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     <!-- Active Violations & Quick DIP Remediation -->
     {#if activeViolations.length > 0}

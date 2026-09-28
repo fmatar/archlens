@@ -1,5 +1,6 @@
 package com.design.umlviewer.mcp;
 
+import com.design.umlviewer.domain.dossier.DipInversionPlan;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.resource.DiagramResource;
 import io.quarkiverse.mcp.server.Tool;
@@ -77,5 +78,26 @@ public class ArchlensMcpService {
           String projectRoot)
       throws IOException {
     return diagramResource.getSnapshot(snapshotId, projectRoot);
+  }
+
+  @Tool(
+      description =
+          "Synthesize a targeted Dependency Inversion Principle (DIP) refactoring plan to fix an outward architectural breach, including synthesized Java interface port code, concrete adapter implementation diff, caller injection refactor, and step-by-step instructions.")
+  public DipInversionPlan synthesizeDipInversion(
+      @ToolArg(
+              description =
+                  "Fully qualified class name of the caller class initiating the outward breach (e.g. com.example.service.OrderService)")
+          String fromClass,
+      @ToolArg(
+              description =
+                  "Fully qualified class name of the target concrete class to invert into an interface port (e.g. com.example.repo.PostgresOrderRepo)")
+          String toClass,
+      @ToolArg(
+              description =
+                  "Absolute or relative path to the target project directory. Defaults to current directory.",
+              defaultValue = ".")
+          String projectRoot)
+      throws IOException {
+    return diagramResource.getInvertPlan(fromClass, toClass, projectRoot, null);
   }
 }

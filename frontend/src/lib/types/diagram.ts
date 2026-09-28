@@ -161,3 +161,50 @@ export interface DiffMetrics {
   totalBefore: number;
   totalAfter: number;
 }
+
+export interface DipInversionPlan {
+  fromClass: string;
+  toClass: string;
+  fromLevel: number | null;
+  toLevel: number | null;
+  portName: string;
+  portPackage: string;
+  portFilePath: string;
+  portInterfaceCode: string;
+  adapterRefactorPreview: string;
+  callerRefactorPreview: string;
+  surgicalPrompt: string;
+  targetMethods?: string[];
+}
+
+export interface MartinMetrics {
+  ca: number; // Afferent Coupling
+  ce: number; // Efferent Coupling
+  instability: number; // I = Ce / (Ca + Ce)
+  abstractness: number; // A = Na / Nc
+  distance: number; // D = |A + I - 1|
+  zone: 'MAIN_SEQUENCE' | 'ZONE_OF_PAIN' | 'ZONE_OF_USELESSNESS';
+  totalClasses: number;
+  abstractClasses: number;
+}
+
+export interface StagedClassMove {
+  classId: string;
+  className: string;
+  sourceComponentId: string;
+  sourceComponentName: string;
+  targetComponentId: string;
+  targetComponentName: string;
+  timestamp: number;
+}
+
+export interface SandboxSimulationResult {
+  simulatedGraph: ArchitectureGraph;
+  baselineViolations: number;
+  simulatedViolations: number;
+  violationDelta: number; // negative = improvement
+  stagedMoves: StagedClassMove[];
+  componentMetrics: Record<string, MartinMetrics>;
+}
+
+

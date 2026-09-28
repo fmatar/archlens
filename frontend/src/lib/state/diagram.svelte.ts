@@ -16,7 +16,8 @@ import type {
   SandboxSimulationResult,
   StagedClassMove,
   MartinMetrics,
-  ScatterPlotPoint
+  ScatterPlotPoint,
+  PackageCycle
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -49,6 +50,29 @@ class DiagramState {
 
   toggleMainSequence() {
     this.isMainSequenceOpen = !this.isMainSequenceOpen;
+  }
+
+  // Acyclic Dependencies Principle (ADP) Cycles
+  packageCycles = $derived.by<PackageCycle[]>(() => this.graph?.cycles || []);
+  hasCycles = $derived(this.packageCycles.length > 0);
+
+  // Policy Designer & Ring Editor Modal State
+  isPolicyEditorOpen = $state<boolean>(false);
+  isSavingPolicy = $state<boolean>(false);
+  policySaveNotice = $state<string | null>(null);
+
+  openPolicyEditor() {
+    this.isPolicyEditorOpen = true;
+    this.policySaveNotice = null;
+  }
+
+  closePolicyEditor() {
+    this.isPolicyEditorOpen = false;
+    this.policySaveNotice = null;
+  }
+
+  togglePolicyEditor() {
+    this.isPolicyEditorOpen = !this.isPolicyEditorOpen;
   }
 
   activeComponentMetrics = $derived.by<Record<string, MartinMetrics>>(() => {
@@ -504,6 +528,100 @@ class DiagramState {
   constructor() {
     this.loadRecentProjects();
     this.fetchProjects();
+    this.initLiveEvents();
+  }
+
+  // Real-Time File System Watcher & Live Event Stream
+  private eventSource: EventSource | null = null;
+  isLiveSyncConnected = $state<boolean>(false);
+  lastLiveSyncTime = $state<string | null>(null);
+
+  initLiveEvents() {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') return;
+
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/events?${params.toString()}` : '/api/events';
+
+      this.eventSource = new EventSource(url);
+
+      this.eventSource.onopen = () => {
+        this.isLiveSyncConnected = true;
+      };
+
+      this.eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.event === 'graph-update') {
+            this.handleLiveGraphUpdate(payload);
+          }
+        } catch (_) {}
+      };
+
+      this.eventSource.onerror = () => {
+        this.isLiveSyncConnected = false;
+      };
+    } catch (_) {
+      this.isLiveSyncConnected = false;
+    }
+  }
+
+  async handleLiveGraphUpdate(payload: { path?: string; type?: string; timestamp?: number }) {
+    const timeStr = new Date().toTimeString().split(' ')[0];
+    this.lastLiveSyncTime = timeStr;
+    const fileLabel = payload.path ? payload.path.split('/').pop() : 'source file';
+
+    this.addTelemetryEvent(
+      'SUCCESS',
+      `Live Reload: detected change in ${fileLabel}`,
+      `Auto-synchronized AST and recalculated Clean Architecture metrics at ${timeStr}`
+    );
+
+    // Auto-reload active graph and policy
+    await this.loadPolicy();
+    await this.loadGraph(this.activeProposalId);
+  }
+
+  async savePolicy(updatedPolicy: ArchitecturePolicy) {
+    this.isSavingPolicy = true;
+    this.policySaveNotice = 'Saving policy and re-indexing architecture...';
+
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/policy?${params.toString()}` : '/api/policy';
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedPolicy)
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      this.graph = await res.json();
+      this.policy = updatedPolicy;
+      this.policySaveNotice = 'Policy updated & architecture recompiled!';
+      this.addTelemetryEvent(
+        'SUCCESS',
+        'Architecture policy saved to .archlens/policy.json',
+        `Recompiled ${this.graph?.components.length || 0} concentric tiers`
+      );
+      setTimeout(() => {
+        this.isSavingPolicy = false;
+        this.policySaveNotice = null;
+        this.isPolicyEditorOpen = false;
+      }, 1000);
+    } catch (e: any) {
+      this.policySaveNotice = `Error saving policy: ${e?.message || e}`;
+      this.isSavingPolicy = false;
+    }
   }
 
   loadRecentProjects() {
@@ -554,6 +672,7 @@ class DiagramState {
       }
       window.history.replaceState({}, '', url.toString());
     }
+    this.initLiveEvents();
     await this.loadPolicy();
     await this.loadGraph();
     await this.loadSnapshots();

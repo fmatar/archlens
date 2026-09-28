@@ -91,6 +91,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
   );
 
   const violations = [];
+  const packageEdges = new Map();
   const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
 
   for (const file of sourceFiles) {
@@ -100,9 +101,11 @@ export async function checkArchitecture(projectRoot, options = {}) {
       const lowerRel = relPath.toLowerCase();
 
       let fileLevel = null;
+      let filePackage = null;
       for (const [pkg, lvl] of pkgToLevel.entries()) {
         if (lowerRel.includes(pkg)) {
           fileLevel = lvl;
+          filePackage = pkg;
           break;
         }
       }
@@ -118,6 +121,12 @@ export async function checkArchitecture(projectRoot, options = {}) {
           const lowerImport = imported.toLowerCase();
           for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
             if (lowerImport.includes(targetPkg)) {
+              if (filePackage && filePackage !== targetPkg) {
+                if (!packageEdges.has(filePackage)) {
+                  packageEdges.set(filePackage, new Set());
+                }
+                packageEdges.get(filePackage).add(targetPkg);
+              }
               if (fileLevel < targetLvl) {
                 const baseName = path.basename(file, path.extname(file));
                 violations.push({
@@ -139,7 +148,9 @@ export async function checkArchitecture(projectRoot, options = {}) {
     }
   }
 
-  const passed = violations.length <= maxViolations;
+  const cycles = detectPackageCycles(packageEdges);
+  const failOnCycles = Boolean(options.detectCycles);
+  const passed = violations.length <= maxViolations && (!failOnCycles || cycles.length === 0);
 
   return {
     passed,
@@ -147,9 +158,46 @@ export async function checkArchitecture(projectRoot, options = {}) {
     sourceFilesCount: sourceFiles.length,
     packagesCount: (policy.order || []).length,
     violationsCount: violations.length,
+    cyclesCount: cycles.length,
     maxViolations,
-    violations
+    violations,
+    cycles
   };
+}
+
+/**
+ * Detect elementary directed cycles in package dependency graph using DFS
+ */
+export function detectPackageCycles(packageEdges) {
+  const detectedCycles = [];
+  const sortedNodes = Array.from(packageEdges.keys()).sort();
+
+  function dfs(startNode, currentNode, currentPath, visitedOnPath) {
+    const neighbors = packageEdges.get(currentNode);
+    if (!neighbors) return;
+
+    for (const neighbor of Array.from(neighbors).sort()) {
+      if (neighbor === startNode && currentPath.length > 1) {
+        detectedCycles.push([...currentPath, startNode]);
+      } else if (neighbor > startNode && !visitedOnPath.has(neighbor)) {
+        visitedOnPath.add(neighbor);
+        currentPath.push(neighbor);
+        dfs(startNode, neighbor, currentPath, visitedOnPath);
+        currentPath.pop();
+        visitedOnPath.delete(neighbor);
+      }
+    }
+  }
+
+  for (const startNode of sortedNodes) {
+    const visited = new Set([startNode]);
+    dfs(startNode, startNode, [startNode], visited);
+  }
+
+  return detectedCycles.map((c) => ({
+    packages: c,
+    formatted: c.join(' -> ')
+  }));
 }
 
 /**
@@ -159,6 +207,71 @@ export async function checkArchitecture(projectRoot, options = {}) {
 export function generateSarifReport(report, options = {}) {
   const version = options.version || '0.0.1';
   const violations = report.violations || [];
+  const cycles = report.cycles || [];
+
+  const rules = [
+    {
+      id: 'ARCH001',
+      name: 'CleanArchitectureOutwardDependencyRule',
+      shortDescription: {
+        text: 'Clean Architecture concentric dependency rule violation'
+      },
+      fullDescription: {
+        text: 'Inner layers (Domain, Application) must not depend outwardly on outer layers (Adapters, Infrastructure). Apply the Dependency Inversion Principle (DIP) to invert the dependency.'
+      },
+      defaultConfiguration: {
+        level: 'error'
+      },
+      helpUri: 'https://github.com/fmatar/archlens#clean-architecture-rules'
+    }
+  ];
+
+  if (cycles.length > 0) {
+    rules.push({
+      id: 'ARCH002',
+      name: 'AcyclicDependenciesPrincipleRule',
+      shortDescription: {
+        text: 'Package dependency cycle detected (Robert C. Martin ADP violation)'
+      },
+      fullDescription: {
+        text: 'The dependency structure between packages must be a Directed Acyclic Graph (DAG). There must be no cycles in the dependency structure.'
+      },
+      defaultConfiguration: {
+        level: 'error'
+      },
+      helpUri: 'https://github.com/fmatar/archlens#clean-architecture-rules'
+    });
+  }
+
+  const sarifResults = violations.map((v) => ({
+    ruleId: 'ARCH001',
+    level: 'error',
+    message: {
+      text: `Clean Architecture Violation: Inner tier '${v.fromTier}' (${v.fromFile}) depends outwardly on outer tier '${v.toTier}' via import '${v.toImport}'. Invert with interface '${v.portName}'.`
+    },
+    locations: [
+      {
+        physicalLocation: {
+          artifactLocation: {
+            uri: v.fromFile
+          },
+          region: {
+            startLine: v.line || 1
+          }
+        }
+      }
+    ]
+  }));
+
+  for (const c of cycles) {
+    sarifResults.push({
+      ruleId: 'ARCH002',
+      level: 'error',
+      message: {
+        text: `Package Dependency Cycle (ADP Violation): Cyclic loop detected: ${c.formatted}. Invert dependencies to break the cycle.`
+      }
+    });
+  }
 
   const sarif = {
     $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
@@ -170,43 +283,10 @@ export function generateSarifReport(report, options = {}) {
             name: 'archlens',
             version,
             informationUri: 'https://github.com/fmatar/archlens',
-            rules: [
-              {
-                id: 'ARCH001',
-                name: 'CleanArchitectureOutwardDependencyRule',
-                shortDescription: {
-                  text: 'Clean Architecture concentric dependency rule violation'
-                },
-                fullDescription: {
-                  text: 'Inner layers (Domain, Application) must not depend outwardly on outer layers (Adapters, Infrastructure). Apply the Dependency Inversion Principle (DIP) to invert the dependency.'
-                },
-                defaultConfiguration: {
-                  level: 'error'
-                },
-                helpUri: 'https://github.com/fmatar/archlens#clean-architecture-rules'
-              }
-            ]
+            rules
           }
         },
-        results: violations.map((v) => ({
-          ruleId: 'ARCH001',
-          level: 'error',
-          message: {
-            text: `Clean Architecture Violation: Inner tier '${v.fromTier}' (${v.fromFile}) depends outwardly on outer tier '${v.toTier}' via import '${v.toImport}'. Invert with interface '${v.portName}'.`
-          },
-          locations: [
-            {
-              physicalLocation: {
-                artifactLocation: {
-                  uri: v.fromFile
-                },
-                region: {
-                  startLine: v.line || 1
-                }
-              }
-            }
-          ]
-        }))
+        results: sarifResults
       }
     ]
   };

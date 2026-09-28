@@ -7,18 +7,24 @@ import com.design.umlviewer.domain.dossier.DossierGenerator;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.model.PackageCycle;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.ArchitectureCompiler;
+import com.design.umlviewer.engine.ProjectFileWatcher;
 import com.design.umlviewer.usecase.ExportDossierUseCase;
+import com.design.umlviewer.usecase.SavePolicyUseCase;
 import com.design.umlviewer.usecase.SynthesizeDipInversionUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
@@ -54,8 +60,16 @@ public class DiagramResource {
 
   @Inject MailboxResource mailboxResource;
 
+  @Inject ProjectFileWatcher fileWatcher;
+
+  @Inject SavePolicyUseCase savePolicyUseCase;
+
+  private final BroadcastProcessor<Map<String, Object>> eventProcessor =
+      BroadcastProcessor.create();
+
   public DiagramResource() {
     this.filesystemResource = new ProjectFilesystemResource();
+    this.fileWatcher = new ProjectFileWatcher();
   }
 
   public DiagramResource(
@@ -76,6 +90,8 @@ public class DiagramResource {
     this.filesystemResource = new ProjectFilesystemResource();
     this.snapshotResource = new SnapshotResource(graphCompiler, this.mapper);
     this.mailboxResource = new MailboxResource(mailboxService);
+    this.savePolicyUseCase = new SavePolicyUseCase(this.graphCompiler, this.mapper);
+    this.fileWatcher = new ProjectFileWatcher();
   }
 
   public DiagramResource(
@@ -184,6 +200,13 @@ public class DiagramResource {
         .execute(normalizeRoot(projectRoot), proposalId, fromClass, toClass);
   }
 
+  private SavePolicyUseCase getSavePolicyUseCase() {
+    if (savePolicyUseCase == null) {
+      savePolicyUseCase = new SavePolicyUseCase(graphCompiler, mapper);
+    }
+    return savePolicyUseCase;
+  }
+
   @GET
   @Path("/policy")
   public ArchitecturePolicy getPolicy(
@@ -191,16 +214,65 @@ public class DiagramResource {
     return graphCompiler.loadPolicy(normalizeRoot(projectRoot));
   }
 
+  @POST
+  @Path("/policy")
+  public ArchitectureGraph savePolicy(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      ArchitecturePolicy policy)
+      throws IOException {
+    ArchitectureGraph updated = getSavePolicyUseCase().execute(normalizeRoot(projectRoot), policy);
+    eventProcessor.onNext(
+        Map.of("event", "graph-update", "type", "policy", "timestamp", System.currentTimeMillis()));
+    return updated;
+  }
+
+  @GET
+  @Path("/cycles")
+  public List<PackageCycle> getCycles(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    ArchitectureGraph graph = getGraph(projectRoot, proposalId);
+    return graph.cycles() != null ? graph.cycles() : List.of();
+  }
+
   @GET
   @Path("/events")
   @Produces(MediaType.SERVER_SENT_EVENTS)
   @RestStreamElementType(MediaType.APPLICATION_JSON)
+  public Multi<Map<String, Object>> streamEvents(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
+    ensureWatcherRunning(normalizeRoot(projectRoot));
+    Multi<Map<String, Object>> heartbeat =
+        Multi.createFrom()
+            .ticks()
+            .every(Duration.ofSeconds(10))
+            .map(tick -> Map.of("event", "ping", "tick", tick));
+    return Multi.createBy().merging().streams(heartbeat, eventProcessor);
+  }
+
   public Multi<Map<String, Object>> streamEvents() {
-    // SSE heartbeat / live-reload pulse
-    return Multi.createFrom()
-        .ticks()
-        .every(Duration.ofSeconds(2))
-        .map(tick -> Map.of("event", "ping", "tick", tick));
+    return streamEvents(DEFAULT_PROJECT_ROOT);
+  }
+
+  public void ensureWatcherRunning(String projectRoot) {
+    if (fileWatcher != null && !fileWatcher.isRunning()) {
+      try {
+        fileWatcher.start(
+            Paths.get(projectRoot),
+            path ->
+                eventProcessor.onNext(
+                    Map.of(
+                        "event", "graph-update",
+                        "path", path.toString(),
+                        "timestamp", System.currentTimeMillis())));
+      } catch (Exception ignored) {
+      }
+    }
+  }
+
+  public void notifyGraphUpdate(Map<String, Object> payload) {
+    eventProcessor.onNext(payload);
   }
 
   // --- Backwards-compatible delegates for Java consumers and unit tests ---

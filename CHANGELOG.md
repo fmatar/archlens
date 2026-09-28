@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+## [0.0.1-Alpha-13] - 2026-09-28
+
+### Added
+- **Application Use Cases & CLI SARIF Exporter (Issue #128)**:
+  - **Level 1 Application Use Cases**: Extracted `ManageSnapshotsUseCase` and `ResolveFilesystemUseCase` in `com.design.umlviewer.usecase`, fully relieving `SnapshotResource` and `ProjectFilesystemResource` from file system and git execution logic.
+  - **Relocated Workspace Path Resolution**: Moved `WorkspacePathResolver` to Level 1 (`com.design.umlviewer.usecase`), ensuring zero outward dependency violations between application interactors and delivery infrastructure.
+  - **SARIF v2.1.0 Exporter**: Added `--format pretty|json|sarif` and `--output <path>` flags to `archlens check`, generating industry-standard SARIF reports for GitHub Code Scanning and automated pull request annotations.
+  - **CI SARIF Artifact Upload**: Integrated SARIF generation into `.github/workflows/ci.yml` with automated artifact retention.
+  - **Interactive Scatter Plot Enhancements**: Added dynamic tier badge counts and floating SVG telemetry tooltips displaying $I$, $A$, and $D$ metrics directly on the Martin Metrics canvas.
+  - **Expanded Quality Gates**: Backend test suite expanded to 94 tests (100% pass rate); CLI test suite to 50 tests; frontend test suite to 49 tests. Zero Clean Architecture violations.
+
 ## [0.0.1-Alpha-12] - 2026-09-28
 
 ### Added

@@ -1,5 +1,5 @@
 import { DEMO_POLICY, DEMO_GRAPH_REAL, DEMO_GRAPH_PROPOSAL } from '../data/demoData';
-import { simulateSandboxGraph } from '../utils/martinMetrics';
+import { simulateSandboxGraph, calculateAllMartinMetrics, buildScatterPlotPoints } from '../utils/martinMetrics';
 import type {
   ArchitectureGraph,
   ArchitecturePolicy,
@@ -14,7 +14,9 @@ import type {
   Proposal,
   ProposalLayer,
   SandboxSimulationResult,
-  StagedClassMove
+  StagedClassMove,
+  MartinMetrics,
+  ScatterPlotPoint
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -32,6 +34,36 @@ class DiagramState {
   activeSandboxSimulation = $derived.by<SandboxSimulationResult | null>(() => {
     if (!this.isSandboxActive || !this.baseGraph) return null;
     return simulateSandboxGraph(this.baseGraph, this.stagedClassMoves);
+  });
+
+  // Main Sequence & Stability Quadrant State
+  isMainSequenceOpen = $state<boolean>(false);
+
+  openMainSequence() {
+    this.isMainSequenceOpen = true;
+  }
+
+  closeMainSequence() {
+    this.isMainSequenceOpen = false;
+  }
+
+  toggleMainSequence() {
+    this.isMainSequenceOpen = !this.isMainSequenceOpen;
+  }
+
+  activeComponentMetrics = $derived.by<Record<string, MartinMetrics>>(() => {
+    if (this.isSandboxActive && this.activeSandboxSimulation) {
+      return this.activeSandboxSimulation.componentMetrics;
+    }
+    if (this.baseGraph) {
+      return calculateAllMartinMetrics(this.baseGraph);
+    }
+    return {};
+  });
+
+  activeScatterPlotPoints = $derived.by<ScatterPlotPoint[]>(() => {
+    const comps = this.graph?.components || [];
+    return buildScatterPlotPoints(comps, this.activeComponentMetrics);
   });
 
   get graph(): ArchitectureGraph | null {

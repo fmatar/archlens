@@ -5,7 +5,8 @@ import type {
   DependencyEdge,
   MartinMetrics,
   StagedClassMove,
-  SandboxSimulationResult
+  SandboxSimulationResult,
+  ScatterPlotPoint
 } from '../types/diagram';
 
 export type ComponentMetricsSummary = MartinMetrics;
@@ -215,4 +216,75 @@ export function simulateSandboxGraph(
     stagedMoves: stagedMoveRecords,
     componentMetrics
   };
+}
+
+/**
+ * Computes SVG (x, y) pixel coordinates on a 2D Cartesian plane for given Instability and Abstractness.
+ * Instability: 0.0 (left) to 1.0 (right).
+ * Abstractness: 0.0 (bottom) to 1.0 (top).
+ */
+export function computeScatterCoordinates(
+  instability: number,
+  abstractness: number,
+  plotBounds = { minX: 60, maxX: 500, minY: 40, maxY: 480 }
+): { x: number; y: number } {
+  const clampedI = Math.max(0, Math.min(1, Number.isFinite(instability) ? instability : 0));
+  const clampedA = Math.max(0, Math.min(1, Number.isFinite(abstractness) ? abstractness : 0));
+  const width = plotBounds.maxX - plotBounds.minX;
+  const height = plotBounds.maxY - plotBounds.minY;
+  const x = plotBounds.minX + clampedI * width;
+  const y = plotBounds.maxY - clampedA * height;
+  return { x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 };
+}
+
+/**
+ * Computes dynamic visual node radius scaled logarithmically by class count.
+ */
+export function computeNodeRadius(classCount: number): number {
+  const count = Math.max(1, classCount || 1);
+  return Math.round(6 + Math.min(14, Math.sqrt(count) * 2.8));
+}
+
+/**
+ * Maps a list of components and their Martin metrics into drawable ScatterPlotPoints.
+ */
+export function buildScatterPlotPoints(
+  components: ComponentNode[],
+  metrics: Record<string, MartinMetrics>,
+  plotBounds = { minX: 60, maxX: 500, minY: 40, maxY: 480 }
+): ScatterPlotPoint[] {
+  if (!components || !metrics) return [];
+
+  return components.map((comp) => {
+    const m = metrics[comp.id] || {
+      ca: 0,
+      ce: 0,
+      instability: 0,
+      abstractness: 0,
+      distance: 0,
+      zone: 'MAIN_SEQUENCE',
+      totalClasses: comp.classes?.length || 0,
+      abstractClasses: 0
+    };
+
+    const coords = computeScatterCoordinates(m.instability, m.abstractness, plotBounds);
+    const radius = computeNodeRadius(m.totalClasses);
+
+    return {
+      componentId: comp.id,
+      label: comp.label,
+      level: comp.level,
+      instability: m.instability,
+      abstractness: m.abstractness,
+      distance: m.distance,
+      zone: m.zone,
+      classCount: m.totalClasses,
+      abstractCount: m.abstractClasses,
+      ca: m.ca,
+      ce: m.ce,
+      x: coords.x,
+      y: coords.y,
+      radius
+    };
+  });
 }

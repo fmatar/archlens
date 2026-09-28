@@ -175,6 +175,7 @@ npx @fmatar/archlens-skill --mcp
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
 | `S` | **Sandbox "What-If"** | Enter or exit interactive architectural sandbox simulation |
+| `M` | **Main Sequence** | Toggle 2D Cartesian scatter plot of Abstractness ($A$) vs. Instability ($I$) |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |

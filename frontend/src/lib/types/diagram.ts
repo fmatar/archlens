@@ -207,4 +207,21 @@ export interface SandboxSimulationResult {
   componentMetrics: Record<string, MartinMetrics>;
 }
 
+export interface ScatterPlotPoint {
+  componentId: string;
+  label: string;
+  level: number | null;
+  instability: number;
+  abstractness: number;
+  distance: number;
+  zone: 'MAIN_SEQUENCE' | 'ZONE_OF_PAIN' | 'ZONE_OF_USELESSNESS';
+  classCount: number;
+  abstractCount: number;
+  ca: number;
+  ce: number;
+  x: number;
+  y: number;
+  radius: number;
+}
+
 

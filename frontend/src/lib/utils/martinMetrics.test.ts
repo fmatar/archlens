@@ -3,6 +3,9 @@ import {
   calculateComponentMartinMetrics,
   calculateAllMartinMetrics,
   simulateSandboxGraph,
+  computeScatterCoordinates,
+  computeNodeRadius,
+  buildScatterPlotPoints,
   type ComponentMetricsSummary
 } from './martinMetrics';
 import type { ArchitectureGraph, ComponentNode, ClassNode, DependencyEdge, ArchitecturePolicy } from '../types/diagram';
@@ -261,5 +264,105 @@ describe('Robert C. Martin Architectural Metrics Engine (TDD)', () => {
     nullLevelsMoves.set('cls-null', 'c-null');
     const simNullLevels = simulateSandboxGraph(edgeWithNullLevelsGraph, nullLevelsMoves);
     expect(simNullLevels.simulatedGraph.edges[0].isViolating).toBe(true);
+  });
+
+  describe('Main Sequence Scatter Plot Transformations', () => {
+    it('should map (I=0, A=1) to top-left and (I=1, A=0) to bottom-right', () => {
+      // Default bounds: minX: 60, maxX: 500, minY: 40, maxY: 480
+      const topLeft = computeScatterCoordinates(0, 1);
+      expect(topLeft).toEqual({ x: 60, y: 40 });
+
+      const bottomRight = computeScatterCoordinates(1, 0);
+      expect(bottomRight).toEqual({ x: 500, y: 480 });
+
+      const center = computeScatterCoordinates(0.5, 0.5);
+      expect(center).toEqual({ x: 280, y: 260 });
+    });
+
+    it('should clamp out-of-bounds coordinates safely', () => {
+      const clampedNegative = computeScatterCoordinates(-0.5, -0.2);
+      expect(clampedNegative).toEqual({ x: 60, y: 480 });
+
+      const clampedExcess = computeScatterCoordinates(1.5, 1.8);
+      expect(clampedExcess).toEqual({ x: 500, y: 40 });
+
+      const nanSafe = computeScatterCoordinates(NaN, NaN);
+      expect(nanSafe).toEqual({ x: 60, y: 480 });
+    });
+
+    it('should scale node radius based on class count', () => {
+      const r1 = computeNodeRadius(1);
+      const r16 = computeNodeRadius(16);
+      const r100 = computeNodeRadius(100);
+
+      expect(r1).toBeGreaterThanOrEqual(6);
+      expect(r16).toBeGreaterThan(r1);
+      expect(r100).toBeLessThanOrEqual(20);
+    });
+
+    it('should build complete scatter plot points for architecture graph components', () => {
+      const comp1: ComponentNode = {
+        id: 'comp-1',
+        label: 'domain',
+        level: 0,
+        crap: { mu: 1, max: 1, sigma: 0 },
+        mutationScore: 100,
+        childPackageIds: [],
+        classes: [createMockClass('c1', 'Entity', 'CLASS'), createMockClass('c2', 'Port', 'INTERFACE')]
+      };
+
+      const comp2: ComponentNode = {
+        id: 'comp-2',
+        label: 'adapters',
+        level: 2,
+        crap: { mu: 1, max: 1, sigma: 0 },
+        mutationScore: 90,
+        childPackageIds: [],
+        classes: [createMockClass('c3', 'Adapter', 'CLASS')]
+      };
+
+      const metrics = {
+        'comp-1': {
+          ca: 2,
+          ce: 0,
+          instability: 0.0,
+          abstractness: 0.5,
+          distance: 0.5,
+          zone: 'ZONE_OF_PAIN' as const,
+          totalClasses: 2,
+          abstractClasses: 1
+        },
+        'comp-2': {
+          ca: 0,
+          ce: 2,
+          instability: 1.0,
+          abstractness: 0.0,
+          distance: 0.0,
+          zone: 'MAIN_SEQUENCE' as const,
+          totalClasses: 1,
+          abstractClasses: 0
+        }
+      };
+
+      const points = buildScatterPlotPoints([comp1, comp2], metrics);
+      expect(points).toHaveLength(2);
+
+      expect(points[0].componentId).toBe('comp-1');
+      expect(points[0].label).toBe('domain');
+      expect(points[0].level).toBe(0);
+      expect(points[0].x).toBe(60);
+      expect(points[0].y).toBe(260); // 480 - 0.5 * 440 = 260
+      expect(points[0].zone).toBe('ZONE_OF_PAIN');
+
+      expect(points[1].componentId).toBe('comp-2');
+      expect(points[1].x).toBe(500); // 60 + 1 * 440 = 500
+      expect(points[1].y).toBe(480); // 480 - 0 = 480
+      expect(points[1].zone).toBe('MAIN_SEQUENCE');
+
+      // Edge cases: null/empty inputs
+      expect(buildScatterPlotPoints(null as any, metrics)).toEqual([]);
+      expect(buildScatterPlotPoints([comp1], null as any)).toEqual([]);
+      expect(buildScatterPlotPoints([comp1], {})[0].instability).toBe(0);
+    });
   });
 });

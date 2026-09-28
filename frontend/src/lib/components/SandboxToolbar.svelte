@@ -15,7 +15,8 @@
     ArrowRight,
     Gauge,
     Check,
-    Sparkles
+    Sparkles,
+    Activity
   } from '@lucide/svelte';
 
   let isDetailsExpanded = $state<boolean>(false);
@@ -193,10 +194,21 @@
         <!-- Robert C. Martin Architectural Metrics Section -->
         {#if sim && Object.keys(sim.componentMetrics).length > 0}
           <div>
-            <h4 class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-1.5 flex items-center gap-1.5">
-              <span>Robert C. Martin Coupling & Stability Metrics</span>
-              <span class="text-[10px] text-slate-400 font-normal">($C_a, C_e, I, A, D$)</span>
-            </h4>
+            <div class="flex items-center justify-between mb-1.5">
+              <h4 class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
+                <span>Robert C. Martin Coupling & Stability Metrics</span>
+                <span class="text-[10px] text-slate-400 font-normal">($C_a, C_e, I, A, D$)</span>
+              </h4>
+
+              <button
+                onclick={() => diagramStore.openMainSequence()}
+                class="px-2 py-0.5 rounded bg-blue-600/30 hover:bg-blue-600/50 border border-blue-500/40 text-blue-200 text-[11px] font-sans font-medium flex items-center gap-1 transition-colors cursor-pointer"
+                title="Open 2D Main Sequence Scatter Plot (M)"
+              >
+                <Activity size={12} class="text-blue-400" />
+                <span>Open Scatter Plot (M)</span>
+              </button>
+            </div>
 
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs font-mono border-collapse">

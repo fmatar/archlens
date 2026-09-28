@@ -61,93 +61,6 @@ export function loadProjectPolicy(projectRoot) {
   return null;
 }
 
-export async function checkArchitecture(projectRoot, options = {}) {
-  const root = path.resolve(projectRoot || '.');
-  const policy = loadProjectPolicy(root);
-
-  if (!policy) {
-    return {
-      passed: false,
-      violationsCount: 0,
-      violations: [],
-      error: `No Archlens policy found in ${root}. Run 'npx @fmatar/archlens-skill init' first.`
-    };
-  }
-
-  const maxViolations = options.maxViolations !== undefined ? Number(options.maxViolations) : 0;
-  const levels = policy.levels || [];
-  const tierNames = ['Domain Core (L0)', 'Application (L1)', 'Adapters (L2)', 'Infrastructure (L3)'];
-
-  const pkgToLevel = new Map();
-  levels.forEach((tier, lvl) => {
-    tier.forEach((p) => pkgToLevel.set(p.toLowerCase(), lvl));
-  });
-
-  const fullSrc = path.join(root, policy.src || 'src');
-  const sourceFiles = findMatchingFiles(
-    fullSrc,
-    (f) => f.endsWith('.java') || f.endsWith('.kt') || f.endsWith('.ts') || f.endsWith('.js'),
-    500
-  );
-
-  const violations = [];
-  const packageEdges = new Map();
-  const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
-
-  for (const file of sourceFiles) {
-    try {
-      const content = fs.readFileSync(file, 'utf8');
-      const relPath = path.relative(root, file);
-      const lowerRel = relPath.toLowerCase();
-
-      let fileLevel = null;
-      let filePackage = null;
-      for (const [pkg, lvl] of pkgToLevel.entries()) {
-        if (lowerRel.includes(pkg)) {
-          fileLevel = lvl;
-          filePackage = pkg;
-          break;
-        }
-      }
-
-      if (fileLevel === null) continue;
-
-      const lines = content.split('\n');
-      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        const line = lines[lineIndex];
-        const match = importRegex.exec(line);
-        if (match) {
-          const imported = match[1];
-          const lowerImport = imported.toLowerCase();
-          for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
-            if (lowerImport.includes(targetPkg)) {
-              if (filePackage && filePackage !== targetPkg) {
-                if (!packageEdges.has(filePackage)) {
-                  packageEdges.set(filePackage, new Set());
-                }
-                packageEdges.get(filePackage).add(targetPkg);
-              }
-              if (fileLevel < targetLvl) {
-                const baseName = path.basename(file, path.extname(file));
-                violations.push({
-                  fromFile: relPath,
-                  fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
-                  toImport: imported,
-                  toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
-                  portName: `${baseName}Port`,
-                  line: lineIndex + 1
-                });
-              }
-              break;
-            }
-          }
-        }
-      }
-    } catch {
-      // Ignore unreadable files
-    }
-  }
-
 export const TECHNICAL_MARKERS = new Set([
   'controller',
   'controllers',
@@ -236,6 +149,93 @@ export function calculateScreamingMetric(packages) {
     technicalPackages
   };
 }
+
+export async function checkArchitecture(projectRoot, options = {}) {
+  const root = path.resolve(projectRoot || '.');
+  const policy = loadProjectPolicy(root);
+
+  if (!policy) {
+    return {
+      passed: false,
+      violationsCount: 0,
+      violations: [],
+      error: `No Archlens policy found in ${root}. Run 'npx @fmatar/archlens-skill init' first.`
+    };
+  }
+
+  const maxViolations = options.maxViolations !== undefined ? Number(options.maxViolations) : 0;
+  const levels = policy.levels || [];
+  const tierNames = ['Domain Core (L0)', 'Application (L1)', 'Adapters (L2)', 'Infrastructure (L3)'];
+
+  const pkgToLevel = new Map();
+  levels.forEach((tier, lvl) => {
+    tier.forEach((p) => pkgToLevel.set(p.toLowerCase(), lvl));
+  });
+
+  const fullSrc = path.join(root, policy.src || 'src');
+  const sourceFiles = findMatchingFiles(
+    fullSrc,
+    (f) => f.endsWith('.java') || f.endsWith('.kt') || f.endsWith('.ts') || f.endsWith('.js'),
+    500
+  );
+
+  const violations = [];
+  const packageEdges = new Map();
+  const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
+
+  for (const file of sourceFiles) {
+    try {
+      const content = fs.readFileSync(file, 'utf8');
+      const relPath = path.relative(root, file);
+      const lowerRel = relPath.toLowerCase();
+
+      let fileLevel = null;
+      let filePackage = null;
+      for (const [pkg, lvl] of pkgToLevel.entries()) {
+        if (lowerRel.includes(pkg)) {
+          fileLevel = lvl;
+          filePackage = pkg;
+          break;
+        }
+      }
+
+      if (fileLevel === null) continue;
+
+      const lines = content.split('\n');
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+        const line = lines[lineIndex];
+        const match = importRegex.exec(line);
+        if (match) {
+          const imported = match[1];
+          const lowerImport = imported.toLowerCase();
+          for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
+            if (lowerImport.includes(targetPkg)) {
+              if (filePackage && filePackage !== targetPkg) {
+                if (!packageEdges.has(filePackage)) {
+                  packageEdges.set(filePackage, new Set());
+                }
+                packageEdges.get(filePackage).add(targetPkg);
+              }
+              if (fileLevel < targetLvl) {
+                const baseName = path.basename(file, path.extname(file));
+                violations.push({
+                  fromFile: relPath,
+                  fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
+                  toImport: imported,
+                  toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
+                  portName: `${baseName}Port`,
+                  line: lineIndex + 1
+                });
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore unreadable files
+    }
+  }
 
   const allKnownPackages = Array.from(pkgToLevel.keys());
   const screaming = calculateScreamingMetric(allKnownPackages);

@@ -1,10 +1,13 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical } from '@lucide/svelte';
+  import { calculateComponentMartinMetrics } from '../utils/martinMetrics';
+  import type { MartinMetrics } from '../types/diagram';
 
   let policy = $derived(diagramStore.policy);
   let proposals = $derived(policy?.proposals || []);
+  let activeViolations = $derived(diagramStore.graph?.edges.filter((e) => e.isViolating) || []);
 
   let classSearchQuery = $state('');
 
@@ -12,6 +15,10 @@
     diagramStore.focusedNodeId && diagramStore.graph?.components
       ? diagramStore.graph.components.find((c) => c.id === diagramStore.focusedNodeId)
       : null
+  );
+
+  let focusedMetrics = $derived<MartinMetrics | null>(
+    focusedComponent ? calculateComponentMartinMetrics(focusedComponent, diagramStore.graph?.edges || []) : null
   );
 
   let filteredFocusedClasses = $derived.by(() => {
@@ -61,6 +68,46 @@
           </div>
         </div>
 
+        <!-- Robert C. Martin Architectural Metrics Card -->
+        {#if focusedMetrics}
+          <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] font-mono space-y-1.5">
+            <div class="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+              <span class="flex items-center gap-1 text-slate-300">
+                <Gauge size={11} class="text-blue-400" />
+                Martin Metrics
+              </span>
+              {#if focusedMetrics.zone === 'MAIN_SEQUENCE'}
+                <span class="text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Main Seq</span>
+              {:else if focusedMetrics.zone === 'ZONE_OF_PAIN'}
+                <span class="text-rose-400 bg-rose-950/60 px-1 py-0.2 rounded border border-rose-500/30">Zone of Pain</span>
+              {:else}
+                <span class="text-amber-400 bg-amber-950/60 px-1 py-0.2 rounded border border-amber-500/30">Zone of Uselessness</span>
+              {/if}
+            </div>
+
+            <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800/80">
+              <div class="bg-slate-950/50 p-1 rounded" title="Afferent Coupling (Incoming dependencies from external classes)">
+                <div class="text-slate-500 text-[8px]">$C_a$</div>
+                <div class="font-bold text-slate-200">{focusedMetrics.ca}</div>
+              </div>
+              <div class="bg-slate-950/50 p-1 rounded" title="Efferent Coupling (Outgoing dependencies to external classes)">
+                <div class="text-slate-500 text-[8px]">$C_e$</div>
+                <div class="font-bold text-slate-200">{focusedMetrics.ce}</div>
+              </div>
+              <div class="bg-slate-950/50 p-1 rounded" title="Instability = Ce / (Ca + Ce)">
+                <div class="text-slate-500 text-[8px]">$I$</div>
+                <div class="font-bold text-amber-300">{focusedMetrics.instability.toFixed(2)}</div>
+              </div>
+              <div class="bg-slate-950/50 p-1 rounded" title="Normalized Distance from Main Sequence = |A + I - 1|">
+                <div class="text-slate-500 text-[8px]">$D$</div>
+                <div class="font-bold {focusedMetrics.distance <= 0.25 ? 'text-emerald-400' : 'text-rose-400'}">
+                  {focusedMetrics.distance.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
+
         <!-- Class Search Input -->
         <div class="relative flex items-center">
           <Search size={12} class="absolute left-2.5 text-slate-500" />
@@ -90,20 +137,29 @@
         <!-- Scrollable Class List -->
         <div class="space-y-1 max-h-48 overflow-y-auto pr-0.5">
           {#each filteredFocusedClasses as cls (cls.id)}
-            <button
-              onclick={() => diagramStore.selectedClass = cls}
-              class="w-full text-left px-2 py-1.5 rounded bg-slate-900/90 hover:bg-blue-950/40 border border-slate-800 hover:border-blue-500/40 flex items-center justify-between transition-colors cursor-pointer group"
-            >
-              <span class="text-[11px] font-mono text-slate-300 group-hover:text-blue-200 truncate pr-2">
-                {cls.name}
-              </span>
-              <div class="flex items-center gap-1.5 shrink-0">
-                <span class="text-[8px] font-mono font-bold px-1 rounded bg-slate-800 text-slate-400">
-                  CRAP {Math.round(cls.crap?.mu ?? 0)}
-                </span>
-                <span class="w-1.5 h-1.5 rounded-full" style={`background-color: ${cls.coverage >= 0.8 ? '#10b981' : cls.coverage >= 0.5 ? '#f59e0b' : '#ef4444'}`}></span>
-              </div>
-            </button>
+            <div class="flex items-center gap-1 w-full">
+              <button
+                onclick={() => diagramStore.selectedClass = cls}
+                class="flex-1 text-left px-2 py-1.5 rounded bg-slate-900/90 hover:bg-blue-950/40 border border-slate-800 hover:border-blue-500/40 flex items-center justify-between transition-colors cursor-pointer group min-w-0"
+              >
+                <div class="flex items-center gap-1.5 truncate pr-2">
+                  <span class="text-[11px] font-mono text-slate-300 group-hover:text-blue-200 truncate">
+                    {cls.name}
+                  </span>
+                  {#if diagramStore.stagedClassMoves.has(cls.id)}
+                    <span class="text-[8px] font-mono font-bold px-1 rounded bg-amber-500/20 text-amber-300 shrink-0">
+                      Staged
+                    </span>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span class="text-[8px] font-mono font-bold px-1 rounded bg-slate-800 text-slate-400">
+                    CRAP {Math.round(cls.crap?.mu ?? 0)}
+                  </span>
+                  <span class="w-1.5 h-1.5 rounded-full" style={`background-color: ${cls.coverage >= 0.8 ? '#10b981' : cls.coverage >= 0.5 ? '#f59e0b' : '#ef4444'}`}></span>
+                </div>
+              </button>
+            </div>
           {/each}
           {#if filteredFocusedClasses.length === 0}
             <div class="text-[10px] text-slate-500 italic text-center py-2">No matching classes</div>
@@ -261,6 +317,39 @@
         </button>
       </div>
     </div>
+
+    <!-- Active Violations & Quick DIP Remediation -->
+    {#if activeViolations.length > 0}
+      <div class="p-3 rounded-lg bg-rose-950/30 border border-rose-900/50 space-y-2 text-xs">
+        <div class="flex items-center justify-between text-rose-300 font-semibold text-[11px]">
+          <span class="flex items-center gap-1.5 font-mono">
+            <AlertTriangle size={13} class="animate-pulse text-rose-400" />
+            Breaches ({activeViolations.length})
+          </span>
+          <span class="text-[9px] font-mono text-rose-400/90 bg-rose-900/40 px-1.5 py-0.5 rounded">
+            DIP Fix
+          </span>
+        </div>
+        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+          {#each activeViolations.slice(0, 6) as v (v.from + '->' + v.to)}
+            <button
+              onclick={() => diagramStore.openDipInversion(v.from, v.to)}
+              class="w-full text-left p-1.5 rounded bg-slate-900/90 hover:bg-rose-950/60 border border-rose-900/30 hover:border-rose-500/50 flex items-center justify-between transition-colors cursor-pointer group"
+              title={`Invert violation: ${v.from} -> ${v.to}`}
+            >
+              <div class="min-w-0 pr-1">
+                <div class="text-[10px] font-mono text-slate-200 group-hover:text-rose-200 truncate">
+                  {v.from.split('.').pop()} ➔ {v.to.split('.').pop()}
+                </div>
+              </div>
+              <span class="text-[9px] font-mono text-rose-400 group-hover:text-white shrink-0 flex items-center gap-0.5 font-semibold">
+                ⚡ Invert
+              </span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <!-- Clean Architecture Legend -->
     <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2.5 text-xs">

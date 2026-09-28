@@ -108,14 +108,17 @@ Open **`http://localhost:8088`** in your browser.
 
 ---
 
-### 3. Inspect, X-Ray & Refactor
+### 3. Inspect, X-Ray, Sandbox & Refactor
 
 1. **Browse Projects (`⌘O` / `Ctrl+O`)**: Press `⌘O` to open the visual filesystem explorer. Select any repository mounted in `/workspace` with automatic build framework detection (`Maven`, `Gradle`, `Node`, `Go`, `Cargo`).
 2. **Violation X-Ray (`V`)**: Press `V` to isolate illegal outward dependency violations in neon crimson while compliant inward flows gently fade into the background.
 3. **Hierarchical Edge Bundling (`B`)**: Press `B` to route dense cross-package connections along smooth Catmull-Rom spline corridors.
 4. **Git Release Comparator (`G`)**: Compare architecture against prior Git tags or pre-compiled snapshots with real-time delta badges (`+N breaches`, `✓N fixed`, `+N added`).
-5. **LLM Prompt Export (`L`)**: Export a copy-ready Clean Architecture refactoring prompt dossier for LLMs to generate abstractions and invert inward dependencies.
-6. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
+5. **Architectural Sandbox ("What-If" Prototyping) (`S`)**: Press `S` to enter sandbox simulation mode. Reassign classes between concentric rings without modifying a single line of disk code. Live-simulate package restructuring, see instantaneous violation deltas (`⚡ -N Violations`), inspect live Robert C. Martin coupling metrics, and dispatch proposals (`APPLY_PROPOSAL`) to AI agents.
+6. **Robert C. Martin Coupling & Stability Engine**: Calculates Efferent Coupling ($C_e$), Afferent Coupling ($C_a$), Instability ($I = \frac{C_e}{C_a + C_e}$), Abstractness ($A$), and Normalized Distance from the Main Sequence ($D = |A + I - 1|$). Identifies components trapped in the *Zone of Pain* (rigid, unyielding) or *Zone of Uselessness* (abstract, unreferenced).
+7. **Surgical DIP Inverter (`⚡`)**: Click any offending crimson edge or use the Inspector breach list to open the 1-click DIP Inverter. Automatically inspects class ASTs, extracts public caller methods, synthesizes clean interface ports in the inner tier, previews adapter implementations and caller injection refactors, and dispatches refactoring directives (`INVERT_DEPENDENCY`) directly to companion agents.
+8. **LLM Prompt Export (`L`)**: Export a copy-ready Clean Architecture refactoring prompt dossier for LLMs to generate abstractions and invert inward dependencies.
+9. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
 
 ---
 
@@ -130,6 +133,7 @@ npx @fmatar/archlens-skill --mcp
 ```
 
 #### Available Declarative Tools:
+- `synthesizeDipInversion`: Synthesizes a targeted Dependency Inversion Principle (DIP) refactoring plan for any outward breach, generating the Java interface port code, adapter implementation diff, caller injection refactor, and step-by-step instructions.
 - `inspectArchitecture`: Evaluates codebase concentric rings, computes instability metrics, and identifies outward dependency breaches.
 - `exportLlmDossier`: Produces an actionable refactoring prompt dossier diagnosing violations and prescribing concrete Dependency Inversion Principle (DIP) interface ports.
 - `listSnapshots`: Discovers pre-compiled snapshot files and historical Git release tags.
@@ -170,6 +174,8 @@ npx @fmatar/archlens-skill --mcp
 | `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
+| `S` | **Sandbox "What-If"** | Enter or exit interactive architectural sandbox simulation |
+| `M` | **Main Sequence** | Toggle 2D Cartesian scatter plot of Abstractness ($A$) vs. Instability ($I$) |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |
@@ -229,13 +235,33 @@ flowchart LR
 
 ---
 
-## 🤖 AI Agent Mailbox Protocol
+## 🤖 AI Agent Mailbox Protocol (IPC)
 
-Archlens provides seamless bidirectional integration with autonomous coding assistants:
+Archlens provides seamless bidirectional integration with autonomous coding companions (Claude Code, Google Antigravity, Gemini CLI, Cursor, Windsurf) through a structured file-based Mailbox IPC (`.archlens/to-agent.json` and `.archlens/to-viewer.json`):
 
-1. **Trigger Refactoring**: When clicking **Regen (Wake Agent)** in the workbench, Archlens posts a structured command into `.archlens/to-agent.json`.
-2. **Autonomous Execution**: AI assistants (Google Antigravity, Claude Code, Gemini CLI) read the payload, introduce domain interfaces, invert outward dependencies, and execute local test suites.
-3. **Hot-Reload Canvas**: The agent writes completion details to `.archlens/to-viewer.json`. Archlens detects the response through Server-Sent Events (SSE) and instantly updates the architecture diagram.
+```mermaid
+sequenceDiagram
+    participant User as Architect / Developer
+    participant UI as Archlens Workbench (Port 8088)
+    participant Inbox as .archlens/to-agent.json
+    participant Agent as AI Coding Assistant (Claude / AGY)
+    participant Code as Codebase & Tests
+    participant Outbox as .archlens/to-viewer.json
+
+    User->>UI: 1-Click DIP Invert or Sandbox Reassign
+    UI->>Inbox: Dispatch Actionable Payload (INVERT_DEPENDENCY / APPLY_PROPOSAL)
+    Agent->>Inbox: Dequeue Architectural Command
+    Agent->>Code: Synthesize Port in Inner Tier, Update Adapters, Run Tests
+    Agent->>Outbox: Post Completion ACK with Git Commit & Test Results
+    UI->>Outbox: Detect ACK via SSE Event Stream (/api/events)
+    UI->>User: Hot-Reload Architecture Diagram (0 Breaches)
+```
+
+### Supported Mailbox Commands:
+- **`INVERT_DEPENDENCY`**: Dispatches the complete DIP synthesizer payload (`portName`, `portPackage`, `portInterfaceCode`, `sourceClass`, `targetClass`). The agent creates the interface port in the inner layer, updates the concrete adapter, refactors the caller to inject the port, runs tests, and acknowledges completion.
+- **`APPLY_PROPOSAL`**: Dispatches a full sandbox "what-if" architectural proposal (`proposalId`, `stagedClassMoves`). The agent relocates classes across concentric package rings and executes test suites.
+- **`REGEN`**: Signals the agent to re-scan the codebase AST, evaluate inward dependency rules, and verify architectural invariants.
+- **`REFRESH_CRAP`**: Triggers execution of mutation testing (PITest / Stryker) and JaCoCo coverage to refresh complexity and risk metrics.
 
 ---
 
@@ -302,7 +328,13 @@ npm --prefix frontend run test:e2e
 ---
 
 ## 📚 Documentation & Resources
-
+ 
+- **[Archlens GitHub Wiki](https://github.com/fmatar/archlens/wiki)** *(Complete architectural guides & deep-dives)*
+  - [Surgical DIP Inverter Guide](https://github.com/fmatar/archlens/wiki/Surgical-DIP-Inverter)
+  - [Architectural Sandbox & What-If Simulation](https://github.com/fmatar/archlens/wiki/Architectural-Sandbox)
+  - [Robert C. Martin Coupling & Stability Metrics](https://github.com/fmatar/archlens/wiki/Robert-C-Martin-Metrics)
+  - [Model Context Protocol (MCP) Integration](https://github.com/fmatar/archlens/wiki/MCP-Integration)
+  - [Mailbox IPC Companion Protocol](https://github.com/fmatar/archlens/wiki/Mailbox-IPC)
 - [User Guide](docs/guide/USER_GUIDE.md)
 - [Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)
 - [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)

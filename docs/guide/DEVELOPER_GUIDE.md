@@ -160,6 +160,25 @@ archlens-skill --version
 
 ---
 
+### Workflow D: Safe Dependency Governance & Maintenance
+
+To keep the monorepo secure and modern without sacrificing build determinism:
+
+```bash
+# Audit dependencies across Maven and NPM without modifying files
+npm run deps:check
+
+# Safely upgrade dependencies to verified stable GA releases and run full Dual-Gate verification
+npm run deps:update
+
+# Explore major version upgrades with full Dual-Gate verification and automated rollback
+npm run deps:update:major
+```
+
+If any verification test fails during an update, the engine immediately rolls back all manifest changes to preserve a clean git state.
+
+---
+
 ## 🧩 5. How to Add a New Polyglot Language Scanner
 
 Archlens uses a Service Provider Interface (SPI) design for language scanners. Follow this four-step recipe to add support for a new language (e.g. Swift, C#, Scala, Ruby):

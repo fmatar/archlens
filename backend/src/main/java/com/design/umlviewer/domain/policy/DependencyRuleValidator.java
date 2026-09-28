@@ -57,22 +57,22 @@ public class DependencyRuleValidator {
       return ranks.get(id);
     }
     String[] parts = id.split("\\.");
-    // Check simple name (last token)
-    if (parts.length > 0 && ranks.containsKey(parts[parts.length - 1])) {
-      return ranks.get(parts[parts.length - 1]);
-    }
-    // Check longest prefix to root
+    // Check longest prefix to root (package containment)
     for (int i = parts.length; i > 0; i--) {
       String sub = String.join(".", java.util.Arrays.copyOfRange(parts, 0, i));
       if (ranks.containsKey(sub)) {
         return ranks.get(sub);
       }
     }
-    // Check individual package segments
+    // Check individual package segments from root to leaf
     for (String seg : parts) {
       if (ranks.containsKey(seg)) {
         return ranks.get(seg);
       }
+    }
+    // Check simple name (last token) as fallback
+    if (parts.length > 0 && ranks.containsKey(parts[parts.length - 1])) {
+      return ranks.get(parts[parts.length - 1]);
     }
     return null;
   }

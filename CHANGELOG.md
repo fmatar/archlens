@@ -9,6 +9,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-10] - 2026-09-28
+
+### Added
+- **Interactive Main Sequence Scatter Plot & Quadrant Analyzer (`M`)**:
+  - Implemented 2D Cartesian SVG scatter plot (`MainSequenceModal.svelte`) plotting component Instability ($I \in [0, 1]$) against Abstractness ($A \in [0, 1]$).
+  - Rendered Uncle Bob's ideal Main Sequence diagonal ($A + I = 1$), the Balanced Corridor ($\pm 0.25$), the Zone of Pain (bottom-left triangle), and the Zone of Uselessness (top-right triangle).
+  - Added concentric tier filtering (`Domain Core`, `Application`, `Adapters`, `Frameworks`), real-time search, interactive hover tooltips with coupling telemetry ($C_a, C_e, I, A, D$), and 1-click canvas focus.
+  - Bound to keyboard shortcut `M` and top header button `Main Sequence`.
+  - Integrated with `SandboxToolbar.svelte` metrics drawer to easily toggle between tabular metrics and 2D quadrant view.
+- **Interactive Architectural Sandbox ("What-If" Architecture Prototyping)**:
+  - Added real-time "What-If" architectural simulation engine (`martinMetrics.ts`) allowing users to drag and reassign classes across concentric tiers without touching source files.
+  - Implemented Robert C. Martin Architectural Metrics calculation: Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I = C_e / (C_a + C_e)$), Abstractness ($A = N_a / N_c$), Normalized Distance from Main Sequence ($D = |A + I - 1|$), and Zone classification (Main Sequence, Zone of Pain, Zone of Uselessness).
+  - Added `SandboxToolbar.svelte` floating command dock showing live staged moves, net violation delta, and expandable metrics table.
+  - Added sandbox reassignment dropdown directly inside `ClassCard.svelte` and component coupling telemetry in `Inspector.svelte`.
+  - Added 1-click "Save Proposal" generating persistent architectural proposals in `policy.proposals`.
+  - Added "Dispatch to Agent" queuing `APPLY_PROPOSAL` refactoring instructions into `.archlens/to-agent.json`.
+- **Surgical DIP Inverter ("One-Click Dependency Inversion")**:
+  - Implemented `DipInversionSynthesizer` in backend generating Clean Architecture interface ports, refactored adapter classes, and inverted caller injection points.
+  - Added REST endpoint `GET /api/violations/invert-plan` producing targeted refactoring plans for illicit outward violations.
+  - Exposed native MCP tool `synthesizeDipInversion` in `ArchlensMcpService` with automated AST interface extraction for Claude, Antigravity, and Cursor.
+  - Implemented `InvertDipModal.svelte` interactive UI cockpit with GSAP animations, 1-click port code copying, before/after diffs, and surgical prompt export.
+  - Integrated `INVERT_DEPENDENCY` mailbox IPC operation into `.archlens/to-agent.json` allowing 1-click refactoring dispatch to autonomous coding agents.
+  - Added active breach triage panel to `Inspector.svelte` and quick-trigger button to `EdgeTooltip.svelte`.
+- **GitHub Wiki & Deep-Dive Architecture Guides**:
+  - Authored complete GitHub Wiki repository suite (`wiki/`): `Home.md`, `Architecture.md`, `Surgical-DIP-Inverter.md`, `Architectural-Sandbox.md`, `Robert-C-Martin-Metrics.md`, `MCP-Integration.md`, `Mailbox-IPC.md`, `ADR-001`, and `ADR-002`.
+  - Added automated GitHub Actions wiki publisher (`.github/workflows/publish-wiki.yml`) and local direct sync script (`scripts/publish-wiki.sh`).
+  - Synchronized root `README.md` with 5-minute developer onboarding showcase, sandbox shortcut `S`, and expanded Mailbox IPC sequence diagram.
+- **Safe Automated Dependency Governance Toolchain (Closes #110)**:
+  - Added `scripts/update-dependencies.js` and `scripts/update-dependencies.sh` providing safe dependency audits and updates across Maven and NPM manifests.
+  - Implemented pre-release build filter excluding unstable candidate versions (`Alpha`, `Beta`, `CR`, `RC`, `dev`, `canary`).
+  - Added automated rollback recovering clean working tree state if any test suite fails during updates.
+  - Added root npm scripts `deps:check`, `deps:update`, and `deps:update:major`.
+  - Added scheduled GitHub Action `.github/workflows/dependency-pulse.yml` executing weekly automated dependency audits with automatic PR creation for verified safe upgrades.
+  - Added test suite `scripts/test/update-dependencies.test.js` validating version filtering, semver comparison, and manifest updating logic.
+
+### Fixed
+- **Package Containment Hierarchy Resolution in Dependency Rule Validator**:
+  - Reordered `resolveRank(id)` in `DependencyRuleValidator.java` so that enclosing package prefixes and directory containment hierarchy take priority over simple leaf filenames.
+  - Eliminates false-positive outward Clean Architecture dependency violations for nested modules (such as Pulumi IaC scripts like `infra/infra/fastapi_server.py`) that match outer/inner layer tokens.
+
 ## [0.0.1-Alpha-09] - 2026-09-25
 
 ### Added

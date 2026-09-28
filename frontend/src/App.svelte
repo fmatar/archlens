@@ -13,7 +13,8 @@
   import SandboxToolbar from './lib/components/SandboxToolbar.svelte';
   import MainSequenceModal from './lib/components/MainSequenceModal.svelte';
   import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity } from '@lucide/svelte';
+  import PolicyEditorModal from './lib/components/PolicyEditorModal.svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -280,6 +281,40 @@
         </kbd>
       </button>
 
+      <!-- Concentric Policy Designer Button -->
+      <button
+        onclick={() => diagramStore.openPolicyEditor()}
+        class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border ${
+          diagramStore.isPolicyEditorOpen
+            ? 'bg-blue-600/30 border-blue-500/60 text-blue-200 shadow-sm shadow-blue-950/50'
+            : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-300 hover:text-white'
+        }`}
+        title="Open Concentric Architecture Policy Designer & Ring Editor"
+      >
+        <Sliders size={13} class="text-blue-400" />
+        <span class="text-[11px] font-medium">Policy Designer</span>
+      </button>
+
+      <!-- Live File Watcher Sync Indicator -->
+      <div
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border {diagramStore.isLiveSyncConnected ? 'text-emerald-300 bg-emerald-950/40 border-emerald-700/50' : 'text-slate-500 bg-slate-900 border-slate-800'}"
+        title={diagramStore.isLiveSyncConnected ? `File Watcher connected. Last sync: ${diagramStore.lastLiveSyncTime || 'active'}` : 'File Watcher idle'}
+      >
+        <span class="w-1.5 h-1.5 rounded-full {diagramStore.isLiveSyncConnected ? 'bg-emerald-400 animate-ping' : 'bg-slate-600'}"></span>
+        <span>{diagramStore.isLiveSyncConnected ? 'Live Watch' : 'Sync Idle'}</span>
+      </div>
+
+      <!-- Package Cycles (ADP) Warning Badge -->
+      {#if diagramStore.hasCycles}
+        <div
+          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono font-medium shadow-sm shadow-amber-950"
+          title={`${diagramStore.packageCycles.length} circular package dependency detected (Robert C. Martin Acyclic Dependencies Principle)`}
+        >
+          <AlertCircle size={14} class="text-amber-400 animate-pulse" />
+          <span>{diagramStore.packageCycles.length} Package {diagramStore.packageCycles.length === 1 ? 'Cycle' : 'Cycles'} (ADP)</span>
+        </div>
+      {/if}
+
       {#if violatingCount > 0}
         <div
           bind:this={badgeEl}
@@ -315,4 +350,5 @@
   <InvertDipModal />
   <SandboxToolbar />
   <MainSequenceModal />
+  <PolicyEditorModal />
 </div>

@@ -122,6 +122,26 @@ class DiagramResourceTest {
 
     // Test events stream
     assertNotNull(resource.streamEvents());
+    assertNotNull(resource.streamEvents(tempDir.toString()));
+
+    // Test getCycles
+    assertNotNull(resource.getCycles(tempDir.toString(), null));
+
+    // Test savePolicy
+    ArchitecturePolicy validPolicy =
+        new ArchitecturePolicy(
+            "Saved Policy",
+            "src/main/java",
+            "com.test",
+            true,
+            List.of("domain", "application"),
+            List.of(List.of("domain"), List.of("application")),
+            List.of(),
+            List.of(),
+            List.of(),
+            "java");
+    ArchitectureGraph savedGraph = resource.savePolicy(tempDir.toString(), validPolicy);
+    assertNotNull(savedGraph);
 
     // Test listProjects
     Map<String, Object> projects = resource.listProjects();

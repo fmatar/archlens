@@ -63,6 +63,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -p, --path <DIR>         Target repository path (default: current directory)
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --max-violations <NUM>   Maximum allowable outward dependency violations (default: 0)
+  --detect-cycles          Enforce Robert C. Martin Acyclic Dependencies Principle (ADP)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
@@ -130,6 +131,7 @@ function parseArgs(args) {
     mcp: false,
     check: false,
     maxViolations: 0,
+    detectCycles: false,
     format: 'pretty',
     output: null,
     force: false,
@@ -164,6 +166,8 @@ function parseArgs(args) {
       parsed.prompt = true;
     } else if (arg === '--check') {
       parsed.check = true;
+    } else if (arg === '--detect-cycles' || arg === '--cycles' || arg === '--fail-on-cycles') {
+      parsed.detectCycles = true;
     } else if (arg === '--max-violations') {
       parsed.maxViolations = Number(args[++i] || 0);
     } else if (arg === '--format') {
@@ -500,17 +504,40 @@ async function main() {
       console.log(`\n  ${ui.colors.bold}Architecture Governance Results (${report.projectTitle}):${ui.colors.reset}`);
       console.log(`  - Source Files Analyzed: ${report.sourceFilesCount}`);
       console.log(`  - Governed Packages:     ${report.packagesCount}`);
-      console.log(`  - Detected Violations:   ${report.violationsCount} (threshold: ${report.maxViolations})\n`);
+      console.log(`  - Detected Violations:   ${report.violationsCount} (threshold: ${report.maxViolations})`);
+      if (report.cyclesCount > 0) {
+        console.log(`  - Package Cycles (ADP):  ${report.cyclesCount} cycle(s) detected`);
+        report.cycles.forEach((c, idx) => {
+          console.log(`    [C${idx + 1}] ${c.formatted}`);
+        });
+      }
+      console.log();
 
       if (report.passed) {
-        ui.success(`Clean Architecture Gate PASSED (0 violations exceeding threshold).`);
+        ui.success(
+          `Clean Architecture Gate PASSED (0 violations exceeding threshold${
+            options.detectCycles ? ', 0 package cycles' : ''
+          }).`
+        );
         process.exit(0);
       } else {
-        ui.error(`Clean Architecture Gate FAILED (${report.violationsCount} violation(s) detected)!`);
+        ui.error(
+          `Clean Architecture Gate FAILED (${report.violationsCount} violation(s), ${
+            report.cyclesCount || 0
+          } cycle(s))!`
+        );
         report.violations.forEach((v, idx) => {
-          console.log(`    [${idx + 1}] ${v.fromFile}:${v.line || 1} (${v.fromTier}) -> ${v.toImport} (${v.toTier})`);
+          console.log(
+            `    [${idx + 1}] ${v.fromFile}:${v.line || 1} (${v.fromTier}) -> ${v.toImport} (${v.toTier})`
+          );
           console.log(`        Prescribed Port: ${v.portName}`);
         });
+        if (report.cycles && report.cycles.length > 0) {
+          console.log(`\n    Package Dependency Cycles (ADP Violations):`);
+          report.cycles.forEach((c, idx) => {
+            console.log(`    [C${idx + 1}] ${c.formatted}`);
+          });
+        }
         process.exit(1);
       }
     } catch (err) {

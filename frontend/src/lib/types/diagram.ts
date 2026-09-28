@@ -68,6 +68,10 @@ export interface DependencyEdge {
   isViolating: boolean;
 }
 
+export interface PackageCycle {
+  packages: string[];
+}
+
 export interface ArchitectureGraph {
   title: string;
   isProposal: boolean;
@@ -75,6 +79,7 @@ export interface ArchitectureGraph {
   components: ComponentNode[];
   edges: DependencyEdge[];
   unassigned: ClassNode[];
+  cycles?: PackageCycle[];
 }
 
 export interface ProposalLayer {

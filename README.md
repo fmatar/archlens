@@ -116,6 +116,7 @@ Open **`http://localhost:8088`** in your browser.
 4. **Git Release Comparator (`G`)**: Compare architecture against prior Git tags or pre-compiled snapshots with real-time delta badges (`+N breaches`, `✓N fixed`, `+N added`).
 5. **LLM Prompt Export (`L`)**: Export a copy-ready Clean Architecture refactoring prompt dossier for LLMs to generate abstractions and invert inward dependencies.
 6. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
+7. **Surgical DIP Inverter (`⚡`)**: Click any offending crimson edge or use the Inspector breach list to synthesize interface ports in the inner tier, preview adapter diffs, and dispatch 1-click refactoring tasks to your companion agent.
 
 ---
 

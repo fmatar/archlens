@@ -1,10 +1,11 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle } from '@lucide/svelte';
 
   let policy = $derived(diagramStore.policy);
   let proposals = $derived(policy?.proposals || []);
+  let activeViolations = $derived(diagramStore.graph?.edges.filter((e) => e.isViolating) || []);
 
   let classSearchQuery = $state('');
 
@@ -261,6 +262,39 @@
         </button>
       </div>
     </div>
+
+    <!-- Active Violations & Quick DIP Remediation -->
+    {#if activeViolations.length > 0}
+      <div class="p-3 rounded-lg bg-rose-950/30 border border-rose-900/50 space-y-2 text-xs">
+        <div class="flex items-center justify-between text-rose-300 font-semibold text-[11px]">
+          <span class="flex items-center gap-1.5 font-mono">
+            <AlertTriangle size={13} class="animate-pulse text-rose-400" />
+            Breaches ({activeViolations.length})
+          </span>
+          <span class="text-[9px] font-mono text-rose-400/90 bg-rose-900/40 px-1.5 py-0.5 rounded">
+            DIP Fix
+          </span>
+        </div>
+        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
+          {#each activeViolations.slice(0, 6) as v (v.from + '->' + v.to)}
+            <button
+              onclick={() => diagramStore.openDipInversion(v.from, v.to)}
+              class="w-full text-left p-1.5 rounded bg-slate-900/90 hover:bg-rose-950/60 border border-rose-900/30 hover:border-rose-500/50 flex items-center justify-between transition-colors cursor-pointer group"
+              title={`Invert violation: ${v.from} -> ${v.to}`}
+            >
+              <div class="min-w-0 pr-1">
+                <div class="text-[10px] font-mono text-slate-200 group-hover:text-rose-200 truncate">
+                  {v.from.split('.').pop()} ➔ {v.to.split('.').pop()}
+                </div>
+              </div>
+              <span class="text-[9px] font-mono text-rose-400 group-hover:text-white shrink-0 flex items-center gap-0.5 font-semibold">
+                ⚡ Invert
+              </span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <!-- Clean Architecture Legend -->
     <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2.5 text-xs">

@@ -9,6 +9,7 @@
   import CommandPalette from './lib/components/CommandPalette.svelte';
   import OpenProjectModal from './lib/components/OpenProjectModal.svelte';
   import LlmPromptModal from './lib/components/LlmPromptModal.svelte';
+  import InvertDipModal from './lib/components/InvertDipModal.svelte';
   import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
   import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
@@ -269,4 +270,5 @@
   <CommandPalette />
   <OpenProjectModal />
   <LlmPromptModal />
+  <InvertDipModal />
 </div>

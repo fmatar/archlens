@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-14] - 2026-09-28
+
 ### Added
 - **Real-Time File System Watcher & Live SSE Synchronization (Issue #132 - Pillar 1)**:
   - **Reactive NIO File Watcher**: Implemented `ProjectFileWatcher` in `com.design.umlviewer.engine` utilizing Java NIO `WatchService` with recursive subdirectory monitoring, intelligent directory exclusion (`.git`, `target`, `node_modules`, `.idea`), file extension filtering, and debounced callback dispatching.

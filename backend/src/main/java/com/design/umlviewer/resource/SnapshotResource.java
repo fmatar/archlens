@@ -1,7 +1,7 @@
 package com.design.umlviewer.resource;
 
 import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.engine.GraphCompiler;
+import com.design.umlviewer.engine.ArchitectureCompiler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,13 +22,13 @@ public class SnapshotResource {
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  @Inject GraphCompiler graphCompiler;
+  @Inject ArchitectureCompiler graphCompiler;
 
   @Inject ObjectMapper mapper = new ObjectMapper();
 
   public SnapshotResource() {}
 
-  public SnapshotResource(GraphCompiler graphCompiler, ObjectMapper mapper) {
+  public SnapshotResource(ArchitectureCompiler graphCompiler, ObjectMapper mapper) {
     this.graphCompiler = graphCompiler;
     this.mapper = mapper != null ? mapper : new ObjectMapper();
   }

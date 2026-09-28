@@ -3,11 +3,14 @@ package com.design.umlviewer.resource;
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
 import com.design.umlviewer.domain.dossier.DipInversionPlan;
 import com.design.umlviewer.domain.dossier.DipInversionSynthesizer;
+import com.design.umlviewer.domain.dossier.DossierGenerator;
 import com.design.umlviewer.domain.mailbox.MailboxEnvelope;
 import com.design.umlviewer.domain.mailbox.MailboxGateway;
 import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
-import com.design.umlviewer.engine.GraphCompiler;
+import com.design.umlviewer.engine.ArchitectureCompiler;
+import com.design.umlviewer.usecase.ExportDossierUseCase;
+import com.design.umlviewer.usecase.SynthesizeDipInversionUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,13 +34,17 @@ public class DiagramResource {
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  @Inject GraphCompiler graphCompiler;
+  @Inject ArchitectureCompiler graphCompiler;
 
   @Inject MailboxGateway mailboxService;
 
-  @Inject ArchitecturalDossierGenerator dossierGenerator;
+  @Inject DossierGenerator dossierGenerator;
 
   @Inject DipInversionSynthesizer dipSynthesizer;
+
+  @Inject ExportDossierUseCase exportDossierUseCase;
+
+  @Inject SynthesizeDipInversionUseCase synthesizeDipUseCase;
 
   @Inject ObjectMapper mapper = new ObjectMapper();
 
@@ -52,25 +59,29 @@ public class DiagramResource {
   }
 
   public DiagramResource(
-      GraphCompiler graphCompiler,
+      ArchitectureCompiler graphCompiler,
       MailboxGateway mailboxService,
-      ArchitecturalDossierGenerator dossierGenerator,
+      DossierGenerator dossierGenerator,
       ObjectMapper mapper,
       DipInversionSynthesizer dipSynthesizer) {
     this.graphCompiler = graphCompiler;
     this.mailboxService = mailboxService;
-    this.dossierGenerator = dossierGenerator;
+    this.dossierGenerator =
+        dossierGenerator != null ? dossierGenerator : new ArchitecturalDossierGenerator();
     this.mapper = mapper != null ? mapper : new ObjectMapper();
     this.dipSynthesizer = dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer();
+    this.exportDossierUseCase = new ExportDossierUseCase(this.graphCompiler, this.dossierGenerator);
+    this.synthesizeDipUseCase =
+        new SynthesizeDipInversionUseCase(this.graphCompiler, this.dipSynthesizer);
     this.filesystemResource = new ProjectFilesystemResource();
     this.snapshotResource = new SnapshotResource(graphCompiler, this.mapper);
     this.mailboxResource = new MailboxResource(mailboxService);
   }
 
   public DiagramResource(
-      GraphCompiler graphCompiler,
+      ArchitectureCompiler graphCompiler,
       MailboxGateway mailboxService,
-      ArchitecturalDossierGenerator dossierGenerator,
+      DossierGenerator dossierGenerator,
       ObjectMapper mapper) {
     this(graphCompiler, mailboxService, dossierGenerator, mapper, new DipInversionSynthesizer());
   }
@@ -100,6 +111,26 @@ public class DiagramResource {
     return mailboxResource;
   }
 
+  private ExportDossierUseCase getExportDossierUseCase() {
+    if (exportDossierUseCase == null) {
+      exportDossierUseCase =
+          new ExportDossierUseCase(
+              graphCompiler,
+              dossierGenerator != null ? dossierGenerator : new ArchitecturalDossierGenerator());
+    }
+    return exportDossierUseCase;
+  }
+
+  private SynthesizeDipInversionUseCase getSynthesizeDipUseCase() {
+    if (synthesizeDipUseCase == null) {
+      synthesizeDipUseCase =
+          new SynthesizeDipInversionUseCase(
+              graphCompiler,
+              dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer());
+    }
+    return synthesizeDipUseCase;
+  }
+
   @GET
   @Path("/graph")
   public ArchitectureGraph getGraph(
@@ -125,10 +156,7 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
       throws IOException {
-    String normalized = normalizeRoot(projectRoot);
-    ArchitectureGraph graph = graphCompiler.compileGraph(normalized, proposalId);
-    ArchitecturePolicy policy = graphCompiler.loadPolicy(normalized);
-    return dossierGenerator.generate(graph, policy);
+    return getExportDossierUseCase().execute(normalizeRoot(projectRoot), proposalId);
   }
 
   @GET
@@ -152,10 +180,8 @@ public class DiagramResource {
     if (fromClass == null || fromClass.isBlank() || toClass == null || toClass.isBlank()) {
       throw new BadRequestException("Parameters 'from' and 'to' must not be blank.");
     }
-    String normalized = normalizeRoot(projectRoot);
-    ArchitectureGraph graph = graphCompiler.compileGraph(normalized, proposalId);
-    ArchitecturePolicy policy = graphCompiler.loadPolicy(normalized);
-    return dipSynthesizer.synthesize(graph, policy, fromClass, toClass);
+    return getSynthesizeDipUseCase()
+        .execute(normalizeRoot(projectRoot), proposalId, fromClass, toClass);
   }
 
   @GET

@@ -72,6 +72,35 @@ export interface PackageCycle {
   packages: string[];
 }
 
+export interface ScreamingMetric {
+  score: number;
+  domainPackageCount: number;
+  technicalPackageCount: number;
+  totalPackageCount: number;
+  classification: 'PACKAGE_BY_FEATURE' | 'HYBRID' | 'PACKAGE_BY_LAYER' | string;
+  domainPackages: string[];
+  technicalPackages: string[];
+  frameworkGravityWarnings: string[];
+}
+
+export interface FeatureCluster {
+  featureName: string;
+  proposedPackageName: string;
+  classNames: string[];
+  sourcePackages: string[];
+  classCount: number;
+}
+
+export interface ScreamingMigrationProposal {
+  currentScore: number;
+  projectedScore: number;
+  currentClassification: string;
+  projectedClassification: string;
+  clusters: FeatureCluster[];
+  stagedClassMoves: Record<string, string>;
+  unclusteredClasses: string[];
+}
+
 export interface ArchitectureGraph {
   title: string;
   isProposal: boolean;
@@ -80,6 +109,7 @@ export interface ArchitectureGraph {
   edges: DependencyEdge[];
   unassigned: ClassNode[];
   cycles?: PackageCycle[];
+  screamingMetric?: ScreamingMetric;
 }
 
 export interface ProposalLayer {
@@ -228,5 +258,44 @@ export interface ScatterPlotPoint {
   y: number;
   radius: number;
 }
+
+export interface FitnessRule {
+  id: string;
+  name: string;
+  description?: string;
+  threshold: number;
+  actualValue: number;
+  passed: boolean;
+  failureMessage?: string;
+}
+
+export interface FitnessEvaluation {
+  fitnessScore: number;
+  overallPassed: boolean;
+  grade: string;
+  passedRuleCount: number;
+  totalRuleCount: number;
+  rules: FitnessRule[];
+  summaryMetrics?: Record<string, any>;
+}
+
+export interface HistoricalFitnessSnapshot {
+  snapshotId: string;
+  label: string;
+  date: string;
+  fitnessScore: number;
+  grade: string;
+  violationsCount: number;
+  cyclesCount: number;
+  screamingScore: number;
+  maxDistance: number;
+}
+
+export interface FitnessHistoryTrend {
+  trendDirection: 'IMPROVING' | 'STABLE' | 'DEGRADING';
+  scoreDelta: number;
+  history: HistoricalFitnessSnapshot[];
+}
+
 
 

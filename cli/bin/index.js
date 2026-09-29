@@ -64,6 +64,9 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --max-violations <NUM>   Maximum allowable outward dependency violations (default: 0)
   --detect-cycles          Enforce Robert C. Martin Acyclic Dependencies Principle (ADP)
+  --screaming-threshold <NUM> Enforce minimum Screaming Architecture score (0.0-1.0, Uncle Bob Ch. 21)
+  --suggest-features       Suggest package-by-feature domain refactoring clusters (Uncle Bob Ch. 21)
+  --fitness-threshold <NUM> Enforce minimum Architectural Fitness Index (0.0-1.0, Neal Ford)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
@@ -132,6 +135,9 @@ function parseArgs(args) {
     check: false,
     maxViolations: 0,
     detectCycles: false,
+    screamingThreshold: null,
+    suggestFeatures: false,
+    fitnessThreshold: null,
     format: 'pretty',
     output: null,
     force: false,
@@ -168,6 +174,12 @@ function parseArgs(args) {
       parsed.check = true;
     } else if (arg === '--detect-cycles' || arg === '--cycles' || arg === '--fail-on-cycles') {
       parsed.detectCycles = true;
+    } else if (arg === '--screaming-threshold' || arg === '--screaming') {
+      parsed.screamingThreshold = Number(args[++i] || 0.6);
+    } else if (arg === '--suggest-features' || arg === '--suggest' || arg === '--features') {
+      parsed.suggestFeatures = true;
+    } else if (arg === '--fitness-threshold' || arg === '--fitness') {
+      parsed.fitnessThreshold = Number(args[++i] || 0.8);
     } else if (arg === '--max-violations') {
       parsed.maxViolations = Number(args[++i] || 0);
     } else if (arg === '--format') {
@@ -511,20 +523,55 @@ async function main() {
           console.log(`    [C${idx + 1}] ${c.formatted}`);
         });
       }
+      if (report.screaming) {
+        console.log(`  - Screaming Score (SAS): ${report.screaming.score.toFixed(2)} [${report.screaming.classification}] (${report.screaming.domainPackageCount} domain / ${report.screaming.totalPackageCount} packages)`);
+        if (report.screamingThreshold !== null) {
+          console.log(`  - Screaming Threshold:   ${report.screamingThreshold.toFixed(2)} (required minimum)`);
+        }
+      }
+      if (report.featureClusters && report.featureClusters.clusters.length > 0) {
+        console.log(`  - Feature Migration:     ${report.featureClusters.clusters.length} feature cluster(s) proposed`);
+        console.log(`    Projected SAS Gain:    ${report.featureClusters.currentScore.toFixed(2)} -> ${report.featureClusters.projectedScore.toFixed(2)} [${report.featureClusters.projectedClassification}]`);
+        report.featureClusters.clusters.forEach((c) => {
+          console.log(`    🪄 [Feature: ${c.featureName}] (${c.classCount} classes) -> ${c.proposedPackageName}`);
+          console.log(`       Classes: ${c.classNames.join(', ')}`);
+        });
+      }
+      if (report.fitness) {
+        console.log(`  - Fitness Score (AFI):   ${(report.fitness.fitnessScore * 100).toFixed(0)}% [Grade ${report.fitness.grade}] (${report.fitness.passedRuleCount}/${report.fitness.totalRuleCount} rules passed)`);
+        if (report.fitnessThreshold !== null && !isNaN(report.fitnessThreshold)) {
+          console.log(`  - Fitness Threshold:     ${(report.fitnessThreshold * 100).toFixed(0)}% (required minimum)`);
+        }
+        report.fitness.rules.forEach((r) => {
+          const status = r.passed ? `${ui.colors.green}PASS${ui.colors.reset}` : `${ui.colors.red}FAIL${ui.colors.reset}`;
+          console.log(`    [${status}] ${r.name}: actual=${r.actualValue}, threshold=${r.threshold}`);
+        });
+      }
       console.log();
+
+      const failOnScreaming =
+        report.screamingThreshold !== null &&
+        report.screaming &&
+        report.screaming.score < report.screamingThreshold;
+
+      const failOnFitness =
+        report.fitnessThreshold !== null &&
+        !isNaN(report.fitnessThreshold) &&
+        report.fitness &&
+        report.fitness.fitnessScore < report.fitnessThreshold;
 
       if (report.passed) {
         ui.success(
           `Clean Architecture Gate PASSED (0 violations exceeding threshold${
             options.detectCycles ? ', 0 package cycles' : ''
-          }).`
+          }${report.screamingThreshold !== null ? `, screaming score ${report.screaming.score.toFixed(2)} >= ${report.screamingThreshold.toFixed(2)}` : ''}${report.fitnessThreshold !== null && !isNaN(report.fitnessThreshold) ? `, fitness ${(report.fitness.fitnessScore * 100).toFixed(0)}% >= ${(report.fitnessThreshold * 100).toFixed(0)}%` : ''}).`
         );
         process.exit(0);
       } else {
         ui.error(
           `Clean Architecture Gate FAILED (${report.violationsCount} violation(s), ${
             report.cyclesCount || 0
-          } cycle(s))!`
+          } cycle(s)${failOnScreaming ? ', screaming score below threshold' : ''}${failOnFitness ? ', fitness below threshold' : ''})!`
         );
         report.violations.forEach((v, idx) => {
           console.log(
@@ -537,6 +584,15 @@ async function main() {
           report.cycles.forEach((c, idx) => {
             console.log(`    [C${idx + 1}] ${c.formatted}`);
           });
+        }
+        if (failOnScreaming) {
+          console.log(`\n    Screaming Architecture Violation:`);
+          console.log(`    Score ${report.screaming.score.toFixed(2)} is below required threshold ${report.screamingThreshold.toFixed(2)}.`);
+          console.log(`    Technical packages (${report.screaming.technicalPackages.length}): ${report.screaming.technicalPackages.join(', ')}`);
+        }
+        if (failOnFitness) {
+          console.log(`\n    Architectural Fitness Invariant Violation:`);
+          console.log(`    Fitness Score ${(report.fitness.fitnessScore * 100).toFixed(0)}% [Grade ${report.fitness.grade}] is below required threshold ${(report.fitnessThreshold * 100).toFixed(0)}%.`);
         }
         process.exit(1);
       }

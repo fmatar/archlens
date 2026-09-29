@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-15] - 2026-09-28
+
+### Added
+- **Automated Architecture Fitness Functions & Quality Regression Trend (Issue #141)**:
+  - **Level 0 Pure Domain Core (`com.design.umlviewer.domain.fitness`)**: Introduced immutable records `FitnessRule`, `FitnessThresholds`, `FitnessEvaluation`, `HistoricalFitnessSnapshot`, and `FitnessHistoryTrend`. Implemented pure domain service `ArchitectureFitnessCalculator` computing the composite Architectural Fitness Index (AFI) ($0.0 \dots 1.0$), letter grades (`A` to `F`), and regression trend trajectories (`IMPROVING`, `STABLE`, `DEGRADING`).
+  - **Level 1 Application Use Cases**: Created `EvaluateFitnessUseCase` and `GetFitnessHistoryUseCase` in `com.design.umlviewer.usecase` coordinating live project evaluations and snapshot regression trends.
+  - **Level 3 Delivery Endpoints**: Added `FitnessResource` exposing `@GET @Path("/api/fitness")` and `@GET @Path("/api/fitness/history")`.
+  - **CLI Fitness Gate**: Added `--fitness-threshold <number>` flag to `archlens check`, emitting an ASCII Fitness Matrix and failing CI when AFI falls below the configured threshold.
+  - **Workbench UI Fitness Scorecard & Regression Sparkline**: Added interactive Fitness Invariants card in `Inspector.svelte` with score progress bar, grade badge, rule breakdown accordion, and historical SVG regression sparkline.
+- **Interactive Screaming Refactoring Assistant & Feature Migration Wizard (Issue #139)**:
+  - **Pure Domain Feature Clustering**: Added `FeatureCluster`, `ScreamingMigrationProposal`, and `ScreamingMigrationAssistant` in `domain.screaming`, clustering classes across technical layers based on semantic root tokens with 0 framework coupling.
+  - **REST API & Sandbox Simulation**: Added `ProposeScreamingMigrationUseCase` and `@GET @Path("/api/screaming/migration-proposal")`. Integrated 1-click feature staging into the Architectural Sandbox simulator in `diagram.svelte.ts` and `martinMetrics.ts`.
+  - **CLI Suggestions**: Added `--suggest-features` flag to `archlens check` proposing domain package relocations in terminal output.
+  - **Workbench UI Migration Wizard**: Added "Migrate to Features 🪄" button to Screaming Arch card in `Inspector.svelte`.
+- **Screaming Architecture Score & Domain Cohesion Analyzer (Issue #137)**:
+  - **Domain Metric & Analyzer**: Implemented `ScreamingMetric` and `ScreamingArchitectureAnalyzer` calculating vertical feature slicing vs horizontal technical layering and framework gravity penalties.
+  - **CLI Conformance Gate**: Added `--screaming-threshold` and emitted `ARCH003: ScreamingArchitectureRule` in SARIF.
+  - **Workbench UI SAS Card**: Added Screaming Architecture health card and header indicator chip.
+
 ## [0.0.1-Alpha-14] - 2026-09-28
 
 ### Added

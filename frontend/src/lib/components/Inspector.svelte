@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone, ShieldCheck, TrendingUp, CheckCircle2, XCircle } from '@lucide/svelte';
   import { calculateComponentMartinMetrics } from '../utils/martinMetrics';
   import type { MartinMetrics } from '../types/diagram';
 
@@ -10,6 +10,7 @@
   let activeViolations = $derived(diagramStore.graph?.edges.filter((e) => e.isViolating) || []);
 
   let classSearchQuery = $state('');
+  let isFitnessExpanded = $state(false);
 
   let focusedComponent = $derived(
     diagramStore.focusedNodeId && diagramStore.graph?.components
@@ -317,6 +318,229 @@
         </button>
       </div>
     </div>
+
+    <!-- Screaming Architecture & Domain Cohesion (Uncle Bob Chapter 21) -->
+    {#if diagramStore.screamingMetric}
+      {@const sm = diagramStore.screamingMetric}
+      <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
+        <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
+          <span class="flex items-center gap-1.5 font-mono">
+            <Megaphone size={13} class="text-amber-400" />
+            Screaming Arch (Ch. 21)
+          </span>
+          <span
+            class="text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-rose-950/60 border-rose-500/40 text-rose-300'}"
+          >
+            {sm.classification === 'PACKAGE_BY_FEATURE' ? 'Feature-First' : sm.classification === 'HYBRID' ? 'Hybrid' : 'Layer-Heavy'}
+          </span>
+        </div>
+
+        <!-- Score Bar -->
+        <div class="space-y-1">
+          <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
+            <span>Score (SAS)</span>
+            <span class="font-bold text-slate-200">{(sm.score * 100).toFixed(0)}%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500 {sm.score >= 0.75 ? 'bg-emerald-500' : sm.score >= 0.40 ? 'bg-amber-500' : 'bg-rose-500'}"
+              style="width: {Math.max(4, Math.round(sm.score * 100))}%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Package Breakdown -->
+        <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono pt-1 border-t border-slate-800/80">
+          <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between" title="Domain / Feature Packages">
+            <span class="text-slate-400">Domain</span>
+            <span class="font-bold text-emerald-400">{sm.domainPackageCount}</span>
+          </div>
+          <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between" title="Technical / Framework Packages">
+            <span class="text-slate-400">Technical</span>
+            <span class="font-bold text-rose-400">{sm.technicalPackageCount}</span>
+          </div>
+        </div>
+
+        <!-- Framework Gravity Alerts -->
+        {#if sm.frameworkGravityWarnings && sm.frameworkGravityWarnings.length > 0}
+          <div class="p-2 rounded bg-amber-950/30 border border-amber-900/40 text-[10px] font-mono text-amber-300/90 space-y-1">
+            <div class="font-semibold flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400">
+              <AlertTriangle size={10} />
+              Framework Gravity
+            </div>
+            {#each sm.frameworkGravityWarnings.slice(0, 3) as w}
+              <div class="truncate text-[9px] text-amber-200/80" title={w}>&bull; {w}</div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Package-by-Feature Migration Wizard Assistant -->
+        {#if sm.technicalPackageCount > 0}
+          <div class="pt-2 border-t border-slate-800/80 space-y-2">
+            <button
+              type="button"
+              onclick={async () => {
+                const prop = await diagramStore.loadScreamingMigrationProposal();
+                if (prop) {
+                  diagramStore.applyScreamingMigrationToSandbox(prop);
+                }
+              }}
+              disabled={diagramStore.isLoadingScreamingMigration}
+              class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-gradient-to-r from-amber-600/30 to-purple-600/30 hover:from-amber-600/50 hover:to-purple-600/50 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-semibold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50"
+              title="Cluster classes across technical layers into package-by-feature domain slices (Uncle Bob Ch. 21)"
+            >
+              {#if diagramStore.isLoadingScreamingMigration}
+                <RefreshCw size={11} class="animate-spin text-amber-400" />
+                <span>Synthesizing Features...</span>
+              {:else}
+                <Sparkles size={11} class="text-amber-400" />
+                <span>Migrate to Features 🪄</span>
+              {/if}
+            </button>
+
+            {#if diagramStore.screamingMigrationProposal}
+              {@const prop = diagramStore.screamingMigrationProposal}
+              <div class="p-2 rounded bg-slate-900/90 border border-amber-500/30 text-[9px] font-mono space-y-1">
+                <div class="flex items-center justify-between text-amber-300 font-semibold">
+                  <span>Projected SAS Gain</span>
+                  <span class="text-emerald-400">{(prop.currentScore * 100).toFixed(0)}% &rarr; {(prop.projectedScore * 100).toFixed(0)}%</span>
+                </div>
+                <div class="text-slate-400">
+                  {prop.clusters.length} domain feature clusters ({Object.keys(prop.stagedClassMoves).length} staged moves)
+                </div>
+                {#if prop.clusters.length > 0}
+                  <div class="space-y-0.5 pt-1 border-t border-slate-800 max-h-24 overflow-y-auto pr-0.5">
+                    {#each prop.clusters as c}
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="truncate text-amber-200 font-medium" title={c.proposedPackageName}>
+                          &bull; {c.featureName}
+                        </span>
+                        <span class="text-slate-500 text-[8px]">{c.classCount} classes</span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Architectural Fitness Functions & Regression Trend (Neal Ford & Uncle Bob) -->
+    {#if diagramStore.fitnessEvaluation}
+      {@const fit = diagramStore.fitnessEvaluation}
+      {@const trend = diagramStore.fitnessHistory}
+      <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
+        <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
+          <span class="flex items-center gap-1.5 font-mono">
+            <ShieldCheck size={13} class={fit.overallPassed ? 'text-emerald-400' : 'text-rose-400'} />
+            Fitness Invariants (AFI)
+          </span>
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono text-[9px] px-1.5 py-0.5 rounded font-bold {
+              fit.grade === 'A' ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/30' :
+              fit.grade === 'B' ? 'bg-cyan-900/40 text-cyan-300 border border-cyan-500/30' :
+              fit.grade === 'C' ? 'bg-amber-900/40 text-amber-300 border border-amber-500/30' :
+              'bg-rose-900/40 text-rose-300 border border-rose-500/30'
+            }">
+              Grade {fit.grade}
+            </span>
+            <button
+              onclick={() => isFitnessExpanded = !isFitnessExpanded}
+              class="text-[9px] text-slate-400 hover:text-slate-200 cursor-pointer"
+            >
+              {isFitnessExpanded ? 'Hide' : 'Details'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Score Bar -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>Score: <strong class="text-slate-200">{(fit.fitnessScore * 100).toFixed(0)}%</strong></span>
+            <span>{fit.passedRuleCount}/{fit.totalRuleCount} invariants met</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              class="h-full transition-all duration-500 {fit.overallPassed ? 'bg-emerald-500' : 'bg-amber-500'}"
+              style="width: {Math.max(5, Math.min(100, fit.fitnessScore * 100))}%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Invariants Breakdown (if expanded) -->
+        {#if isFitnessExpanded}
+          <div class="space-y-1.5 pt-1 border-t border-slate-800 text-[10px] font-mono">
+            {#each fit.rules as rule}
+              <div class="flex items-start justify-between gap-1 p-1 rounded bg-slate-900/60">
+                <div class="flex items-start gap-1">
+                  {#if rule.passed}
+                    <CheckCircle2 size={11} class="text-emerald-400 mt-0.5 shrink-0" />
+                  {:else}
+                    <XCircle size={11} class="text-rose-400 mt-0.5 shrink-0" />
+                  {/if}
+                  <div class="flex flex-col">
+                    <span class="text-slate-200 font-medium">{rule.name}</span>
+                    {#if rule.failureMessage}
+                      <span class="text-[8px] text-slate-400">{rule.failureMessage}</span>
+                    {/if}
+                  </div>
+                </div>
+                <span class="text-[9px] font-bold shrink-0 {rule.passed ? 'text-emerald-400' : 'text-rose-400'}">
+                  {rule.passed ? 'PASS' : 'FAIL'}
+                </span>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Historical Regression Trend Sparkline -->
+        {#if trend && trend.history && trend.history.length > 1}
+          {@const pts = trend.history.map((h, i) => {
+            const x = 5 + (i / Math.max(1, trend.history.length - 1)) * 190;
+            const y = 20 - (h.fitnessScore * 16);
+            return { x, y, score: h.fitnessScore, label: h.label };
+          })}
+          <div class="pt-2 border-t border-slate-800/80 space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span class="flex items-center gap-1">
+                <TrendingUp size={11} class={trend.trendDirection === 'IMPROVING' ? 'text-emerald-400' : trend.trendDirection === 'DEGRADING' ? 'text-rose-400' : 'text-slate-400'} />
+                Trend: <strong class="{trend.trendDirection === 'IMPROVING' ? 'text-emerald-300' : trend.trendDirection === 'DEGRADING' ? 'text-rose-300' : 'text-slate-300'}">{trend.trendDirection}</strong>
+              </span>
+              <span class="text-[9px] font-mono text-slate-500">
+                {trend.scoreDelta >= 0 ? `+${(trend.scoreDelta * 100).toFixed(0)}%` : `${(trend.scoreDelta * 100).toFixed(0)}%`}
+              </span>
+            </div>
+            
+            <!-- SVG Sparkline -->
+            <div class="h-9 w-full bg-slate-900/80 rounded p-1 flex items-center justify-center">
+              <svg class="w-full h-full overflow-visible" viewBox="0 0 200 24" preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke={trend.trendDirection === 'DEGRADING' ? '#fb7185' : '#34d399'}
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  points={pts.map(p => `${p.x},${p.y}`).join(' ')}
+                />
+                {#each pts as p}
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r="2.5"
+                    class="fill-slate-950 stroke-emerald-400 hover:scale-150 transition-transform"
+                    stroke-width="1.5"
+                  >
+                    <title>{p.label}: {(p.score * 100).toFixed(0)}%</title>
+                  </circle>
+                {/each}
+              </svg>
+            </div>
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     <!-- Active Violations & Quick DIP Remediation -->
     {#if activeViolations.length > 0}

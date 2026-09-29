@@ -14,7 +14,7 @@
   import MainSequenceModal from './lib/components/MainSequenceModal.svelte';
   import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
   import PolicyEditorModal from './lib/components/PolicyEditorModal.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio } from '@lucide/svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio, Megaphone } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -23,6 +23,7 @@
     await diagramStore.loadPolicy();
     await diagramStore.loadGraph();
     await diagramStore.loadSnapshots();
+    await diagramStore.loadFitness();
 
     // SSE connection for live updates
     const eventSource = new EventSource('/api/events');
@@ -312,6 +313,18 @@
         >
           <AlertCircle size={14} class="text-amber-400 animate-pulse" />
           <span>{diagramStore.packageCycles.length} Package {diagramStore.packageCycles.length === 1 ? 'Cycle' : 'Cycles'} (ADP)</span>
+        </div>
+      {/if}
+
+      <!-- Screaming Architecture (Uncle Bob Ch. 21) Badge -->
+      {#if diagramStore.screamingMetric}
+        {@const sm = diagramStore.screamingMetric}
+        <div
+          class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium shadow-sm border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-rose-500/15 border-rose-500/40 text-rose-300'}"
+          title={`Screaming Architecture Score: ${sm.score.toFixed(2)} (${sm.domainPackageCount} domain / ${sm.totalPackageCount} packages)`}
+        >
+          <Megaphone size={13} class={sm.classification === 'PACKAGE_BY_FEATURE' ? 'text-emerald-400' : sm.classification === 'HYBRID' ? 'text-amber-400' : 'text-rose-400 animate-pulse'} />
+          <span>SAS {(sm.score * 100).toFixed(0)}%</span>
         </div>
       {/if}
 

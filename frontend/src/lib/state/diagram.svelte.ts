@@ -17,7 +17,12 @@ import type {
   StagedClassMove,
   MartinMetrics,
   ScatterPlotPoint,
-  PackageCycle
+  PackageCycle,
+  ScreamingMetric,
+  FeatureCluster,
+  ScreamingMigrationProposal,
+  FitnessEvaluation,
+  FitnessHistoryTrend
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -55,6 +60,9 @@ class DiagramState {
   // Acyclic Dependencies Principle (ADP) Cycles
   packageCycles = $derived.by<PackageCycle[]>(() => this.graph?.cycles || []);
   hasCycles = $derived(this.packageCycles.length > 0);
+
+  // Screaming Architecture Metric (Uncle Bob Ch. 21)
+  screamingMetric = $derived.by<ScreamingMetric | null>(() => this.graph?.screamingMetric || null);
 
   // Policy Designer & Ring Editor Modal State
   isPolicyEditorOpen = $state<boolean>(false);
@@ -445,6 +453,85 @@ class DiagramState {
     this.addTelemetryEvent('INFO', 'Sandbox reset', 'All staged reassignments cleared.');
   }
 
+  // Screaming Architecture Migration Wizard State
+  screamingMigrationProposal = $state<ScreamingMigrationProposal | null>(null);
+  isLoadingScreamingMigration = $state<boolean>(false);
+  screamingMigrationError = $state<string | null>(null);
+
+  async loadScreamingMigrationProposal(): Promise<ScreamingMigrationProposal | null> {
+    this.isLoadingScreamingMigration = true;
+    this.screamingMigrationError = null;
+    try {
+      const res = await fetch(`/api/screaming/migration-proposal?projectRoot=${encodeURIComponent(this.projectRoot)}`);
+      if (!res.ok) {
+        throw new Error(`Server returned HTTP ${res.status}`);
+      }
+      const data: ScreamingMigrationProposal = await res.json();
+      this.screamingMigrationProposal = data;
+      this.addTelemetryEvent(
+        'INFO',
+        'Screaming Migration Proposal loaded',
+        `${data.clusters.length} feature clusters discovered. Projected SAS: ${(data.projectedScore * 100).toFixed(0)}%`
+      );
+      return data;
+    } catch (err: any) {
+      this.screamingMigrationError = err?.message || 'Failed to load migration proposal';
+      this.addTelemetryEvent('WARNING', 'Failed to fetch screaming migration proposal', err?.message);
+      return null;
+    } finally {
+      this.isLoadingScreamingMigration = false;
+    }
+  }
+
+  applyScreamingMigrationToSandbox(proposal?: ScreamingMigrationProposal) {
+    const prop = proposal || this.screamingMigrationProposal;
+    if (!prop) return;
+
+    if (!this.isSandboxActive) {
+      this.enterSandbox();
+    }
+
+    const next = new Map(this.stagedClassMoves);
+    for (const [classId, targetPkg] of Object.entries(prop.stagedClassMoves)) {
+      next.set(classId, targetPkg);
+    }
+    this.stagedClassMoves = next;
+
+    this.addTelemetryEvent(
+      'TASK',
+      'Applied Screaming Migration to Sandbox 🪄',
+      `Staged ${Object.keys(prop.stagedClassMoves).length} class moves across ${prop.clusters.length} domain feature clusters.`
+    );
+  }
+
+  // Architectural Fitness Functions & Quality Trend State
+  fitnessEvaluation = $state<FitnessEvaluation | null>(null);
+  fitnessHistory = $state<FitnessHistoryTrend | null>(null);
+  isLoadingFitness = $state<boolean>(false);
+  fitnessError = $state<string | null>(null);
+
+  async loadFitness(): Promise<void> {
+    this.isLoadingFitness = true;
+    this.fitnessError = null;
+    try {
+      const [evalRes, historyRes] = await Promise.all([
+        fetch(`/api/fitness?projectRoot=${encodeURIComponent(this.projectRoot)}`),
+        fetch(`/api/fitness/history?projectRoot=${encodeURIComponent(this.projectRoot)}`)
+      ]);
+
+      if (evalRes.ok) {
+        this.fitnessEvaluation = await evalRes.json();
+      }
+      if (historyRes.ok) {
+        this.fitnessHistory = await historyRes.json();
+      }
+    } catch (err: any) {
+      this.fitnessError = err.message || 'Failed to load fitness evaluation';
+    } finally {
+      this.isLoadingFitness = false;
+    }
+  }
+
   saveSandboxAsProposal(): string {
     const sim = this.activeSandboxSimulation;
     if (!sim) return '';
@@ -676,6 +763,7 @@ class DiagramState {
     await this.loadPolicy();
     await this.loadGraph();
     await this.loadSnapshots();
+    await this.loadFitness();
   }
 
   async loadGraph(proposalId?: string | null) {
@@ -689,6 +777,7 @@ class DiagramState {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.graph = await res.json();
       this.activeProposalId = proposalId || null;
+      this.loadFitness();
     } catch (e: any) {
       // Graceful fallback to embedded demo dataset
       if (proposalId === 'clean-core') {

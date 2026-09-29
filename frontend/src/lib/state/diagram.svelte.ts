@@ -474,7 +474,7 @@ class DiagramState {
       return data;
     } catch (err: any) {
       this.screamingMigrationError = err?.message || 'Failed to load migration proposal';
-      this.addTelemetryEvent('ERROR', 'Failed to fetch screaming migration proposal', err?.message);
+      this.addTelemetryEvent('WARNING', 'Failed to fetch screaming migration proposal', err?.message);
       return null;
     } finally {
       this.isLoadingScreamingMigration = false;

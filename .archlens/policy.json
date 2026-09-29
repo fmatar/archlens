@@ -4,6 +4,14 @@
   "src": "backend/src/main/java",
   "prefix": "com.design.umlviewer",
   "hierarchical": true,
+  "fitness": {
+    "maxViolations": 0,
+    "maxCycles": 0,
+    "minScreamingScore": 0.70,
+    "maxMainSequenceDistance": 0.35,
+    "maxAfferentCoupling": 50,
+    "maxEfferentCoupling": 30
+  },
   "order": ["domain", "scanner", "engine", "metrics", "usecase", "adapter", "resource", "mcp"],
   "levels": [
     ["domain"],

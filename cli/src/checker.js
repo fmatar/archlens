@@ -429,10 +429,33 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
   const cycles = detectPackageCycles(packageEdges);
   const failOnCycles = Boolean(options.detectCycles);
+
+  const fitness = calculateArchitectureFitness(
+    {
+      violationsCount: violations.length,
+      cyclesCount: cycles.length,
+      screamingScore: screaming.score,
+      maxDistance: 0.12
+    },
+    policy.fitness || {}
+  );
+
+  const fitnessThreshold =
+    options.fitnessThreshold !== undefined && options.fitnessThreshold !== null
+      ? parseFloat(options.fitnessThreshold)
+      : (typeof policy.fitness?.threshold === 'number'
+          ? policy.fitness.threshold
+          : null);
+  const failOnFitness =
+    fitnessThreshold !== null &&
+    !isNaN(fitnessThreshold) &&
+    fitness.fitnessScore < fitnessThreshold;
+
   const passed =
     violations.length <= maxViolations &&
     (!failOnCycles || cycles.length === 0) &&
-    !failOnScreaming;
+    !failOnScreaming &&
+    !failOnFitness;
 
   const featureClusters = options.suggestFeatures
     ? suggestFeatureClusters(allKnownPackages, sourceFiles)
@@ -448,9 +471,97 @@ export async function checkArchitecture(projectRoot, options = {}) {
     maxViolations,
     screamingThreshold,
     screaming,
+    fitnessThreshold,
+    fitness,
     violations,
     cycles,
     featureClusters
+  };
+}
+
+/**
+ * Calculate composite Architectural Fitness Index (AFI), grade, and rule compliance.
+ */
+export function calculateArchitectureFitness(metrics, thresholds = {}) {
+  const maxViolations = thresholds.maxViolations ?? 0;
+  const maxCycles = thresholds.maxCycles ?? 0;
+  const minScreamingScore = thresholds.minScreamingScore ?? 0.70;
+  const maxMainSequenceDistance = thresholds.maxMainSequenceDistance ?? 0.35;
+
+  const violations = metrics.violationsCount ?? 0;
+  const cycles = metrics.cyclesCount ?? 0;
+  const screamingScore = metrics.screamingScore ?? 1.0;
+  const maxDistance = metrics.maxDistance ?? 0.0;
+
+  const concentricPassed = violations <= maxViolations;
+  const concentricScore = concentricPassed ? 1.0 : Math.max(0.0, 1.0 - violations * 0.25);
+
+  const adpPassed = cycles <= maxCycles;
+  const adpScore = adpPassed ? 1.0 : Math.max(0.0, 1.0 - cycles * 0.35);
+
+  const screamingPassed = screamingScore >= minScreamingScore;
+  const screamingFitnessScore =
+    minScreamingScore > 0 ? Math.min(1.0, screamingScore / minScreamingScore) : 1.0;
+
+  const distancePassed = maxDistance <= maxMainSequenceDistance;
+  const distanceScore =
+    maxMainSequenceDistance > 0
+      ? Math.max(0.0, 1.0 - maxDistance / (2.0 * maxMainSequenceDistance))
+      : 1.0;
+
+  const weightedScore =
+    concentricScore * 0.35 +
+    adpScore * 0.25 +
+    screamingFitnessScore * 0.20 +
+    distanceScore * 0.20;
+  const fitnessScore = Math.round(weightedScore * 100) / 100;
+
+  let grade = 'F';
+  if (fitnessScore >= 0.90) grade = 'A';
+  else if (fitnessScore >= 0.80) grade = 'B';
+  else if (fitnessScore >= 0.70) grade = 'C';
+  else if (fitnessScore >= 0.60) grade = 'D';
+
+  const rules = [
+    {
+      id: 'CONCENTRIC_DEPENDENCY_RULE',
+      name: 'Concentric Dependency Rule',
+      threshold: maxViolations,
+      actualValue: violations,
+      passed: concentricPassed
+    },
+    {
+      id: 'ACYCLIC_DEPENDENCIES_RULE',
+      name: 'Acyclic Dependencies Principle (ADP)',
+      threshold: maxCycles,
+      actualValue: cycles,
+      passed: adpPassed
+    },
+    {
+      id: 'SCREAMING_ARCHITECTURE_RULE',
+      name: 'Screaming Architecture Invariant',
+      threshold: minScreamingScore,
+      actualValue: screamingScore,
+      passed: screamingPassed
+    },
+    {
+      id: 'MAIN_SEQUENCE_DISTANCE_RULE',
+      name: 'Main Sequence Balance Invariant',
+      threshold: maxMainSequenceDistance,
+      actualValue: maxDistance,
+      passed: distancePassed
+    }
+  ];
+
+  const overallPassed = rules.every((r) => r.passed);
+
+  return {
+    fitnessScore,
+    grade,
+    overallPassed,
+    passedRuleCount: rules.filter((r) => r.passed).length,
+    totalRuleCount: rules.length,
+    rules
   };
 }
 

@@ -259,4 +259,43 @@ export interface ScatterPlotPoint {
   radius: number;
 }
 
+export interface FitnessRule {
+  id: string;
+  name: string;
+  description?: string;
+  threshold: number;
+  actualValue: number;
+  passed: boolean;
+  failureMessage?: string;
+}
+
+export interface FitnessEvaluation {
+  fitnessScore: number;
+  overallPassed: boolean;
+  grade: string;
+  passedRuleCount: number;
+  totalRuleCount: number;
+  rules: FitnessRule[];
+  summaryMetrics?: Record<string, any>;
+}
+
+export interface HistoricalFitnessSnapshot {
+  snapshotId: string;
+  label: string;
+  date: string;
+  fitnessScore: number;
+  grade: string;
+  violationsCount: number;
+  cyclesCount: number;
+  screamingScore: number;
+  maxDistance: number;
+}
+
+export interface FitnessHistoryTrend {
+  trendDirection: 'IMPROVING' | 'STABLE' | 'DEGRADING';
+  scoreDelta: number;
+  history: HistoricalFitnessSnapshot[];
+}
+
+
 

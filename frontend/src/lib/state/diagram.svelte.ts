@@ -20,7 +20,9 @@ import type {
   PackageCycle,
   ScreamingMetric,
   FeatureCluster,
-  ScreamingMigrationProposal
+  ScreamingMigrationProposal,
+  FitnessEvaluation,
+  FitnessHistoryTrend
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -502,6 +504,34 @@ class DiagramState {
     );
   }
 
+  // Architectural Fitness Functions & Quality Trend State
+  fitnessEvaluation = $state<FitnessEvaluation | null>(null);
+  fitnessHistory = $state<FitnessHistoryTrend | null>(null);
+  isLoadingFitness = $state<boolean>(false);
+  fitnessError = $state<string | null>(null);
+
+  async loadFitness(): Promise<void> {
+    this.isLoadingFitness = true;
+    this.fitnessError = null;
+    try {
+      const [evalRes, historyRes] = await Promise.all([
+        fetch(`/api/fitness?projectRoot=${encodeURIComponent(this.projectRoot)}`),
+        fetch(`/api/fitness/history?projectRoot=${encodeURIComponent(this.projectRoot)}`)
+      ]);
+
+      if (evalRes.ok) {
+        this.fitnessEvaluation = await evalRes.json();
+      }
+      if (historyRes.ok) {
+        this.fitnessHistory = await historyRes.json();
+      }
+    } catch (err: any) {
+      this.fitnessError = err.message || 'Failed to load fitness evaluation';
+    } finally {
+      this.isLoadingFitness = false;
+    }
+  }
+
   saveSandboxAsProposal(): string {
     const sim = this.activeSandboxSimulation;
     if (!sim) return '';
@@ -733,6 +763,7 @@ class DiagramState {
     await this.loadPolicy();
     await this.loadGraph();
     await this.loadSnapshots();
+    await this.loadFitness();
   }
 
   async loadGraph(proposalId?: string | null) {
@@ -746,6 +777,7 @@ class DiagramState {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.graph = await res.json();
       this.activeProposalId = proposalId || null;
+      this.loadFitness();
     } catch (e: any) {
       // Graceful fallback to embedded demo dataset
       if (proposalId === 'clean-core') {

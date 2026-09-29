@@ -23,6 +23,7 @@
     await diagramStore.loadPolicy();
     await diagramStore.loadGraph();
     await diagramStore.loadSnapshots();
+    await diagramStore.loadFitness();
 
     // SSE connection for live updates
     const eventSource = new EventSource('/api/events');

@@ -65,6 +65,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --max-violations <NUM>   Maximum allowable outward dependency violations (default: 0)
   --detect-cycles          Enforce Robert C. Martin Acyclic Dependencies Principle (ADP)
   --screaming-threshold <NUM> Enforce minimum Screaming Architecture score (0.0-1.0, Uncle Bob Ch. 21)
+  --suggest-features       Suggest package-by-feature domain refactoring clusters (Uncle Bob Ch. 21)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
@@ -134,6 +135,7 @@ function parseArgs(args) {
     maxViolations: 0,
     detectCycles: false,
     screamingThreshold: null,
+    suggestFeatures: false,
     format: 'pretty',
     output: null,
     force: false,
@@ -172,6 +174,8 @@ function parseArgs(args) {
       parsed.detectCycles = true;
     } else if (arg === '--screaming-threshold' || arg === '--screaming') {
       parsed.screamingThreshold = Number(args[++i] || 0.6);
+    } else if (arg === '--suggest-features' || arg === '--suggest' || arg === '--features') {
+      parsed.suggestFeatures = true;
     } else if (arg === '--max-violations') {
       parsed.maxViolations = Number(args[++i] || 0);
     } else if (arg === '--format') {
@@ -520,6 +524,14 @@ async function main() {
         if (report.screamingThreshold !== null) {
           console.log(`  - Screaming Threshold:   ${report.screamingThreshold.toFixed(2)} (required minimum)`);
         }
+      }
+      if (report.featureClusters && report.featureClusters.clusters.length > 0) {
+        console.log(`  - Feature Migration:     ${report.featureClusters.clusters.length} feature cluster(s) proposed`);
+        console.log(`    Projected SAS Gain:    ${report.featureClusters.currentScore.toFixed(2)} -> ${report.featureClusters.projectedScore.toFixed(2)} [${report.featureClusters.projectedClassification}]`);
+        report.featureClusters.clusters.forEach((c) => {
+          console.log(`    🪄 [Feature: ${c.featureName}] (${c.classCount} classes) -> ${c.proposedPackageName}`);
+          console.log(`       Classes: ${c.classNames.join(', ')}`);
+        });
       }
       console.log();
 

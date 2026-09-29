@@ -131,11 +131,28 @@ export function simulateSandboxGraph(
 
   // Apply class reassignments
   stagedMoves.forEach((targetCompId, classId) => {
-    const targetComp = compMap.get(targetCompId);
-    if (!targetComp) return;
+    let targetComp = compMap.get(targetCompId);
+    if (!targetComp) {
+      const label = targetCompId.includes('.')
+        ? targetCompId.substring(targetCompId.lastIndexOf('.') + 1)
+        : targetCompId;
+      targetComp = {
+        id: targetCompId,
+        label,
+        level: 0,
+        crap: { mu: 0, max: 0, sigma: 0 },
+        mutationScore: 100,
+        childPackageIds: [],
+        packages: [targetCompId],
+        classes: []
+      };
+      simulatedComponents.push(targetComp);
+      compMap.set(targetCompId, targetComp);
+    }
 
     // Find class in source component
     for (const sourceComp of simulatedComponents) {
+      if (sourceComp === targetComp) continue;
       const clsIdx = sourceComp.classes.findIndex(
         (cls) => cls.id === classId || cls.name === classId || `${cls.packageName}.${cls.name}` === classId
       );
@@ -200,10 +217,73 @@ export function simulateSandboxGraph(
   const simulatedViolations = simulatedEdges.filter((e) => e.isViolating).length;
   const violationDelta = simulatedViolations - baselineViolations;
 
+  // Recalculate ScreamingMetric for simulated graph
+  const technicalMarkers = new Set([
+    'controller',
+    'controllers',
+    'service',
+    'services',
+    'dao',
+    'daos',
+    'repository',
+    'repositories',
+    'dto',
+    'dtos',
+    'model',
+    'models',
+    'entity',
+    'entities',
+    'util',
+    'utils',
+    'helper',
+    'helpers',
+    'common',
+    'infra',
+    'infrastructure',
+    'adapter',
+    'adapters',
+    'resource',
+    'resources',
+    'api',
+    'endpoint',
+    'endpoints',
+    'view',
+    'views',
+    'handler',
+    'handlers'
+  ]);
+  const activeComps = simulatedComponents.filter((c) => (c.classes || []).length > 0);
+  const domainPkgs: string[] = [];
+  const techPkgs: string[] = [];
+  activeComps.forEach((c) => {
+    const id = c.id.toLowerCase();
+    const leaf = id.includes('.') ? id.substring(id.lastIndexOf('.') + 1) : id;
+    if (technicalMarkers.has(leaf) || technicalMarkers.has(id)) {
+      techPkgs.push(c.id);
+    } else {
+      domainPkgs.push(c.id);
+    }
+  });
+  const totalPkgs = domainPkgs.length + techPkgs.length;
+  const simScore = totalPkgs > 0 ? Math.round((domainPkgs.length / totalPkgs) * 100) / 100 : 1.0;
+  let simClassification = 'PACKAGE_BY_LAYER';
+  if (simScore >= 0.75) simClassification = 'PACKAGE_BY_FEATURE';
+  else if (simScore >= 0.40) simClassification = 'HYBRID';
+
   const simulatedGraph: ArchitectureGraph = {
     ...baseGraph,
     components: simulatedComponents,
-    edges: simulatedEdges
+    edges: simulatedEdges,
+    screamingMetric: {
+      score: simScore,
+      domainPackageCount: domainPkgs.length,
+      technicalPackageCount: techPkgs.length,
+      totalPackageCount: totalPkgs,
+      classification: simClassification,
+      domainPackages: domainPkgs,
+      technicalPackages: techPkgs,
+      frameworkGravityWarnings: []
+    }
   };
 
   const componentMetrics = calculateAllMartinMetrics(simulatedGraph);

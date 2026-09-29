@@ -150,6 +150,191 @@ export function calculateScreamingMetric(packages) {
   };
 }
 
+export const TECHNICAL_SUFFIXES = [
+  'Controllers',
+  'Controller',
+  'Resources',
+  'Resource',
+  'Endpoints',
+  'Endpoint',
+  'Services',
+  'ServiceImpl',
+  'Service',
+  'Repositories',
+  'Repository',
+  'Repos',
+  'Repo',
+  'Daos',
+  'Dao',
+  'Dtos',
+  'Dto',
+  'Entities',
+  'Entity',
+  'Models',
+  'Model',
+  'Views',
+  'View',
+  'Handlers',
+  'Handler',
+  'Validators',
+  'Validator',
+  'Adapters',
+  'Adapter',
+  'Helpers',
+  'Helper',
+  'Utils',
+  'Util'
+];
+
+export const TECHNICAL_PREFIXES = [
+  'Default',
+  'Abstract',
+  'Base',
+  'Postgres',
+  'Jpa',
+  'Mongo',
+  'Sql',
+  'Http'
+];
+
+export function extractFeatureToken(className) {
+  if (!className || typeof className !== 'string') return null;
+  let candidate = className;
+  for (const prefix of TECHNICAL_PREFIXES) {
+    if (candidate.startsWith(prefix) && candidate.length > prefix.length + 2) {
+      candidate = candidate.substring(prefix.length);
+      break;
+    }
+  }
+  for (const suffix of TECHNICAL_SUFFIXES) {
+    if (candidate.endsWith(suffix) && candidate.length > suffix.length) {
+      candidate = candidate.substring(0, candidate.length - suffix.length);
+      break;
+    }
+  }
+  candidate = candidate.replace(/[0-9_]+$/, '');
+  if (
+    TECHNICAL_PREFIXES.includes(candidate) ||
+    TECHNICAL_SUFFIXES.includes(candidate) ||
+    TECHNICAL_MARKERS.has(candidate.toLowerCase())
+  ) {
+    return null;
+  }
+  return candidate.length >= 3 ? candidate : null;
+}
+
+export function suggestFeatureClusters(packages, sourceFiles = []) {
+  const currentMetric = calculateScreamingMetric(packages);
+  const techPkgSet = new Set(currentMetric.technicalPackages.map((p) => p.toLowerCase()));
+
+  if (techPkgSet.size === 0) {
+    return {
+      currentScore: currentMetric.score,
+      projectedScore: currentMetric.score,
+      currentClassification: currentMetric.classification,
+      projectedClassification: currentMetric.classification,
+      clusters: [],
+      stagedClassMoves: {},
+      unclusteredClasses: []
+    };
+  }
+
+  const technicalClasses = [];
+  for (const file of sourceFiles) {
+    const ext = path.extname(file);
+    const className = path.basename(file, ext);
+    const lowerFile = file.toLowerCase();
+
+    let filePkg = null;
+    for (const pkg of currentMetric.technicalPackages) {
+      const pkgPath = pkg.toLowerCase().replace(/\./g, path.sep);
+      if (lowerFile.includes(pkgPath) || lowerFile.includes(pkg.toLowerCase())) {
+        filePkg = pkg;
+        break;
+      }
+    }
+
+    if (filePkg) {
+      technicalClasses.push({
+        className,
+        packageName: filePkg,
+        filePath: file
+      });
+    }
+  }
+
+  const tokenToClasses = new Map();
+  for (const cls of technicalClasses) {
+    const token = extractFeatureToken(cls.className);
+    if (token) {
+      if (!tokenToClasses.has(token)) {
+        tokenToClasses.set(token, []);
+      }
+      tokenToClasses.get(token).push(cls);
+    }
+  }
+
+  const clusters = [];
+  const stagedClassMoves = {};
+  const clusteredClassNames = new Set();
+
+  for (const [token, classes] of tokenToClasses.entries()) {
+    const sourcePkgs = new Set(classes.map((c) => c.packageName));
+    if (classes.length >= 2 || sourcePkgs.size >= 2) {
+      const featureName = token.charAt(0).toUpperCase() + token.slice(1);
+      const firstPkg = Array.from(sourcePkgs)[0];
+      const parts = firstPkg.split('.');
+      let basePrefix = '';
+      if (parts.length > 1) {
+        basePrefix = parts.slice(0, -1).join('.') + '.';
+      }
+      const proposedPackage = `${basePrefix}${token.toLowerCase()}`;
+
+      clusters.push({
+        featureName,
+        proposedPackageName: proposedPackage,
+        classNames: classes.map((c) => c.className),
+        sourcePackages: Array.from(sourcePkgs).sort(),
+        classCount: classes.length
+      });
+
+      for (const cls of classes) {
+        stagedClassMoves[cls.className] = proposedPackage;
+        clusteredClassNames.add(cls.className);
+      }
+    }
+  }
+
+  clusters.sort((a, b) => a.featureName.localeCompare(b.featureName));
+
+  const unclustered = technicalClasses
+    .filter((c) => !clusteredClassNames.has(c.className))
+    .map((c) => c.className)
+    .sort();
+
+  const projectedPackages = new Set();
+  for (const pkg of packages) {
+    if (!techPkgSet.has(pkg.toLowerCase())) {
+      projectedPackages.add(pkg);
+    }
+  }
+  for (const cluster of clusters) {
+    projectedPackages.add(cluster.proposedPackageName);
+  }
+
+  const projectedMetric = calculateScreamingMetric(Array.from(projectedPackages));
+
+  return {
+    currentScore: currentMetric.score,
+    projectedScore: projectedMetric.score,
+    currentClassification: currentMetric.classification,
+    projectedClassification: projectedMetric.classification,
+    clusters,
+    stagedClassMoves,
+    unclusteredClasses: unclustered
+  };
+}
+
 export async function checkArchitecture(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || '.');
   const policy = loadProjectPolicy(root);
@@ -249,6 +434,10 @@ export async function checkArchitecture(projectRoot, options = {}) {
     (!failOnCycles || cycles.length === 0) &&
     !failOnScreaming;
 
+  const featureClusters = options.suggestFeatures
+    ? suggestFeatureClusters(allKnownPackages, sourceFiles)
+    : null;
+
   return {
     passed,
     projectTitle: policy.title || path.basename(root),
@@ -260,7 +449,8 @@ export async function checkArchitecture(projectRoot, options = {}) {
     screamingThreshold,
     screaming,
     violations,
-    cycles
+    cycles,
+    featureClusters
   };
 }
 

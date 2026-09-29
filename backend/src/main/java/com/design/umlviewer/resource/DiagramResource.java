@@ -10,9 +10,12 @@ import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.model.PackageCycle;
 import com.design.umlviewer.domain.model.ScreamingMetric;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
+import com.design.umlviewer.domain.screaming.ScreamingMigrationAssistant;
+import com.design.umlviewer.domain.screaming.ScreamingMigrationProposal;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import com.design.umlviewer.engine.ProjectFileWatcher;
 import com.design.umlviewer.usecase.ExportDossierUseCase;
+import com.design.umlviewer.usecase.ProposeScreamingMigrationUseCase;
 import com.design.umlviewer.usecase.SavePolicyUseCase;
 import com.design.umlviewer.usecase.SynthesizeDipInversionUseCase;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -51,9 +54,13 @@ public class DiagramResource {
 
   @Inject DipInversionSynthesizer dipSynthesizer;
 
+  @Inject ScreamingMigrationAssistant screamingMigrationAssistant;
+
   @Inject ExportDossierUseCase exportDossierUseCase;
 
   @Inject SynthesizeDipInversionUseCase synthesizeDipUseCase;
+
+  @Inject ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase;
 
   @Inject ObjectMapper mapper = new ObjectMapper();
 
@@ -81,15 +88,37 @@ public class DiagramResource {
       DossierGenerator dossierGenerator,
       ObjectMapper mapper,
       DipInversionSynthesizer dipSynthesizer) {
+    this(
+        graphCompiler,
+        mailboxService,
+        dossierGenerator,
+        mapper,
+        dipSynthesizer,
+        new ScreamingMigrationAssistant());
+  }
+
+  public DiagramResource(
+      ArchitectureCompiler graphCompiler,
+      MailboxGateway mailboxService,
+      DossierGenerator dossierGenerator,
+      ObjectMapper mapper,
+      DipInversionSynthesizer dipSynthesizer,
+      ScreamingMigrationAssistant screamingMigrationAssistant) {
     this.graphCompiler = graphCompiler;
     this.mailboxService = mailboxService;
     this.dossierGenerator =
         dossierGenerator != null ? dossierGenerator : new ArchitecturalDossierGenerator();
     this.mapper = mapper != null ? mapper : new ObjectMapper();
     this.dipSynthesizer = dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer();
+    this.screamingMigrationAssistant =
+        screamingMigrationAssistant != null
+            ? screamingMigrationAssistant
+            : new ScreamingMigrationAssistant();
     this.exportDossierUseCase = new ExportDossierUseCase(this.graphCompiler, this.dossierGenerator);
     this.synthesizeDipUseCase =
         new SynthesizeDipInversionUseCase(this.graphCompiler, this.dipSynthesizer);
+    this.proposeScreamingMigrationUseCase =
+        new ProposeScreamingMigrationUseCase(this.graphCompiler, this.screamingMigrationAssistant);
     this.filesystemResource = new ProjectFilesystemResource();
     this.snapshotResource = new SnapshotResource(graphCompiler, this.mapper);
     this.mailboxResource = new MailboxResource(mailboxService);
@@ -148,6 +177,18 @@ public class DiagramResource {
               dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer());
     }
     return synthesizeDipUseCase;
+  }
+
+  private ProposeScreamingMigrationUseCase getProposeScreamingMigrationUseCase() {
+    if (proposeScreamingMigrationUseCase == null) {
+      proposeScreamingMigrationUseCase =
+          new ProposeScreamingMigrationUseCase(
+              graphCompiler,
+              screamingMigrationAssistant != null
+                  ? screamingMigrationAssistant
+                  : new ScreamingMigrationAssistant());
+    }
+    return proposeScreamingMigrationUseCase;
   }
 
   @GET
@@ -247,6 +288,15 @@ public class DiagramResource {
       throws IOException {
     ArchitectureGraph graph = getGraph(projectRoot, proposalId);
     return graph.screamingMetric() != null ? graph.screamingMetric() : ScreamingMetric.empty();
+  }
+
+  @GET
+  @Path("/screaming/migration-proposal")
+  public ScreamingMigrationProposal getScreamingMigrationProposal(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId)
+      throws IOException {
+    return getProposeScreamingMigrationUseCase().execute(normalizeRoot(projectRoot), proposalId);
   }
 
   @GET

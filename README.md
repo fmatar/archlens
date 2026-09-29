@@ -6,7 +6,7 @@
 [![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.39-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](Dockerfile)
-[![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go%20%7C%20Clojure-emerald.svg)](#polyglot-language-support)
+[![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go%20%7C%20Clojure-emerald.svg)](#-polyglot-language-support)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 > *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
@@ -19,128 +19,215 @@ An interactive real-time architectural visualization workbench, polyglot Clean A
 
 ---
 
-## ⚡ 3-Step Quickstart
+## 💡 How It Works
 
-Experience real-time Clean Architecture governance on any repository in three direct steps:
+Archlens operates as a **closed-loop feedback system** that bridges high-level architectural design with low-level source code refactoring. It continuously protects codebases against architectural drift through three interconnected pillars:
 
-### 1. Equip Your Repository (Install Skills & Policy)
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Architect as Software Architect
+    participant Workbench as Archlens Workbench (Port 8088)
+    participant Core as AST & Governance Engine
+    participant Mailbox as .archlens/ Mailbox IPC
+    participant Agent as Autonomous AI Agent (Antigravity / Claude)
+    participant Code as Codebase & Tests
 
-Scaffold architectural policies and agent refactoring protocols directly into your project:
-
-```bash
-# Production Stable Track (default)
-npx @fmatar/archlens-skill
-
-# Canary / Development Preview (tracks latest develop commits)
-npx @fmatar/archlens-skill@dev
-
-# Direct GitHub Execution (zero registry dependencies)
-npx github:fmatar/archlens
-
-# Non-interactive / headless setup accepting defaults
-npx @fmatar/archlens-skill --yes
-
-# Target a specific repository directory
-npx @fmatar/archlens-skill --path /path/to/my-project --yes
-
-# Export Clean Architecture LLM refactoring prompt dossier
-npx @fmatar/archlens-skill prompt
-
-# Copy dossier directly to system clipboard
-npx @fmatar/archlens-skill prompt --copy
+    Core->>Code: 1. Polyglot AST Scan (Extract types, imports, calls)
+    Core->>Workbench: 2. Render Concentric Rings & Flag Outward Breaches
+    Architect->>Workbench: 3. Prototype in Sandbox or Click DIP Invert
+    Workbench->>Mailbox: 4. 1-Click "Dispatch to Agent" (to-agent.json)
+    Agent->>Mailbox: 5. Dequeue Architectural Directive
+    Agent->>Code: 6. Synthesize Ports, Update Adapters, Reorganize Packages
+    Agent->>Code: 7. Run Test Verification (mvn test / npm test)
+    Agent->>Mailbox: 8. Write Completion ACK (to-viewer.json)
+    Mailbox->>Workbench: 9. SSE Hot-Reload (/api/events)
+    Workbench->>Architect: 10. Instant Visual Confirmation (0 Violations)
 ```
 
-*Or install globally via npm:*
-```bash
-npm install -g @fmatar/archlens-skill
-archlens-skill
-```
+### 1. Polyglot AST Analysis & Governance Engine
+Archlens reads your project source files directly. Pluggable Abstract Syntax Tree (AST) scanners (Java 25, Python, TypeScript, Go, Rust, Clojure) discover packages, classes, structs, and interfaces, mapping every import and function call against your configured Clean Architecture concentric tiers:
+$$\text{Domain Core (Tier 0)} \longleftarrow \text{Application (Tier 1)} \longleftarrow \text{Adapters (Tier 2)} \longleftarrow \text{Infrastructure (Tier 3)}$$
+Any source dependency violating Uncle Bob's Dependency Rule (pointing outward from inner tiers to outer details) is instantly flagged as an architectural breach.
 
-*Or install from a local repository clone:*
-```bash
-npm install -g ./cli
-archlens-skill
-```
+### 2. Interactive Real-Time Canvas & "What-If" Sandbox
+The Svelte 5 frontend visualizes components arranged in concentric rings. With built-in **Violation X-Ray (`V`)**, **Hierarchical Edge Bundling (`B`)**, and the **Architectural Sandbox (`S`)**, architects can simulate moving classes between rings in-memory to immediately view violation deltas ($\Delta \pm N$) and Robert C. Martin coupling metrics without touching disk code.
 
-*Or instruct your AI assistant (Claude Code, Gemini CLI, Google Antigravity):*
-> *"Install the Archlens Clean Architecture policy in this project."*
-
-This creates:
-- `.archlens/policy.json`: Concentric Clean Architecture tiers (Domain Core $\rightarrow$ Application $\rightarrow$ Adapters $\rightarrow$ Infrastructure).
-- `.archlens/workbench.config.json`: Local workbench connection and mailbox configuration.
-- `CLAUDE.md` & `AGENTS.md`: Mailbox refactoring protocols for autonomous coding companions.
+### 3. Closed-Loop AI Agent Refactoring ("Dispatch to Agent")
+When an architectural violation is identified or a new package layout is designed in the Sandbox, clicking **`Dispatch to Agent`** writes a concrete, structured refactoring task into `.archlens/to-agent.json`. Your autonomous AI coding companion (Google Antigravity, Claude Code, Cursor) picks up the directive, synthesizes interface ports, updates caller injections, reorganizes packages, and runs test suites to guarantee a verified clean build.
 
 ---
 
-### 2. Launch the Studio (1-Command Container Lifecycle)
+## 📦 Installation
 
-Start the all-in-one container and visual workbench with a single command:
+Choose the installation method that fits your workflow:
 
+### Option A: Zero-Install Execution via `npx` (Recommended)
+Run directly without installing any global packages:
 ```bash
-# Launch container and automatically open workbench in browser:
-npx @fmatar/archlens-skill start --open
+# Production Stable Track
+npx @fmatar/archlens-skill
 
-# Launch container in background on default port 8088:
-npx @fmatar/archlens-skill start
+# Canary / Development Preview (tracks latest develop branch)
+npx @fmatar/archlens-skill@dev
 
-# Specify custom workspace path or port:
-npx @fmatar/archlens-skill start --path /path/to/my-project --port 8088 --open
+# Direct from GitHub Repository
+npx github:fmatar/archlens
 ```
 
-> [!TIP]
-> **Automatic Lifecycle & Auto-Resurrection**: `archlens-skill start` automatically checks whether the container (`archlens-server`) is running. If it is stopped, offline, or killed, it immediately starts it again on demand. Furthermore, any time an AI assistant calls an Archlens MCP tool, the container automatically resurrects without manual intervention.
-
-*Alternatively, launch via Docker directly:*
-
+### Option B: Global CLI Installation
+Install the CLI globally on your workstation:
 ```bash
-# Production Stable
+npm install -g @fmatar/archlens-skill
+
+# Run from anywhere:
+archlens-skill
+```
+
+### Option C: Docker Container (Standalone Server)
+Run the all-in-one container directly via Docker:
+```bash
+# Mount your local workspace into /workspace:
 docker run -d --name archlens-server -p 8088:8088 \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:latest
-
-# Canary / Development Track
-docker run -d --name archlens-server -p 8088:8088 \
-  -v "$HOME/workspace:/workspace" \
-  ghcr.io/fmatar/archlens:dev
 ```
 
-Open **`http://localhost:8088`** in your browser.
-
 ---
 
-### 3. Inspect, X-Ray, Sandbox & Refactor
+## ⚡ 3-Step Quickstart
 
-1. **Browse Projects (`⌘O` / `Ctrl+O`)**: Press `⌘O` to open the visual filesystem explorer. Select any repository mounted in `/workspace` with automatic build framework detection (`Maven`, `Gradle`, `Node`, `Go`, `Cargo`).
-2. **Violation X-Ray (`V`)**: Press `V` to isolate illegal outward dependency violations in neon crimson while compliant inward flows gently fade into the background.
-3. **Hierarchical Edge Bundling (`B`)**: Press `B` to route dense cross-package connections along smooth Catmull-Rom spline corridors.
-4. **Git Release Comparator (`G`)**: Compare architecture against prior Git tags or pre-compiled snapshots with real-time delta badges (`+N breaches`, `✓N fixed`, `+N added`).
-5. **Architectural Sandbox ("What-If" Prototyping) (`S`)**: Press `S` to enter sandbox simulation mode. Reassign classes between concentric rings without modifying a single line of disk code. Live-simulate package restructuring, see instantaneous violation deltas (`⚡ -N Violations`), inspect live Robert C. Martin coupling metrics, and dispatch proposals (`APPLY_PROPOSAL`) to AI agents.
-6. **Robert C. Martin Coupling & Stability Engine**: Calculates Efferent Coupling ($C_e$), Afferent Coupling ($C_a$), Instability ($I = \frac{C_e}{C_a + C_e}$), Abstractness ($A$), and Normalized Distance from the Main Sequence ($D = |A + I - 1|$). Identifies components trapped in the *Zone of Pain* (rigid, unyielding) or *Zone of Uselessness* (abstract, unreferenced).
-7. **Surgical DIP Inverter (`⚡`)**: Click any offending crimson edge or use the Inspector breach list to open the 1-click DIP Inverter. Automatically inspects class ASTs, extracts public caller methods, synthesizes clean interface ports in the inner tier, previews adapter implementations and caller injection refactors, and dispatches refactoring directives (`INVERT_DEPENDENCY`) directly to companion agents.
-8. **LLM Prompt Export (`L`)**: Export a copy-ready Clean Architecture refactoring prompt dossier for LLMs to generate abstractions and invert inward dependencies.
-9. **Wake Refactoring Agent (`Regen`)**: Click the green **Regen** action to post tasks into `.archlens/to-agent.json`. Your AI assistant applies the Dependency Inversion Principle, generates abstractions, runs tests, and triggers hot-reloads on the canvas.
+Get full Clean Architecture visualization and autonomous AI refactoring running on any codebase in under two minutes:
 
----
-
-### 4. Connect AI Assistants via Model Context Protocol (MCP)
-
-Archlens embeds a native **Model Context Protocol (MCP)** server directly in its unified Quarkus backend over HTTP/SSE (`/mcp` and `/mcp/sse`), accompanied by an on-demand container runner and stdio bridge. AI coding assistants (Claude Desktop, Google Antigravity, Claude Code, Cursor, VS Code) can query Clean Architecture metrics and refactoring dossiers autonomously.
-
-#### Automated 1-Command Setup:
+### 1. Equip Your Repository (Scaffold Policy & Protocols)
+Navigate to your project root and run the setup CLI:
 ```bash
-# Auto-configures Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code:
+cd /path/to/my-project
+npx @fmatar/archlens-skill
+```
+*For automated, non-interactive CI/CD or agent setups:*
+```bash
+npx @fmatar/archlens-skill --yes
+```
+This scaffolds:
+* `.archlens/policy.json`: Concentric Clean Architecture tiers tailored to your repository.
+* `.archlens/workbench.config.json`: Local workbench server and mailbox IPC parameters.
+* `CLAUDE.md` & `AGENTS.md`: Contextual guidance and mailbox protocols for AI coding agents.
+
+### 2. Launch the Studio (1-Command Lifecycle)
+Start the workbench container and open the visual canvas in your browser:
+```bash
+npx @fmatar/archlens-skill start --open
+```
+> [!TIP]
+> **Auto-Resurrection**: If the container is stopped or offline, `archlens-skill start` automatically resurrects it. The container also starts on demand whenever an AI assistant calls an Archlens MCP tool.
+
+### 3. Inspect Architecture & 1-Click Dispatch to Agent
+Open **`http://localhost:8088`** in your browser:
+* Press **`⌘O`** / **`Ctrl+O`** to switch projects or select any mounted repository.
+* Press **`V`** to activate **Violation X-Ray** and isolate illegal outward dependencies in crimson.
+* Click any violating edge or enter the Sandbox (**`S`**) to stage fixes, then click **`Dispatch to Agent`** to let your AI assistant refactor the code automatically.
+
+---
+
+## 🎯 Core Workflows (How to Use)
+
+### 1. Visualizing Architecture & Isolating Breaches
+Archlens arranges your codebase components into concentric rings radiating outward from the domain core:
+* **Violation X-Ray (`V`)**: Dims compliant inward dependencies and highlights illegal outward dependencies in neon crimson.
+* **Hierarchical Edge Bundling (`B`)**: Toggles Catmull-Rom spline corridor routing to declutter dense dependency graphs across large enterprise codebases.
+* **1-Hop Focus (`F`)**: Select any component and isolate only its direct callers and dependencies.
+* **Compact Cards (`C`)**: Collapse detailed class lists into high-level macro package summaries.
+
+---
+
+### 2. "What-If" Architectural Sandbox & 1-Click "Dispatch to Agent"
+Refactoring monolithic architectures is risky without knowing the impact in advance. The **Architectural Sandbox** enables zero-disk in-memory prototyping:
+
+1. Press **`S`** or click **`🧪 Sandbox`** to enter simulation mode.
+2. Click any class and reassign it to a different tier (e.g. moving a class from `adapters` to `application`).
+3. Observe real-time **Violation Deltas** in the bottom floating toolbar (e.g. `⚡ -3 Violations`).
+4. Click **`Metrics & Staged`** to evaluate how the move impacts Martin coupling and stability numbers.
+5. Click **`Dispatch to Agent`**:
+   * Archlens writes an `APPLY_PROPOSAL` directive into `.archlens/to-agent.json`.
+   * Your AI companion (Claude / Antigravity) physically relocates classes on disk, rewires import statements, executes test suites (`mvn test` / `npm test`), and posts an ACK to trigger a hot-reload on your screen.
+
+*Learn more: [Architectural Sandbox & What-If Simulation Guide](https://github.com/fmatar/archlens/wiki/Architectural-Sandbox)*
+
+---
+
+### 3. Surgical DIP Inverter & 1-Click Port Synthesis
+Remediate outward Clean Architecture violations with mathematical precision:
+
+1. Click any violating crimson edge or select a breach from the Inspector drawer.
+2. Click **`⚡ Invert Dependency (DIP)`** to open the 3-tab Inversion Modal:
+   * **Synthesized Port**: Inspect the automatically generated interface (e.g., `OrderRepositoryPort.java`) placed in the inner tier's `.ports` package with method signatures extracted via AST analysis.
+   * **Refactor Previews**: Side-by-side diff previews showing the outer adapter implementing the port and the inner caller refactored to use constructor injection.
+   * **AI Prompt**: Copy-ready prompt instructions for manual LLM pasting.
+3. Click **`Dispatch to AI Agent`**:
+   * Archlens posts an `INVERT_DEPENDENCY` command into `.archlens/to-agent.json`.
+   * The AI companion creates the port interface, modifies the concrete adapter, injects the abstraction into the caller, and verifies tests pass.
+
+*Learn more: [Surgical DIP Inverter Guide](https://github.com/fmatar/archlens/wiki/Surgical-DIP-Inverter)*
+
+---
+
+### 4. Robert C. Martin Coupling & Main Sequence Stability Engine
+Archlens quantifies the structural health of every component using Uncle Bob’s seminal metrics:
+* **Afferent Coupling ($C_a$)**: Incoming dependencies (classes outside that depend on classes inside).
+* **Efferent Coupling ($C_e$)**: Outgoing dependencies (classes inside that depend on classes outside).
+* **Instability ($I$)**: Ratio of outgoing dependencies: $I = \frac{C_e}{C_a + C_e}$, ranging from $0.0$ (maximally stable) to $1.0$ (maximally unstable).
+* **Abstractness ($A$)**: Ratio of abstract classes and interfaces to total classes: $A = \frac{N_a}{N_c}$.
+* **Distance from Main Sequence ($D$)**: Normalized deviation from the ideal balance: $D = |A + I - 1|$.
+
+Press **`M`** to open the interactive **Main Sequence Scatter Plot**:
+* **Zone of Pain** ($I \to 0, A \to 0$): Highly stable, highly concrete components that are rigid and painful to change (e.g., database models with heavy dependents).
+* **Zone of Uselessness** ($I \to 1, A \to 1$): Highly abstract components with no dependents (dead abstractions).
+* **Main Sequence Corridor**: Balanced components that adhere to the Stable Abstractions Principle.
+
+*Learn more: [Robert C. Martin Coupling & Stability Metrics](https://github.com/fmatar/archlens/wiki/Robert-C-Martin-Metrics)*
+
+---
+
+## 🤖 Autonomous AI Companion Integration
+
+Archlens provides two complementary communication protocols for AI coding assistants:
+
+### 1. Mailbox IPC Companion Protocol (File-Based Queue)
+For local, asynchronous pair programming, Archlens maintains bidirectional JSON mailboxes inside `.archlens/`:
+
+| Mailbox File | Direction | Purpose |
+| :--- | :--- | :--- |
+| `.archlens/to-agent.json` | Workbench $\to$ Agent | Inbound refactoring commands dispatched from the UI |
+| `.archlens/to-viewer.json` | Agent $\to$ Workbench | Outbound completion acknowledgments and test reports |
+
+#### Supported Mailbox Directives:
+* **`APPLY_PROPOSAL`**: Dispatched by **`Dispatch to Agent`** in the Sandbox. Contains all staged class moves and target packages.
+* **`INVERT_DEPENDENCY`**: Dispatched by **`Dispatch to AI Agent`** in the DIP Inverter modal. Contains the synthesized port code, caller diff, and adapter diff.
+* **`REGEN`**: Dispatched when clicking the **`Regen`** toolbar action. Directs the agent to re-scan the AST and re-evaluate compliance rules.
+* **`REFRESH_CRAP`**: Signals the agent to run mutation tests (PITest / Stryker) and JaCoCo coverage to refresh risk metrics.
+
+*Learn more: [Mailbox IPC Companion Protocol](https://github.com/fmatar/archlens/wiki/Mailbox-IPC)*
+
+---
+
+### 2. Model Context Protocol (MCP) Integration
+Archlens includes a built-in **Model Context Protocol (MCP)** server over HTTP/SSE (`/mcp` and `/mcp/sse`) and a stdio bridge, allowing AI tools to inspect architecture and query metrics directly.
+
+#### Automated 1-Command Configuration:
+Automatically configure Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code:
+```bash
 npx @fmatar/archlens-skill --mcp
 ```
 
-#### Available Declarative Tools:
-- `synthesizeDipInversion`: Synthesizes a targeted Dependency Inversion Principle (DIP) refactoring plan for any outward breach, generating the Java interface port code, adapter implementation diff, caller injection refactor, and step-by-step instructions.
-- `inspectArchitecture`: Evaluates codebase concentric rings, computes instability metrics, and identifies outward dependency breaches.
-- `exportLlmDossier`: Produces an actionable refactoring prompt dossier diagnosing violations and prescribing concrete Dependency Inversion Principle (DIP) interface ports.
-- `listSnapshots`: Discovers pre-compiled snapshot files and historical Git release tags.
-- `getSnapshot`: Retrieves architecture graph models for specific historical releases.
+#### Available MCP Tools:
+* `inspectArchitecture`: Evaluates codebase concentric rings, computes instability metrics, and identifies outward dependency breaches.
+* `synthesizeDipInversion`: Synthesizes a targeted Dependency Inversion refactoring plan for any outward breach, generating port code and injection diffs.
+* `exportLlmDossier`: Produces an actionable refactoring prompt dossier diagnosing violations and prescribing concrete DIP interface ports.
+* `listSnapshots` & `getSnapshot`: Discovers and retrieves architectural models across historical Git release tags.
 
 #### Manual AI Client Configurations:
-- **Cursor & VS Code (`.cursor/mcp.json` or `.vscode/mcp.json`)**:
+* **Cursor & VS Code (`.cursor/mcp.json` or `.vscode/mcp.json`)**:
   ```json
   {
     "mcpServers": {
@@ -150,7 +237,7 @@ npx @fmatar/archlens-skill --mcp
     }
   }
   ```
-- **Claude Desktop (`claude_desktop_config.json`) & Claude Code (`.mcp.json`)**:
+* **Claude Desktop (`claude_desktop_config.json`) & Claude Code (`.mcp.json`)**:
   ```json
   {
     "mcpServers": {
@@ -162,20 +249,24 @@ npx @fmatar/archlens-skill --mcp
   }
   ```
 
+*Learn more: [Model Context Protocol (MCP) Integration](https://github.com/fmatar/archlens/wiki/MCP-Integration)*
+
 ---
 
-## 🧭 Keyboard & Interaction Shortcuts
+## 🧭 Reference
+
+### Keyboard & Interaction Shortcuts
 
 | Key | Action | Description |
 | :--- | :--- | :--- |
 | `⌘O` / `Ctrl+O` | **Project Switcher** | Open native folder browser to switch active repositories |
-| `V` | **Violation X-Ray** | Toggle isolation of illicit outward dependency violations |
+| `V` | **Violation X-Ray** | Toggle isolation of illicit outward dependency violations in neon crimson |
 | `B` | **Edge Bundling** | Route connections along concentric Catmull-Rom spline corridors |
-| `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
-| `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
-| `P` | **Proposals** | Toggle between live architecture and hypothetical structural proposals |
 | `S` | **Sandbox "What-If"** | Enter or exit interactive architectural sandbox simulation |
 | `M` | **Main Sequence** | Toggle 2D Cartesian scatter plot of Abstractness ($A$) vs. Instability ($I$) |
+| `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
+| `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
+| `P` | **Proposals** | Toggle between live architecture and saved structural proposals |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |
@@ -183,9 +274,9 @@ npx @fmatar/archlens-skill --mcp
 
 ---
 
-## 🌐 Polyglot Language Support
+### 🌐 Polyglot Language Support
 
-Archlens features a modular Service Provider Interface (SPI) for language scanners:
+Archlens provides native AST scanners via a modular Service Provider Interface (SPI):
 
 | Language | Ecosystem & AST Engine | File Extensions | Capabilities |
 | :--- | :--- | :--- | :--- |
@@ -198,74 +289,7 @@ Archlens features a modular Service Provider Interface (SPI) for language scanne
 
 ---
 
-## 🏛️ System Architecture
-
-```mermaid
-flowchart LR
-    subgraph Client ["Developer Workspace"]
-        User["Architect / Developer"]
-        Browser["Archlens UI<br/>(Svelte 5 + Tailwind v4)"]
-    end
-
-    subgraph Runtime ["Archlens Container (Port 8088)"]
-        Server["Quarkus REST & SSE Server<br/>(Java 25 Runtime)"]
-        
-        subgraph Core ["Analysis & Governance Engine"]
-            Scanner["Polyglot AST Scanners<br/>(Java, TS, Python, Go, Rust, Clojure)"]
-            Rules["Clean Architecture Rule Engine<br/>(Level Inversion Validator)"]
-            Metrics["Quality Metrics Engine<br/>(CRAP Score & Mutation Stats)"]
-        end
-    end
-
-    subgraph Storage ["Target Project"]
-        Code["Source Codebase"]
-        Mailbox["Mailbox IPC<br/>(.archlens/)"]
-    end
-
-    Agent["AI Agent / Companion<br/>(Antigravity / Claude)"]
-
-    User <-->|Pan, Zoom, Drag & Filter| Browser
-    Browser <-->|REST & Server-Sent Events| Server
-    Server --> Core
-    Scanner -->|Parse AST & Deps| Code
-    Server <-->|Queue Commands & Hot Reload| Mailbox
-    Agent <-->|Read Task & Write ACK| Mailbox
-    Agent -->|Refactor Code & Run Tests| Code
-```
-
----
-
-## 🤖 AI Agent Mailbox Protocol (IPC)
-
-Archlens provides seamless bidirectional integration with autonomous coding companions (Claude Code, Google Antigravity, Gemini CLI, Cursor, Windsurf) through a structured file-based Mailbox IPC (`.archlens/to-agent.json` and `.archlens/to-viewer.json`):
-
-```mermaid
-sequenceDiagram
-    participant User as Architect / Developer
-    participant UI as Archlens Workbench (Port 8088)
-    participant Inbox as .archlens/to-agent.json
-    participant Agent as AI Coding Assistant (Claude / AGY)
-    participant Code as Codebase & Tests
-    participant Outbox as .archlens/to-viewer.json
-
-    User->>UI: 1-Click DIP Invert or Sandbox Reassign
-    UI->>Inbox: Dispatch Actionable Payload (INVERT_DEPENDENCY / APPLY_PROPOSAL)
-    Agent->>Inbox: Dequeue Architectural Command
-    Agent->>Code: Synthesize Port in Inner Tier, Update Adapters, Run Tests
-    Agent->>Outbox: Post Completion ACK with Git Commit & Test Results
-    UI->>Outbox: Detect ACK via SSE Event Stream (/api/events)
-    UI->>User: Hot-Reload Architecture Diagram (0 Breaches)
-```
-
-### Supported Mailbox Commands:
-- **`INVERT_DEPENDENCY`**: Dispatches the complete DIP synthesizer payload (`portName`, `portPackage`, `portInterfaceCode`, `sourceClass`, `targetClass`). The agent creates the interface port in the inner layer, updates the concrete adapter, refactors the caller to inject the port, runs tests, and acknowledges completion.
-- **`APPLY_PROPOSAL`**: Dispatches a full sandbox "what-if" architectural proposal (`proposalId`, `stagedClassMoves`). The agent relocates classes across concentric package rings and executes test suites.
-- **`REGEN`**: Signals the agent to re-scan the codebase AST, evaluate inward dependency rules, and verify architectural invariants.
-- **`REFRESH_CRAP`**: Triggers execution of mutation testing (PITest / Stryker) and JaCoCo coverage to refresh complexity and risk metrics.
-
----
-
-## 🛠️ CLI Reference (`@fmatar/archlens-skill`)
+### 🛠️ CLI Reference (`@fmatar/archlens-skill`)
 
 | Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
@@ -289,8 +313,9 @@ sequenceDiagram
 
 ---
 
-## 💡 The Vision & Inspiration
+## 🏛️ Contributing, Vision & Resources
 
+### 💡 The Vision & Inspiration
 Robert C. Martin’s writings have been a foundational reference point throughout modern software engineering. *Clean Code*, *Clean Architecture*, and the SOLID principles established how we protect core business policies from the volatility of frameworks, delivery mechanisms, and external databases.
 
 When Uncle Bob open-sourced [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), the vision was captivating: transforming the Dependency Rule from an abstract diagram in a book into a living, tangible feedback loop right on our screens. Seeing that experimental prototype sparked an immediate ambition: bring this exact philosophy into modern polyglot enterprise environments.
@@ -299,21 +324,21 @@ Archlens takes Uncle Bob's core thesis and expands it into a comprehensive archi
 
 ---
 
-## 💻 Building from Source
+### 💻 Building from Source
 
-For developers wishing to build and test Archlens locally:
+For developers wishing to contribute to Archlens locally:
 
-### Prerequisites
-- Java 25 (OpenJDK / GraalVM)
-- Apache Maven 3.9+
-- Node.js 22+ and npm
+#### Prerequisites
+* Java 25 (OpenJDK / GraalVM)
+* Apache Maven 3.9+
+* Node.js 22+ and npm
 
 ```bash
 # 1. Start the Backend
 cd backend
 ./mvnw clean quarkus:dev
 
-# 2. Start the Frontend
+# 2. Start the Frontend (in a separate terminal)
 cd ../frontend
 npm install
 npm run dev
@@ -327,21 +352,21 @@ npm --prefix frontend run test:e2e
 
 ---
 
-## 📚 Documentation & Resources
- 
-- **[Archlens GitHub Wiki](https://github.com/fmatar/archlens/wiki)** *(Complete architectural guides & deep-dives)*
-  - [Surgical DIP Inverter Guide](https://github.com/fmatar/archlens/wiki/Surgical-DIP-Inverter)
-  - [Architectural Sandbox & What-If Simulation](https://github.com/fmatar/archlens/wiki/Architectural-Sandbox)
-  - [Robert C. Martin Coupling & Stability Metrics](https://github.com/fmatar/archlens/wiki/Robert-C-Martin-Metrics)
-  - [Model Context Protocol (MCP) Integration](https://github.com/fmatar/archlens/wiki/MCP-Integration)
-  - [Mailbox IPC Companion Protocol](https://github.com/fmatar/archlens/wiki/Mailbox-IPC)
-- [User Guide](docs/guide/USER_GUIDE.md)
-- [Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)
-- [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)
-- [Inspiration & Vision](docs/guide/INSPIRATION_AND_VISION.md)
-- [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
-- [Changelog](CHANGELOG.md)
-- [Contribution Process](CONTRIBUTING.md)
+### 📚 Documentation & Resources
+
+* **[Archlens GitHub Wiki](https://github.com/fmatar/archlens/wiki)** *(Complete architectural guides & deep-dives)*
+  * [Surgical DIP Inverter Guide](https://github.com/fmatar/archlens/wiki/Surgical-DIP-Inverter)
+  * [Architectural Sandbox & What-If Simulation](https://github.com/fmatar/archlens/wiki/Architectural-Sandbox)
+  * [Robert C. Martin Coupling & Stability Metrics](https://github.com/fmatar/archlens/wiki/Robert-C-Martin-Metrics)
+  * [Model Context Protocol (MCP) Integration](https://github.com/fmatar/archlens/wiki/MCP-Integration)
+  * [Mailbox IPC Companion Protocol](https://github.com/fmatar/archlens/wiki/Mailbox-IPC)
+* [User Guide](docs/guide/USER_GUIDE.md)
+* [Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)
+* [C4 Architecture Specification](docs/specs/C4_ARCHITECTURE.md)
+* [Inspiration & Vision](docs/guide/INSPIRATION_AND_VISION.md)
+* [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
+* [Changelog](CHANGELOG.md)
+* [Contribution Process](CONTRIBUTING.md)
 
 ---
 

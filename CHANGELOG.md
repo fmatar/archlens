@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1-Alpha-15] - 2026-09-28
+
 ### Added
 - **Automated Architecture Fitness Functions & Quality Regression Trend (Issue #141)**:
   - **Level 0 Pure Domain Core (`com.design.umlviewer.domain.fitness`)**: Introduced immutable records `FitnessRule`, `FitnessThresholds`, `FitnessEvaluation`, `HistoricalFitnessSnapshot`, and `FitnessHistoryTrend`. Implemented pure domain service `ArchitectureFitnessCalculator` computing the composite Architectural Fitness Index (AFI) ($0.0 \dots 1.0$), letter grades (`A` to `F`), and regression trend trajectories (`IMPROVING`, `STABLE`, `DEGRADING`).

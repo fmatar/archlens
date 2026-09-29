@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone, ShieldCheck, TrendingUp, CheckCircle2, XCircle } from '@lucide/svelte';
   import { calculateComponentMartinMetrics } from '../utils/martinMetrics';
   import type { MartinMetrics } from '../types/diagram';
 
@@ -10,6 +10,7 @@
   let activeViolations = $derived(diagramStore.graph?.edges.filter((e) => e.isViolating) || []);
 
   let classSearchQuery = $state('');
+  let isFitnessExpanded = $state(false);
 
   let focusedComponent = $derived(
     diagramStore.focusedNodeId && diagramStore.graph?.components
@@ -421,6 +422,121 @@
                 {/if}
               </div>
             {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    <!-- Architectural Fitness Functions & Regression Trend (Neal Ford & Uncle Bob) -->
+    {#if diagramStore.fitnessEvaluation}
+      {@const fit = diagramStore.fitnessEvaluation}
+      {@const trend = diagramStore.fitnessHistory}
+      <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
+        <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
+          <span class="flex items-center gap-1.5 font-mono">
+            <ShieldCheck size={13} class={fit.overallPassed ? 'text-emerald-400' : 'text-rose-400'} />
+            Fitness Invariants (AFI)
+          </span>
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono text-[9px] px-1.5 py-0.5 rounded font-bold {
+              fit.grade === 'A' ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/30' :
+              fit.grade === 'B' ? 'bg-cyan-900/40 text-cyan-300 border border-cyan-500/30' :
+              fit.grade === 'C' ? 'bg-amber-900/40 text-amber-300 border border-amber-500/30' :
+              'bg-rose-900/40 text-rose-300 border border-rose-500/30'
+            }">
+              Grade {fit.grade}
+            </span>
+            <button
+              onclick={() => isFitnessExpanded = !isFitnessExpanded}
+              class="text-[9px] text-slate-400 hover:text-slate-200 cursor-pointer"
+            >
+              {isFitnessExpanded ? 'Hide' : 'Details'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Score Bar -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>Score: <strong class="text-slate-200">{(fit.fitnessScore * 100).toFixed(0)}%</strong></span>
+            <span>{fit.passedRuleCount}/{fit.totalRuleCount} invariants met</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              class="h-full transition-all duration-500 {fit.overallPassed ? 'bg-emerald-500' : 'bg-amber-500'}"
+              style="width: {Math.max(5, Math.min(100, fit.fitnessScore * 100))}%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Invariants Breakdown (if expanded) -->
+        {#if isFitnessExpanded}
+          <div class="space-y-1.5 pt-1 border-t border-slate-800 text-[10px] font-mono">
+            {#each fit.rules as rule}
+              <div class="flex items-start justify-between gap-1 p-1 rounded bg-slate-900/60">
+                <div class="flex items-start gap-1">
+                  {#if rule.passed}
+                    <CheckCircle2 size={11} class="text-emerald-400 mt-0.5 shrink-0" />
+                  {:else}
+                    <XCircle size={11} class="text-rose-400 mt-0.5 shrink-0" />
+                  {/if}
+                  <div class="flex flex-col">
+                    <span class="text-slate-200 font-medium">{rule.name}</span>
+                    {#if rule.failureMessage}
+                      <span class="text-[8px] text-slate-400">{rule.failureMessage}</span>
+                    {/if}
+                  </div>
+                </div>
+                <span class="text-[9px] font-bold shrink-0 {rule.passed ? 'text-emerald-400' : 'text-rose-400'}">
+                  {rule.passed ? 'PASS' : 'FAIL'}
+                </span>
+              </div>
+            {/each}
+          </div>
+        {/if}
+
+        <!-- Historical Regression Trend Sparkline -->
+        {#if trend && trend.history && trend.history.length > 1}
+          {@const pts = trend.history.map((h, i) => {
+            const x = 5 + (i / Math.max(1, trend.history.length - 1)) * 190;
+            const y = 20 - (h.fitnessScore * 16);
+            return { x, y, score: h.fitnessScore, label: h.label };
+          })}
+          <div class="pt-2 border-t border-slate-800/80 space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span class="flex items-center gap-1">
+                <TrendingUp size={11} class={trend.trendDirection === 'IMPROVING' ? 'text-emerald-400' : trend.trendDirection === 'DEGRADING' ? 'text-rose-400' : 'text-slate-400'} />
+                Trend: <strong class="{trend.trendDirection === 'IMPROVING' ? 'text-emerald-300' : trend.trendDirection === 'DEGRADING' ? 'text-rose-300' : 'text-slate-300'}">{trend.trendDirection}</strong>
+              </span>
+              <span class="text-[9px] font-mono text-slate-500">
+                {trend.scoreDelta >= 0 ? `+${(trend.scoreDelta * 100).toFixed(0)}%` : `${(trend.scoreDelta * 100).toFixed(0)}%`}
+              </span>
+            </div>
+            
+            <!-- SVG Sparkline -->
+            <div class="h-9 w-full bg-slate-900/80 rounded p-1 flex items-center justify-center">
+              <svg class="w-full h-full overflow-visible" viewBox="0 0 200 24" preserveAspectRatio="none">
+                <polyline
+                  fill="none"
+                  stroke={trend.trendDirection === 'DEGRADING' ? '#fb7185' : '#34d399'}
+                  stroke-width="1.75"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  points={pts.map(p => `${p.x},${p.y}`).join(' ')}
+                />
+                {#each pts as p}
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r="2.5"
+                    class="fill-slate-950 stroke-emerald-400 hover:scale-150 transition-transform"
+                    stroke-width="1.5"
+                  >
+                    <title>{p.label}: {(p.score * 100).toFixed(0)}%</title>
+                  </circle>
+                {/each}
+              </svg>
+            </div>
           </div>
         {/if}
       </div>

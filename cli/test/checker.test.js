@@ -12,7 +12,8 @@ import {
   detectPackageCycles,
   calculateScreamingMetric,
   extractFeatureToken,
-  suggestFeatureClusters
+  suggestFeatureClusters,
+  calculateArchitectureFitness
 } from '../src/checker.js';
 
 test('loadProjectPolicy detects .archlens/policy.json', (t) => {
@@ -377,4 +378,69 @@ test('checkArchitecture with suggestFeatures flag returns refactoring proposal',
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('calculateArchitectureFitness calculates composite fitness score and grade', () => {
+  const perfect = calculateArchitectureFitness({
+    violationsCount: 0,
+    cyclesCount: 0,
+    screamingScore: 0.90,
+    maxDistance: 0.10
+  });
+
+  assert.equal(perfect.overallPassed, true);
+  assert.equal(perfect.grade, 'A');
+  assert.ok(perfect.fitnessScore >= 0.90);
+  assert.equal(perfect.totalRuleCount, 4);
+  assert.equal(perfect.passedRuleCount, 4);
+
+  const failingViolations = calculateArchitectureFitness({
+    violationsCount: 3,
+    cyclesCount: 0,
+    screamingScore: 0.85,
+    maxDistance: 0.12
+  });
+
+  assert.equal(failingViolations.overallPassed, false);
+  const concentric = failingViolations.rules.find((r) => r.id === 'CONCENTRIC_DEPENDENCY_RULE');
+  assert.equal(concentric.passed, false);
+  assert.equal(concentric.actualValue, 3);
+});
+
+test('checkArchitecture enforces fitnessThreshold in options', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-check-fitness-'));
+  try {
+    const archlensDir = path.join(tmpDir, '.archlens');
+    const srcDir = path.join(tmpDir, 'src');
+    const domainDir = path.join(srcDir, 'domain');
+
+    fs.mkdirSync(archlensDir, { recursive: true });
+    fs.mkdirSync(domainDir, { recursive: true });
+
+    const policy = {
+      title: 'Clean App',
+      src: 'src',
+      order: ['domain'],
+      levels: [['domain']]
+    };
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(policy), 'utf8');
+    fs.writeFileSync(
+      path.join(domainDir, 'Order.java'),
+      'package domain;\npublic class Order {}\n',
+      'utf8'
+    );
+
+    // Pass with 0.80 threshold
+    const passResult = await checkArchitecture(tmpDir, { fitnessThreshold: 0.80 });
+    assert.ok(passResult.fitness);
+    assert.equal(passResult.passed, true);
+    assert.ok(passResult.fitness.fitnessScore >= 0.80);
+
+    // Fail with impossible 1.05 threshold
+    const failResult = await checkArchitecture(tmpDir, { fitnessThreshold: 1.05 });
+    assert.equal(failResult.passed, false);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 

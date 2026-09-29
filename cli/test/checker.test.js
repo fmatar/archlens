@@ -10,7 +10,9 @@ import {
   generateSarifReport,
   generateJsonReport,
   detectPackageCycles,
-  calculateScreamingMetric
+  calculateScreamingMetric,
+  extractFeatureToken,
+  suggestFeatureClusters
 } from '../src/checker.js';
 
 test('loadProjectPolicy detects .archlens/policy.json', (t) => {
@@ -291,3 +293,88 @@ test('checkArchitecture enforces screamingThreshold and produces ARCH003 in SARI
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('extractFeatureToken correctly extracts domain feature names from technical class names', () => {
+  assert.equal(extractFeatureToken('OrderController'), 'Order');
+  assert.equal(extractFeatureToken('OrderService'), 'Order');
+  assert.equal(extractFeatureToken('OrderRepository'), 'Order');
+  assert.equal(extractFeatureToken('PostgresOrderRepository'), 'Order');
+  assert.equal(extractFeatureToken('InvoiceResource'), 'Invoice');
+  assert.equal(extractFeatureToken('GlobalDateHelper'), 'GlobalDate');
+  assert.equal(extractFeatureToken('Base'), null);
+});
+
+test('suggestFeatureClusters proposes cohesive domain packages and calculates SAS gain', () => {
+  const packages = ['com.app.controllers', 'com.app.services', 'com.app.repositories'];
+  const sourceFiles = [
+    '/root/src/com/app/controllers/OrderController.java',
+    '/root/src/com/app/services/OrderService.java',
+    '/root/src/com/app/repositories/OrderRepository.java',
+    '/root/src/com/app/controllers/InvoiceController.java',
+    '/root/src/com/app/services/InvoiceService.java'
+  ];
+
+  const proposal = suggestFeatureClusters(packages, sourceFiles);
+  assert.equal(proposal.currentScore, 0.0);
+  assert.equal(proposal.currentClassification, 'PACKAGE_BY_LAYER');
+  assert.equal(proposal.projectedScore, 1.0);
+  assert.equal(proposal.projectedClassification, 'PACKAGE_BY_FEATURE');
+  assert.equal(proposal.clusters.length, 2);
+
+  const orderCluster = proposal.clusters.find((c) => c.featureName === 'Order');
+  assert.ok(orderCluster);
+  assert.equal(orderCluster.proposedPackageName, 'com.app.order');
+  assert.equal(orderCluster.classCount, 3);
+  assert.deepEqual(orderCluster.classNames.sort(), ['OrderController', 'OrderRepository', 'OrderService']);
+
+  const invoiceCluster = proposal.clusters.find((c) => c.featureName === 'Invoice');
+  assert.ok(invoiceCluster);
+  assert.equal(invoiceCluster.proposedPackageName, 'com.app.invoice');
+  assert.equal(invoiceCluster.classCount, 2);
+
+  assert.equal(proposal.stagedClassMoves['OrderController'], 'com.app.order');
+  assert.equal(proposal.stagedClassMoves['InvoiceService'], 'com.app.invoice');
+});
+
+test('checkArchitecture with suggestFeatures flag returns refactoring proposal', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-check-suggest-'));
+  try {
+    const archlensDir = path.join(tmpDir, '.archlens');
+    const srcDir = path.join(tmpDir, 'src');
+    const controllersDir = path.join(srcDir, 'controllers');
+    const servicesDir = path.join(srcDir, 'services');
+
+    fs.mkdirSync(archlensDir, { recursive: true });
+    fs.mkdirSync(controllersDir, { recursive: true });
+    fs.mkdirSync(servicesDir, { recursive: true });
+
+    const policy = {
+      title: 'Layered App',
+      src: 'src',
+      order: ['controllers', 'services'],
+      levels: [['controllers'], ['services']]
+    };
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(policy), 'utf8');
+
+    fs.writeFileSync(
+      path.join(controllersDir, 'OrderController.java'),
+      'package controllers;\npublic class OrderController {}\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(servicesDir, 'OrderService.java'),
+      'package services;\npublic class OrderService {}\n',
+      'utf8'
+    );
+
+    const result = await checkArchitecture(tmpDir, { suggestFeatures: true });
+    assert.ok(result.featureClusters);
+    assert.equal(result.featureClusters.clusters.length, 1);
+    assert.equal(result.featureClusters.clusters[0].featureName, 'Order');
+    assert.equal(result.featureClusters.clusters[0].proposedPackageName, 'order');
+    assert.equal(result.featureClusters.projectedScore, 1.0);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+

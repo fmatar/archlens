@@ -83,6 +83,24 @@ export interface ScreamingMetric {
   frameworkGravityWarnings: string[];
 }
 
+export interface FeatureCluster {
+  featureName: string;
+  proposedPackageName: string;
+  classNames: string[];
+  sourcePackages: string[];
+  classCount: number;
+}
+
+export interface ScreamingMigrationProposal {
+  currentScore: number;
+  projectedScore: number;
+  currentClassification: string;
+  projectedClassification: string;
+  clusters: FeatureCluster[];
+  stagedClassMoves: Record<string, string>;
+  unclusteredClasses: string[];
+}
+
 export interface ArchitectureGraph {
   title: string;
   isProposal: boolean;

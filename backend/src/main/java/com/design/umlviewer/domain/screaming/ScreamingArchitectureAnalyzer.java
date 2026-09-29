@@ -1,10 +1,12 @@
 package com.design.umlviewer.domain.screaming;
 
+import com.design.umlviewer.domain.model.ArchitectureGraph;
 import com.design.umlviewer.domain.model.ClassNode;
 import com.design.umlviewer.domain.model.ComponentNode;
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.domain.model.ScreamingMetric;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -19,7 +21,7 @@ import java.util.Set;
  */
 public class ScreamingArchitectureAnalyzer {
 
-  private static final Set<String> TECHNICAL_MARKERS =
+  public static final Set<String> TECHNICAL_MARKERS =
       Set.of(
           "controller",
           "controllers",
@@ -63,6 +65,13 @@ public class ScreamingArchitectureAnalyzer {
           "com.google.inject.",
           "org.hibernate.",
           "io.micronaut.");
+
+  public ScreamingMetric analyze(ArchitectureGraph graph) {
+    if (graph == null) {
+      return ScreamingMetric.empty();
+    }
+    return analyze(graph.components(), graph.edges());
+  }
 
   public ScreamingMetric analyze(List<ComponentNode> components, List<DependencyEdge> edges) {
     if (components == null || components.isEmpty()) {
@@ -142,17 +151,66 @@ public class ScreamingArchitectureAnalyzer {
         hotspotsList);
   }
 
-  private boolean isTechnical(String fullId, String leaf) {
-    if (TECHNICAL_MARKERS.contains(leaf) || TECHNICAL_MARKERS.contains(fullId)) {
+  public static boolean isTechnicalPackage(String packageName) {
+    if (packageName == null || packageName.isBlank()) {
+      return false;
+    }
+    String id = packageName.toLowerCase(Locale.ROOT);
+    String leaf = id.contains(".") ? id.substring(id.lastIndexOf('.') + 1) : id;
+    if (TECHNICAL_MARKERS.contains(leaf) || TECHNICAL_MARKERS.contains(id)) {
       return true;
     }
-    String[] parts = fullId.split("\\.");
+    String[] parts = id.split("\\.");
     for (String part : parts) {
       if (TECHNICAL_MARKERS.contains(part)) {
         return true;
       }
     }
     return false;
+  }
+
+  public static ScreamingMetric calculateScore(List<String> packageNames) {
+    if (packageNames == null || packageNames.isEmpty()) {
+      return ScreamingMetric.empty();
+    }
+    List<String> domainPackages = new ArrayList<>();
+    List<String> technicalPackages = new ArrayList<>();
+    for (String pkg : packageNames) {
+      if (isTechnicalPackage(pkg)) {
+        technicalPackages.add(pkg);
+      } else {
+        domainPackages.add(pkg);
+      }
+    }
+    int domainCount = domainPackages.size();
+    int techCount = technicalPackages.size();
+    int totalCount = domainCount + techCount;
+    if (totalCount == 0) {
+      return ScreamingMetric.empty();
+    }
+    double rawRatio = (double) domainCount / totalCount;
+    double roundedScore = Math.round(rawRatio * 100.0) / 100.0;
+    String classification;
+    if (roundedScore >= 0.75) {
+      classification = "PACKAGE_BY_FEATURE";
+    } else if (roundedScore >= 0.40) {
+      classification = "HYBRID";
+    } else {
+      classification = "PACKAGE_BY_LAYER";
+    }
+    return new ScreamingMetric(
+        roundedScore,
+        domainCount,
+        techCount,
+        totalCount,
+        classification,
+        domainPackages,
+        technicalPackages,
+        Collections.emptyList());
+  }
+
+  private boolean isTechnical(String fullId, String leaf) {
+    return isTechnicalPackage(fullId) || TECHNICAL_MARKERS.contains(leaf);
   }
 
   private boolean isFrameworkTarget(String target) {

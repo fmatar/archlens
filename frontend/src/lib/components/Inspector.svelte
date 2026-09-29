@@ -372,6 +372,57 @@
             {/each}
           </div>
         {/if}
+
+        <!-- Package-by-Feature Migration Wizard Assistant -->
+        {#if sm.technicalPackageCount > 0}
+          <div class="pt-2 border-t border-slate-800/80 space-y-2">
+            <button
+              type="button"
+              onclick={async () => {
+                const prop = await diagramStore.loadScreamingMigrationProposal();
+                if (prop) {
+                  diagramStore.applyScreamingMigrationToSandbox(prop);
+                }
+              }}
+              disabled={diagramStore.isLoadingScreamingMigration}
+              class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-gradient-to-r from-amber-600/30 to-purple-600/30 hover:from-amber-600/50 hover:to-purple-600/50 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-semibold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50"
+              title="Cluster classes across technical layers into package-by-feature domain slices (Uncle Bob Ch. 21)"
+            >
+              {#if diagramStore.isLoadingScreamingMigration}
+                <RefreshCw size={11} class="animate-spin text-amber-400" />
+                <span>Synthesizing Features...</span>
+              {:else}
+                <Sparkles size={11} class="text-amber-400" />
+                <span>Migrate to Features 🪄</span>
+              {/if}
+            </button>
+
+            {#if diagramStore.screamingMigrationProposal}
+              {@const prop = diagramStore.screamingMigrationProposal}
+              <div class="p-2 rounded bg-slate-900/90 border border-amber-500/30 text-[9px] font-mono space-y-1">
+                <div class="flex items-center justify-between text-amber-300 font-semibold">
+                  <span>Projected SAS Gain</span>
+                  <span class="text-emerald-400">{(prop.currentScore * 100).toFixed(0)}% &rarr; {(prop.projectedScore * 100).toFixed(0)}%</span>
+                </div>
+                <div class="text-slate-400">
+                  {prop.clusters.length} domain feature clusters ({Object.keys(prop.stagedClassMoves).length} staged moves)
+                </div>
+                {#if prop.clusters.length > 0}
+                  <div class="space-y-0.5 pt-1 border-t border-slate-800 max-h-24 overflow-y-auto pr-0.5">
+                    {#each prop.clusters as c}
+                      <div class="flex items-center justify-between text-slate-300">
+                        <span class="truncate text-amber-200 font-medium" title={c.proposedPackageName}>
+                          &bull; {c.featureName}
+                        </span>
+                        <span class="text-slate-500 text-[8px]">{c.classCount} classes</span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
       </div>
     {/if}
 

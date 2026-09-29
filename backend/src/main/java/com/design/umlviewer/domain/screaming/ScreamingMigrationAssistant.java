@@ -261,7 +261,7 @@ public class ScreamingMigrationAssistant {
     String[] partsB = b.split("\\.");
     List<String> matched = new ArrayList<>();
     for (int i = 0; i < Math.min(partsA.length, partsB.length); i++) {
-      if (partsA[i].toLowerCase(Locale.ROOT).equals(partsB[i].toLowerCase(Locale.ROOT))) {
+      if (partsA[i].equals(partsB[i])) {
         matched.add(partsA[i]);
       } else {
         break;

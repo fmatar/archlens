@@ -73,7 +73,7 @@ public class ScreamingMigrationAssistant {
 
     Set<String> technicalPkgSet =
         currentMetric.technicalPackages().stream()
-            .map(String::toLowerCase)
+            .map(s -> s.toLowerCase(Locale.ROOT))
             .collect(Collectors.toSet());
 
     if (technicalPkgSet.isEmpty()) {
@@ -92,12 +92,14 @@ public class ScreamingMigrationAssistant {
 
     for (ComponentNode comp : graph.components()) {
       for (ClassNode cls : comp.classes()) {
-        String pkgLower = cls.packageName() != null ? cls.packageName().toLowerCase() : "";
+        String pkgLower =
+            cls.packageName() != null ? cls.packageName().toLowerCase(Locale.ROOT) : "";
+        String labelLower = comp.label() != null ? comp.label().toLowerCase(Locale.ROOT) : "";
         boolean isTech =
             technicalPkgSet.contains(pkgLower)
-                || technicalPkgSet.contains(comp.label().toLowerCase())
+                || technicalPkgSet.contains(labelLower)
                 || ScreamingArchitectureAnalyzer.isTechnicalPackage(pkgLower)
-                || ScreamingArchitectureAnalyzer.isTechnicalPackage(comp.label());
+                || ScreamingArchitectureAnalyzer.isTechnicalPackage(labelLower);
 
         if (isTech) {
           technicalClasses.add(cls);
@@ -129,9 +131,11 @@ public class ScreamingMigrationAssistant {
 
       // Valid cluster: at least 2 classes or spanning at least 2 distinct technical packages
       if (classes.size() >= 2 || sourcePkgs.size() >= 2) {
-        String featureName = Character.toUpperCase(token.charAt(0)) + token.substring(1);
+        String featureName = token.substring(0, 1).toUpperCase(Locale.ROOT) + token.substring(1);
         String proposedPackage =
-            commonPrefix.isEmpty() ? token.toLowerCase() : commonPrefix + "." + token.toLowerCase();
+            commonPrefix.isEmpty()
+                ? token.toLowerCase(Locale.ROOT)
+                : commonPrefix + "." + token.toLowerCase(Locale.ROOT);
 
         List<String> classNames = classes.stream().map(ClassNode::name).toList();
         List<String> sourcePackageList = new ArrayList<>(sourcePkgs);
@@ -257,7 +261,7 @@ public class ScreamingMigrationAssistant {
     String[] partsB = b.split("\\.");
     List<String> matched = new ArrayList<>();
     for (int i = 0; i < Math.min(partsA.length, partsB.length); i++) {
-      if (partsA[i].equalsIgnoreCase(partsB[i])) {
+      if (partsA[i].toLowerCase(Locale.ROOT).equals(partsB[i].toLowerCase(Locale.ROOT))) {
         matched.add(partsA[i]);
       } else {
         break;

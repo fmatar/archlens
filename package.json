@@ -1,6 +1,6 @@
 {
   "name": "@fmatar/archlens",
-  "version": "0.0.1-Alpha-15",
+  "version": "0.1.0-Beta-01",
   "description": "Cross-platform CLI and installer for Archlens Clean Architecture governance policies and AI assistant skills",
   "type": "module",
   "bin": {

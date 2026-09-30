@@ -170,22 +170,22 @@
       {/if}
 
       <!-- Navigation Tabs -->
-      <div class="px-6 pt-3 border-b border-slate-800 flex items-center gap-2 bg-slate-900/50">
+      <div class="px-6 pt-3 pb-2 border-b border-slate-800 flex items-center gap-2 bg-slate-900/50">
         <button
           onclick={() => activeTab = 'port'}
-          class="px-3 py-1.5 text-xs font-mono font-medium rounded-t-lg transition-colors border-b-2 cursor-pointer {activeTab === 'port' ? 'border-rose-500 text-rose-300 bg-slate-800/60' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+          class="px-3 py-1.5 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer {activeTab === 'port' ? 'bg-slate-800 text-rose-300 border border-slate-700 shadow-xs' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'}"
         >
           1. Synthesized Port
         </button>
         <button
           onclick={() => activeTab = 'refactor'}
-          class="px-3 py-1.5 text-xs font-mono font-medium rounded-t-lg transition-colors border-b-2 cursor-pointer {activeTab === 'refactor' ? 'border-rose-500 text-rose-300 bg-slate-800/60' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+          class="px-3 py-1.5 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer {activeTab === 'refactor' ? 'bg-slate-800 text-rose-300 border border-slate-700 shadow-xs' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'}"
         >
           2. Adapter & Caller Diff
         </button>
         <button
           onclick={() => activeTab = 'prompt'}
-          class="px-3 py-1.5 text-xs font-mono font-medium rounded-t-lg transition-colors border-b-2 cursor-pointer {activeTab === 'prompt' ? 'border-rose-500 text-rose-300 bg-slate-800/60' : 'border-transparent text-slate-400 hover:text-slate-200'}"
+          class="px-3 py-1.5 text-xs font-mono font-medium rounded-md transition-colors cursor-pointer {activeTab === 'prompt' ? 'bg-slate-800 text-rose-300 border border-slate-700 shadow-xs' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'}"
         >
           3. Surgical LLM Prompt
         </button>
@@ -289,7 +289,7 @@
         <div>
           {#if notice}
             <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
-              <CheckCircle2 size={14} class="animate-bounce" />
+              <CheckCircle2 size={14} class="animate-pulse" />
               <span>{notice}</span>
             </div>
           {:else}

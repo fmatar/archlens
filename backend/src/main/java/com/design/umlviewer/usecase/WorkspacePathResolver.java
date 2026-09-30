@@ -49,10 +49,21 @@ public final class WorkspacePathResolver {
         }
       }
     }
-    if (normalized.equals(".")
-        && !new File(".", "pom.xml").exists()
-        && new File(labsPath, "archlens/pom.xml").exists()) {
-      return labsPath + "/archlens";
+    if (normalized.equals(".")) {
+      if (!new File(".", ".archlens/policy.json").exists()
+          && !new File(".", ".uml-viewer/policy.json").exists()) {
+        if (new File("..", ".archlens/policy.json").exists()
+            || new File("..", ".uml-viewer/policy.json").exists()) {
+          try {
+            return new File("..").getCanonicalPath();
+          } catch (IOException e) {
+            return new File("..").getAbsolutePath();
+          }
+        }
+      }
+      if (!new File(".", "pom.xml").exists() && new File(labsPath, "archlens/pom.xml").exists()) {
+        return labsPath + "/archlens";
+      }
     }
     // Expand home directory shorthand ~
     if (normalized.startsWith("~")) {

@@ -64,6 +64,27 @@ test('detectSourceRoot finds existing source candidate directories', () => {
   }
 });
 
+test('detectSourceRoot discovers nested multi-module source roots dynamically', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-multimodule-test-'));
+
+  try {
+    const apiSrc = path.join(tmpDir, 'backend', 'api-service', 'src', 'main', 'java');
+    const commonSrc = path.join(tmpDir, 'backend', 'common-lib', 'src', 'main', 'java');
+    fs.mkdirSync(apiSrc, { recursive: true });
+    fs.mkdirSync(commonSrc, { recursive: true });
+
+    // Put more files in api-service
+    fs.writeFileSync(path.join(apiSrc, 'App.java'), 'public class App {}');
+    fs.writeFileSync(path.join(apiSrc, 'Controller.java'), 'public class Controller {}');
+    fs.writeFileSync(path.join(commonSrc, 'Util.java'), 'public class Util {}');
+
+    const detected = detectSourceRoot(tmpDir, 'java');
+    assert.equal(detected, 'backend/api-service/src/main/java');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 test('findCommonPackagePrefix finds common prefix across Java source files', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-pkg-test-'));
 

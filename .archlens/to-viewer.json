@@ -1,4 +1,15 @@
 {
-  "nextId": 1,
-  "queue": []
+  "nextId": 2,
+  "queue": [
+    {
+      "id": 1,
+      "op": "ACK",
+      "target": { "id": "project" },
+      "payload": {
+        "status": "COMPLETED",
+        "commandId": 52,
+        "message": "AST re-indexed and validated against policy."
+      }
+    }
+  ]
 }

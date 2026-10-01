@@ -659,20 +659,30 @@ class DiagramState {
     }
   }
 
+  private liveReloadDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
   async handleLiveGraphUpdate(payload: { path?: string; type?: string; timestamp?: number }) {
-    const timeStr = new Date().toTimeString().split(' ')[0];
-    this.lastLiveSyncTime = timeStr;
-    const fileLabel = payload.path ? payload.path.split('/').pop() : 'source file';
+    if (this.liveReloadDebounceTimer) {
+      clearTimeout(this.liveReloadDebounceTimer);
+    }
+    this.liveReloadDebounceTimer = setTimeout(async () => {
+      this.liveReloadDebounceTimer = null;
+      if (this.isLoading) return;
 
-    this.addTelemetryEvent(
-      'SUCCESS',
-      `Live Reload: detected change in ${fileLabel}`,
-      `Auto-synchronized AST and recalculated Clean Architecture metrics at ${timeStr}`
-    );
+      const timeStr = new Date().toTimeString().split(' ')[0];
+      this.lastLiveSyncTime = timeStr;
+      const fileLabel = payload.path ? payload.path.split('/').pop() : 'source file';
 
-    // Auto-reload active graph and policy
-    await this.loadPolicy();
-    await this.loadGraph(this.activeProposalId);
+      this.addTelemetryEvent(
+        'SUCCESS',
+        `Live Reload: detected change in ${fileLabel}`,
+        `Auto-synchronized AST and recalculated Clean Architecture metrics at ${timeStr}`
+      );
+
+      // Auto-reload active graph and policy
+      await this.loadPolicy();
+      await this.loadGraph(this.activeProposalId);
+    }, 300);
   }
 
   async savePolicy(updatedPolicy: ArchitecturePolicy) {

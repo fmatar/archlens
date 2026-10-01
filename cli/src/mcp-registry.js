@@ -94,26 +94,37 @@ export function getAntigravityInstructions() {
   return `# Archlens Clean Architecture MCP Server Instructions
 
 ## Overview
-Archlens provides automated Clean Architecture governance and static structural analysis.
-It enforces the Dependency Rule: source code dependencies must point inward toward higher-level policies.
+Archlens provides automated Clean Architecture governance, static structural analysis, and autonomous refactoring protocols.
+It strictly enforces Uncle Bob's Dependency Rule: source code dependencies must point inward toward higher-level policies.
 
 ### Concentric Layer Hierarchy:
-1. **Domain Core (L0)**: Pure business entities and primitives. Zero outward imports.
-2. **Application (L1)**: Use cases and business orchestrations. Depends only on Domain Core.
-3. **Adapters (L2)**: Gateways, presenters, and controllers converting between UI/database formats and application models.
-4. **Infrastructure (L3)**: Web frameworks, databases, network libraries, UI rendering, CLI entrypoints.
+1. **Domain Core (L0)**: Pure business entities, primitives, and domain logic. Zero outward imports.
+2. **Application (L1)**: Use cases, interaction orchestrators, and interface ports. Depends only on Domain Core.
+3. **Adapters (L2)**: Gateways, presenters, REST resources, controllers, and repository implementations.
+4. **Infrastructure (L3)**: Web frameworks, persistence engines, database drivers, third-party libraries, CLI entrypoints.
 
-## Available Tools:
-- \`inspectArchitecture\`: Analyzes codebase rings, computes instability metrics, and reports illegal outward dependency breaches.
-- \`exportLlmDossier\`: Returns a structured refactoring dossier with concrete Dependency Inversion Principle (DIP) interface port specifications.
-- \`listSnapshots\`: Lists historical Git release tags and pre-compiled snapshot files.
-- \`getSnapshot\`: Retrieves architectural graph models for a specific historical release tag.
+## Governed Invariants & Drifts:
+- **Concentric Dependency Rule**: Zero outward dependencies ($L_i \nrightarrow L_j$ where $i < j$).
+- **Acyclic Dependencies Principle (ADP)**: Component dependencies must form a Directed Acyclic Graph (zero package cycles).
+- **Screaming Architecture Invariant (SAS)**: Packaging must scream business use cases rather than framework technology (score >= 0.70).
+- **Main Sequence Balance Invariant**: Distance from Main Sequence $D = |A + I - 1| \le 0.35$ avoiding Zones of Pain and Uselessness.
+- **Architectural Fitness Index (AFI)**: Composite fitness score (0-100%) and letter grade (A-F) tracking regression trends.
 
-## Refactoring Guidelines:
+## Available MCP Tools:
+- \`exportLlmDossier\`: Primary tool to diagnose architectural drift and generate copy-ready LLM refactoring instructions with Dependency Inversion Principle (DIP) interface port prescriptions. Accepts \`{ "projectRoot": "." }\`.
+- \`inspectArchitecture\`: Returns full structural JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics.
+- \`listSnapshots\`: Lists historical architecture release snapshots in \`.archlens/snapshots/\` and Git release tags.
+- \`getSnapshot\`: Retrieves architectural graph models for a specific historical release tag or snapshot ID.
+
+## Available MCP Resources:
+- \`archlens://llms.txt\`: Canonical reference guide, architectural rules, CLI commands, and refactoring protocols.
+
+## Refactoring Guidelines (Remediating Architectural Drift):
 Whenever outward breaches are detected from inner layers (Domain Core or Application) to outer layers (Adapters or Infrastructure):
-1. Create an interface port inside the inner layer declaring required contract operations.
-2. Implement the interface inside the outer layer.
-3. Inject the outer implementation into the inner layer using constructor or dependency injection.
+1. **Declare Port**: Create an interface port inside the inner layer (\`domain/ports/\` or \`application/ports/\`) declaring required operations.
+2. **Implement Port**: Implement the interface inside the outer layer (\`infrastructure/\` or \`adapters/\`).
+3. **Invert Injection**: Inject the outer implementation into the inner layer using constructor or dependency injection.
+4. **Verify**: Run \`npx @fmatar/archlens-skill check --detect-cycles\` to verify zero violations.
 `.trim();
 }
 

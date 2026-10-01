@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@fmatar/archlens-skill",
+        "mcp"
+      ],
+      "env": {
+        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}

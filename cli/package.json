@@ -1,6 +1,6 @@
 {
   "name": "@fmatar/archlens-skill",
-  "version": "0.1.0-Beta-01",
+  "version": "0.1.0-Beta-02",
   "description": "Cross-platform CLI and installer for Archlens Clean Architecture governance policies and AI assistant skills",
   "main": "src/installer.js",
   "type": "module",
@@ -13,7 +13,8 @@
     "src",
     "skills",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "llms.txt"
   ],
   "engines": {
     "node": ">=18.0.0"

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-02] - 2026-10-01
+
+### Added
+- **Canonical `llms.txt` Reference Specification**: Authored root `llms.txt` according to the llmstxt.org standard, providing AI agents and LLMs with a high-density, authoritative reference covering Clean Architecture rings, governed invariants, CLI recipes, MCP capabilities, and DIP refactoring protocols.
+- **Model Context Protocol (MCP) Resources Support**: Extended `mcp-server.js` with `resources/list` and `resources/read` handlers, exposing `archlens://llms.txt` directly as an MCP resource for AI clients (Antigravity, Claude Code, Cursor).
+- **Modernized MCP Agent Instructions**: Updated `getAntigravityInstructions()` in `mcp-registry.js` and synced `instructions.md` across registered AI assistant environments.
+- **CLI Package Portability**: Bundled `llms.txt` into `@fmatar/archlens-skill` npm distribution package.
+
+### Fixed
+- **CI/CD NPM Package Publication**: Fixed tarball destination path in `.github/workflows/release.yml` (`./cli/...`) to prevent npm from interpreting tarball paths as GitHub git repository slugs.
+
 ## [0.1.0-Beta-01] - 2026-09-30
 
 ### 🎉 Milestone: Graduation to Beta Release

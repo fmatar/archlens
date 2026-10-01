@@ -6,6 +6,8 @@ import * as os from 'node:os';
 
 import {
   getMcpToolsList,
+  getMcpResourcesList,
+  readMcpResource,
   handleMcpMessage,
   executeToolCall
 } from '../src/mcp-server.js';
@@ -27,7 +29,25 @@ test('getMcpToolsList formats tools conforming to MCP specification', () => {
   }
 });
 
-test('handleMcpMessage responds to initialize', async () => {
+test('getMcpResourcesList defines canonical llms.txt resource', () => {
+  const resources = getMcpResourcesList();
+  assert.equal(resources.length, 1);
+  assert.equal(resources[0].uri, 'archlens://llms.txt');
+  assert.equal(resources[0].mimeType, 'text/markdown');
+  assert.ok(resources[0].description.includes('Clean Architecture'));
+});
+
+test('readMcpResource returns markdown content of llms.txt', () => {
+  const res = readMcpResource('archlens://llms.txt');
+  assert.ok(res.contents);
+  assert.equal(res.contents.length, 1);
+  assert.equal(res.contents[0].uri, 'archlens://llms.txt');
+  assert.equal(res.contents[0].mimeType, 'text/markdown');
+  assert.ok(res.contents[0].text.includes('# Archlens'));
+  assert.ok(res.contents[0].text.includes('Clean Architecture'));
+});
+
+test('handleMcpMessage responds to initialize with tools and resources capabilities', async () => {
   const req = {
     jsonrpc: '2.0',
     id: 1,
@@ -41,6 +61,8 @@ test('handleMcpMessage responds to initialize', async () => {
   assert.equal(resp.result.protocolVersion, '2024-11-05');
   assert.equal(resp.result.serverInfo.name, 'archlens-mcp-server');
   assert.equal(resp.result.serverInfo.version, '1.2.3');
+  assert.ok(resp.result.capabilities.tools);
+  assert.ok(resp.result.capabilities.resources);
 });
 
 test('handleMcpMessage responds to ping', async () => {
@@ -56,6 +78,40 @@ test('handleMcpMessage responds to tools/list', async () => {
   const resp = await handleMcpMessage(req);
   assert.equal(resp.id, 3);
   assert.equal(resp.result.tools.length, 4);
+});
+
+test('handleMcpMessage responds to resources/list', async () => {
+  const req = { jsonrpc: '2.0', id: 4, method: 'resources/list' };
+  const resp = await handleMcpMessage(req);
+  assert.equal(resp.id, 4);
+  assert.equal(resp.result.resources.length, 1);
+  assert.equal(resp.result.resources[0].uri, 'archlens://llms.txt');
+});
+
+test('handleMcpMessage responds to resources/read', async () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 5,
+    method: 'resources/read',
+    params: { uri: 'archlens://llms.txt' }
+  };
+  const resp = await handleMcpMessage(req);
+  assert.equal(resp.id, 5);
+  assert.ok(resp.result.contents);
+  assert.equal(resp.result.contents[0].uri, 'archlens://llms.txt');
+  assert.ok(resp.result.contents[0].text.includes('# Archlens'));
+});
+
+test('handleMcpMessage returns error for unknown resource uri', async () => {
+  const req = {
+    jsonrpc: '2.0',
+    id: 6,
+    method: 'resources/read',
+    params: { uri: 'archlens://unknown' }
+  };
+  const resp = await handleMcpMessage(req);
+  assert.equal(resp.id, 6);
+  assert.equal(resp.error.code, -32002);
 });
 
 test('handleMcpMessage ignores notifications without error', async () => {

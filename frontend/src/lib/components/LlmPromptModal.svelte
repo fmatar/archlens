@@ -179,7 +179,7 @@
             <div class="h-28 bg-slate-900/60 rounded border border-slate-800"></div>
           </div>
         {:else}
-          <pre class="text-slate-200 leading-relaxed whitespace-pre-wrap break-words selection:bg-indigo-900 selection:text-white font-mono">{dossier}</pre>
+          <pre class="text-slate-200 leading-relaxed whitespace-pre-wrap break-words selection:bg-slate-700 selection:text-white font-mono">{dossier}</pre>
         {/if}
       </div>
 

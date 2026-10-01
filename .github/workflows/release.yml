@@ -124,7 +124,7 @@ jobs:
         id: pack
         run: |
           npm pack ./cli --pack-destination cli
-          TARBALL_PATH=$(ls cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
       - name: Publish to GitHub Packages

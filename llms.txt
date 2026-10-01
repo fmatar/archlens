@@ -1,0 +1,131 @@
+# Archlens
+
+> Dynamic Clean Architecture Governance Workbench, Automated Fitness Inspector & Autonomous Refactoring Companion.
+
+Archlens models software systems as concentric Clean Architecture rings, continuously audits codebase dependency flow, detects architectural drift (layer leaks, package cycles, technical packaging decay, distance from the main sequence), and prescribes concrete Dependency Inversion Principle (DIP) interface ports for automated refactoring.
+
+---
+
+## 🏛️ Clean Architecture Concentric Hierarchy
+
+Source code dependencies must point strictly inward toward higher-level policies (Uncle Bob's Dependency Rule):
+
+```
+[Level 3: Infrastructure / Web / DB / CLI / Frameworks]
+       │
+       ▼
+[Level 2: Adapters / Controllers / Presenters / Gateways / Repositories]
+       │
+       ▼
+[Level 1: Application / Use Cases / Interaction Orchestrators / Ports]
+       │
+       ▼
+[Level 0: Domain Core / Entities / Value Objects / Domain Logic]
+```
+
+- **Level 0: Domain Core** (`domain.model`, `domain.entity`, `core.domain`):
+  Pure business rules, primitives, entities, and domain logic. Zero outward imports or dependencies on frameworks, databases, network libraries, or UI.
+- **Level 1: Application** (`usecase`, `application`, `core.ports`, `domain.ports`):
+  Application workflows, use cases, and business orchestration. Depends only on Level 0 (Domain Core). Declares outbound interface ports.
+- **Level 2: Adapters** (`resource`, `controller`, `presenter`, `gateway`, `repository.impl`):
+  Translates external delivery protocols (HTTP, REST, CLI, gRPC) and storage models to application formats. Implements application/domain ports.
+- **Level 3: Infrastructure** (`infrastructure`, `config`, `persistence.entity`, `framework`):
+  Framework drivers (Quarkus, Spring, Express), database engines, third-party network clients, and entrypoint bootstrap wiring.
+
+---
+
+## 🔍 Governed Architectural Invariants & Drifts
+
+Archlens continuously evaluates five foundational architectural invariants:
+
+1. **Concentric Dependency Rule (Layer Drift)**:
+   - **Invariant**: Inner rings must never depend on outer rings ($L_i \nrightarrow L_j$ where $i < j$).
+   - **Remediation**: Apply Dependency Inversion Principle (DIP). Declare an interface port in $L_i$ and implement it in $L_j$.
+2. **Acyclic Dependencies Principle (ADP)**:
+   - **Invariant**: The component/package dependency structure must be a Directed Acyclic Graph (DAG) with zero cycles.
+   - **Remediation**: Break cycles using interface extraction or merging interdependent feature packages.
+3. **Screaming Architecture Invariant (SAS)**:
+   - **Invariant**: Systems should scream business domain use cases rather than framework technology (Uncle Bob Ch. 21).
+   - **Metric**: Screaming Architecture Score (SAS) from 0.0 to 1.0 (Feature vs Technical packaging). Minimum threshold: $\ge 0.70$.
+4. **Main Sequence Balance Invariant ($A, I, D$)**:
+   - **Invariant**: Components must remain in the balanced corridor avoiding the **Zone of Pain** (brittle, highly concrete, widely depended upon) and the **Zone of Uselessness** (abstract with no dependents).
+   - **Metric**: Normalized distance from Main Sequence: $D = |A + I - 1| \le 0.35$.
+5. **Architectural Fitness Index (AFI) & Trend Regression**:
+   - **Invariant**: Architecture fitness must remain stable or improve across releases.
+   - **Metric**: Composite AFI score (0–100%) and letter grade (A through F) tracking historical drift across Git release tags.
+
+---
+
+## ⚡ Command Line Interface (CLI)
+
+Archlens CLI requires zero external dependencies and runs cross-platform via Node.js / NPX:
+
+```bash
+# 1. Audit Codebase Conformance & Detect All Architectural Drifts:
+npx @fmatar/archlens-skill check
+npx @fmatar/archlens-skill check --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85
+npx @fmatar/archlens-skill check --format json
+npx @fmatar/archlens-skill check --format sarif -O arch-drift.sarif
+
+# 2. Export Actionable LLM Refactoring Prompt Dossier (with DIP Interface Prescriptions):
+npx @fmatar/archlens-skill prompt
+npx @fmatar/archlens-skill prompt --copy
+
+# 3. Launch Dynamic Visual Workbench (Auto-resurrects Docker container on demand):
+npx @fmatar/archlens-skill start --open
+
+# 4. Initialize or Synchronize Policy:
+npx @fmatar/archlens-skill init --yes
+npx @fmatar/archlens-skill update
+
+# 5. Model Context Protocol (MCP) Integration:
+npx @fmatar/archlens-skill --mcp      # Auto-configure Claude, Antigravity, Cursor manifests
+npx @fmatar/archlens-skill mcp        # Launch MCP stdio bridge server
+```
+
+---
+
+## 🤖 Model Context Protocol (MCP) Tools & Resources
+
+When Archlens is registered as an MCP server, AI assistants can query it using standard MCP primitives:
+
+### MCP Tools:
+| Tool Name | Parameters | Purpose |
+| :--- | :--- | :--- |
+| `exportLlmDossier` | `projectRoot` (default: `.`), `proposalId` | Diagnoses outward dependency breaches and outputs a Markdown refactoring prompt with concrete DIP interface port prescriptions. |
+| `inspectArchitecture` | `projectRoot` (default: `.`) | Returns full JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics. |
+| `listSnapshots` | `projectRoot` (default: `.`) | Lists historical architecture release snapshots in `.archlens/snapshots/` and Git release tags. |
+| `getSnapshot` | `snapshotId` (required), `projectRoot` | Retrieves the graph model of a specific historical snapshot or Git tag for temporal drift diffing. |
+
+### MCP Resources:
+| Resource URI | MIME Type | Description |
+| :--- | :--- | :--- |
+| `archlens://llms.txt` | `text/markdown` | This authoritative reference guide, Clean Architecture rules, CLI recipes, and refactoring protocols. |
+
+---
+
+## 🛠️ Step-by-Step Refactoring Protocol for LLMs
+
+When Archlens reports an illegal outward dependency breach (e.g. `domain/Order.java` imports `infrastructure/OrderRepository.java`):
+
+1. **Isolate Dependency**: Identify the methods called on the outer dependency by the inner class.
+2. **Declare Interface Port**:
+   - Location: Inside the inner layer (`domain/ports/` or `application/ports/`).
+   - Signature: Define an interface (e.g. `OrderRepositoryPort`) declaring only the domain-relevant contracts.
+3. **Implement Port in Outer Layer**:
+   - Make the outer class (e.g. `infrastructure/persistence/OrderRepository.java`) implement `OrderRepositoryPort`.
+4. **Invert Injection**:
+   - Inject `OrderRepositoryPort` into the inner class using constructor injection or framework dependency injection (`@Inject` / `@Autowired`).
+5. **Verify**:
+   - Run `npx @fmatar/archlens-skill check --detect-cycles` to confirm zero violations.
+   - Run the project test suite to verify zero functional regressions.
+
+---
+
+## 🔄 Dynamic Workbench Autonomous Companion Protocol
+
+When human architects interact with the Archlens visual workbench canvas (`http://localhost:8088`), tasks are dispatched via bidirectional mailbox IPC:
+- **Inbound queue (UI $\rightarrow$ Agent)**: `.archlens/to-agent.json`
+  - Operations: `REGEN` (recompile AST), `APPLY_PROPOSAL` (restructure packages), `REFRESH_CRAP`, `OMIT`.
+- **Outbound events (Agent $\rightarrow$ UI)**: `.archlens/to-viewer.json`
+  - Write completion events (e.g. `{"op": "REGEN_COMPLETE", "payload": {"status": "SUCCESS"}}`) to trigger hot-reload of the visual canvas via Server-Sent Events (SSE).

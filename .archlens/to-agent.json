@@ -1,5 +1,5 @@
 {
-  "nextId" : 52,
+  "nextId" : 53,
   "queue" : [ {
     "id" : 1,
     "op" : "REGEN",
@@ -452,6 +452,15 @@
     }
   }, {
     "id" : 51,
+    "op" : "REGEN",
+    "target" : {
+      "id" : "project"
+    },
+    "payload" : {
+      "proposalId" : null
+    }
+  }, {
+    "id" : 52,
     "op" : "REGEN",
     "target" : {
       "id" : "project"

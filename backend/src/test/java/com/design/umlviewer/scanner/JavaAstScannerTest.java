@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.design.umlviewer.domain.model.DependencyEdge;
 import com.design.umlviewer.metrics.CrapScoreCalculator;
+import com.github.javaparser.JavaParser;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -149,5 +150,60 @@ class JavaAstScannerTest {
         }
       }
     }
+  }
+
+  @Test
+  void testEmptyOrMalformedJavaFiles(@TempDir Path tempDir) throws IOException {
+    JavaAstScanner scanner = new JavaAstScanner();
+    Path src = tempDir.resolve("src/main/java/com/test");
+    Files.createDirectories(src);
+    Files.writeString(src.resolve("Empty.java"), "");
+    Files.writeString(src.resolve("CommentsOnly.java"), "// just a comment\n");
+    Files.writeString(src.resolve("Whitespace.java"), "   \n\t  ");
+    Files.writeString(src.resolve("Broken.java"), "public class Broken { incomplete syntax !!@#$ ");
+
+    assertDoesNotThrow(
+        () -> {
+          scanner.scanProject(tempDir.toString(), "src/main/java", "com.test");
+        });
+  }
+
+  @Test
+  void testScanCurrentProject() {
+    JavaAstScanner scanner = new JavaAstScanner();
+    assertDoesNotThrow(
+        () -> {
+          scanner.scanProject(".", null, "com.design.umlviewer");
+        });
+  }
+
+  @Test
+  void testResilienceAgainstAssertionError(@TempDir Path tempDir) throws IOException {
+    Path src = tempDir.resolve("src/main/java/com/test");
+    Files.createDirectories(src);
+    Files.writeString(
+        src.resolve("Valid.java"),
+        "package com.test;\npublic class Valid {\n  public void hello() {}\n}\n");
+    Files.writeString(
+        src.resolve("Failing.java"), "package com.test;\npublic class Failing {\n}\n");
+
+    JavaParser realParser = new JavaParser();
+    JavaAstScanner.JavaParserFunction mockParser =
+        path -> {
+          if (path.getFileName().toString().equals("Failing.java")) {
+            throw new AssertionError("A reference was unexpectedly null.");
+          }
+          return realParser.parse(path);
+        };
+
+    JavaAstScanner scanner = new JavaAstScanner(mockParser);
+    LanguageScanner.ScanResult result =
+        assertDoesNotThrow(
+            () -> scanner.scanProject(tempDir.toString(), "src/main/java", "com.test"));
+
+    assertNotNull(result);
+    // Valid.java should be parsed successfully despite Failing.java throwing AssertionError
+    assertEquals(1, result.classes().size());
+    assertEquals("com.test.Valid", result.classes().get(0).id());
   }
 }

@@ -26,17 +26,48 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class JavaAstScanner implements LanguageScanner {
 
+  private static final Logger LOG = Logger.getLogger(JavaAstScanner.class);
+
+  @FunctionalInterface
+  public interface JavaParserFunction {
+    ParseResult<CompilationUnit> parse(Path path) throws IOException;
+  }
+
   @Inject CrapScoreCalculator crapCalculator;
 
-  private final JavaParser javaParser =
-      new JavaParser(
-          new com.github.javaparser.ParserConfiguration()
-              .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.RAW));
+  private final JavaParserFunction fileParser;
+
+  public JavaAstScanner() {
+    this(createDefaultParser());
+  }
+
+  public JavaAstScanner(JavaParser javaParser) {
+    this(javaParser != null ? javaParser::parse : (JavaParserFunction) null);
+  }
+
+  public JavaAstScanner(JavaParserFunction fileParser) {
+    this.fileParser = fileParser;
+  }
+
+  private static JavaParserFunction createDefaultParser() {
+    try {
+      JavaParser jp =
+          new JavaParser(
+              new com.github.javaparser.ParserConfiguration()
+                  .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.RAW));
+      return jp::parse;
+    } catch (Throwable t) {
+      LOG.warnf("Failed to initialize default JavaParser: %s", t.getMessage());
+      return null;
+    }
+  }
 
   @Override
   public String languageId() {
@@ -139,180 +170,196 @@ public class JavaAstScanner implements LanguageScanner {
       return new ScanResult(List.of(), List.of());
     }
 
-    // First pass: collect all classes and map simple name -> fully qualified name
+    List<ParsedJavaFile> parsedFiles = new ArrayList<>(javaFiles.size());
     for (Path path : javaFiles) {
-      ParseResult<CompilationUnit> parseResult = javaParser.parse(path);
-      if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
-        continue;
+      parseCompilationUnit(path).ifPresent(cu -> parsedFiles.add(new ParsedJavaFile(path, cu)));
+    }
+
+    if (parsedFiles.isEmpty()) {
+      return new ScanResult(List.of(), List.of());
+    }
+
+    // First pass: collect all classes and map simple name -> fully qualified name
+    for (ParsedJavaFile parsed : parsedFiles) {
+      try {
+        CompilationUnit cu = parsed.cu();
+        String packageName = cu.getPackageDeclaration().map(p -> p.getName().asString()).orElse("");
+
+        cu.findAll(ClassOrInterfaceDeclaration.class)
+            .forEach(
+                decl -> {
+                  String simpleName = decl.getNameAsString();
+                  String fullId =
+                      packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
+                  simpleToFullyQualified.put(simpleName, fullId);
+                });
+
+        cu.findAll(RecordDeclaration.class)
+            .forEach(
+                decl -> {
+                  String simpleName = decl.getNameAsString();
+                  String fullId =
+                      packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
+                  simpleToFullyQualified.put(simpleName, fullId);
+                });
+      } catch (Throwable t) {
+        LOG.warnf("Failed to extract type declarations from %s: %s", parsed.path(), t.getMessage());
       }
-      CompilationUnit cu = parseResult.getResult().get();
-      String packageName = cu.getPackageDeclaration().map(p -> p.getName().asString()).orElse("");
-
-      cu.findAll(ClassOrInterfaceDeclaration.class)
-          .forEach(
-              decl -> {
-                String simpleName = decl.getNameAsString();
-                String fullId = packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
-                simpleToFullyQualified.put(simpleName, fullId);
-              });
-
-      cu.findAll(RecordDeclaration.class)
-          .forEach(
-              decl -> {
-                String simpleName = decl.getNameAsString();
-                String fullId = packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
-                simpleToFullyQualified.put(simpleName, fullId);
-              });
     }
 
     // Second pass: extract classes, records, and dependencies
-    for (Path path : javaFiles) {
-      ParseResult<CompilationUnit> parseResult = javaParser.parse(path);
-      if (!parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
-        continue;
-      }
-      CompilationUnit cu = parseResult.getResult().get();
-      String packageName = cu.getPackageDeclaration().map(p -> p.getName().asString()).orElse("");
+    for (ParsedJavaFile parsed : parsedFiles) {
+      try {
+        Path path = parsed.path();
+        CompilationUnit cu = parsed.cu();
+        String packageName = cu.getPackageDeclaration().map(p -> p.getName().asString()).orElse("");
 
-      // Collect imports
-      List<String> imports =
-          cu.getImports().stream().map(ImportDeclaration::getNameAsString).toList();
+        // Collect imports
+        List<String> imports =
+            cu.getImports().stream().map(ImportDeclaration::getNameAsString).toList();
 
-      // Process classes, interfaces
-      cu.findAll(ClassOrInterfaceDeclaration.class)
-          .forEach(
-              decl -> {
-                String simpleName = decl.getNameAsString();
-                String fullId = packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
+        // Process classes, interfaces
+        cu.findAll(ClassOrInterfaceDeclaration.class)
+            .forEach(
+                decl -> {
+                  String simpleName = decl.getNameAsString();
+                  String fullId =
+                      packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
 
-                ClassNode.Stereotype stereotype =
-                    decl.isInterface()
-                        ? ClassNode.Stereotype.INTERFACE
-                        : decl.isAbstract()
-                            ? ClassNode.Stereotype.ABSTRACT
-                            : ClassNode.Stereotype.CLASS;
+                  ClassNode.Stereotype stereotype =
+                      decl.isInterface()
+                          ? ClassNode.Stereotype.INTERFACE
+                          : decl.isAbstract()
+                              ? ClassNode.Stereotype.ABSTRACT
+                              : ClassNode.Stereotype.CLASS;
 
-                List<FieldNode> fields = extractFields(decl);
-                List<MethodNode> methods = extractMethods(decl);
+                  List<FieldNode> fields = extractFields(decl);
+                  List<MethodNode> methods = extractMethods(decl);
 
-                // Compute mock coverage & CRAP for demo metrics
-                List<Double> methodCraps = methods.stream().map(MethodNode::crap).toList();
-                CrapScore crapScore =
-                    crapCalculator != null
-                        ? crapCalculator.aggregate(methodCraps)
-                        : CrapScore.zero();
+                  // Compute mock coverage & CRAP for demo metrics
+                  List<Double> methodCraps = methods.stream().map(MethodNode::crap).toList();
+                  CrapScore crapScore =
+                      crapCalculator != null
+                          ? crapCalculator.aggregate(methodCraps)
+                          : CrapScore.zero();
 
-                classes.add(
-                    new ClassNode(
-                        fullId,
-                        simpleName,
-                        packageName,
-                        path.toAbsolutePath().toString(),
-                        stereotype,
-                        false,
-                        null,
-                        crapScore,
-                        0.85, // base coverage
-                        methods.stream().mapToInt(MethodNode::cc).sum(),
-                        methods.stream().mapToInt(MethodNode::killed).sum(),
-                        methods.stream().mapToInt(MethodNode::survived).sum(),
-                        methods.stream().mapToInt(MethodNode::uncovered).sum(),
-                        fields,
-                        methods));
-
-                // Check inheritance / implements
-                for (ClassOrInterfaceType ext : decl.getExtendedTypes()) {
-                  rawEdges.add(
-                      new DependencyEdge(
+                  classes.add(
+                      new ClassNode(
                           fullId,
-                          ext.getNameAsString(),
-                          DependencyEdge.Kind.INHERITANCE,
+                          simpleName,
+                          packageName,
+                          path.toAbsolutePath().toString(),
+                          stereotype,
+                          false,
                           null,
-                          false));
-                }
-                for (ClassOrInterfaceType impl : decl.getImplementedTypes()) {
-                  rawEdges.add(
-                      new DependencyEdge(
-                          fullId,
-                          impl.getNameAsString(),
-                          DependencyEdge.Kind.IMPLEMENTS,
-                          null,
-                          false));
-                }
+                          crapScore,
+                          0.85, // base coverage
+                          methods.stream().mapToInt(MethodNode::cc).sum(),
+                          methods.stream().mapToInt(MethodNode::killed).sum(),
+                          methods.stream().mapToInt(MethodNode::survived).sum(),
+                          methods.stream().mapToInt(MethodNode::uncovered).sum(),
+                          fields,
+                          methods));
 
-                // Treat internal imports as dependencies
-                for (String imp : imports) {
-                  if (imp.startsWith(basePrefix) && !imp.equals(fullId)) {
+                  // Check inheritance / implements
+                  for (ClassOrInterfaceType ext : decl.getExtendedTypes()) {
                     rawEdges.add(
                         new DependencyEdge(
-                            fullId, imp, DependencyEdge.Kind.DEPENDENCY, null, false));
+                            fullId,
+                            ext.getNameAsString(),
+                            DependencyEdge.Kind.INHERITANCE,
+                            null,
+                            false));
                   }
-                }
+                  for (ClassOrInterfaceType impl : decl.getImplementedTypes()) {
+                    rawEdges.add(
+                        new DependencyEdge(
+                            fullId,
+                            impl.getNameAsString(),
+                            DependencyEdge.Kind.IMPLEMENTS,
+                            null,
+                            false));
+                  }
 
-                // Also check referenced simple types from within the same package or project
-                decl.findAll(ClassOrInterfaceType.class)
-                    .forEach(
-                        t -> {
-                          String typeName = t.getNameAsString();
-                          if (simpleToFullyQualified.containsKey(typeName)) {
-                            String targetFullId = simpleToFullyQualified.get(typeName);
-                            if (!targetFullId.equals(fullId)) {
-                              rawEdges.add(
-                                  new DependencyEdge(
-                                      fullId,
-                                      targetFullId,
-                                      DependencyEdge.Kind.DEPENDENCY,
-                                      null,
-                                      false));
+                  // Treat internal imports as dependencies
+                  for (String imp : imports) {
+                    if (imp.startsWith(basePrefix) && !imp.equals(fullId)) {
+                      rawEdges.add(
+                          new DependencyEdge(
+                              fullId, imp, DependencyEdge.Kind.DEPENDENCY, null, false));
+                    }
+                  }
+
+                  // Also check referenced simple types from within the same package or project
+                  decl.findAll(ClassOrInterfaceType.class)
+                      .forEach(
+                          t -> {
+                            String typeName = t.getNameAsString();
+                            if (simpleToFullyQualified.containsKey(typeName)) {
+                              String targetFullId = simpleToFullyQualified.get(typeName);
+                              if (!targetFullId.equals(fullId)) {
+                                rawEdges.add(
+                                    new DependencyEdge(
+                                        fullId,
+                                        targetFullId,
+                                        DependencyEdge.Kind.DEPENDENCY,
+                                        null,
+                                        false));
+                              }
                             }
-                          }
-                        });
-              });
+                          });
+                });
 
-      // Records
-      cu.findAll(RecordDeclaration.class)
-          .forEach(
-              decl -> {
-                String simpleName = decl.getNameAsString();
-                String fullId = packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
+        // Records
+        cu.findAll(RecordDeclaration.class)
+            .forEach(
+                decl -> {
+                  String simpleName = decl.getNameAsString();
+                  String fullId =
+                      packageName.isEmpty() ? simpleName : packageName + "." + simpleName;
 
-                classes.add(
-                    new ClassNode(
-                        fullId,
-                        simpleName,
-                        packageName,
-                        path.toAbsolutePath().toString(),
-                        ClassNode.Stereotype.RECORD,
-                        false,
-                        null,
-                        CrapScore.zero(),
-                        1.0,
-                        1,
-                        0,
-                        0,
-                        0,
-                        List.of(),
-                        List.of()));
+                  classes.add(
+                      new ClassNode(
+                          fullId,
+                          simpleName,
+                          packageName,
+                          path.toAbsolutePath().toString(),
+                          ClassNode.Stereotype.RECORD,
+                          false,
+                          null,
+                          CrapScore.zero(),
+                          1.0,
+                          1,
+                          0,
+                          0,
+                          0,
+                          List.of(),
+                          List.of()));
 
-                // Check referenced simple types in record components/methods
-                decl.findAll(ClassOrInterfaceType.class)
-                    .forEach(
-                        t -> {
-                          String typeName = t.getNameAsString();
-                          if (simpleToFullyQualified.containsKey(typeName)) {
-                            String targetFullId = simpleToFullyQualified.get(typeName);
-                            if (!targetFullId.equals(fullId)) {
-                              rawEdges.add(
-                                  new DependencyEdge(
-                                      fullId,
-                                      targetFullId,
-                                      DependencyEdge.Kind.DEPENDENCY,
-                                      null,
-                                      false));
+                  // Check referenced simple types in record components/methods
+                  decl.findAll(ClassOrInterfaceType.class)
+                      .forEach(
+                          t -> {
+                            String typeName = t.getNameAsString();
+                            if (simpleToFullyQualified.containsKey(typeName)) {
+                              String targetFullId = simpleToFullyQualified.get(typeName);
+                              if (!targetFullId.equals(fullId)) {
+                                rawEdges.add(
+                                    new DependencyEdge(
+                                        fullId,
+                                        targetFullId,
+                                        DependencyEdge.Kind.DEPENDENCY,
+                                        null,
+                                        false));
+                              }
                             }
-                          }
-                        });
-              });
+                          });
+                });
+      } catch (Throwable t) {
+        LOG.warnf(
+            "Failed to extract classes and dependencies from %s: %s",
+            parsed.path(), t.getMessage());
+      }
     }
 
     // Normalize edge targets using fully-qualified names
@@ -332,50 +379,84 @@ public class JavaAstScanner implements LanguageScanner {
     return new ScanResult(classes, normalizedEdges);
   }
 
+  private Optional<CompilationUnit> parseCompilationUnit(Path path) {
+    if (fileParser == null) {
+      return Optional.empty();
+    }
+    try {
+      ParseResult<CompilationUnit> parseResult = fileParser.parse(path);
+      if (parseResult != null
+          && parseResult.isSuccessful()
+          && parseResult.getResult().isPresent()) {
+        return parseResult.getResult();
+      }
+      if (parseResult != null && !parseResult.isSuccessful()) {
+        LOG.debugf("JavaParser reported problems parsing %s: %s", path, parseResult.getProblems());
+      }
+    } catch (Throwable t) {
+      LOG.warnf("Failed to parse Java AST for %s: %s", path, t.getMessage());
+    }
+    return Optional.empty();
+  }
+
   private List<FieldNode> extractFields(ClassOrInterfaceDeclaration decl) {
     List<FieldNode> fields = new ArrayList<>();
-    for (FieldDeclaration f : decl.getFields()) {
-      f.getVariables()
-          .forEach(
-              v -> {
-                fields.add(new FieldNode(v.getNameAsString(), v.getTypeAsString(), f.isPrivate()));
-              });
+    try {
+      for (FieldDeclaration f : decl.getFields()) {
+        f.getVariables()
+            .forEach(
+                v -> {
+                  fields.add(
+                      new FieldNode(v.getNameAsString(), v.getTypeAsString(), f.isPrivate()));
+                });
+      }
+    } catch (Throwable t) {
+      LOG.debugf(
+          "Could not extract all fields from %s: %s", decl.getNameAsString(), t.getMessage());
     }
     return fields;
   }
 
   private List<MethodNode> extractMethods(ClassOrInterfaceDeclaration decl) {
     List<MethodNode> methods = new ArrayList<>();
-    for (MethodDeclaration m : decl.getMethods()) {
-      int cc = 1; // baseline Cyclomatic Complexity
-      cc += m.findAll(com.github.javaparser.ast.stmt.IfStmt.class).size();
-      cc += m.findAll(com.github.javaparser.ast.stmt.ForStmt.class).size();
-      cc += m.findAll(com.github.javaparser.ast.stmt.WhileStmt.class).size();
-      cc += m.findAll(com.github.javaparser.ast.expr.ConditionalExpr.class).size();
+    try {
+      for (MethodDeclaration m : decl.getMethods()) {
+        int cc = 1; // baseline Cyclomatic Complexity
+        cc += m.findAll(com.github.javaparser.ast.stmt.IfStmt.class).size();
+        cc += m.findAll(com.github.javaparser.ast.stmt.ForStmt.class).size();
+        cc += m.findAll(com.github.javaparser.ast.stmt.WhileStmt.class).size();
+        cc += m.findAll(com.github.javaparser.ast.expr.ConditionalExpr.class).size();
 
-      double coverage = 0.8;
-      double crap = crapCalculator != null ? crapCalculator.calculateMethodCrap(cc, coverage) : cc;
-      int line = m.getRange().map(r -> r.begin.line).orElse(1);
+        double coverage = 0.8;
+        double crap =
+            crapCalculator != null ? crapCalculator.calculateMethodCrap(cc, coverage) : cc;
+        int line = m.getRange().map(r -> r.begin.line).orElse(1);
 
-      List<String> params =
-          m.getParameters().stream()
-              .map(p -> p.getTypeAsString() + " " + p.getNameAsString())
-              .toList();
+        List<String> params =
+            m.getParameters().stream()
+                .map(p -> p.getTypeAsString() + " " + p.getNameAsString())
+                .toList();
 
-      methods.add(
-          new MethodNode(
-              m.getNameAsString(),
-              params,
-              m.getTypeAsString(),
-              m.isPrivate(),
-              cc,
-              coverage,
-              Math.round(crap * 10.0) / 10.0,
-              3,
-              0,
-              0, // killed, survived, uncovered mock
-              line));
+        methods.add(
+            new MethodNode(
+                m.getNameAsString(),
+                params,
+                m.getTypeAsString(),
+                m.isPrivate(),
+                cc,
+                coverage,
+                Math.round(crap * 10.0) / 10.0,
+                3,
+                0,
+                0, // killed, survived, uncovered mock
+                line));
+      }
+    } catch (Throwable t) {
+      LOG.debugf(
+          "Could not extract all methods from %s: %s", decl.getNameAsString(), t.getMessage());
     }
     return methods;
   }
+
+  private record ParsedJavaFile(Path path, CompilationUnit cu) {}
 }

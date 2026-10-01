@@ -47,6 +47,79 @@ export function detectProjectLanguage(projectRoot) {
   return 'java';
 }
 
+function findNestedSourceRoots(dir, lang, depth = 0, maxDepth = 5, results = []) {
+  if (depth > maxDepth || !fs.existsSync(dir)) {
+    return results;
+  }
+
+  const skipDirs = new Set([
+    '.git',
+    'node_modules',
+    'target',
+    'build',
+    '.gradle',
+    '.idea',
+    '.vscode',
+    '.svelte-kit',
+    'dist',
+    'out',
+    'bin',
+    '.archlens',
+    '.uml-viewer',
+    '.mvn',
+    'infra',
+    'cpln',
+    'assets',
+    'screenshots',
+    'docs'
+  ]);
+
+  try {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || skipDirs.has(entry.name) || entry.name.startsWith('.')) {
+        continue;
+      }
+
+      const fullPath = path.join(dir, entry.name);
+
+      if (lang === 'java' && fullPath.endsWith(path.join('src', 'main', 'java'))) {
+        results.push(fullPath);
+        continue;
+      }
+      if (
+        lang === 'kotlin' &&
+        (fullPath.endsWith(path.join('src', 'main', 'kotlin')) ||
+          fullPath.endsWith(path.join('src', 'main', 'java')))
+      ) {
+        results.push(fullPath);
+        continue;
+      }
+      if ((lang === 'typescript' || lang === 'javascript') && entry.name === 'src') {
+        results.push(fullPath);
+        continue;
+      }
+      if (lang === 'python' && (entry.name === 'src' || entry.name === 'app')) {
+        results.push(fullPath);
+        continue;
+      }
+      if (
+        lang === 'go' &&
+        (entry.name === 'pkg' || entry.name === 'internal' || entry.name === 'cmd')
+      ) {
+        results.push(fullPath);
+        continue;
+      }
+
+      findNestedSourceRoots(fullPath, lang, depth + 1, maxDepth, results);
+    }
+  } catch {
+    // Gracefully handle unreadable directories
+  }
+
+  return results;
+}
+
 export function detectSourceRoot(projectRoot, lang) {
   const root = path.resolve(projectRoot);
 
@@ -64,10 +137,46 @@ export function detectSourceRoot(projectRoot, lang) {
   const candidates = candidateMap[lang] || ['src', '.'];
 
   for (const cand of candidates) {
+    if (cand === '.') continue;
     const p = path.join(root, cand);
     if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
       return cand;
     }
+  }
+
+  // Multi-module dynamic discovery if standard candidates are not found
+  const nested = findNestedSourceRoots(root, lang);
+  if (nested.length > 0) {
+    const ext =
+      lang === 'java'
+        ? '.java'
+        : lang === 'kotlin'
+          ? '.kt'
+          : lang === 'typescript'
+            ? '.ts'
+            : lang === 'python'
+              ? '.py'
+              : '';
+    const ranked = nested.map((dir) => {
+      const rel = path.relative(root, dir).replace(/\\/g, '/');
+      const files = ext
+        ? findMatchingFiles(dir, (f) => f.endsWith(ext), 100)
+        : [];
+      let score = files.length;
+      const lower = rel.toLowerCase();
+      if (lower.includes('api')) score += 15;
+      if (lower.includes('backend') || lower.includes('server')) score += 10;
+      if (lower.includes('core') || lower.includes('app')) score += 5;
+      return { rel, score };
+    });
+    ranked.sort((a, b) => b.score - a.score);
+    if (ranked[0] && ranked[0].rel) {
+      return ranked[0].rel;
+    }
+  }
+
+  if (candidates.includes('.')) {
+    return '.';
   }
 
   return 'src';

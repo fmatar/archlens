@@ -9,9 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-03] - 2026-10-01
+
 ### Fixed
 - **JavaAstScanner Dev-Mode Resiliency**: Hardened AST parser against JavaParser `AssertionError` ("A reference was unexpectedly null") triggered when assertions (`-ea`) are enabled in Quarkus dev mode. Introduced `JavaParserFunction` strategy interface, single-pass compilation unit caching, and guarded AST extraction ([#151](https://github.com/fmatar/archlens/pull/151)).
 - **CLI Multi-Module Source Root Discovery**: Added dynamic nested source root detection in `detectSourceRoot` (`cli/src/analyzer.js`), dynamically identifying multi-module project structures (e.g. `rootine-backend/rootine-api/src/main/java`) and computing accurate package prefixes and Clean Architecture tier layers instead of falling back to non-existent `src/`.
+- **Workbench Live-Reload Debouncing & Event Storm Protection**: Debounced `handleLiveGraphUpdate()` in `diagram.svelte.ts` with a 300ms trailing-edge window and in-flight compilation lock, eliminating rapid UI re-render and flickering loops during file modification bursts.
 
 ## [0.1.0-Beta-02] - 2026-10-01
 

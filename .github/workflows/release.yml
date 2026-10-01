@@ -123,7 +123,7 @@ jobs:
       - name: Pack CLI Package
         id: pack
         run: |
-          npm pack cli --pack-destination cli
+          npm pack ./cli --pack-destination cli
           TARBALL_PATH=$(ls cli/fmatar-archlens-skill-*.tgz | head -n 1)
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 

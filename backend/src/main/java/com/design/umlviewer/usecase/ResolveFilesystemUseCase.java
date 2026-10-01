@@ -53,6 +53,9 @@ public class ResolveFilesystemUseCase {
         && parent.exists()
         && parent.isDirectory()
         && !parent.getAbsolutePath().equals("/")) {
+      if (WorkspacePathResolver.isProjectDirectory(parent)) {
+        WorkspacePathResolver.addDiscoveredProject(parent, parent.getName(), discovered, seenPaths);
+      }
       File[] siblings = parent.listFiles();
       if (siblings != null) {
         Arrays.sort(siblings, Comparator.comparing(File::getName));

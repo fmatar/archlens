@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-01] - 2026-09-30
+
+### 🎉 Milestone: Graduation to Beta Release
+Archlens officially graduates from the `0.0.1-Alpha-*` development cycle into **Beta (`0.1.0-Beta-01`)**. This milestone freezes public API contracts, establishes production readiness across 6 polyglot languages, and shifts focus toward hardening, real-world dogfooding, and ecosystem adoption.
+
+### Changed
+- **Version Milestone Bump**: Graduated project versioning from `0.0.1-Alpha-15` to `0.1.0-Beta-01` across root, backend, frontend, and CLI descriptors.
+
+### Fixed
+- **Frontend Impeccable Quality & UX Polish**:
+  - `InvertDipModal.svelte`: Replaced tab navigation with accessible, high-contrast pill tabs (`rounded-md`, border-clash eliminated) and replaced bouncy animation with subtle pulse indicator.
+  - `LlmPromptModal.svelte`: Fixed text selection contrast conflict (`selection:bg-slate-700 selection:text-white`).
+  - `index.html`: Added inline SVG favicon (`<link rel="icon" type="image/svg+xml" ... />`), eliminating 404 console errors.
+  - `App.svelte`: Eliminated redundant duplicate `loadFitness()` call and unmanaged secondary `EventSource` on startup.
+- **Backend Architecture & Dev-Server Resiliency**:
+  - `WorkspacePathResolver`: Enhanced sub-module path normalization so running from `backend/` correctly resolves `.` to the parent repository containing `.archlens/policy.json`.
+  - `ResolveFilesystemUseCase`: Automatically registers and discovers parent workspace directories during multi-module exploration.
+  - `GetFitnessHistoryUseCase`: Optimized historical fitness AST compilation by computing the current graph once instead of repeatedly recompiling 65 Java AST files across git tags without snapshots.
+  - `application.properties`: Added `%test.quarkus.http.test-port=0` for ephemeral port isolation during test runs, preventing port collisions with running dev servers.
+
+### Documentation
+- **Root README Modernization**: Restructured root `README.md` with closed-loop agent architecture, 5-minute developer quickstart, and dispatch workflows ([#146](https://github.com/fmatar/archlens/pull/146)).
+
 ## [0.0.1-Alpha-15] - 2026-09-28
 
 ### Added

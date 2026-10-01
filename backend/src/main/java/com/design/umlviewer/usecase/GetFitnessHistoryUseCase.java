@@ -10,6 +10,7 @@ import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -54,11 +55,22 @@ public class GetFitnessHistoryUseCase {
             ? policy.fitness()
             : FitnessThresholds.defaultThresholds();
 
+    ArchitectureGraph currentGraph = null;
+    try {
+      currentGraph = architectureCompiler.compileGraph(root, null);
+    } catch (IOException e) {
+      LOG.warnf(
+          "Could not compile current workspace graph for fitness history: %s", e.getMessage());
+    }
+
     List<Map<String, Object>> snapshotList = manageSnapshotsUseCase.listSnapshots(root);
 
     // Snapshots from manageSnapshotsUseCase are newest first; reverse so oldest is first
     List<Map<String, Object>> chronologicalSnapshots = new ArrayList<>(snapshotList);
     Collections.reverse(chronologicalSnapshots);
+
+    File snapshotsDir = new File(root, ".archlens/snapshots");
+    File cacheDir = new File(root, ".archlens/cache");
 
     for (Map<String, Object> snap : chronologicalSnapshots) {
       String id = (String) snap.get("id");
@@ -69,7 +81,14 @@ public class GetFitnessHistoryUseCase {
                   "date", new SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(new Date()));
 
       try {
-        ArchitectureGraph graph = manageSnapshotsUseCase.getSnapshot(id, root);
+        ArchitectureGraph graph;
+        File snapFile = new File(snapshotsDir, id + ".json");
+        File cacheFile = new File(cacheDir, id + ".json");
+        if (snapFile.exists() || cacheFile.exists()) {
+          graph = manageSnapshotsUseCase.getSnapshot(id, root);
+        } else {
+          graph = currentGraph;
+        }
         if (graph != null) {
           FitnessEvaluation eval = fitnessCalculator.evaluate(graph, thresholds);
           int violations =
@@ -98,8 +117,7 @@ public class GetFitnessHistoryUseCase {
     }
 
     // Always append current working state as latest point
-    try {
-      ArchitectureGraph currentGraph = architectureCompiler.compileGraph(root, null);
+    if (currentGraph != null) {
       FitnessEvaluation currentEval = fitnessCalculator.evaluate(currentGraph, thresholds);
       int violations =
           ((Number) currentEval.summaryMetrics().getOrDefault("violations", 0)).intValue();
@@ -121,9 +139,6 @@ public class GetFitnessHistoryUseCase {
               cycles,
               screaming,
               maxDistance));
-    } catch (IOException e) {
-      LOG.warnf(
-          "Could not compile current workspace graph for fitness history: %s", e.getMessage());
     }
 
     return fitnessCalculator.calculateTrend(history);

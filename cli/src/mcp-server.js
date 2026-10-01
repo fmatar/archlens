@@ -9,9 +9,13 @@
 import * as readline from 'node:readline';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { ARCHLENS_TOOL_SCHEMAS } from './mcp-registry.js';
 import { ensureServerRunning, DEFAULT_SERVER_URL } from './docker-runner.js';
 import { generateLlmPrompt, generatePolicy } from './analyzer.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function getMcpToolsList() {
   return Object.values(ARCHLENS_TOOL_SCHEMAS).map((tool) => ({
@@ -19,6 +23,53 @@ export function getMcpToolsList() {
     description: tool.description,
     inputSchema: tool.parameters
   }));
+}
+
+export function getMcpResourcesList() {
+  return [
+    {
+      uri: 'archlens://llms.txt',
+      name: 'Archlens Architecture Guide & Best Practices',
+      description:
+        'Comprehensive Clean Architecture guide, concentric ring hierarchy, CLI commands, fitness invariants, and refactoring protocols for LLMs.',
+      mimeType: 'text/markdown'
+    }
+  ];
+}
+
+export function readMcpResource(uri, options = {}, deps = {}) {
+  if (uri === 'archlens://llms.txt') {
+    const projectRoot = path.resolve(options.path || '.');
+    const localLlmsPath = path.join(projectRoot, 'llms.txt');
+    const cliLlmsPath = path.resolve(__dirname, '..', 'llms.txt');
+    const rootLlmsPath = path.resolve(__dirname, '..', '..', 'llms.txt');
+
+    const fileReader = deps.readFileSync || fs.readFileSync;
+    const fileExists = deps.existsSync || fs.existsSync;
+
+    let content = '';
+    if (fileExists(localLlmsPath)) {
+      content = fileReader(localLlmsPath, 'utf8');
+    } else if (fileExists(cliLlmsPath)) {
+      content = fileReader(cliLlmsPath, 'utf8');
+    } else if (fileExists(rootLlmsPath)) {
+      content = fileReader(rootLlmsPath, 'utf8');
+    } else {
+      content = '# Archlens Clean Architecture Guide\n\nRefer to https://github.com/fmatar/archlens for documentation.';
+    }
+
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'text/markdown',
+          text: content
+        }
+      ]
+    };
+  }
+
+  throw new Error(`Resource not found: ${uri}`);
 }
 
 export async function executeToolCall(toolName, args = {}, options = {}, deps = {}) {
@@ -181,11 +232,12 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
       result: {
         protocolVersion: '2024-11-05',
         capabilities: {
-          tools: {}
+          tools: {},
+          resources: {}
         },
         serverInfo: {
           name: 'archlens-mcp-server',
-          version: options.version || '0.0.1-Alpha-11'
+          version: options.version || '0.1.0-Beta-02'
         }
       }
     };
@@ -207,6 +259,37 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
         tools: getMcpToolsList()
       }
     };
+  }
+
+  if (method === 'resources/list') {
+    return {
+      jsonrpc: '2.0',
+      id,
+      result: {
+        resources: getMcpResourcesList()
+      }
+    };
+  }
+
+  if (method === 'resources/read') {
+    const uri = params?.uri;
+    try {
+      const readResult = readMcpResource(uri, options, deps);
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: readResult
+      };
+    } catch (err) {
+      return {
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: -32002,
+          message: err.message
+        }
+      };
+    }
   }
 
   if (method === 'tools/call') {

@@ -27,9 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class GraphCompiler implements ArchitectureCompiler {
+
+  private static final Logger LOG = Logger.getLogger(GraphCompiler.class);
 
   @Inject LanguageScannerRegistry scannerRegistry;
 
@@ -202,14 +205,24 @@ public class GraphCompiler implements ArchitectureCompiler {
               .orElse(null);
     }
 
-    LanguageScanner.ScanResult scan =
-        scanner != null
-            ? scanner.scanProject(
+    LanguageScanner.ScanResult scan;
+    if (scanner != null) {
+      try {
+        scan =
+            scanner.scanProject(
                 projectRoot,
                 policy.src() != null ? policy.src() : "",
                 policy.prefix() != null ? policy.prefix() : "",
-                policy)
-            : new LanguageScanner.ScanResult(List.of(), List.of());
+                policy);
+      } catch (Throwable t) {
+        LOG.errorf(
+            "Language scanner '%s' failed scanning project root '%s': %s",
+            scanner.languageId(), projectRoot, t.getMessage());
+        scan = new LanguageScanner.ScanResult(List.of(), List.of());
+      }
+    } else {
+      scan = new LanguageScanner.ScanResult(List.of(), List.of());
+    }
 
     Set<String> omitPatterns = new HashSet<>();
     if (policy.omit() != null) {

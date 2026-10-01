@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.slixes</groupId>
         <artifactId>archlens</artifactId>
-        <version>0.1.0-Beta-02</version>
+        <version>0.1.0-Beta-03</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -105,6 +105,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <enableAssertions>true</enableAssertions>
                     <systemPropertyVariables>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                     </systemPropertyVariables>

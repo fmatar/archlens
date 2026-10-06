@@ -67,6 +67,7 @@ public class GoAstScanner implements LanguageScanner {
     List<ClassNode> classes = new ArrayList<>();
     List<DependencyEdge> edges = new ArrayList<>();
     Map<String, String> internalPackages = new HashMap<>();
+    Set<String> seenClassIds = new HashSet<>();
 
     List<Path> goFiles =
         FileScannerUtil.findFiles(
@@ -153,9 +154,19 @@ public class GoAstScanner implements LanguageScanner {
 
       if (typeNames.isEmpty()) {
         String simpleName = new File(rel).getName().replace(".go", "");
+        String candidateId =
+            currentPackage.isEmpty() || currentPackage.equals("main")
+                ? simpleName
+                : currentPackage + "." + simpleName;
+        String uniqueId = candidateId;
+        int counter = 2;
+        while (seenClassIds.contains(uniqueId)) {
+          uniqueId = candidateId + "-" + counter++;
+        }
+        seenClassIds.add(uniqueId);
         classes.add(
             new ClassNode(
-                currentPackage,
+                uniqueId,
                 simpleName,
                 currentPackage,
                 rel,
@@ -172,9 +183,19 @@ public class GoAstScanner implements LanguageScanner {
                 methods));
       } else {
         for (String typeName : typeNames) {
+          String candidateId =
+              currentPackage.isEmpty() || currentPackage.equals("main")
+                  ? typeName
+                  : currentPackage + "." + typeName;
+          String uniqueId = candidateId;
+          int counter = 2;
+          while (seenClassIds.contains(uniqueId)) {
+            uniqueId = candidateId + "-" + counter++;
+          }
+          seenClassIds.add(uniqueId);
           classes.add(
               new ClassNode(
-                  currentPackage + "." + typeName,
+                  uniqueId,
                   typeName,
                   currentPackage,
                   rel,

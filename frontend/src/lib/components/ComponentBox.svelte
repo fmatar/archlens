@@ -288,7 +288,7 @@
     {:else}
       <!-- Detailed Micro View with Class Rows & Stepwise Paging -->
       <g transform="translate(10, 36)">
-        {#each displayedClasses as cls, i (cls.id)}
+        {#each displayedClasses as cls, i (cls.id + ':' + i)}
           {@const crapCol = getCrapColor(cls.crap.mu)}
           {@const covCol = getCoverageColor(cls.coverage)}
           <!-- svelte-ignore a11y_click_events_have_key_events -->

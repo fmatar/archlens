@@ -232,8 +232,27 @@ public class GraphCompiler implements ArchitectureCompiler {
       omitPatterns.addAll(activeProposal.omit());
     }
 
-    List<ClassNode> validClasses =
-        scan.classes().stream().filter(c -> !matchesOmit(c, omitPatterns)).toList();
+    Set<String> seenClassIds = new HashSet<>();
+    List<ClassNode> validClasses = new ArrayList<>();
+    for (ClassNode c : scan.classes()) {
+      if (matchesOmit(c, omitPatterns)) {
+        continue;
+      }
+      if (seenClassIds.contains(c.id())) {
+        String baseId = c.id();
+        int counter = 2;
+        String uniqueId = baseId + "-" + counter;
+        while (seenClassIds.contains(uniqueId)) {
+          counter++;
+          uniqueId = baseId + "-" + counter;
+        }
+        seenClassIds.add(uniqueId);
+        validClasses.add(c.withId(uniqueId));
+      } else {
+        seenClassIds.add(c.id());
+        validClasses.add(c);
+      }
+    }
 
     PolicyValidator validator =
         (activeProposal != null)

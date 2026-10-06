@@ -206,4 +206,53 @@ class JavaAstScannerTest {
     assertEquals(1, result.classes().size());
     assertEquals("com.test.Valid", result.classes().get(0).id());
   }
+
+  @Test
+  void testConcurrentScanningOnMultipleThreads(@TempDir Path tempDir) throws Exception {
+    Path src = tempDir.resolve("src/main/java/com/concurrent");
+    Files.createDirectories(src);
+
+    for (int i = 0; i < 10; i++) {
+      Files.writeString(
+          src.resolve("Service" + i + ".java"),
+          "package com.concurrent;\npublic class Service"
+              + i
+              + " {\n  public void execute"
+              + i
+              + "() {}\n}\n");
+    }
+
+    JavaAstScanner scanner = new JavaAstScanner();
+    int threadCount = 8;
+    java.util.concurrent.ExecutorService executor =
+        java.util.concurrent.Executors.newFixedThreadPool(threadCount);
+    java.util.concurrent.CountDownLatch latch =
+        new java.util.concurrent.CountDownLatch(threadCount);
+    java.util.concurrent.atomic.AtomicInteger successCount =
+        new java.util.concurrent.atomic.AtomicInteger();
+    java.util.List<Throwable> errors = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    for (int t = 0; t < threadCount; t++) {
+      executor.submit(
+          () -> {
+            try {
+              LanguageScanner.ScanResult res =
+                  scanner.scanProject(tempDir.toString(), "src/main/java", "com.concurrent");
+              if (res.classes().size() == 10) {
+                successCount.incrementAndGet();
+              }
+            } catch (Throwable ex) {
+              errors.add(ex);
+            } finally {
+              latch.countDown();
+            }
+          });
+    }
+
+    assertTrue(latch.await(10, java.util.concurrent.TimeUnit.SECONDS));
+    executor.shutdown();
+
+    assertTrue(errors.isEmpty(), "Concurrent scanning encountered errors: " + errors);
+    assertEquals(threadCount, successCount.get());
+  }
 }

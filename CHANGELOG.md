@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-06] - 2026-10-06
+
+### Added
+- **Svelte 5 & Rune File AST Scanning**: Extended `TypeScriptAstScanner` to parse `.svelte`, `.svelte.ts`, and `.svelte.js` files, extracting component definitions, script block dependencies, and internal `#lib/*` subpath alias imports.
+- **Container Workspace Path Mapping**: Added automatic translation in `WorkspacePathResolver.normalizeRoot()` to map host workspace paths (e.g. `/Users/fady/workspace/...`) into container-mounted `/workspace/...` directories when running inside Docker containers.
+
+### Changed
+- **Base Package Namespace Standardization**: Renamed all backend Java source packages and test suites from legacy `com.design.umlviewer` to `io.slixes.archlens`.
+- **Spotless Formatting & Java Code Cleanliness**: Formatted codebase adhering to Google Java Format 1.30.0 and updated test fixtures.
+
+### Fixed
+- **Empty Graph / Diagnostic "Wake Agent" on Svelte/Vite Workspaces**: Resolved an issue where Svelte applications (e.g. `khasis-ui`) showed 0 components and a diagnostic empty state due to container path translation misses and missing `.svelte` file discovery.
+
 ## [0.1.0-Beta-05] - 2026-10-06
 
 ### Changed

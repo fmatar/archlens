@@ -342,7 +342,7 @@
               type="text"
               bind:value={localPrefix}
               class="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-slate-200 focus:outline-none focus:border-blue-500 font-medium font-mono text-[11px]"
-              placeholder="e.g. com.design.umlviewer"
+              placeholder="e.g. io.slixes.archlens"
             />
           </div>
         </div>

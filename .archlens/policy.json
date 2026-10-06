@@ -2,7 +2,7 @@
   "title": "Archlens Workbench",
   "lang": "java",
   "src": "backend/src/main/java",
-  "prefix": "com.design.umlviewer",
+  "prefix": "io.slixes.archlens",
   "hierarchical": true,
   "fitness": {
     "maxViolations": 0,

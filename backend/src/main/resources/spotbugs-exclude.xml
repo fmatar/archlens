@@ -26,31 +26,31 @@
     </Match>
 
     <Match>
-        <Package name="com.design.umlviewer.scanner"/>
+        <Package name="io.slixes.archlens.scanner"/>
         <Bug pattern="REDOS"/>
     </Match>
     <Match>
-        <Package name="com.design.umlviewer.scanner"/>
+        <Package name="io.slixes.archlens.scanner"/>
         <Bug pattern="IMPROPER_UNICODE"/>
     </Match>
     <Match>
-        <Package name="com.design.umlviewer.scanner"/>
+        <Package name="io.slixes.archlens.scanner"/>
         <Bug pattern="MODIFICATION_AFTER_VALIDATION"/>
     </Match>
     <Match>
-        <Package name="com.design.umlviewer.scanner"/>
+        <Package name="io.slixes.archlens.scanner"/>
         <Bug pattern="UC_USELESS_OBJECT"/>
     </Match>
     <Match>
-        <Class name="com.design.umlviewer.scanner.GoAstScanner"/>
+        <Class name="io.slixes.archlens.scanner.GoAstScanner"/>
         <Bug pattern="REC_CATCH_EXCEPTION"/>
     </Match>
     <Match>
-        <Package name="com.design.umlviewer.delivery.rest"/>
+        <Package name="io.slixes.archlens.delivery.rest"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
     <Match>
-        <Package name="com.design.umlviewer.usecase"/>
+        <Package name="io.slixes.archlens.usecase"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
 </FindBugsFilter>

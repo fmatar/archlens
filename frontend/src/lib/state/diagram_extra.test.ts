@@ -51,6 +51,7 @@ describe('diagramStore extended coverage tests', () => {
   it('should handle source code fetch error fallback gracefully', async () => {
     // Mock fetch to reject
     const originalFetch = globalThis.fetch;
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('Network offline'));
 
     await diagramStore.openSource('org.llmwiki.Dummy', 10);
@@ -59,6 +60,7 @@ describe('diagramStore extended coverage tests', () => {
     expect(diagramStore.sourceFileModal?.content).toContain('Error connecting to server');
 
     globalThis.fetch = originalFetch;
+    consoleSpy.mockRestore();
   });
 
   it('should pan to component safely when graph is initialized or empty', () => {

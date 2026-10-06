@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Native Quarkus Runner Auto-Launching**: Enhanced CLI runner (`docker-runner.js`) to automatically discover and prefer native JVM execution (`quarkus-run.jar`) in detached background mode when Java 21+ and a runner JAR are present, delivering ~0.5s sub-second startup with native APFS filesystem speed and transparent fallback to Docker.
+- **CLI Execution Flags**: Added `--native`, `--docker`, and `--jar <PATH>` options to `archlens start` and CLI parser for flexible runtime selection.
+
+### Changed
+- **Quarkus Stack Upgrade**: Upgraded Quarkus Platform BOM to `3.40.1` and Quarkiverse MCP Server extension to `2.0.2`.
+
+### Fixed
+- **Frontend Test Stderr Suppression**: Spied on `console.error` during simulated network failure fallback test in `diagram_extra.test.ts`, preventing unhandled stderr output in test runner.
+
 ## [0.1.0-Beta-03] - 2026-10-01
 
 ### Fixed

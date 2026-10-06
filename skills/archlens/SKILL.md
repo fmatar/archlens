@@ -81,8 +81,11 @@ npx @fmatar/archlens-skill mcp
 ### Launching the Workbench & Auto-Resurrection
 When the user asks to start Archlens, launch the studio, or open the visual workbench:
 1. Run `npx @fmatar/archlens-skill start --open` (or `archlens-skill start`).
-2. The CLI inspects whether the container (`archlens-server`) is active. If stopped or killed, it immediately starts it again on demand and confirms readiness at `http://localhost:8088`.
-3. When using MCP tools (`inspectArchitecture`, `exportLlmDossier`), the stdio bridge also auto-resurrects the container if offline.
+2. The CLI inspects whether the server is active on `http://localhost:8088`. If offline, it automatically auto-resurrects:
+   - **Native Java Runner (Default)**: If Java 21+ and a runner JAR (`quarkus-run.jar` in `~/.archlens/`, project `target/`, or via `--jar <PATH>`) are detected, it launches the native JVM server in ~0.5s with bare-metal filesystem speed.
+   - **Docker Container (Fallback)**: If Java or a local runner is absent, it automatically starts or creates the `archlens-server` Docker container.
+   - Use `--docker` to force Docker mode, or `--native` to force native mode.
+3. When using MCP tools (`inspectArchitecture`, `exportLlmDossier`), the stdio bridge also auto-resurrects the server if offline.
 
 ---
 

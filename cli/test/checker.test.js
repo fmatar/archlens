@@ -105,7 +105,7 @@ test('checkArchitecture detects outward violations and fails when exceeding maxV
     assert.equal(lenientResult.passed, true);
 
     // SARIF Report generation test
-    const sarifString = generateSarifReport(strictResult, { version: '0.1.0-Beta-03' });
+    const sarifString = generateSarifReport(strictResult, { version: '0.1.0-Beta-04' });
     const sarif = JSON.parse(sarifString);
     assert.equal(sarif.version, '2.1.0');
     assert.equal(sarif.runs[0].tool.driver.name, 'archlens');
@@ -200,7 +200,7 @@ test('checkArchitecture enforces ADP when detectCycles is true and generates ARC
     assert.equal(adpResult.cycles[0].formatted, 'pkga -> pkgb -> pkga');
 
     // SARIF report includes ARCH002
-    const sarif = JSON.parse(generateSarifReport(adpResult, { version: '0.1.0-Beta-03' }));
+    const sarif = JSON.parse(generateSarifReport(adpResult, { version: '0.1.0-Beta-04' }));
     assert.equal(sarif.runs[0].results.length, 1);
     assert.equal(sarif.runs[0].results[0].ruleId, 'ARCH002');
     assert.ok(sarif.runs[0].results[0].message.text.includes('pkga -> pkgb -> pkga'));

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-04] - 2026-10-06
+
 ### Added
 - **Native Quarkus Runner Auto-Launching**: Enhanced CLI runner (`docker-runner.js`) to automatically discover and prefer native JVM execution (`quarkus-run.jar`) in detached background mode when Java 21+ and a runner JAR are present, delivering ~0.5s sub-second startup with native APFS filesystem speed and transparent fallback to Docker.
 - **CLI Execution Flags**: Added `--native`, `--docker`, and `--jar <PATH>` options to `archlens start` and CLI parser for flexible runtime selection.

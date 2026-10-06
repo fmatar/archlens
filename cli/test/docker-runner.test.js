@@ -79,7 +79,7 @@ test('ensureServerRunning prefers native JAR when java and jar are available', a
   const mockHealth = async () => {
     callCount++;
     if (callCount === 1) return { ok: false };
-    return { ok: true, version: '0.1.0-Beta-03' };
+    return { ok: true, version: '0.1.0-Beta-04' };
   };
 
   let jarStarted = false;
@@ -115,7 +115,7 @@ test('ensureServerRunning respects preferDocker option and skips native JAR', as
   const mockHealth = async () => {
     callCount++;
     if (callCount === 1) return { ok: false };
-    return { ok: true, version: '0.1.0-Beta-03' };
+    return { ok: true, version: '0.1.0-Beta-04' };
   };
 
   let jarStarted = false;

@@ -70,6 +70,9 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
+  --native                 Prefer running workbench via native Java Quarkus runner (default)
+  --docker                 Force running workbench via Docker container
+  --jar <PATH>             Custom path to Archlens Quarkus runner JAR
   -o, --open               Open visual workbench in default browser upon startup
   -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)
   -c, --copy               Copy LLM prompt output directly to system clipboard
@@ -202,6 +205,12 @@ function parseArgs(args) {
       parsed.prefix = args[++i];
     } else if (arg === '--server-url') {
       parsed.serverUrl = args[++i] || 'http://localhost:8088';
+    } else if (arg === '--docker') {
+      parsed.preferDocker = true;
+    } else if (arg === '--native') {
+      parsed.preferNative = true;
+    } else if (arg === '--jar') {
+      parsed.jarPath = args[++i];
     } else if (!arg.startsWith('-')) {
       positional.push(arg);
     }
@@ -618,17 +627,21 @@ async function main() {
       const status = await executeStart(options);
       if (status.status === 'running') {
         if (status.spawned) {
-          ui.success(`Archlens container (${DEFAULT_CONTAINER_NAME}) launched successfully!`);
+          if (status.mode === 'jar') {
+            ui.success(`Archlens native runner (${status.jarPath || 'JAR'}) launched successfully!`);
+          } else {
+            ui.success(`Archlens container (${DEFAULT_CONTAINER_NAME}) launched successfully!`);
+          }
         } else {
           ui.success(`Archlens Workbench server is active (${status.version || 'running'}).`);
         }
         console.log(`\n  ${ui.colors.bold}Workbench URL:${ui.colors.reset} ${ui.colors.cyan}${status.serverUrl}${ui.colors.reset}\n`);
       } else if (status.status === 'offline') {
-        ui.warn(status.message || 'Archlens server is offline and Docker daemon is unavailable.');
+        ui.warn(status.message || 'Archlens server is offline and neither native runner JAR nor Docker is available.');
         console.log(`\n  ${ui.colors.dim}To run offline architecture analysis:${ui.colors.reset}`);
         console.log(`  npx @fmatar/archlens-skill prompt\n`);
       } else {
-        ui.error(status.message || 'Failed to start Archlens container.');
+        ui.error(status.message || 'Failed to start Archlens server.');
         process.exit(1);
       }
       process.exit(0);

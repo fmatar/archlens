@@ -194,7 +194,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
     if (mod.startsWith("src/")) {
       mod = mod.substring(4);
     }
-    mod = mod.replaceAll("\\.(ts|tsx|js|jsx)$", "");
+    mod = mod.replaceAll("\\.(svelte\\.ts|svelte\\.js|ts|tsx|js|jsx|svelte)$", "");
     if (mod.endsWith("/index")) {
       mod = mod.substring(0, mod.length() - 6);
     }
@@ -213,8 +213,11 @@ public class TypeScriptAstScanner implements LanguageScanner {
       String combined = currentPkg.isEmpty() ? importPath : currentPkg + "/" + importPath;
       return normalizePath(combined).replace('/', '.');
     }
-    if (importPath.startsWith("@/") || importPath.startsWith("~/")) {
+    if (importPath.startsWith("@/") || importPath.startsWith("~/") || importPath.startsWith("#/")) {
       return importPath.substring(2).replace('/', '.');
+    }
+    if (importPath.startsWith("#lib/")) {
+      return "lib." + importPath.substring(5).replace('/', '.');
     }
     return importPath;
   }
@@ -245,7 +248,11 @@ public class TypeScriptAstScanner implements LanguageScanner {
           if (LanguageScanner.matchesOmitPattern(rootPath.relativize(p).toString(), omitPatterns)) {
             return false;
           }
-          return s.endsWith(".ts") || s.endsWith(".tsx") || s.endsWith(".js") || s.endsWith(".jsx");
+          return s.endsWith(".ts")
+              || s.endsWith(".tsx")
+              || s.endsWith(".js")
+              || s.endsWith(".jsx")
+              || s.endsWith(".svelte");
         });
   }
 }

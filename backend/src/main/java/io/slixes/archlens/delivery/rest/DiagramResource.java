@@ -320,18 +320,23 @@ public class DiagramResource {
 
   public void ensureWatcherRunning(String projectRoot) {
     if (fileWatcher != null && !fileWatcher.isRunning()) {
-      try {
-        fileWatcher.start(
-            Paths.get(projectRoot),
-            path ->
-                eventProcessor.onNext(
-                    Map.of(
-                        "event", "graph-update",
-                        "path", path.toString(),
-                        "timestamp", System.currentTimeMillis())));
-      } catch (Exception e) {
-        LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
-      }
+      Thread.ofVirtual()
+          .name("archlens-watcher-starter")
+          .start(
+              () -> {
+                try {
+                  fileWatcher.start(
+                      Paths.get(projectRoot),
+                      path ->
+                          eventProcessor.onNext(
+                              Map.of(
+                                  "event", "graph-update",
+                                  "path", path.toString(),
+                                  "timestamp", System.currentTimeMillis())));
+                } catch (Exception e) {
+                  LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
+                }
+              });
     }
   }
 

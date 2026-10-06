@@ -38,6 +38,23 @@ class WorkspacePathResolverTest {
   }
 
   @Test
+  void testNormalizeRootContainerWorkspace(@TempDir Path tempDir) {
+    Path fakeWorkspace = tempDir.resolve("workspace");
+    fakeWorkspace.toFile().mkdirs();
+    System.setProperty("archlens.container.workspace", fakeWorkspace.toString());
+    try {
+      String userHome = System.getProperty("user.home", "/Users/fady");
+      String result = WorkspacePathResolver.normalizeRoot(userHome + "/workspace/khasis/khasis-ui");
+      assertEquals(fakeWorkspace.toString() + "/khasis/khasis-ui", result);
+
+      String result2 = WorkspacePathResolver.normalizeRoot("/Users/someone/workspace/other/proj");
+      assertEquals(fakeWorkspace.toString() + "/other/proj", result2);
+    } finally {
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
+
+  @Test
   void testIsIgnoredDirectory() {
     assertTrue(WorkspacePathResolver.isIgnoredDirectory(null));
     assertTrue(WorkspacePathResolver.isIgnoredDirectory(new File(".git")));

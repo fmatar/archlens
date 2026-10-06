@@ -68,8 +68,19 @@ public final class WorkspacePathResolver {
     if (normalized.startsWith("~")) {
       normalized = userHome + normalized.substring(1);
     }
-    // Map /workspace/labs/ to host userHome/workspace/labs/ if present
-    if (normalized.startsWith("/workspace/labs/")) {
+    // In container environments, map host workspace paths to container mounts
+    if (isContainerEnvironment()
+        && containerWorkspace.exists()
+        && containerWorkspace.isDirectory()) {
+      if (!userHome.isBlank() && normalized.startsWith(userHome + "/workspace/")) {
+        normalized = containerPath + normalized.substring((userHome + "/workspace").length());
+      } else if (normalized.startsWith("/Users/") && normalized.contains("/workspace/")) {
+        int wsIdx = normalized.indexOf("/workspace/");
+        normalized = containerPath + normalized.substring(wsIdx + "/workspace".length());
+      }
+    }
+    // Map /workspace/labs/ to host userHome/workspace/labs/ if present on host
+    if (!isContainerEnvironment() && normalized.startsWith("/workspace/labs/")) {
       File hostLabs = new File(labsPath);
       if (hostLabs.exists() && hostLabs.isDirectory()) {
         normalized = normalized.replace("/workspace/labs", labsPath);

@@ -142,4 +142,65 @@ class TypeScriptAstScannerTest {
     assertTrue(result.edges().stream().anyMatch(e -> e.to().equals("utils.helper")));
     assertTrue(result.edges().stream().anyMatch(e -> e.to().equals("styles.theme")));
   }
+
+  @Test
+  void testSvelteComponentAndImportScanning(@TempDir Path tempDir) throws IOException {
+    Path src = tempDir.resolve("src");
+    Path lib = src.resolve("lib");
+    Path components = lib.resolve("components");
+    Path services = lib.resolve("services");
+    Path stores = lib.resolve("stores");
+    Files.createDirectories(components);
+    Files.createDirectories(services);
+    Files.createDirectories(stores);
+
+    Files.writeString(
+        services.resolve("OrderService.ts"),
+        """
+        export class OrderService {
+          processOrder() {}
+        }
+        """);
+
+    Files.writeString(
+        stores.resolve("orderStore.svelte.ts"),
+        """
+        export const orderStore = {};
+        """);
+
+    Files.writeString(
+        components.resolve("OrderCard.svelte"),
+        """
+        <script lang="ts">
+          import { OrderService } from '#lib/services/OrderService';
+          import { orderStore } from '#lib/stores/orderStore.svelte';
+        </script>
+        <div>Order</div>
+        """);
+
+    ArchitecturePolicy policy =
+        new ArchitecturePolicy(
+            "Svelte App", "src", "", true, List.of(), List.of(), List.of(), List.of(), List.of());
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "", policy);
+    assertEquals(3, result.classes().size());
+    assertTrue(result.classes().stream().anyMatch(c -> c.id().equals("lib.components.OrderCard")));
+    assertTrue(
+        result.classes().stream()
+            .anyMatch(c -> c.id().equals("lib.services.OrderService.OrderService")));
+    assertTrue(result.classes().stream().anyMatch(c -> c.id().equals("lib.stores.orderStore")));
+
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("lib.components.OrderCard")
+                        && e.to().equals("lib.services.OrderService")));
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("lib.components.OrderCard")
+                        && e.to().equals("lib.stores.orderStore.svelte")));
+  }
 }

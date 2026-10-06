@@ -625,7 +625,10 @@
   <!-- SVG Graph Canvas -->
   <svg
     bind:this={svgElement}
-    class="w-full h-full"
+    class="w-full h-full focus:outline-none"
+    role="region"
+    aria-label="Clean Architecture Interactive Diagram Canvas"
+    tabindex="0"
   >
     <defs>
       <!-- Normal arrow marker -->

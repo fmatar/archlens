@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-07] - 2026-10-06
+
+### Added
+- **Canvas Keyboard Navigation & Assistive A11y (`/impeccable a11y`)**:
+  - Attached `role="region"` and accessible landmark label to the root SVG canvas.
+  - Equipped all package nodes (`ComponentBox.svelte`) with `role="button"`, `tabindex="0"`, dynamic screen-reader labels (e.g. `Package App, Ring 1, 8 classes`), and `Enter`/`Space` activation.
+  - Equipped individual class rows with `role="button"`, `tabindex="0"`, detailed ARIA labels (`Class name, CRAP score, coverage percent`), and keyboard inspection triggers.
+  - Made SVG class pagination chevrons (`‹`, `›`) and Inspector jump links fully keyboard-focusable and navigable.
+- **Top Navigation Semantic Chunking (`/impeccable distill`)**:
+  - Divided top application toolbar into three clean semantic zones: *Project Context & Source*, *Workstation Modes & Search* (indented glass container with explicit shortcut chips), and *Live Health Telemetry*.
+- **Inspector Tabbed Progressive Disclosure**:
+  - Refactored monolithic vertical inspector into a 3-tab segmented control: `Views` (Architectural views, decluttering matrix, legend), `Inventory` (Focused component classes, Martin metrics $C_a, C_e, I, D$), and `Fitness` (Architectural fitness invariants, SAS screaming score, and 1-click DIP remediation).
+
+### Changed
+- **Predictable Tab State Preservation**: Fixed tab hijacking in `Inspector.svelte` so selecting nodes on the canvas preserves the active tab when auditing Fitness invariants or declutter views.
+- **Intent Clarification for Agent Dispatch**: Added explicit micro-copy to the `Regen & Sync Mailbox` button clarifying that it safely re-indexes AST and evaluates policies without overwriting unstaged files.
+
 ## [0.1.0-Beta-06] - 2026-10-06
 
 ### Added

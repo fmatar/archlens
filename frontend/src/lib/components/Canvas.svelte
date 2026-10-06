@@ -182,7 +182,7 @@
       const touchesFocused = focusedId && (fromNode.comp.id === focusedId || toNode.comp.id === focusedId);
       if (touchesFocused) {
         unbundled.push({
-          key: `unbundled:${edge.from}->${edge.to}:${edge.kind}`,
+          key: `unbundled:${edge.from}->${edge.to}:${edge.kind}:${unbundled.length}`,
           edge,
           fromNode,
           toNode,
@@ -712,7 +712,7 @@
 
       <!-- Animated Dependency Edges (Frustum Culled & Hierarchically Bundled) -->
       {#if diagramStore.declutterMode !== 'REMOVE_ARROWS' && !diagramStore.hasDeclutterFilter('HIDE_ALL_EDGES')}
-        {#each renderedGraphEdges as item (item.key)}
+        {#each renderedGraphEdges as item, i (item.key + ':' + i)}
           {@const goingDown = item.fromNode.y < item.toNode.y}
           {@const isHighlighted = diagramStore.focusedNodeId
             ? (item.fromNode.comp.id === diagramStore.focusedNodeId || item.toNode.comp.id === diagramStore.focusedNodeId)

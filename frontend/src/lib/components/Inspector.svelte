@@ -137,7 +137,7 @@
 
         <!-- Scrollable Class List -->
         <div class="space-y-1 max-h-48 overflow-y-auto pr-0.5">
-          {#each filteredFocusedClasses as cls (cls.id)}
+          {#each filteredFocusedClasses as cls, i (cls.id + ':' + i)}
             <div class="flex items-center gap-1 w-full">
               <button
                 onclick={() => diagramStore.selectedClass = cls}
@@ -555,7 +555,7 @@
           </span>
         </div>
         <div class="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
-          {#each activeViolations.slice(0, 6) as v (v.from + '->' + v.to)}
+          {#each activeViolations.slice(0, 6) as v, i (v.from + '->' + v.to + ':' + i)}
             <button
               onclick={() => diagramStore.openDipInversion(v.from, v.to)}
               class="w-full text-left p-1.5 rounded bg-slate-900/90 hover:bg-rose-950/60 border border-rose-900/30 hover:border-rose-500/50 flex items-center justify-between transition-colors cursor-pointer group"

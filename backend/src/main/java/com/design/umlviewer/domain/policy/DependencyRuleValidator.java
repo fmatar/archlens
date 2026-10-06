@@ -1,6 +1,6 @@
 package com.design.umlviewer.domain.policy;
 
-import com.design.umlviewer.domain.model.DependencyEdge;
+import com.design.umlviewer.domain.graph.DependencyEdge;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

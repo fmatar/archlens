@@ -1,10 +1,10 @@
 package com.design.umlviewer.domain.policy;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.ComponentNode;
-import com.design.umlviewer.domain.model.DependencyEdge;
-import com.design.umlviewer.domain.model.PackageCycle;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ClassNode;
+import com.design.umlviewer.domain.graph.ComponentNode;
+import com.design.umlviewer.domain.graph.DependencyEdge;
+import com.design.umlviewer.domain.graph.PackageCycle;
 import java.util.*;
 
 /**

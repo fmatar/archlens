@@ -1,6 +1,6 @@
 package com.design.umlviewer.domain.policy;
 
-import com.design.umlviewer.domain.model.DependencyEdge;
+import com.design.umlviewer.domain.graph.DependencyEdge;
 
 /** Domain policy abstraction for Clean Architecture rule enforcement and layer rank resolution. */
 public interface PolicyValidator {

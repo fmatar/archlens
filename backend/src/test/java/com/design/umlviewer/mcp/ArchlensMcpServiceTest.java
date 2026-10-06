@@ -2,13 +2,13 @@ package com.design.umlviewer.mcp;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.adapter.mailbox.FileMailboxService;
+import com.design.umlviewer.delivery.rest.DiagramResource;
 import com.design.umlviewer.domain.dossier.ArchitecturalDossierGenerator;
 import com.design.umlviewer.domain.dossier.DipInversionPlan;
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.GraphCompiler;
-import com.design.umlviewer.resource.DiagramResource;
+import com.design.umlviewer.mailbox.fs.FileMailboxService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Path;

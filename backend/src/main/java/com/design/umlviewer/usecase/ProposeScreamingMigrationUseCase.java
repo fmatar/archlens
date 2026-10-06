@@ -1,6 +1,6 @@
 package com.design.umlviewer.usecase;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.domain.screaming.ScreamingMigrationAssistant;
 import com.design.umlviewer.domain.screaming.ScreamingMigrationProposal;
 import com.design.umlviewer.engine.ArchitectureCompiler;

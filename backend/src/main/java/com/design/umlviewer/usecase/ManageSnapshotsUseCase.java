@@ -1,6 +1,6 @@
 package com.design.umlviewer.usecase;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;

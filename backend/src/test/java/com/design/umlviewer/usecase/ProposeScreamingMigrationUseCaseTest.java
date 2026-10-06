@@ -2,11 +2,11 @@ package com.design.umlviewer.usecase;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.ComponentNode;
-import com.design.umlviewer.domain.model.CrapScore;
-import com.design.umlviewer.domain.model.ScreamingMetric;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ClassNode;
+import com.design.umlviewer.domain.graph.ComponentNode;
+import com.design.umlviewer.domain.graph.CrapScore;
+import com.design.umlviewer.domain.graph.ScreamingMetric;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.domain.screaming.ScreamingMigrationAssistant;
 import com.design.umlviewer.domain.screaming.ScreamingMigrationProposal;

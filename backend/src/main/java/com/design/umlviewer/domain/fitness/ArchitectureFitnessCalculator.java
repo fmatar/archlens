@@ -1,9 +1,9 @@
 package com.design.umlviewer.domain.fitness;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.ComponentNode;
-import com.design.umlviewer.domain.model.DependencyEdge;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ClassNode;
+import com.design.umlviewer.domain.graph.ComponentNode;
+import com.design.umlviewer.domain.graph.DependencyEdge;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.*;
 

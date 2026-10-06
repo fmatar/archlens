@@ -1,4 +1,4 @@
-package com.design.umlviewer.domain.model;
+package com.design.umlviewer.domain.graph;
 
 import static org.junit.jupiter.api.Assertions.*;
 

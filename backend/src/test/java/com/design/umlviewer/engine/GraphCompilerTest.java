@@ -2,7 +2,7 @@ package com.design.umlviewer.engine;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.metrics.CrapScoreCalculator;
 import com.design.umlviewer.scanner.JavaAstScanner;
@@ -114,13 +114,13 @@ class GraphCompilerTest {
     assertEquals(tempDir.toFile().getName(), fallbackPolicy.title());
 
     // 7. Test dynamic common prefix computation
-    com.design.umlviewer.domain.model.ClassNode c1 =
-        new com.design.umlviewer.domain.model.ClassNode(
+    com.design.umlviewer.domain.graph.ClassNode c1 =
+        new com.design.umlviewer.domain.graph.ClassNode(
             "com.slixes.vanguard.chat.ChatService",
             "ChatService",
             "com.slixes.vanguard.chat",
             "path",
-            com.design.umlviewer.domain.model.ClassNode.Stereotype.CLASS,
+            com.design.umlviewer.domain.graph.ClassNode.Stereotype.CLASS,
             false,
             null,
             null,
@@ -131,13 +131,13 @@ class GraphCompilerTest {
             0,
             java.util.List.of(),
             java.util.List.of());
-    com.design.umlviewer.domain.model.ClassNode c2 =
-        new com.design.umlviewer.domain.model.ClassNode(
+    com.design.umlviewer.domain.graph.ClassNode c2 =
+        new com.design.umlviewer.domain.graph.ClassNode(
             "com.slixes.vanguard.project.ProjectService",
             "ProjectService",
             "com.slixes.vanguard.project",
             "path",
-            com.design.umlviewer.domain.model.ClassNode.Stereotype.CLASS,
+            com.design.umlviewer.domain.graph.ClassNode.Stereotype.CLASS,
             false,
             null,
             null,
@@ -260,7 +260,7 @@ class GraphCompilerTest {
               String srcRelativePath,
               String basePrefix,
               ArchitecturePolicy policy) {
-            com.design.umlviewer.domain.model.ClassNode c1 =
+            com.design.umlviewer.domain.graph.ClassNode c1 =
                 com.design.umlviewer.scanner.LanguageScanner.createDefaultClassNode(
                     "pkg.Duplicate",
                     "Duplicate1",
@@ -268,7 +268,7 @@ class GraphCompilerTest {
                     "pkg/dup1.go",
                     java.util.List.of(),
                     java.util.List.of());
-            com.design.umlviewer.domain.model.ClassNode c2 =
+            com.design.umlviewer.domain.graph.ClassNode c2 =
                 com.design.umlviewer.scanner.LanguageScanner.createDefaultClassNode(
                     "pkg.Duplicate",
                     "Duplicate2",
@@ -303,7 +303,7 @@ class GraphCompilerTest {
     java.util.List<String> ids =
         graph.components().stream()
             .flatMap(c -> c.classes().stream())
-            .map(com.design.umlviewer.domain.model.ClassNode::id)
+            .map(com.design.umlviewer.domain.graph.ClassNode::id)
             .toList();
     assertEquals(2, ids.size());
     assertEquals(2, ids.stream().distinct().count(), "Class IDs must be disambiguated!");

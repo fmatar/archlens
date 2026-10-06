@@ -1,6 +1,6 @@
 package com.design.umlviewer.metrics;
 
-import com.design.umlviewer.domain.model.CrapScore;
+import com.design.umlviewer.domain.graph.CrapScore;
 import java.util.List;
 
 /** Metric computation interface for Change Risk Anti-Patterns (CRAP) scores. */

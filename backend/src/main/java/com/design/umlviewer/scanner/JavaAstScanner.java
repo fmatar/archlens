@@ -1,10 +1,10 @@
 package com.design.umlviewer.scanner;
 
-import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.CrapScore;
-import com.design.umlviewer.domain.model.DependencyEdge;
-import com.design.umlviewer.domain.model.FieldNode;
-import com.design.umlviewer.domain.model.MethodNode;
+import com.design.umlviewer.domain.graph.ClassNode;
+import com.design.umlviewer.domain.graph.CrapScore;
+import com.design.umlviewer.domain.graph.DependencyEdge;
+import com.design.umlviewer.domain.graph.FieldNode;
+import com.design.umlviewer.domain.graph.MethodNode;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.metrics.CrapScoreCalculator;
 import com.github.javaparser.JavaParser;

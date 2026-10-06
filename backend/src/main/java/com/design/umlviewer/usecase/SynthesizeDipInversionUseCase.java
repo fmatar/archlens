@@ -2,7 +2,7 @@ package com.design.umlviewer.usecase;
 
 import com.design.umlviewer.domain.dossier.DipInversionPlan;
 import com.design.umlviewer.domain.dossier.DipInversionSynthesizer;
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import jakarta.enterprise.context.ApplicationScoped;

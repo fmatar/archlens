@@ -2,7 +2,7 @@ package com.design.umlviewer.domain.fitness;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.domain.model.*;
+import com.design.umlviewer.domain.graph.*;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

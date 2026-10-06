@@ -239,4 +239,75 @@ class GraphCompilerTest {
     assertNotNull(policy);
     assertEquals("Primary Archlens Policy", policy.title());
   }
+
+  @Test
+  void testCompileGraphDeduplicatesClassIds(@TempDir Path tempDir) throws IOException {
+    com.design.umlviewer.scanner.LanguageScanner dummyScanner =
+        new com.design.umlviewer.scanner.LanguageScanner() {
+          @Override
+          public String languageId() {
+            return "dummy";
+          }
+
+          @Override
+          public boolean supports(String projectRoot, ArchitecturePolicy policy) {
+            return true;
+          }
+
+          @Override
+          public ScanResult scanProject(
+              String projectRoot,
+              String srcRelativePath,
+              String basePrefix,
+              ArchitecturePolicy policy) {
+            com.design.umlviewer.domain.model.ClassNode c1 =
+                com.design.umlviewer.scanner.LanguageScanner.createDefaultClassNode(
+                    "pkg.Duplicate",
+                    "Duplicate1",
+                    "pkg",
+                    "pkg/dup1.go",
+                    java.util.List.of(),
+                    java.util.List.of());
+            com.design.umlviewer.domain.model.ClassNode c2 =
+                com.design.umlviewer.scanner.LanguageScanner.createDefaultClassNode(
+                    "pkg.Duplicate",
+                    "Duplicate2",
+                    "pkg",
+                    "pkg/dup2.go",
+                    java.util.List.of(),
+                    java.util.List.of());
+            return new ScanResult(java.util.List.of(c1, c2), java.util.List.of());
+          }
+
+          @Override
+          public ScanResult scanProject(
+              String projectRoot, String srcRelativePath, String basePrefix) {
+            return scanProject(projectRoot, srcRelativePath, basePrefix, null);
+          }
+        };
+
+    GraphCompiler compiler = new GraphCompiler();
+    try {
+      java.lang.reflect.Field field = GraphCompiler.class.getDeclaredField("scannerRegistry");
+      field.setAccessible(true);
+      field.set(
+          compiler,
+          new com.design.umlviewer.scanner.LanguageScannerRegistry(
+              java.util.List.of(dummyScanner)));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    ArchitectureGraph graph = compiler.compileGraph(tempDir.toString(), null);
+    assertNotNull(graph);
+    java.util.List<String> ids =
+        graph.components().stream()
+            .flatMap(c -> c.classes().stream())
+            .map(com.design.umlviewer.domain.model.ClassNode::id)
+            .toList();
+    assertEquals(2, ids.size());
+    assertEquals(2, ids.stream().distinct().count(), "Class IDs must be disambiguated!");
+    assertTrue(ids.contains("pkg.Duplicate"));
+    assertTrue(ids.contains("pkg.Duplicate-2"));
+  }
 }

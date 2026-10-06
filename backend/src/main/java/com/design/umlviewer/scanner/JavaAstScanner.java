@@ -56,17 +56,34 @@ public class JavaAstScanner implements LanguageScanner {
     this.fileParser = fileParser;
   }
 
+  private static final ThreadLocal<JavaParser> THREAD_LOCAL_PARSER =
+      ThreadLocal.withInitial(
+          () -> {
+            try {
+              return new JavaParser(
+                  new com.github.javaparser.ParserConfiguration()
+                      .setLanguageLevel(
+                          com.github.javaparser.ParserConfiguration.LanguageLevel.RAW));
+            } catch (Throwable t) {
+              LOG.warnf("Failed to initialize thread-local JavaParser: %s", t.getMessage());
+              return null;
+            }
+          });
+
   private static JavaParserFunction createDefaultParser() {
-    try {
-      JavaParser jp =
-          new JavaParser(
-              new com.github.javaparser.ParserConfiguration()
-                  .setLanguageLevel(com.github.javaparser.ParserConfiguration.LanguageLevel.RAW));
-      return jp::parse;
-    } catch (Throwable t) {
-      LOG.warnf("Failed to initialize default JavaParser: %s", t.getMessage());
-      return null;
-    }
+    return path -> {
+      JavaParser jp = THREAD_LOCAL_PARSER.get();
+      if (jp == null) {
+        return new ParseResult<>(null, List.of(), null);
+      }
+      try {
+        return jp.parse(path);
+      } catch (Throwable t) {
+        // Reset thread-local parser in case lexer/tokenizer internal buffers were corrupted
+        THREAD_LOCAL_PARSER.remove();
+        throw t;
+      }
+    };
   }
 
   @Override

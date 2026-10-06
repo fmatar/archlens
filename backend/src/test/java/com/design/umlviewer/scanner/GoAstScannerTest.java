@@ -93,4 +93,42 @@ class GoAstScannerTest {
                         && e.from().equals("internal.adapters")
                         && e.to().equals("internal.domain")));
   }
+
+  @Test
+  void testPackageWithMultipleFunctionOnlyFilesHasUniqueIds(@TempDir Path tempDir)
+      throws IOException {
+    Files.writeString(
+        tempDir.resolve("go.mod"), "module github.com/example/authservice\n\ngo 1.22\n");
+
+    Path authDir = tempDir.resolve("pkg/auth");
+    Files.createDirectories(authDir);
+
+    Files.writeString(
+        authDir.resolve("pkce.go"),
+        """
+        package auth
+
+        func GeneratePKCE() string {
+            return "pkce-token"
+        }
+        """);
+
+    Files.writeString(
+        authDir.resolve("rbac.go"),
+        """
+        package auth
+
+        func RequireAuth() bool {
+            return true
+        }
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
+    assertEquals(2, result.classes().size());
+
+    List<String> ids = result.classes().stream().map(c -> c.id()).toList();
+    assertEquals(2, ids.stream().distinct().count(), "All class IDs must be strictly unique!");
+    assertTrue(ids.contains("pkg.auth.pkce"));
+    assertTrue(ids.contains("pkg.auth.rbac"));
+  }
 }

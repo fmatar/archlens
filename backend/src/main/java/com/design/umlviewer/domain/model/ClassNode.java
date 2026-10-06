@@ -25,4 +25,23 @@ public record ClassNode(
     ENUM,
     ABSTRACT
   }
+
+  public ClassNode withId(String newId) {
+    return new ClassNode(
+        newId,
+        name,
+        packageName,
+        filePath,
+        stereotype,
+        isForeign,
+        level,
+        crap,
+        coverage,
+        cc,
+        killed,
+        survived,
+        uncovered,
+        fields,
+        methods);
+  }
 }

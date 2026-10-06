@@ -545,7 +545,7 @@
             </text>
 
             <!-- 6. Component Scatter Dots -->
-            {#each filteredPoints as pt (pt.componentId)}
+            {#each filteredPoints as pt, i (pt.componentId + ':' + i)}
               {@const isSelected = selectedPoint?.componentId === pt.componentId}
               {@const isHovered = hoveredPoint?.componentId === pt.componentId}
               {@const tierColor = getTierColor(pt.level)}

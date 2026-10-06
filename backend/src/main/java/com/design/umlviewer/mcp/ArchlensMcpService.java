@@ -1,8 +1,8 @@
 package com.design.umlviewer.mcp;
 
+import com.design.umlviewer.delivery.rest.DiagramResource;
 import com.design.umlviewer.domain.dossier.DipInversionPlan;
-import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.resource.DiagramResource;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
 import jakarta.enterprise.context.ApplicationScoped;

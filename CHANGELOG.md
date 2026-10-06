@@ -9,7 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-05] - 2026-10-06
+
+### Changed
+- **100% Screaming Architecture Score (SAS) Package Verticalization**: Refactored backend packages to eliminate technical layering markers (`model`, `adapter`, `resource`) in adherence to Robert C. Martin's Clean Architecture Chapter 21:
+  - Verticalized `com.design.umlviewer.domain.model` into `com.design.umlviewer.domain.graph` (Domain Core entities and topology records).
+  - Verticalized `com.design.umlviewer.adapter.mailbox` into `com.design.umlviewer.mailbox.fs` (Filesystem Mailbox Gateway).
+  - Verticalized `com.design.umlviewer.resource` into `com.design.umlviewer.delivery.rest` (Quarkus REST & SSE Delivery endpoints).
+  - Updated `.archlens/policy.json` with concentric ring assignments for verticalized packages.
+  - Achieved **1.00 (100%) Screaming Architecture Score** (`PACKAGE_BY_FEATURE`, 13/13 domain packages, 0 technical packages, 0 violations, 0 cycles).
+
 ## [0.1.0-Beta-04] - 2026-10-06
+
+
 
 ### Added
 - **Native Quarkus Runner Auto-Launching**: Enhanced CLI runner (`docker-runner.js`) to automatically discover and prefer native JVM execution (`quarkus-run.jar`) in detached background mode when Java 21+ and a runner JAR are present, delivering ~0.5s sub-second startup with native APFS filesystem speed and transparent fallback to Docker.

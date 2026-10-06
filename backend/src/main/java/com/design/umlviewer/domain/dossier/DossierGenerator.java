@@ -1,6 +1,6 @@
 package com.design.umlviewer.domain.dossier;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 
 /**

@@ -5,7 +5,7 @@ import com.design.umlviewer.domain.fitness.FitnessEvaluation;
 import com.design.umlviewer.domain.fitness.FitnessHistoryTrend;
 import com.design.umlviewer.domain.fitness.FitnessThresholds;
 import com.design.umlviewer.domain.fitness.HistoricalFitnessSnapshot;
-import com.design.umlviewer.domain.model.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.ArchitectureCompiler;
 import jakarta.enterprise.context.ApplicationScoped;

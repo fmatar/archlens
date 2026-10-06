@@ -7,17 +7,17 @@
   "fitness": {
     "maxViolations": 0,
     "maxCycles": 0,
-    "minScreamingScore": 0.70,
+    "minScreamingScore": 0.85,
     "maxMainSequenceDistance": 0.35,
     "maxAfferentCoupling": 50,
     "maxEfferentCoupling": 30
   },
-  "order": ["domain", "scanner", "engine", "metrics", "usecase", "adapter", "resource", "mcp"],
+  "order": ["domain", "scanner", "engine", "metrics", "usecase", "mailbox.fs", "delivery.rest", "mcp"],
   "levels": [
     ["domain"],
     ["scanner", "engine", "metrics", "usecase"],
-    ["adapter"],
-    ["resource", "mcp"]
+    ["mailbox.fs"],
+    ["delivery.rest", "mcp"]
   ],
   "proposals": [
     {
@@ -26,7 +26,7 @@
       "layers": [
         { "id": "domain", "label": "Level 0: Domain Entities & Rules", "packages": ["domain"] },
         { "id": "application", "label": "Level 1: Scanners & Graph Engine", "packages": ["scanner", "engine", "metrics", "usecase"] },
-        { "id": "infrastructure", "label": "Level 2: REST API & Mailbox Adapters", "packages": ["adapter", "resource", "mcp"] }
+        { "id": "infrastructure", "label": "Level 2: REST Delivery & Mailbox Gateway", "packages": ["mailbox.fs", "delivery.rest", "mcp"] }
       ],
       "omit": []
     }

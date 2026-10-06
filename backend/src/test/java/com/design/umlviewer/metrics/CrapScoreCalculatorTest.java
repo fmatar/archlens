@@ -2,7 +2,7 @@ package com.design.umlviewer.metrics;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.domain.model.CrapScore;
+import com.design.umlviewer.domain.graph.CrapScore;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

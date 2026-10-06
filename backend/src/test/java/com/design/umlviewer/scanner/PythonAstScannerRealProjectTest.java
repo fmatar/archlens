@@ -2,8 +2,8 @@ package com.design.umlviewer.scanner;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.domain.model.ComponentNode;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ComponentNode;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import com.design.umlviewer.engine.GraphCompiler;
 import java.io.File;

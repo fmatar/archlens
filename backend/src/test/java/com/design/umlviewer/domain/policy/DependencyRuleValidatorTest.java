@@ -2,7 +2,7 @@ package com.design.umlviewer.domain.policy;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.design.umlviewer.domain.model.DependencyEdge;
+import com.design.umlviewer.domain.graph.DependencyEdge;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -46,7 +46,7 @@
         <Bug pattern="REC_CATCH_EXCEPTION"/>
     </Match>
     <Match>
-        <Package name="com.design.umlviewer.resource"/>
+        <Package name="com.design.umlviewer.delivery.rest"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
     <Match>

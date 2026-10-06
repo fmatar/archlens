@@ -1,9 +1,9 @@
 package com.design.umlviewer.domain.dossier;
 
-import com.design.umlviewer.domain.model.ArchitectureGraph;
-import com.design.umlviewer.domain.model.ClassNode;
-import com.design.umlviewer.domain.model.ComponentNode;
-import com.design.umlviewer.domain.model.MethodNode;
+import com.design.umlviewer.domain.graph.ArchitectureGraph;
+import com.design.umlviewer.domain.graph.ClassNode;
+import com.design.umlviewer.domain.graph.ComponentNode;
+import com.design.umlviewer.domain.graph.MethodNode;
 import com.design.umlviewer.domain.policy.ArchitecturePolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;

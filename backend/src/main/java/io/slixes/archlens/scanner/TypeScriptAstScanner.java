@@ -219,6 +219,9 @@ public class TypeScriptAstScanner implements LanguageScanner {
     if (importPath.startsWith("#lib/")) {
       return "lib." + importPath.substring(5).replace('/', '.');
     }
+    if (importPath.startsWith("@workspace/")) {
+      return importPath.substring(11).replace('/', '.');
+    }
     return importPath;
   }
 

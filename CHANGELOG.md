@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Enterprise Monorepo & Multi-Module Workspace AST Resolution** ([#163](https://github.com/fmatar/archlens/issues/163)):
+  - Validated multi-module recursive directory discovery across nested enterprise monorepos for Java (`apps/*/src/main/java`, `libs/*/src/main/java`).
+  - Added support for pnpm/Turborepo workspace package aliases (`@workspace/*`) in `TypeScriptAstScanner` to cleanly link cross-package dependencies between frontend apps and internal UI/shared libraries.
+  - Added end-to-end integration tests for nested monorepo source resolution and inter-module edge tracing in `JavaAstScannerTest` and `TypeScriptAstScannerTest`.
+
 ## [0.1.0-Beta-08] - 2026-10-07
 
 ### Added

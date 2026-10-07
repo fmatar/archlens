@@ -62,4 +62,37 @@ class MailboxResourceTest {
     assertNotNull(rollbackRes);
     assertEquals(false, rollbackRes.get("success"));
   }
+
+  @Test
+  void testSyncAdrEndpoint(@TempDir Path tempDir) throws IOException {
+    MailboxGateway gateway = new FileMailboxService();
+    io.slixes.archlens.engine.ArchitectureCompiler dummyCompiler =
+        (root, proposal) ->
+            new io.slixes.archlens.domain.graph.ArchitectureGraph(
+                "Test", false, null, java.util.List.of(), java.util.List.of(), java.util.List.of());
+    io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase verifyUseCase =
+        new io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase(dummyCompiler, gateway);
+    io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase =
+        new io.slixes.archlens.usecase.SyncAdrUseCase();
+
+    MailboxResource resource = new MailboxResource(gateway, verifyUseCase, syncAdrUseCase);
+
+    Map<String, Object> adrRes =
+        resource.syncAdr(
+            tempDir.toString(),
+            Map.of(
+                "type",
+                "DIP_INVERSION",
+                "sourceClass",
+                "com.example.OrderService",
+                "targetClass",
+                "com.example.PostgresRepo",
+                "interfacePortName",
+                "OrderRepoPort"));
+
+    assertNotNull(adrRes);
+    assertEquals(true, adrRes.get("success"));
+    assertEquals(1, adrRes.get("index"));
+    assertNotNull(adrRes.get("filename"));
+  }
 }

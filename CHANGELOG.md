@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync** ([#165](https://github.com/fmatar/archlens/issues/165)):
+  - Authored official composite GitHub Action `action.yml` (`fmatar/archlens@v1`) enabling zero-dependency CI gate enforcement with automated SARIF 2.1.0 generation and upload to GitHub Code Scanning.
+  - Implemented `SyncAdrUseCase` generating automated Architecture Decision Records (ADRs) in `docs/adr/` tracking DIP inversions and package restructuring.
+  - Added REST endpoint `/api/mailbox/sync-adr` in `MailboxResource` with unit test coverage in `SyncAdrUseCaseTest` and `MailboxResourceTest`.
 - **Transactional Refactor Verification & Worktree Snapshot Rollback Engine** ([#164](https://github.com/fmatar/archlens/issues/164)):
   - Implemented transactional refactoring pre-flight snapshots in `.archlens/snapshots/` before dispatching mutating mailbox proposals (`APPLY_PROPOSAL`, `INVERT_DEPENDENCY`).
   - Added `VerifyAndRollbackRefactorUseCase` calculating violation deltas and preventing inward layer coupling regressions.

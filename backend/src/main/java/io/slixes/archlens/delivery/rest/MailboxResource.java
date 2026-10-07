@@ -25,17 +25,30 @@ public class MailboxResource {
 
   @Inject VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase;
 
+  @Inject io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase;
+
   public MailboxResource() {}
 
   public MailboxResource(MailboxGateway mailboxService) {
     this.mailboxService = mailboxService;
     this.verifyAndRollbackUseCase = null;
+    this.syncAdrUseCase = null;
   }
 
   public MailboxResource(
       MailboxGateway mailboxService, VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase) {
     this.mailboxService = mailboxService;
     this.verifyAndRollbackUseCase = verifyAndRollbackUseCase;
+    this.syncAdrUseCase = null;
+  }
+
+  public MailboxResource(
+      MailboxGateway mailboxService,
+      VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase,
+      io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase) {
+    this.mailboxService = mailboxService;
+    this.verifyAndRollbackUseCase = verifyAndRollbackUseCase;
+    this.syncAdrUseCase = syncAdrUseCase;
   }
 
   @GET
@@ -98,5 +111,43 @@ public class MailboxResource {
         verifyAndRollbackUseCase.rollbackToSnapshot(
             WorkspacePathResolver.normalizeRoot(projectRoot), snapshotId);
     return Map.of("success", success, "snapshotId", snapshotId != null ? snapshotId : "");
+  }
+
+  @POST
+  @Path("/sync-adr")
+  public Map<String, Object> syncAdr(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      Map<String, Object> request)
+      throws IOException {
+    if (syncAdrUseCase == null) {
+      return Map.of("success", false, "error", "SyncAdrUseCase is not configured");
+    }
+
+    String type = (String) request.getOrDefault("type", "DIP_INVERSION");
+    String root = WorkspacePathResolver.normalizeRoot(projectRoot);
+
+    if ("PACKAGE_REORGANIZATION".equalsIgnoreCase(type)) {
+      String title =
+          (String) request.getOrDefault("title", "Clean Architecture Package Reorganization");
+      String context =
+          (String)
+              request.getOrDefault(
+                  "context", "Reorganized packages according to Clean Architecture layers.");
+      String decision =
+          (String) request.getOrDefault("decision", "Adopt concentric layer hierarchy.");
+      String consequences =
+          (String) request.getOrDefault("consequences", "Eliminated illegal outward dependencies.");
+      var doc =
+          syncAdrUseCase.recordPackageReorganization(root, title, context, decision, consequences);
+      return Map.of("success", true, "filename", doc.filename(), "index", doc.index());
+    } else {
+      String fromClass = (String) request.getOrDefault("sourceClass", "");
+      String toClass = (String) request.getOrDefault("targetClass", "");
+      String portName = (String) request.getOrDefault("interfacePortName", "Port");
+      String reason =
+          (String) request.getOrDefault("reason", "Invert outward Clean Architecture dependency");
+      var doc = syncAdrUseCase.recordDipInversion(root, fromClass, toClass, portName, reason);
+      return Map.of("success", true, "filename", doc.filename(), "index", doc.index());
+    }
   }
 }

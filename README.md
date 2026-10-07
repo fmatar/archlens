@@ -107,6 +107,18 @@ docker run -d --name archlens-server -p 8088:8088 \
   ghcr.io/fmatar/archlens:latest
 ```
 
+### Option E: Official GitHub Action for CI/CD Quality Gates
+Enforce Clean Architecture rules, Uncle Bob ADP cycle detection, and Screaming Architecture in your GitHub Actions workflows with zero setup:
+```yaml
+- name: Archlens Clean Architecture Gate
+  uses: fmatar/archlens@v1
+  with:
+    max-violations: 0
+    detect-cycles: true
+    screaming-threshold: 0.70
+    fitness-threshold: 0.85
+```
+
 ---
 
 ## ⚡ 3-Step Quickstart

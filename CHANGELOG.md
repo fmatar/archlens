@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization** ([#166](https://github.com/fmatar/archlens/issues/166)):
+  - Indexed and verified open agent skill specification for `skills.sh` (`npx skills add fmatar/archlens`) across 15+ coding agent ecosystems.
+  - Documented composite GitHub Action workflow integration (`fmatar/archlens@v1`) for continuous team governance in `README.md`.
+  - Validated spatial frustum culling, hierarchical edge bundling, and semantic compact Level-of-Detail (LoD) zooming for high-density 100k+ LoC codebases.
 - **Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync** ([#165](https://github.com/fmatar/archlens/issues/165)):
   - Authored official composite GitHub Action `action.yml` (`fmatar/archlens@v1`) enabling zero-dependency CI gate enforcement with automated SARIF 2.1.0 generation and upload to GitHub Code Scanning.
   - Implemented `SyncAdrUseCase` generating automated Architecture Decision Records (ADRs) in `docs/adr/` tracking DIP inversions and package restructuring.

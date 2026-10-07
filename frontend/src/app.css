@@ -18,3 +18,21 @@ body {
   overflow: hidden;
   user-select: none;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Suppress aggressive infinite loops, pulses, and scanlines */
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .animate-radar-scan {
+    animation: none !important;
+  }
+
+  /* Retain smooth, instant state feedback */
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.08s !important;
+  }
+}

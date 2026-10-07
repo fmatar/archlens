@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone, ShieldCheck, TrendingUp, CheckCircle2, XCircle } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone, ShieldCheck, TrendingUp, CheckCircle2, XCircle, Info } from '@lucide/svelte';
   import { calculateComponentMartinMetrics } from '../utils/martinMetrics';
   import type { MartinMetrics } from '../types/diagram';
 
@@ -11,6 +11,7 @@
 
   let classSearchQuery = $state('');
   let isFitnessExpanded = $state(false);
+  let showMetricHelp = $state(false);
   let activeTab = $state<'architecture' | 'classes' | 'governance'>('architecture');
 
   // Only switch to classes tab if user focused a new node and was already inspecting inventory,
@@ -307,10 +308,21 @@
           {#if focusedMetrics}
             <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] font-mono space-y-1.5">
               <div class="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
-                <span class="flex items-center gap-1 text-slate-300">
-                  <Gauge size={11} class="text-blue-400" />
-                  Martin Metrics
-                </span>
+                <div class="flex items-center gap-1.5">
+                  <span class="flex items-center gap-1 text-slate-300">
+                    <Gauge size={11} class="text-blue-400" />
+                    Martin Metrics
+                  </span>
+                  <button
+                    type="button"
+                    onclick={() => showMetricHelp = !showMetricHelp}
+                    class="p-0.5 rounded text-slate-500 hover:text-blue-300 transition-colors cursor-pointer"
+                    title="Toggle Martin Metrics formula cheat sheet"
+                    aria-label="Toggle Martin Metrics formula cheat sheet"
+                  >
+                    <Info size={10} />
+                  </button>
+                </div>
                 {#if focusedMetrics.zone === 'MAIN_SEQUENCE'}
                   <span class="text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Main Seq</span>
                 {:else if focusedMetrics.zone === 'ZONE_OF_PAIN'}
@@ -319,6 +331,16 @@
                   <span class="text-amber-400 bg-amber-950/60 px-1 py-0.2 rounded border border-amber-500/30">Zone of Uselessness</span>
                 {/if}
               </div>
+
+              {#if showMetricHelp}
+                <div class="p-2 rounded bg-slate-950 border border-slate-800 text-[9px] text-slate-400 space-y-1 font-sans animate-in fade-in duration-100">
+                  <div class="font-semibold text-slate-200 font-mono text-[10px]">Clean Architecture Formulas</div>
+                  <div>• <span class="font-mono text-slate-300">Ca</span>: Afferent Coupling (incoming dependencies)</div>
+                  <div>• <span class="font-mono text-slate-300">Ce</span>: Efferent Coupling (outgoing dependencies)</div>
+                  <div>• <span class="font-mono text-slate-300">I = Ce / (Ca + Ce)</span>: Instability (0 = Stable, 1 = Volatile)</div>
+                  <div>• <span class="font-mono text-slate-300">D = |A + I - 1|</span>: Normalized Distance from Main Sequence (ideal ≤ 0.25)</div>
+                </div>
+              {/if}
 
               <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800/80">
                 <div class="bg-slate-950/50 p-1 rounded" title="Afferent Coupling (Incoming dependencies)">
@@ -599,7 +621,7 @@
     {/if}
   </div>
 
-  <!-- Regen Button -->
+  <!-- Regen & Agent Mailbox Dispatch Section -->
   <div class="p-4 border-t border-slate-800 bg-slate-900 space-y-2">
     {#if diagramStore.regenNotice}
       <div
@@ -614,14 +636,23 @@
       disabled={diagramStore.isRegenerating}
       onclick={() => diagramStore.triggerRegen()}
       class="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700/80 text-white font-medium text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 transition-all cursor-pointer disabled:cursor-not-allowed {diagramStore.isRegenerating ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 shadow-emerald-500/40 shadow-xl animate-pulse' : ''}"
-      title="Re-index workspace AST, evaluate architectural policy, and sync .archlens/to-agent.json"
+      title="Re-index workspace AST, evaluate architectural policy, and sync .archlens/to-agent.json safely"
       aria-label="Re-index AST and Wake Agent"
     >
       <RefreshCw size={14} class={diagramStore.isRegenerating ? 'animate-spin' : ''} />
       <span>{diagramStore.isRegenerating ? 'Agent Synthesizing Code...' : 'Regen & Sync Mailbox'}</span>
     </button>
-    <div class="text-[9px] font-mono text-slate-500 text-center select-none">
-      Re-indexes AST &bull; Evaluates rules &bull; Safe (zero unstaged overwrites)
+    <div class="p-2 rounded bg-slate-950/60 border border-slate-800/80 text-[10px] text-slate-400 space-y-1">
+      <div class="flex items-center justify-between text-slate-300 font-medium">
+        <span class="flex items-center gap-1 text-emerald-400">
+          <ShieldCheck size={11} />
+          Safe Non-Destructive Action
+        </span>
+        <span class="font-mono text-[9px] text-slate-500">.archlens/to-agent.json</span>
+      </div>
+      <p class="text-[10px] text-slate-400 leading-relaxed font-sans">
+        Signals the autonomous companion agent to re-parse the AST and evaluate policy rules. Does <span class="text-slate-200 font-semibold">not</span> overwrite unstaged Git files.
+      </p>
     </div>
   </div>
 </div>

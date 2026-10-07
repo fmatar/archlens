@@ -613,9 +613,10 @@
           <button
             onclick={() => diagramStore.triggerRegen()}
             class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-900/40"
+            title="Non-destructive: re-indexes AST and notifies agent via .archlens/to-agent.json"
           >
             <Sparkles size={14} />
-            Wake Agent
+            Re-index AST
           </button>
         </div>
       </div>
@@ -623,6 +624,7 @@
   {/if}
 
   <!-- SVG Graph Canvas -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <svg
     bind:this={svgElement}
     class="w-full h-full focus:outline-none"

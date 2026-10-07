@@ -292,19 +292,20 @@
     </div>
 
     <!-- 3. Right: Live Health Badges & SSE Status -->
-    <div class="flex items-center gap-2.5">
+    <div class="flex items-center gap-2 overflow-x-auto max-w-full py-0.5 scrollbar-none shrink min-w-0 justify-end">
       {#if diagramStore.isRegenerating}
         <div
-          class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-xs font-mono shadow-sm shadow-cyan-950 animate-pulse"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-xs font-mono shadow-sm shadow-cyan-950 animate-pulse shrink-0"
         >
           <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-          <span>Agent Re-indexing...</span>
+          <span class="hidden sm:inline">Agent Re-indexing...</span>
+          <span class="sm:hidden">Re-indexing</span>
         </div>
       {/if}
 
       <!-- Live File Watcher Sync Indicator -->
       <div
-        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border {diagramStore.isLiveSyncConnected ? 'text-emerald-300 bg-emerald-950/40 border-emerald-700/50' : 'text-slate-500 bg-slate-900 border-slate-800'}"
+        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border shrink-0 {diagramStore.isLiveSyncConnected ? 'text-emerald-300 bg-emerald-950/40 border-emerald-700/50' : 'text-slate-500 bg-slate-900 border-slate-800'}"
         title={diagramStore.isLiveSyncConnected ? `File Watcher connected. Last sync: ${diagramStore.lastLiveSyncTime || 'active'}` : 'File Watcher idle'}
       >
         <span class="w-1.5 h-1.5 rounded-full {diagramStore.isLiveSyncConnected ? 'bg-emerald-400 animate-ping' : 'bg-slate-600'}"></span>
@@ -314,11 +315,12 @@
       <!-- Package Cycles (ADP) Warning Badge -->
       {#if diagramStore.hasCycles}
         <div
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono font-medium shadow-sm shadow-amber-950"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono font-medium shadow-sm shadow-amber-950 shrink-0"
           title={`${diagramStore.packageCycles.length} circular package dependency detected (Robert C. Martin Acyclic Dependencies Principle)`}
         >
           <AlertCircle size={13} class="text-amber-400 animate-pulse" />
           <span class="hidden md:inline">{diagramStore.packageCycles.length} Cycle{diagramStore.packageCycles.length === 1 ? '' : 's'} (ADP)</span>
+          <span class="md:hidden">{diagramStore.packageCycles.length} ADP</span>
         </div>
       {/if}
 
@@ -326,7 +328,7 @@
       {#if diagramStore.screamingMetric}
         {@const sm = diagramStore.screamingMetric}
         <div
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium shadow-sm border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-rose-500/15 border-rose-500/40 text-rose-300'}"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium shadow-sm border shrink-0 {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-rose-500/15 border-rose-500/40 text-rose-300'}"
           title={`Screaming Architecture Score: ${sm.score.toFixed(2)} (${sm.domainPackageCount} domain / ${sm.totalPackageCount} packages)`}
         >
           <Megaphone size={13} class={sm.classification === 'PACKAGE_BY_FEATURE' ? 'text-emerald-400' : sm.classification === 'HYBRID' ? 'text-amber-400' : 'text-rose-400 animate-pulse'} />
@@ -337,7 +339,7 @@
       {#if violatingCount > 0}
         <div
           bind:this={badgeEl}
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono font-medium shadow-sm shadow-rose-950"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono font-medium shadow-sm shadow-rose-950 shrink-0"
         >
           <AlertTriangle size={14} class="text-rose-400 animate-pulse" />
           <span>{violatingCount} {violatingCount === 1 ? 'Violation' : 'Violations'}</span>
@@ -345,7 +347,7 @@
       {:else}
         <div
           bind:this={badgeEl}
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-medium shadow-sm shadow-emerald-950"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-medium shadow-sm shadow-emerald-950 shrink-0"
         >
           <ShieldCheck size={14} class="text-emerald-400" />
           <span class="hidden md:inline">Conforming</span>

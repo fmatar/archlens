@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-08] - 2026-10-07
+
+### Added
+- **Instant Filesystem Explorer & Container-Aware Browsing**:
+  - Eliminated macOS `osascript` hangs and timeouts when running Archlens in Docker containers (`nativePickerSupported: false` by default, dynamic probe).
+  - Added dedicated **"Select Current Folder"** banner with explicit `Check` confirmation, enabling instant single-click selection of the active directory without diving into subfolders.
+  - Added folder drill-down chevron navigation and active directory path syncing into the filesystem input field.
+- **Vestibular Motion Safety (`prefers-reduced-motion`)**:
+  - Implemented `@media (prefers-reduced-motion: reduce)` in `frontend/src/app.css` suppressing continuous infinite radar sweeps and pulsing alerts while preserving smooth state transitions.
+- **Full WAI-ARIA 1.2 Combobox & Listbox Support in Quick Find**:
+  - Upgraded `CommandPalette.svelte` input with `role="combobox"`, `aria-expanded`, `aria-controls`, and `aria-activedescendant`.
+  - Added `role="listbox"` on results container and `role="option"`, `aria-selected`, and keyboard Enter handlers on all palette items.
+- **Interactive Robert C. Martin Architectural Metrics Cheat Sheet**:
+  - Added inline information popover toggle (`<Info />`) in `Inspector.svelte` detailing mathematical formulas for Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I$), and Normalized Distance ($D$).
+- **Stable Edge Hover Intent & Distance Hysteresis**:
+  - Added mouse coordinate tracking and distance hysteresis to `DependencyEdge.svelte` to prevent tooltip jitter and false dismissals across dense edge corridors.
+
+### Changed
+- **Adaptive Top-Bar Telemetry Layout**:
+  - Refactored right-hand telemetry container with responsive auto-shrinking and abbreviating badges (`Re-indexing...` -> `Re-indexing`, `X Cycles (ADP)` -> `X ADP`) to prevent horizontal toolbar overflow on narrow displays.
+- **Reassuring Non-Destructive Agent Mailbox Micro-Copy**:
+  - Added explicit micro-card and `<ShieldCheck>` callout to the `Regen & Sync Mailbox` button in `Inspector.svelte` and `Canvas.svelte` empty states, reassuring users that AST re-indexing and policy checks do not overwrite unstaged Git files.
+
+### Fixed
+- **SVG Canvas TabIndex Compiler Warning**: Resolved Svelte 5 a11y non-interactive tabindex compiler warnings on `<svg>` and draggable card rects.
+
 ## [0.1.0-Beta-07] - 2026-10-06
 
 ### Added

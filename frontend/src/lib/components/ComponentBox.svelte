@@ -128,6 +128,7 @@
     />
 
     <!-- Component Header Banner (Clipped cleanly by card-clip for perfect top corners) -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <rect
       x="0"
       y="0"
@@ -155,6 +156,7 @@
   </g>
 
   <!-- Outer Box Card Surface (Drawn on top with pointer-events="all" for crisp, unbroken edges and dragging) -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <rect
     data-testid="component-card"
     width={width}
@@ -174,6 +176,7 @@
     }}
   />
 
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <text
     x="12"
     y="19"

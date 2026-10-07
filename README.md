@@ -8,11 +8,15 @@
 [![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](Dockerfile)
 [![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go%20%7C%20Clojure-emerald.svg)](#polyglot-language-support)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Roadmap](https://img.shields.io/badge/Roadmap-v1.0.0%20GA-purple.svg)](ROADMAP.md)
+[![Kanban](https://img.shields.io/badge/Kanban-Living%20Board-blueviolet.svg)](docs/KANBAN.md)
 
 > *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
 > — **Robert C. Martin (Uncle Bob)**
 
 An interactive real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and autonomous AI refactoring studio for modern software systems.
+
+*(Explore the [Product Roadmap](ROADMAP.md) & [Living Kanban Board](docs/KANBAN.md))*
 
 ![Archlens Clean Architecture Dynamic Workbench](media/archlens-canvas.png)  
 *(High Definition Video: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) &bull; Extended Tour: [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) &bull; Animated Preview: [`media/archlens-teaser.gif`](media/archlens-teaser.gif))*
@@ -58,11 +62,21 @@ When an architectural violation is identified or a new package layout is designe
 
 ---
 
-## 📦 Installation
+## 📦 Installation & AI Skill Setup
 
 Choose the installation method that fits your workflow:
 
-### Option A: Zero-Install Execution via `npx` (Recommended)
+### Option A: Open Skills Ecosystem via `npx skills` (Recommended for AI Agents)
+Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, equip any AI coding agent (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed) with Archlens governance protocols and companion tools:
+```bash
+# Add to all detected AI assistants:
+npx skills add fmatar/archlens
+
+# Or add to a specific assistant:
+npx skills add fmatar/archlens --agent claude-code
+```
+
+### Option B: Zero-Install Policy Scaffolder via `npx`
 Run directly without installing any global packages:
 ```bash
 # Production Stable Track
@@ -75,7 +89,7 @@ npx @fmatar/archlens-skill@dev
 npx github:fmatar/archlens
 ```
 
-### Option B: Global CLI Installation
+### Option C: Global CLI Installation
 Install the CLI globally on your workstation:
 ```bash
 npm install -g @fmatar/archlens-skill
@@ -84,7 +98,7 @@ npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
 
-### Option C: Docker Container (Standalone Server)
+### Option D: Docker Container (Standalone Server)
 Run the all-in-one container directly via Docker:
 ```bash
 # Mount your local workspace into /workspace:

@@ -24,3 +24,5 @@ reports/
 **/*.tgz
 
 .agents/
+.claude/
+.junie/

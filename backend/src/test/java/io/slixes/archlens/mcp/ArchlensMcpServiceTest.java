@@ -1,0 +1,94 @@
+package io.slixes.archlens.mcp;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.slixes.archlens.delivery.rest.DiagramResource;
+import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
+import io.slixes.archlens.domain.dossier.DipInversionPlan;
+import io.slixes.archlens.domain.graph.ArchitectureGraph;
+import io.slixes.archlens.domain.policy.ArchitecturePolicy;
+import io.slixes.archlens.engine.GraphCompiler;
+import io.slixes.archlens.mailbox.fs.FileMailboxService;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class ArchlensMcpServiceTest {
+
+  private ArchlensMcpService mcpService;
+  private DiagramResource diagramResource;
+
+  @BeforeEach
+  void setUp() {
+    GraphCompiler compiler =
+        new GraphCompiler() {
+          @Override
+          public ArchitecturePolicy loadPolicy(String root) {
+            return new ArchitecturePolicy(
+                "McpApp", "src", "com.mcp", true, List.of(), List.of(), List.of(), List.of(),
+                List.of());
+          }
+
+          @Override
+          public ArchitectureGraph compileGraph(String root, String proposalId) {
+            return new ArchitectureGraph(
+                "McpGraph", false, proposalId, List.of(), List.of(), List.of());
+          }
+        };
+
+    diagramResource =
+        new DiagramResource(
+            compiler,
+            new FileMailboxService(),
+            new ArchitecturalDossierGenerator(),
+            new ObjectMapper());
+    mcpService = new ArchlensMcpService(diagramResource);
+  }
+
+  @Test
+  void testInspectArchitecture(@TempDir Path tempDir) throws Exception {
+    ArchitectureGraph graph = mcpService.inspectArchitecture(tempDir.toString());
+    assertNotNull(graph);
+    assertEquals("McpGraph", graph.title());
+  }
+
+  @Test
+  void testExportLlmDossier(@TempDir Path tempDir) throws IOException {
+    String dossier = mcpService.exportLlmDossier(tempDir.toString(), "");
+    assertNotNull(dossier);
+    assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — McpGraph"));
+    assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
+  }
+
+  @Test
+  void testListSnapshots(@TempDir Path tempDir) {
+    Map<String, Object> result = mcpService.listSnapshots(tempDir.toString());
+    assertNotNull(result);
+    assertTrue(result.containsKey("snapshots"));
+  }
+
+  @Test
+  void testGetSnapshot(@TempDir Path tempDir) throws IOException {
+    ArchitectureGraph fallback = mcpService.getSnapshot("test-release", tempDir.toString());
+    assertNotNull(fallback);
+    assertEquals("McpGraph", fallback.title());
+  }
+
+  @Test
+  void testSynthesizeDipInversion(@TempDir Path tempDir) throws IOException {
+    DipInversionPlan plan =
+        mcpService.synthesizeDipInversion(
+            "com.example.OrderService", "com.example.PaymentGateway", tempDir.toString());
+    assertNotNull(plan);
+    assertEquals("com.example.OrderService", plan.fromClass());
+    assertEquals("com.example.PaymentGateway", plan.toClass());
+    assertEquals("PaymentGatewayPort", plan.portName());
+    assertNotNull(plan.portInterfaceCode());
+    assertNotNull(plan.surgicalPrompt());
+  }
+}

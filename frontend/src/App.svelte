@@ -139,11 +139,13 @@
 <div class="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
   <!-- Top App Navigation -->
   <header class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-30 select-none">
+    <!-- 1. Left: Source & Project Context -->
     <div class="flex items-center gap-3">
       <div class="flex items-center gap-2 font-semibold text-sm tracking-tight text-slate-100">
         <Network size={18} class="text-blue-400" />
-        Clean Architecture Workbench
+        <span class="hidden sm:inline">Clean Architecture</span> Workbench
       </div>
+
       <!-- Project Switcher -->
       <div class="flex items-center gap-1.5">
         <select
@@ -198,62 +200,42 @@
           <FolderOpen size={14} class="text-blue-400" />
         </button>
       </div>
-      <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
-        Java 25 &bull; Svelte 5 &bull; GSAP 3.15
-      </span>
 
       <!-- Git Release / Snapshot Comparator -->
       <GitVersionComparator />
     </div>
 
-    <!-- Live Architectural Status Badge & Quick Search -->
-    <div class="flex items-center gap-3">
-      {#if diagramStore.isRegenerating}
-        <div
-          class="flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-xs font-mono shadow-sm shadow-cyan-950 animate-pulse"
-        >
-          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-          <span>Agent Re-indexing AST...</span>
-        </div>
-      {/if}
-
+    <!-- 2. Center: Workstation Modes & Quick Search -->
+    <div class="flex items-center gap-1.5 bg-slate-950/70 p-1 rounded-xl border border-slate-800/80 shadow-inner">
       <button
         onclick={() => diagramStore.isCommandPaletteOpen = true}
-        class="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 hover:text-white text-xs transition-colors cursor-pointer"
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs transition-colors cursor-pointer border border-transparent hover:border-slate-700"
         title="Quick search (Cmd+K)"
+        aria-label="Quick search (Cmd+K)"
       >
         <Search size={13} class="text-blue-400" />
-        <span class="text-[11px]">Quick Find</span>
-        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
+        <span class="text-[11px] font-medium hidden md:inline">Quick Find</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400">
           ⌘K
         </kbd>
       </button>
 
-      <button
-        onclick={() => diagramStore.openLlmPromptModal()}
-        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-200 hover:text-white text-xs transition-colors cursor-pointer"
-        title="Export LLM Refactoring Prompt Dossier (L)"
-      >
-        <Bot size={13} class="text-indigo-400" />
-        <span class="text-[11px] font-medium">LLM Prompt</span>
-        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
-          L
-        </kbd>
-      </button>
+      <div class="w-px h-4 bg-slate-800 mx-0.5"></div>
 
-      <!-- Architectural Sandbox What-If Simulator Button -->
+      <!-- Architectural Sandbox Simulator Button -->
       <button
         onclick={() => diagramStore.toggleSandbox()}
         class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border ${
           diagramStore.isSandboxActive
             ? 'bg-amber-500/20 border-amber-500/60 text-amber-200 shadow-sm shadow-amber-950/50'
-            : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-300 hover:text-white'
+            : 'bg-transparent hover:bg-slate-900 border-transparent text-slate-300 hover:text-white'
         }`}
         title="Toggle Architectural Sandbox What-If Simulator (S)"
+        aria-label="Toggle Sandbox (S)"
       >
         <FlaskConical size={13} class={diagramStore.isSandboxActive ? 'text-amber-400 animate-pulse' : 'text-amber-400'} />
-        <span class="text-[11px] font-medium">{diagramStore.isSandboxActive ? 'In Sandbox' : 'Sandbox'}</span>
-        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
+        <span class="text-[11px] font-medium hidden lg:inline">{diagramStore.isSandboxActive ? 'In Sandbox' : 'Sandbox'}</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400">
           S
         </kbd>
       </button>
@@ -264,13 +246,14 @@
         class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border ${
           diagramStore.isMainSequenceOpen
             ? 'bg-blue-600/30 border-blue-500/60 text-blue-200 shadow-sm shadow-blue-950/50'
-            : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-300 hover:text-white'
+            : 'bg-transparent hover:bg-slate-900 border-transparent text-slate-300 hover:text-white'
         }`}
         title="Toggle Robert C. Martin Main Sequence Scatter Plot (M)"
+        aria-label="Toggle Main Sequence (M)"
       >
         <Activity size={13} class="text-blue-400" />
-        <span class="text-[11px] font-medium">Main Sequence</span>
-        <kbd class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[9px] font-mono text-slate-400">
+        <span class="text-[11px] font-medium hidden lg:inline">Main Sequence</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400">
           M
         </kbd>
       </button>
@@ -281,31 +264,63 @@
         class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border ${
           diagramStore.isPolicyEditorOpen
             ? 'bg-blue-600/30 border-blue-500/60 text-blue-200 shadow-sm shadow-blue-950/50'
-            : 'bg-slate-800 hover:bg-slate-750 border-slate-700 text-slate-300 hover:text-white'
+            : 'bg-transparent hover:bg-slate-900 border-transparent text-slate-300 hover:text-white'
         }`}
-        title="Open Concentric Architecture Policy Designer & Ring Editor"
+        title="Open Concentric Architecture Policy Designer & Ring Editor (P)"
+        aria-label="Open Policy Designer (P)"
       >
         <Sliders size={13} class="text-blue-400" />
-        <span class="text-[11px] font-medium">Policy Designer</span>
+        <span class="text-[11px] font-medium hidden lg:inline">Policy</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400">
+          P
+        </kbd>
       </button>
+
+      <!-- Export LLM Refactoring Prompt Dossier -->
+      <button
+        onclick={() => diagramStore.openLlmPromptModal()}
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border bg-indigo-950/50 hover:bg-indigo-900/80 border-indigo-700/60 text-indigo-200 hover:text-white"
+        title="Export LLM Refactoring Prompt Dossier (L)"
+        aria-label="Export LLM Prompt (L)"
+      >
+        <Bot size={13} class="text-indigo-400" />
+        <span class="text-[11px] font-medium hidden xl:inline">LLM Prompt</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400">
+          L
+        </kbd>
+      </button>
+    </div>
+
+    <!-- 3. Right: Live Health Badges & SSE Status -->
+    <div class="flex items-center gap-2 overflow-x-auto max-w-full py-0.5 scrollbar-none shrink min-w-0 justify-end">
+      {#if diagramStore.isRegenerating}
+        <div
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/50 text-cyan-300 text-xs font-mono shadow-sm shadow-cyan-950 animate-pulse shrink-0"
+        >
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="hidden sm:inline">Agent Re-indexing...</span>
+          <span class="sm:hidden">Re-indexing</span>
+        </div>
+      {/if}
 
       <!-- Live File Watcher Sync Indicator -->
       <div
-        class="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border {diagramStore.isLiveSyncConnected ? 'text-emerald-300 bg-emerald-950/40 border-emerald-700/50' : 'text-slate-500 bg-slate-900 border-slate-800'}"
+        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono border shrink-0 {diagramStore.isLiveSyncConnected ? 'text-emerald-300 bg-emerald-950/40 border-emerald-700/50' : 'text-slate-500 bg-slate-900 border-slate-800'}"
         title={diagramStore.isLiveSyncConnected ? `File Watcher connected. Last sync: ${diagramStore.lastLiveSyncTime || 'active'}` : 'File Watcher idle'}
       >
         <span class="w-1.5 h-1.5 rounded-full {diagramStore.isLiveSyncConnected ? 'bg-emerald-400 animate-ping' : 'bg-slate-600'}"></span>
-        <span>{diagramStore.isLiveSyncConnected ? 'Live Watch' : 'Sync Idle'}</span>
+        <span>{diagramStore.isLiveSyncConnected ? 'Live' : 'Sync Idle'}</span>
       </div>
 
       <!-- Package Cycles (ADP) Warning Badge -->
       {#if diagramStore.hasCycles}
         <div
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono font-medium shadow-sm shadow-amber-950"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-mono font-medium shadow-sm shadow-amber-950 shrink-0"
           title={`${diagramStore.packageCycles.length} circular package dependency detected (Robert C. Martin Acyclic Dependencies Principle)`}
         >
-          <AlertCircle size={14} class="text-amber-400 animate-pulse" />
-          <span>{diagramStore.packageCycles.length} Package {diagramStore.packageCycles.length === 1 ? 'Cycle' : 'Cycles'} (ADP)</span>
+          <AlertCircle size={13} class="text-amber-400 animate-pulse" />
+          <span class="hidden md:inline">{diagramStore.packageCycles.length} Cycle{diagramStore.packageCycles.length === 1 ? '' : 's'} (ADP)</span>
+          <span class="md:hidden">{diagramStore.packageCycles.length} ADP</span>
         </div>
       {/if}
 
@@ -313,7 +328,7 @@
       {#if diagramStore.screamingMetric}
         {@const sm = diagramStore.screamingMetric}
         <div
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium shadow-sm border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-rose-500/15 border-rose-500/40 text-rose-300'}"
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium shadow-sm border shrink-0 {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-500/15 border-amber-500/40 text-amber-300' : 'bg-rose-500/15 border-rose-500/40 text-rose-300'}"
           title={`Screaming Architecture Score: ${sm.score.toFixed(2)} (${sm.domainPackageCount} domain / ${sm.totalPackageCount} packages)`}
         >
           <Megaphone size={13} class={sm.classification === 'PACKAGE_BY_FEATURE' ? 'text-emerald-400' : sm.classification === 'HYBRID' ? 'text-amber-400' : 'text-rose-400 animate-pulse'} />
@@ -324,18 +339,18 @@
       {#if violatingCount > 0}
         <div
           bind:this={badgeEl}
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono font-medium shadow-sm shadow-rose-950"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-mono font-medium shadow-sm shadow-rose-950 shrink-0"
         >
           <AlertTriangle size={14} class="text-rose-400 animate-pulse" />
-          <span>{violatingCount} Dependency Rule {violatingCount === 1 ? 'Violation' : 'Violations'}</span>
+          <span>{violatingCount} {violatingCount === 1 ? 'Violation' : 'Violations'}</span>
         </div>
       {:else}
         <div
           bind:this={badgeEl}
-          class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-medium shadow-sm shadow-emerald-950"
+          class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono font-medium shadow-sm shadow-emerald-950 shrink-0"
         >
           <ShieldCheck size={14} class="text-emerald-400" />
-          <span>Clean Architecture Conforming</span>
+          <span class="hidden md:inline">Conforming</span>
         </div>
       {/if}
     </div>

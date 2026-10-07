@@ -3,7 +3,7 @@ import type { ArchitectureGraph, ArchitecturePolicy } from '../types/diagram';
 export const DEMO_POLICY: ArchitecturePolicy = {
   title: "Clean Architecture Workbench",
   src: "src/main/java",
-  prefix: "com.design.umlviewer",
+  prefix: "io.slixes.archlens",
   hierarchical: true,
   order: ["domain", "scanner", "metrics", "engine", "resource"],
   levels: [
@@ -47,13 +47,13 @@ export const DEMO_GRAPH_REAL: ArchitectureGraph = {
       level: 0,
       crap: { mu: 1.2, max: 2.0, sigma: 0.4 },
       mutationScore: 0.96,
-      childPackageIds: ["com.design.umlviewer.domain"],
+      childPackageIds: ["io.slixes.archlens.domain"],
       classes: [
         {
-          id: "com.design.umlviewer.domain.model.ClassNode",
+          id: "io.slixes.archlens.domain.model.ClassNode",
           name: "ClassNode",
-          packageName: "com.design.umlviewer.domain.model",
-          filePath: "backend/src/main/java/com/design/umlviewer/domain/model/ClassNode.java",
+          packageName: "io.slixes.archlens.domain.model",
+          filePath: "backend/src/main/java/io/slixes/archlens/domain/model/ClassNode.java",
           stereotype: "RECORD",
           isForeign: false,
           level: 0,
@@ -85,10 +85,10 @@ export const DEMO_GRAPH_REAL: ArchitectureGraph = {
           ]
         },
         {
-          id: "com.design.umlviewer.domain.policy.DependencyRuleValidator",
+          id: "io.slixes.archlens.domain.policy.DependencyRuleValidator",
           name: "DependencyRuleValidator",
-          packageName: "com.design.umlviewer.domain.policy",
-          filePath: "backend/src/main/java/com/design/umlviewer/domain/policy/DependencyRuleValidator.java",
+          packageName: "io.slixes.archlens.domain.policy",
+          filePath: "backend/src/main/java/io/slixes/archlens/domain/policy/DependencyRuleValidator.java",
           stereotype: "CLASS",
           isForeign: false,
           level: 0,
@@ -138,13 +138,13 @@ export const DEMO_GRAPH_REAL: ArchitectureGraph = {
       level: 1,
       crap: { mu: 3.2, max: 5.0, sigma: 0.9 },
       mutationScore: 0.92,
-      childPackageIds: ["com.design.umlviewer.engine"],
+      childPackageIds: ["io.slixes.archlens.engine"],
       classes: [
         {
-          id: "com.design.umlviewer.engine.GraphCompiler",
+          id: "io.slixes.archlens.engine.GraphCompiler",
           name: "GraphCompiler",
-          packageName: "com.design.umlviewer.engine",
-          filePath: "backend/src/main/java/com/design/umlviewer/engine/GraphCompiler.java",
+          packageName: "io.slixes.archlens.engine",
+          filePath: "backend/src/main/java/io/slixes/archlens/engine/GraphCompiler.java",
           stereotype: "CLASS",
           isForeign: false,
           level: 1,
@@ -174,10 +174,10 @@ export const DEMO_GRAPH_REAL: ArchitectureGraph = {
           ]
         },
         {
-          id: "com.design.umlviewer.scanner.JavaAstScanner",
+          id: "io.slixes.archlens.scanner.JavaAstScanner",
           name: "JavaAstScanner",
-          packageName: "com.design.umlviewer.scanner",
-          filePath: "backend/src/main/java/com/design/umlviewer/scanner/JavaAstScanner.java",
+          packageName: "io.slixes.archlens.scanner",
+          filePath: "backend/src/main/java/io/slixes/archlens/scanner/JavaAstScanner.java",
           stereotype: "CLASS",
           isForeign: false,
           level: 1,
@@ -214,13 +214,13 @@ export const DEMO_GRAPH_REAL: ArchitectureGraph = {
       level: 2,
       crap: { mu: 2.0, max: 3.0, sigma: 0.5 },
       mutationScore: 0.95,
-      childPackageIds: ["com.design.umlviewer.resource"],
+      childPackageIds: ["io.slixes.archlens.resource"],
       classes: [
         {
-          id: "com.design.umlviewer.resource.DiagramResource",
+          id: "io.slixes.archlens.resource.DiagramResource",
           name: "DiagramResource",
-          packageName: "com.design.umlviewer.resource",
-          filePath: "backend/src/main/java/com/design/umlviewer/resource/DiagramResource.java",
+          packageName: "io.slixes.archlens.resource",
+          filePath: "backend/src/main/java/io/slixes/archlens/resource/DiagramResource.java",
           stereotype: "CLASS",
           isForeign: false,
           level: 2,

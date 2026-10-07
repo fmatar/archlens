@@ -111,28 +111,42 @@
     return 'none';
   });
 
+  let lastHoverX = 0;
+  let lastHoverY = 0;
+
   function handleMouseEnter(e: MouseEvent) {
     if (hoverTimeoutId) clearTimeout(hoverTimeoutId);
     diagramStore.cancelDismissEdgeTooltip();
 
     const clientX = e.clientX;
     const clientY = e.clientY;
+    lastHoverX = clientX;
+    lastHoverY = clientY;
 
     hoverTimeoutId = setTimeout(() => {
-      diagramStore.showEdgeTooltip({
-        edge,
-        fromLabel: fromLabel || edge.from,
-        toLabel: toLabel || edge.to,
-        fromLevel,
-        toLevel,
-        x: clientX,
-        y: clientY,
-        isBundled,
-        bundleCount,
-        violationCount
-      });
+      // Confirm pointer is still relatively close to initiation coordinate
+      const dist = Math.hypot(clientX - lastHoverX, clientY - lastHoverY);
+      if (dist < 20) {
+        diagramStore.showEdgeTooltip({
+          edge,
+          fromLabel: fromLabel || edge.from,
+          toLabel: toLabel || edge.to,
+          fromLevel,
+          toLevel,
+          x: clientX,
+          y: clientY,
+          isBundled,
+          bundleCount,
+          violationCount
+        });
+      }
       hoverTimeoutId = null;
     }, 140);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    lastHoverX = e.clientX;
+    lastHoverY = e.clientY;
   }
 
   function handleMouseLeave() {
@@ -149,6 +163,7 @@
   class="group cursor-pointer transition-opacity duration-300"
   opacity={isDimmed ? 0.35 : 1.0}
   onmouseenter={handleMouseEnter}
+  onmousemove={handleMouseMove}
   onmouseleave={handleMouseLeave}
 >
   <!-- Invisible Wide Hit Target (Prevents missing thin lines and stabilizes hover) -->

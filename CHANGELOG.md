@@ -9,7 +9,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-08] - 2026-10-07
+
+### Added
+- **Instant Filesystem Explorer & Container-Aware Browsing**:
+  - Eliminated macOS `osascript` hangs and timeouts when running Archlens in Docker containers (`nativePickerSupported: false` by default, dynamic probe).
+  - Added dedicated **"Select Current Folder"** banner with explicit `Check` confirmation, enabling instant single-click selection of the active directory without diving into subfolders.
+  - Added folder drill-down chevron navigation and active directory path syncing into the filesystem input field.
+- **Vestibular Motion Safety (`prefers-reduced-motion`)**:
+  - Implemented `@media (prefers-reduced-motion: reduce)` in `frontend/src/app.css` suppressing continuous infinite radar sweeps and pulsing alerts while preserving smooth state transitions.
+- **Full WAI-ARIA 1.2 Combobox & Listbox Support in Quick Find**:
+  - Upgraded `CommandPalette.svelte` input with `role="combobox"`, `aria-expanded`, `aria-controls`, and `aria-activedescendant`.
+  - Added `role="listbox"` on results container and `role="option"`, `aria-selected`, and keyboard Enter handlers on all palette items.
+- **Interactive Robert C. Martin Architectural Metrics Cheat Sheet**:
+  - Added inline information popover toggle (`<Info />`) in `Inspector.svelte` detailing mathematical formulas for Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I$), and Normalized Distance ($D$).
+- **Stable Edge Hover Intent & Distance Hysteresis**:
+  - Added mouse coordinate tracking and distance hysteresis to `DependencyEdge.svelte` to prevent tooltip jitter and false dismissals across dense edge corridors.
+
+### Changed
+- **Adaptive Top-Bar Telemetry Layout**:
+  - Refactored right-hand telemetry container with responsive auto-shrinking and abbreviating badges (`Re-indexing...` -> `Re-indexing`, `X Cycles (ADP)` -> `X ADP`) to prevent horizontal toolbar overflow on narrow displays.
+- **Reassuring Non-Destructive Agent Mailbox Micro-Copy**:
+  - Added explicit micro-card and `<ShieldCheck>` callout to the `Regen & Sync Mailbox` button in `Inspector.svelte` and `Canvas.svelte` empty states, reassuring users that AST re-indexing and policy checks do not overwrite unstaged Git files.
+
+### Fixed
+- **SVG Canvas TabIndex Compiler Warning**: Resolved Svelte 5 a11y non-interactive tabindex compiler warnings on `<svg>` and draggable card rects.
+
+## [0.1.0-Beta-07] - 2026-10-06
+
+### Added
+- **Canvas Keyboard Navigation & Assistive A11y (`/impeccable a11y`)**:
+  - Attached `role="region"` and accessible landmark label to the root SVG canvas.
+  - Equipped all package nodes (`ComponentBox.svelte`) with `role="button"`, `tabindex="0"`, dynamic screen-reader labels (e.g. `Package App, Ring 1, 8 classes`), and `Enter`/`Space` activation.
+  - Equipped individual class rows with `role="button"`, `tabindex="0"`, detailed ARIA labels (`Class name, CRAP score, coverage percent`), and keyboard inspection triggers.
+  - Made SVG class pagination chevrons (`‹`, `›`) and Inspector jump links fully keyboard-focusable and navigable.
+- **Top Navigation Semantic Chunking (`/impeccable distill`)**:
+  - Divided top application toolbar into three clean semantic zones: *Project Context & Source*, *Workstation Modes & Search* (indented glass container with explicit shortcut chips), and *Live Health Telemetry*.
+- **Inspector Tabbed Progressive Disclosure**:
+  - Refactored monolithic vertical inspector into a 3-tab segmented control: `Views` (Architectural views, decluttering matrix, legend), `Inventory` (Focused component classes, Martin metrics $C_a, C_e, I, D$), and `Fitness` (Architectural fitness invariants, SAS screaming score, and 1-click DIP remediation).
+
+### Changed
+- **Predictable Tab State Preservation**: Fixed tab hijacking in `Inspector.svelte` so selecting nodes on the canvas preserves the active tab when auditing Fitness invariants or declutter views.
+- **Intent Clarification for Agent Dispatch**: Added explicit micro-copy to the `Regen & Sync Mailbox` button clarifying that it safely re-indexes AST and evaluates policies without overwriting unstaged files.
+
+## [0.1.0-Beta-06] - 2026-10-06
+
+### Added
+- **Svelte 5 & Rune File AST Scanning**: Extended `TypeScriptAstScanner` to parse `.svelte`, `.svelte.ts`, and `.svelte.js` files, extracting component definitions, script block dependencies, and internal `#lib/*` subpath alias imports.
+- **Container Workspace Path Mapping**: Added automatic translation in `WorkspacePathResolver.normalizeRoot()` to map host workspace paths (e.g. `/Users/fady/workspace/...`) into container-mounted `/workspace/...` directories when running inside Docker containers.
+
+### Changed
+- **Base Package Namespace Standardization**: Renamed all backend Java source packages and test suites from legacy `com.design.umlviewer` to `io.slixes.archlens`.
+- **Spotless Formatting & Java Code Cleanliness**: Formatted codebase adhering to Google Java Format 1.30.0 and updated test fixtures.
+
+### Fixed
+- **Empty Graph / Diagnostic "Wake Agent" on Svelte/Vite Workspaces**: Resolved an issue where Svelte applications (e.g. `khasis-ui`) showed 0 components and a diagnostic empty state due to container path translation misses and missing `.svelte` file discovery.
+
+## [0.1.0-Beta-05] - 2026-10-06
+
+### Changed
+- **100% Screaming Architecture Score (SAS) Package Verticalization**: Refactored backend packages to eliminate technical layering markers (`model`, `adapter`, `resource`) in adherence to Robert C. Martin's Clean Architecture Chapter 21:
+  - Verticalized `com.design.umlviewer.domain.model` into `com.design.umlviewer.domain.graph` (Domain Core entities and topology records).
+  - Verticalized `com.design.umlviewer.adapter.mailbox` into `com.design.umlviewer.mailbox.fs` (Filesystem Mailbox Gateway).
+  - Verticalized `com.design.umlviewer.resource` into `com.design.umlviewer.delivery.rest` (Quarkus REST & SSE Delivery endpoints).
+  - Updated `.archlens/policy.json` with concentric ring assignments for verticalized packages.
+  - Achieved **1.00 (100%) Screaming Architecture Score** (`PACKAGE_BY_FEATURE`, 13/13 domain packages, 0 technical packages, 0 violations, 0 cycles).
+
 ## [0.1.0-Beta-04] - 2026-10-06
+
+
 
 ### Added
 - **Native Quarkus Runner Auto-Launching**: Enhanced CLI runner (`docker-runner.js`) to automatically discover and prefer native JVM execution (`quarkus-run.jar`) in detached background mode when Java 21+ and a runner JAR are present, delivering ~0.5s sub-second startup with native APFS filesystem speed and transparent fallback to Docker.

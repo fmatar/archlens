@@ -50,12 +50,12 @@ Dispatched when clicking **`Dispatch to AI Agent`** in the **Surgical DIP Invert
   "commandId": "cmd-1727488000000",
   "timestamp": "2026-09-28T02:00:00Z",
   "payload": {
-    "fromClass": "com.design.umlviewer.mcp.ArchlensMcpService",
-    "toClass": "com.design.umlviewer.resource.DiagramResource",
+    "fromClass": "io.slixes.archlens.mcp.ArchlensMcpService",
+    "toClass": "io.slixes.archlens.resource.DiagramResource",
     "portName": "DiagramResourcePort",
-    "portPackage": "com.design.umlviewer.mcp.ports",
-    "portFilePath": "/workspace/src/main/java/com/design/umlviewer/mcp/ports/DiagramResourcePort.java",
-    "portInterfaceCode": "package com.design.umlviewer.mcp.ports;\n\npublic interface DiagramResourcePort {\n    // Extracted public method signatures\n}\n",
+    "portPackage": "io.slixes.archlens.mcp.ports",
+    "portFilePath": "/workspace/src/main/java/io/slixes/archlens/mcp/ports/DiagramResourcePort.java",
+    "portInterfaceCode": "package io.slixes.archlens.mcp.ports;\n\npublic interface DiagramResourcePort {\n    // Extracted public method signatures\n}\n",
     "adapterRefactorPreview": "...",
     "callerRefactorPreview": "..."
   }

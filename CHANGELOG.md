@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Transactional Refactor Verification & Worktree Snapshot Rollback Engine** ([#164](https://github.com/fmatar/archlens/issues/164)):
+  - Implemented transactional refactoring pre-flight snapshots in `.archlens/snapshots/` before dispatching mutating mailbox proposals (`APPLY_PROPOSAL`, `INVERT_DEPENDENCY`).
+  - Added `VerifyAndRollbackRefactorUseCase` calculating violation deltas and preventing inward layer coupling regressions.
+  - Added REST verification and rollback endpoints (`/api/mailbox/verify` and `/api/mailbox/rollback`) with `ROLLBACK_COMPLETE` mailbox viewer notifications.
+  - Added comprehensive test coverage in `VerifyAndRollbackRefactorUseCaseTest` and `MailboxResourceTest`.
 - **Enterprise Monorepo & Multi-Module Workspace AST Resolution** ([#163](https://github.com/fmatar/archlens/issues/163)):
   - Validated multi-module recursive directory discovery across nested enterprise monorepos for Java (`apps/*/src/main/java`, `libs/*/src/main/java`).
   - Added support for pnpm/Turborepo workspace package aliases (`@workspace/*`) in `TypeScriptAstScanner` to cleanly link cross-package dependencies between frontend apps and internal UI/shared libraries.

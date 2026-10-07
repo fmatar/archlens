@@ -36,4 +36,30 @@ class MailboxResourceTest {
     assertEquals(1, updated.queue().size());
     assertEquals("REGEN", updated.queue().get(0).op());
   }
+
+  @Test
+  void testVerifyAndRollbackEndpoints(@TempDir Path tempDir) throws IOException {
+    MailboxGateway gateway = new FileMailboxService();
+    io.slixes.archlens.engine.ArchitectureCompiler dummyCompiler =
+        (root, proposal) ->
+            new io.slixes.archlens.domain.graph.ArchitectureGraph(
+                "Test", false, null, java.util.List.of(), java.util.List.of(), java.util.List.of());
+    io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase verifyUseCase =
+        new io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase(dummyCompiler, gateway);
+
+    MailboxResource resource = new MailboxResource(gateway, verifyUseCase);
+
+    // Initial verify call with empty baseline
+    io.slixes.archlens.domain.mailbox.RefactorVerificationResult res =
+        resource.verifyRefactoring(
+            tempDir.toString(), Map.of("baselineViolations", 0, "snapshotId", "snap-test"));
+    assertNotNull(res);
+    assertTrue(res.passed());
+
+    // Rollback non-existent snapshot
+    Map<String, Object> rollbackRes =
+        resource.rollbackRefactoring(tempDir.toString(), Map.of("snapshotId", "missing"));
+    assertNotNull(rollbackRes);
+    assertEquals(false, rollbackRes.get("success"));
+  }
 }

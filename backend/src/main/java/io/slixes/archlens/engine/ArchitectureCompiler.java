@@ -27,5 +27,7 @@ public interface ArchitectureCompiler {
    * @param projectRoot the project root directory
    * @return the resolved ArchitecturePolicy
    */
-  ArchitecturePolicy loadPolicy(String projectRoot);
+  default ArchitecturePolicy loadPolicy(String projectRoot) {
+    return null;
+  }
 }

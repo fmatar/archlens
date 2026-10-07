@@ -7,6 +7,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { generatePolicy } from './analyzer.js';
 import { installMcpConfigs } from './mcp-registry.js';
@@ -180,6 +181,31 @@ export function installGlobalSkills(options = {}) {
   const force = Boolean(options.force);
   const bundledSkillsRoot = path.resolve(__dirname, '..', 'skills');
 
+  // Attempt using vercel-labs/skills CLI if available and not explicitly disabled
+  if (!options.homedir && options.preferVercelSkills !== false && !dryRun) {
+    try {
+      const isWin = process.platform === 'win32';
+      const npxCmd = isWin ? 'npx.cmd' : 'npx';
+      // Install skills package from GitHub or local bundled skills via `npx skills add`
+      const skillsProc = spawnSync(npxCmd, ['--yes', 'skills', 'add', bundledSkillsRoot, '-g', '--copy', '-y'], {
+        encoding: 'utf8',
+        timeout: 15000,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+      if (skillsProc.status === 0) {
+        return {
+          sourceDir: bundledSkillsRoot,
+          method: 'skills-cli',
+          output: skillsProc.stdout,
+          installed: [{ agent: 'All Supported Agents (via vercel-labs/skills)', skill: 'archlens-suite', path: 'global' }],
+          dryRun: false
+        };
+      }
+    } catch {
+      // Fallback seamlessly to native direct directory installation
+    }
+  }
+
   const destinations = getGlobalSkillDirectories(options.homedir);
   const installed = [];
 
@@ -204,6 +230,7 @@ export function installGlobalSkills(options = {}) {
 
   return {
     sourceDir: bundledSkillsRoot,
+    method: 'direct-copy',
     installed,
     dryRun
   };

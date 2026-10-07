@@ -8,6 +8,7 @@ import io.slixes.archlens.metrics.CrapScoreCalculator;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -254,5 +255,49 @@ class JavaAstScannerTest {
 
     assertTrue(errors.isEmpty(), "Concurrent scanning encountered errors: " + errors);
     assertEquals(threadCount, successCount.get());
+  }
+
+  @Test
+  void testNestedMonorepoModuleSourceResolution(@TempDir Path tempDir) throws IOException {
+    // Scaffold deep nested enterprise monorepo: apps/backend-service/src/main/java and
+    // libs/domain-core/src/main/java
+    Path backendSrc = tempDir.resolve("apps/backend-service/src/main/java/com/enterprise/backend");
+    Path domainSrc = tempDir.resolve("libs/domain-core/src/main/java/com/enterprise/domain");
+    Files.createDirectories(backendSrc);
+    Files.createDirectories(domainSrc);
+
+    Files.writeString(
+        domainSrc.resolve("Order.java"), "package com.enterprise.domain;\npublic class Order {}\n");
+
+    Files.writeString(
+        backendSrc.resolve("OrderController.java"),
+        """
+        package com.enterprise.backend;
+        import com.enterprise.domain.Order;
+        public class OrderController {
+            private Order activeOrder;
+        }
+        """);
+
+    JavaAstScanner scanner = new JavaAstScanner();
+    // Resolve source dirs at monorepo root
+    List<java.io.File> sourceDirs = scanner.resolveSourceDirs(tempDir.toString(), null);
+    assertEquals(2, sourceDirs.size());
+
+    LanguageScanner.ScanResult res =
+        scanner.scanProject(tempDir.toString(), null, "com.enterprise");
+    assertEquals(2, res.classes().size());
+    assertTrue(res.classes().stream().anyMatch(c -> c.id().equals("com.enterprise.domain.Order")));
+    assertTrue(
+        res.classes().stream()
+            .anyMatch(c -> c.id().equals("com.enterprise.backend.OrderController")));
+
+    // Verify inter-module dependency edge resolution
+    assertTrue(
+        res.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("com.enterprise.backend.OrderController")
+                        && e.to().equals("com.enterprise.domain.Order")));
   }
 }

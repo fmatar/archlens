@@ -141,3 +141,20 @@ test('installGlobalSkills installs all bundled skills into global agent director
   }
 });
 
+test('installGlobalSkills respects dryRun and fallback mode', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-global-dryrun-'));
+
+  try {
+    const res = installGlobalSkills({
+      dryRun: true,
+      homedir: tmpHome,
+      force: true
+    });
+
+    assert.equal(res.dryRun, true);
+    assert.equal(res.method, 'direct-copy');
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+

@@ -203,4 +203,42 @@ class TypeScriptAstScannerTest {
                     e.from().equals("lib.components.OrderCard")
                         && e.to().equals("lib.stores.orderStore.svelte")));
   }
+
+  @Test
+  void testTypeScriptMonorepoWorkspaceResolution(@TempDir Path tempDir) throws IOException {
+    // Scaffold Turborepo / pnpm workspace: apps/web/src and packages/ui/src
+    Path webSrc = tempDir.resolve("apps/web/src/routes");
+    Path uiSrc = tempDir.resolve("packages/ui/src/components");
+    Files.createDirectories(webSrc);
+    Files.createDirectories(uiSrc);
+
+    Files.writeString(
+        uiSrc.resolve("Button.svelte"),
+        """
+        <script lang="ts">
+          export let label: string;
+        </script>
+        <button>{label}</button>
+        """);
+
+    Files.writeString(
+        webSrc.resolve("page.svelte"),
+        """
+        <script lang="ts">
+          import Button from '@workspace/ui/components/Button.svelte';
+        </script>
+        <Button label="Submit" />
+        """);
+
+    // Scan from monorepo root
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), null, "");
+    assertEquals(2, result.classes().size());
+    assertTrue(result.classes().stream().anyMatch(c -> c.id().contains("Button")));
+    assertTrue(result.classes().stream().anyMatch(c -> c.id().contains("page")));
+
+    // Edge from web route to ui component
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(e -> e.from().contains("page") && e.to().contains("ui.components.Button")));
+  }
 }

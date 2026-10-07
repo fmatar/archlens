@@ -50,6 +50,10 @@
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
     <Match>
+        <Package name="io.slixes.archlens.delivery.rest"/>
+        <Bug pattern="IMPROPER_UNICODE"/>
+    </Match>
+    <Match>
         <Package name="io.slixes.archlens.usecase"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>

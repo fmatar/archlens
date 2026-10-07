@@ -68,7 +68,7 @@ public class MailboxResource {
           payload = new java.util.HashMap<>(payload);
           payload.put("snapshotId", snapshotId);
         }
-      } catch (Exception ignored) {
+      } catch (IOException ignored) {
       }
     }
 

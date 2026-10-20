@@ -25,13 +25,16 @@ import java.util.regex.Pattern;
 public class PythonAstScanner implements LanguageScanner {
 
   private static final Pattern FROM_IMPORT_PATTERN =
-      Pattern.compile("^\\s*from\\s+([a-zA-Z0-9_.]+)\\s+import\\s+(.+)$");
+      Pattern.compile("^\\s*from\\s+([a-zA-Z0-9_.]+)(?:\\s+|(?<=\\.))import\\s+(.+)$");
   private static final Pattern DIRECT_IMPORT_PATTERN =
       Pattern.compile("^\\s*import\\s+([a-zA-Z0-9_., ]+)$");
+  private static final Pattern DYNAMIC_IMPORT_PATTERN =
+      Pattern.compile(
+          "(?:importlib\\.import_module|__import__)\\s*\\(\\s*['\"]([a-zA-Z0-9_.]+)['\"]");
   private static final Pattern CLASS_DEF_PATTERN =
-      Pattern.compile("^\\s*class\\s+([a-zA-Z0-9_]+)(?:\\(([^)]*)\\))?:");
+      Pattern.compile("^\\s*class\\s+([a-zA-Z0-9_]+)(?:\\(([^)]*)\\))?\\s*:");
   private static final Pattern DEF_PATTERN =
-      Pattern.compile("^(\\s*)def\\s+([a-zA-Z0-9_]+)\\s*\\(([^)]*)\\)");
+      Pattern.compile("^(\\s*)(?:async\\s+)?def\\s+([a-zA-Z0-9_]+)\\s*\\(([^)]*)\\)");
 
   @Override
   public String languageId() {
@@ -185,34 +188,93 @@ public class PythonAstScanner implements LanguageScanner {
 
     Path rootPath =
         new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".").toPath();
-    Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
-    List<Path> pyFiles = discoverPythonFiles(scanDir.toPath(), rootPath, omitPatterns);
+    Path scanPath = scanDir.toPath();
+    Path effectiveRoot =
+        (!scanPath.equals(rootPath) && !Files.exists(scanPath.resolve("__init__.py")))
+            ? scanPath
+            : rootPath;
+    boolean stripSrcPrefix = !Files.exists(rootPath.resolve("src").resolve("__init__.py"));
 
-    Map<String, String> internalModules = new HashMap<>(); // modulePath -> fullModuleId
+    Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
+    List<Path> pyFiles = discoverPythonFiles(scanPath, rootPath, omitPatterns);
+
+    Map<String, String> internalModules = new HashMap<>(); // moduleOrExportKey -> canonicalModuleId
+    Map<Path, String> fileToModuleId = new HashMap<>();
+    Map<Path, List<String>> fileLogicalLines = new HashMap<>();
+
     for (Path pyFile : pyFiles) {
-      String rel = rootPath.relativize(pyFile).toString();
-      String modId = toModuleId(rel);
-      internalModules.put(modId, rel);
+      String rawRel = rootPath.relativize(pyFile).toString();
+      String canonicalRel = toCanonicalRelPath(pyFile, effectiveRoot, rootPath, stripSrcPrefix);
+      String modId = toModuleId(canonicalRel);
+      String rawModId = toModuleId(rawRel);
+      fileToModuleId.put(pyFile, modId);
+      internalModules.put(modId, modId);
+      internalModules.putIfAbsent(rawModId, modId);
+      fileLogicalLines.put(
+          pyFile, extractLogicalStatements(Files.readAllLines(pyFile, StandardCharsets.UTF_8)));
+    }
+
+    // Pass 1.5: Index __init__.py symbol & submodule re-exports (up to 4 hops for chained barrels)
+    for (int hop = 0; hop < 4; hop++) {
+      boolean added = false;
+      for (Path pyFile : pyFiles) {
+        Path fn = pyFile.getFileName();
+        if (fn == null || !fn.toString().equals("__init__.py")) {
+          continue;
+        }
+        String currentModule = fileToModuleId.get(pyFile);
+        String packageName = getPackageName(currentModule, true);
+        for (String line : fileLogicalLines.getOrDefault(pyFile, List.of())) {
+          Matcher fromMatcher = FROM_IMPORT_PATTERN.matcher(line);
+          if (!fromMatcher.find()) {
+            continue;
+          }
+          String fromMod = fromMatcher.group(1).trim();
+          String resolvedFromMod = resolvePythonImport(currentModule, packageName, fromMod);
+          if (resolvedFromMod == null || isStdlib(resolvedFromMod)) {
+            continue;
+          }
+          for (ImportItem item : parseImportItems(fromMatcher.group(2))) {
+            if ("*".equals(item.originalName())) {
+              continue;
+            }
+            String originCandidate = resolvedFromMod + "." + item.originalName();
+            String resolvedTarget = resolveInternalTarget(originCandidate, internalModules);
+            if (resolvedTarget != null) {
+              String exportKey = currentModule + "." + item.exportedName();
+              if (!internalModules.containsKey(exportKey)) {
+                internalModules.put(exportKey, resolvedTarget);
+                added = true;
+              }
+            }
+          }
+        }
+      }
+      if (!added) {
+        break;
+      }
     }
 
     List<ClassNode> classes = new ArrayList<>();
     List<DependencyEdge> edges = new ArrayList<>();
 
-    // Pass 2: Parse source contents
+    // Pass 2: Parse source contents and resolve dependency edges
     for (Path pyFile : pyFiles) {
-      String rel = rootPath.relativize(pyFile).toString();
-      String currentModule = toModuleId(rel);
-      String packageName = getPackageName(currentModule);
+      String rel = toCanonicalRelPath(pyFile, effectiveRoot, rootPath, stripSrcPrefix);
+      String currentModule = fileToModuleId.get(pyFile);
+      Path fn = pyFile.getFileName();
+      boolean isInitFile = fn != null && fn.toString().equals("__init__.py");
+      String packageName = getPackageName(currentModule, isInitFile);
 
-      List<String> lines = Files.readAllLines(pyFile, StandardCharsets.UTF_8);
+      List<String> logicalLines = fileLogicalLines.getOrDefault(pyFile, List.of());
       List<FieldNode> fields = new ArrayList<>();
       List<MethodNode> methods = new ArrayList<>();
       Set<String> importedModules = new HashSet<>();
       List<String> classNames = new ArrayList<>();
 
-      for (String line : lines) {
+      for (String line : logicalLines) {
         String trimmed = line.trim();
-        if (trimmed.startsWith("#")) {
+        if (trimmed.isEmpty() || trimmed.startsWith("#")) {
           continue;
         }
 
@@ -220,14 +282,23 @@ public class PythonAstScanner implements LanguageScanner {
         if (fromMatcher.find()) {
           String fromMod = fromMatcher.group(1).trim();
           String resolvedFromMod = resolvePythonImport(currentModule, packageName, fromMod);
-          String importedItems = fromMatcher.group(2).trim();
           if (resolvedFromMod != null && !isStdlib(resolvedFromMod)) {
-            importedModules.add(resolvedFromMod);
-            for (String item : importedItems.split(",")) {
-              String cleanItem = item.trim().split("\\s+")[0].replaceAll("[()#]", "").trim();
-              if (!cleanItem.isBlank() && Character.isJavaIdentifierStart(cleanItem.charAt(0))) {
-                importedModules.add(resolvedFromMod + "." + cleanItem);
+            boolean anyItemResolvedInternally = false;
+            List<ImportItem> items = parseImportItems(fromMatcher.group(2));
+            for (ImportItem item : items) {
+              if ("*".equals(item.originalName())) {
+                importedModules.add(resolvedFromMod);
+                anyItemResolvedInternally = true;
+                continue;
               }
+              String candidate = resolvedFromMod + "." + item.originalName();
+              if (resolveInternalTarget(candidate, internalModules) != null) {
+                anyItemResolvedInternally = true;
+              }
+              importedModules.add(candidate);
+            }
+            if (!anyItemResolvedInternally) {
+              importedModules.add(resolvedFromMod);
             }
           }
           continue;
@@ -235,9 +306,8 @@ public class PythonAstScanner implements LanguageScanner {
 
         Matcher directMatcher = DIRECT_IMPORT_PATTERN.matcher(line);
         if (directMatcher.find()) {
-          String mods = directMatcher.group(1).trim();
-          for (String m : mods.split(",")) {
-            String cleanMod = m.trim().split("\\s+")[0].replaceAll("[()#]", "").trim();
+          for (ImportItem item : parseImportItems(directMatcher.group(1))) {
+            String cleanMod = item.originalName();
             if (!cleanMod.isBlank()
                 && Character.isJavaIdentifierStart(cleanMod.charAt(0))
                 && !isStdlib(cleanMod)) {
@@ -245,6 +315,15 @@ public class PythonAstScanner implements LanguageScanner {
             }
           }
           continue;
+        }
+
+        Matcher dynMatcher = DYNAMIC_IMPORT_PATTERN.matcher(line);
+        while (dynMatcher.find()) {
+          String dynMod = dynMatcher.group(1).trim();
+          String resolvedDyn = resolvePythonImport(currentModule, packageName, dynMod);
+          if (resolvedDyn != null && !resolvedDyn.isBlank() && !isStdlib(resolvedDyn)) {
+            importedModules.add(resolvedDyn);
+          }
         }
 
         Matcher classMatcher = CLASS_DEF_PATTERN.matcher(line);
@@ -255,7 +334,7 @@ public class PythonAstScanner implements LanguageScanner {
           if (baseClasses != null && !baseClasses.isBlank()) {
             for (String base : baseClasses.split(",")) {
               String cleanBase = base.trim();
-              if (!cleanBase.isBlank()) {
+              if (!cleanBase.isBlank() && !cleanBase.contains("=")) {
                 edges.add(
                     new DependencyEdge(
                         currentModule + "." + clsName,
@@ -322,12 +401,16 @@ public class PythonAstScanner implements LanguageScanner {
       }
 
       // Resolve edges to imported modules
+      Set<String> seenTargets = new HashSet<>();
       for (String imported : importedModules) {
         String matchedTarget = resolveInternalTarget(imported, internalModules);
         boolean isForeign = matchedTarget == null;
         String targetId = isForeign ? imported : matchedTarget;
 
-        if (targetId.equals(currentModule) || targetId.isBlank() || isStdlib(targetId)) {
+        if (targetId.equals(currentModule)
+            || targetId.isBlank()
+            || isStdlib(targetId)
+            || !seenTargets.add(targetId)) {
           continue;
         }
 
@@ -338,6 +421,191 @@ public class PythonAstScanner implements LanguageScanner {
     }
 
     return new ScanResult(classes, edges);
+  }
+
+  private record ImportItem(String originalName, String exportedName) {}
+
+  static List<ImportItem> parseImportItems(String rawClause) {
+    if (rawClause == null || rawClause.isBlank()) {
+      return List.of();
+    }
+    String cleaned = rawClause.replace('(', ' ').replace(')', ' ').trim();
+    List<ImportItem> result = new ArrayList<>();
+    for (String part : cleaned.split(",")) {
+      String token = part.trim();
+      if (token.isEmpty()) {
+        continue;
+      }
+      if ("*".equals(token)) {
+        result.add(new ImportItem("*", "*"));
+        continue;
+      }
+      String[] words = token.split("\\s+");
+      String orig = words[0].trim();
+      if (orig.isEmpty() || !Character.isJavaIdentifierStart(orig.charAt(0))) {
+        continue;
+      }
+      String alias =
+          (words.length >= 3 && "as".equals(words[1]) && !words[2].isBlank())
+              ? words[2].trim()
+              : orig;
+      result.add(new ImportItem(orig, alias));
+    }
+    return result;
+  }
+
+  /**
+   * Normalizes raw physical Python source lines into logical statements: - Strips triple-quoted
+   * docstrings/multiline strings ("""...""" and '''...''') - Strips inline # comments outside
+   * string literals - Joins multi-line statements across parentheses/brackets/braces and trailing
+   * backslashes (\) - Splits top-level semicolon-separated statements
+   */
+  static List<String> extractLogicalStatements(List<String> rawLines) {
+    if (rawLines == null || rawLines.isEmpty()) {
+      return List.of();
+    }
+    List<String> statements = new ArrayList<>();
+    StringBuilder currentStmt = new StringBuilder();
+    boolean inTripleDouble = false;
+    boolean inTripleSingle = false;
+    int parenDepth = 0;
+
+    for (String line : rawLines) {
+      StringBuilder lineBuf = new StringBuilder();
+      int len = line.length();
+      int i = 0;
+
+      while (i < len) {
+        if (inTripleDouble) {
+          int close = line.indexOf("\"\"\"", i);
+          if (close != -1) {
+            inTripleDouble = false;
+            i = close + 3;
+          } else {
+            break;
+          }
+          continue;
+        }
+        if (inTripleSingle) {
+          int close = line.indexOf("'''", i);
+          if (close != -1) {
+            inTripleSingle = false;
+            i = close + 3;
+          } else {
+            break;
+          }
+          continue;
+        }
+
+        if (line.startsWith("\"\"\"", i)) {
+          inTripleDouble = true;
+          i += 3;
+          continue;
+        }
+        if (line.startsWith("'''", i)) {
+          inTripleSingle = true;
+          i += 3;
+          continue;
+        }
+
+        char c = line.charAt(i);
+        if (c == '#') {
+          break; // Inline comment to end of physical line
+        }
+        if (c == '"' || c == '\'') {
+          char quote = c;
+          lineBuf.append(c);
+          i++;
+          while (i < len) {
+            char sc = line.charAt(i);
+            lineBuf.append(sc);
+            if (sc == '\\' && i + 1 < len) {
+              i++;
+              lineBuf.append(line.charAt(i));
+            } else if (sc == quote) {
+              i++;
+              break;
+            }
+            i++;
+          }
+          continue;
+        }
+
+        if (c == '(' || c == '[' || c == '{') {
+          parenDepth++;
+        } else if (c == ')' || c == ']' || c == '}') {
+          parenDepth = Math.max(0, parenDepth - 1);
+        } else if (c == ';' && parenDepth == 0) {
+          currentStmt.append(lineBuf);
+          String emitted = currentStmt.toString();
+          if (!emitted.isBlank()) {
+            statements.add(emitted);
+          }
+          currentStmt.setLength(0);
+          lineBuf.setLength(0);
+          i++;
+          continue;
+        }
+
+        lineBuf.append(c);
+        i++;
+      }
+
+      if (inTripleDouble || inTripleSingle) {
+        continue;
+      }
+
+      String cleanedLine = lineBuf.toString();
+      String trimmedRight = cleanedLine.stripTrailing();
+      if (trimmedRight.endsWith("\\")) {
+        currentStmt.append(trimmedRight, 0, trimmedRight.length() - 1).append(' ');
+        continue;
+      }
+
+      if (parenDepth > 0) {
+        if (!cleanedLine.isBlank()) {
+          if (currentStmt.length() > 0) {
+            currentStmt.append(' ').append(cleanedLine.trim());
+          } else {
+            currentStmt.append(cleanedLine);
+          }
+        }
+        continue;
+      }
+
+      if (currentStmt.length() > 0) {
+        if (!cleanedLine.isBlank()) {
+          currentStmt.append(' ').append(cleanedLine.trim());
+        }
+        String emitted = currentStmt.toString();
+        if (!emitted.isBlank()) {
+          statements.add(emitted);
+        }
+        currentStmt.setLength(0);
+      } else if (!cleanedLine.isBlank()) {
+        statements.add(cleanedLine);
+      }
+    }
+
+    if (currentStmt.length() > 0 && !currentStmt.toString().isBlank()) {
+      statements.add(currentStmt.toString());
+    }
+
+    return statements;
+  }
+
+  private String toCanonicalRelPath(
+      Path pyFile, Path effectiveRoot, Path rootPath, boolean stripSrcPrefix) {
+    String rel =
+        (pyFile.startsWith(effectiveRoot)
+                ? effectiveRoot.relativize(pyFile)
+                : rootPath.relativize(pyFile))
+            .toString()
+            .replace('\\', '/');
+    if (stripSrcPrefix && rel.startsWith("src/")) {
+      rel = rel.substring(4);
+    }
+    return rel;
   }
 
   static String resolvePythonImport(String currentModule, String packageName, String imported) {
@@ -385,19 +653,26 @@ public class PythonAstScanner implements LanguageScanner {
   }
 
   private String getPackageName(String moduleId) {
+    return getPackageName(moduleId, false);
+  }
+
+  private String getPackageName(String moduleId, boolean isInitFile) {
+    if (isInitFile) {
+      return moduleId;
+    }
     int idx = moduleId.lastIndexOf('.');
     return idx > 0 ? moduleId.substring(0, idx) : moduleId;
   }
 
   private String resolveInternalTarget(String imported, Map<String, String> internalModules) {
     if (internalModules.containsKey(imported)) {
-      return imported;
+      return internalModules.get(imported);
     }
     String cur = imported;
     while (cur.contains(".")) {
       cur = cur.substring(0, cur.lastIndexOf('.'));
       if (internalModules.containsKey(cur)) {
-        return cur;
+        return internalModules.get(cur);
       }
     }
     return null;

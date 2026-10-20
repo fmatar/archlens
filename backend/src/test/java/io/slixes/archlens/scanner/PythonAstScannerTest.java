@@ -201,4 +201,172 @@ class PythonAstScannerTest {
     assertEquals(1, result.classes().size());
     assertEquals("User", result.classes().get(0).name());
   }
+
+  @Test
+  void testNestedMultiLineRelativeAndBarrelReExportImports(@TempDir Path tempDir)
+      throws IOException {
+    // src/myapp/{domain,application,adapters/persistence}
+    Path domainDir = tempDir.resolve("src/myapp/domain");
+    Path appDir = tempDir.resolve("src/myapp/application");
+    Path adaptersDir = tempDir.resolve("src/myapp/adapters");
+    Path persistenceDir = adaptersDir.resolve("persistence");
+    Files.createDirectories(domainDir);
+    Files.createDirectories(appDir);
+    Files.createDirectories(persistenceDir);
+
+    Files.writeString(tempDir.resolve("src/myapp/__init__.py"), "");
+    Files.writeString(
+        domainDir.resolve("__init__.py"),
+        """
+        from . import (
+            order,
+        )
+        """);
+
+    // Multi-line docstring with fake import (should be ignored) + nested function import with #
+    // noqa
+    Files.writeString(
+        domainDir.resolve("order.py"),
+        """
+        \"\"\"
+        Example docstring that must not be parsed as an import:
+        from fake.pkg import FakeClass
+        import fake_direct
+        \"\"\"
+        import importlib
+
+        class Order:
+            async def save_audit(self):
+                import myapp.adapters.persistence.sql_repo as repo  # noqa: PLC0415
+                dyn = importlib.import_module("myapp.adapters.http_client")
+                return repo, dyn
+        """);
+
+    // Barrel re-export in adapters/__init__.py + multi-line parenthesized & backslash imports
+    Files.writeString(
+        adaptersDir.resolve("__init__.py"),
+        """
+        from .persistence.sql_repo import (
+            SqlOrderRepository,  # primary SQL adapter
+        )
+        """);
+
+    Files.writeString(
+        persistenceDir.resolve("sql_repo.py"),
+        """
+        from ...domain.order \\
+            import Order
+
+        class SqlOrderRepository:
+            def save(self, order: Order):
+                pass
+        """);
+
+    Files.writeString(
+        adaptersDir.resolve("http_client.py"),
+        """
+        class HttpClient:
+            pass
+        """);
+
+    // Application use case importing via adapters/__init__.py barrel + multi-line parenthesized
+    Files.writeString(
+        appDir.resolve("place_order.py"),
+        """
+        from typing import TYPE_CHECKING
+        from myapp.domain.order import (
+            Order,
+        )
+        if TYPE_CHECKING:
+            from myapp.adapters import SqlOrderRepository  # type: ignore[import]
+
+        class PlaceOrderUseCase:
+            def execute(self, order: Order):
+                pass
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "myapp");
+
+    // Docstring fake imports must not appear
+    assertTrue(result.edges().stream().noneMatch(e -> e.to().contains("fake")));
+
+    // 1. __init__.py relative multi-line import: myapp.domain -> myapp.domain.order
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(e -> e.from().equals("myapp.domain") && e.to().equals("myapp.domain.order")));
+
+    // 2. Nested function import with inline # noqa comment & dynamic import_module:
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("myapp.domain.order")
+                        && e.to().equals("myapp.adapters.persistence.sql_repo")));
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("myapp.domain.order")
+                        && e.to().equals("myapp.adapters.http_client")));
+
+    // 3. Backslash continuation + 3-dot relative import: sql_repo -> myapp.domain.order
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("myapp.adapters.persistence.sql_repo")
+                        && e.to().equals("myapp.domain.order")));
+
+    // 4. Barrel re-export through adapters/__init__.py under TYPE_CHECKING:
+    // place_order imports SqlOrderRepository from myapp.adapters -> resolves to sql_repo!
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("myapp.application.place_order")
+                        && e.to().equals("myapp.adapters.persistence.sql_repo")));
+
+    // 5. Verify end-to-end GraphCompiler, Cycle Detection, and Dossier generation on Python graph
+    io.slixes.archlens.domain.policy.ArchitecturePolicy policy =
+        new io.slixes.archlens.domain.policy.ArchitecturePolicy(
+            "MyApp Python",
+            "src",
+            "myapp",
+            true,
+            List.of("domain", "application", "adapters"),
+            List.of(List.of("domain"), List.of("application"), List.of("adapters")),
+            List.of(),
+            List.of(),
+            List.of(),
+            "python");
+    Files.createDirectories(tempDir.resolve(".archlens"));
+    new com.fasterxml.jackson.databind.ObjectMapper()
+        .writeValue(tempDir.resolve(".archlens/policy.json").toFile(), policy);
+
+    LanguageScannerRegistry registry = new LanguageScannerRegistry(List.of(scanner));
+    io.slixes.archlens.engine.GraphCompiler compiler =
+        new io.slixes.archlens.engine.GraphCompiler();
+    try {
+      java.lang.reflect.Field f =
+          io.slixes.archlens.engine.GraphCompiler.class.getDeclaredField("scannerRegistry");
+      f.setAccessible(true);
+      f.set(compiler, registry);
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+
+    io.slixes.archlens.domain.graph.ArchitectureGraph graph =
+        compiler.compileGraph(tempDir.toString(), null);
+    assertFalse(graph.edges().stream().filter(DependencyEdge::isViolating).toList().isEmpty());
+    assertFalse(
+        graph.cycles().isEmpty(),
+        "PackageCycleDetector should detect cycle between myapp.domain and myapp.adapters.persistence");
+
+    String dossier =
+        new io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator()
+            .generate(graph, policy);
+    assertFalse(
+        dossier.contains("Unknown Layer"),
+        "Dossier must resolve Python module edge endpoints to their concentric ring levels");
+  }
 }

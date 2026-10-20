@@ -74,7 +74,8 @@ public class DipInversionSynthesizer {
             if (qualifiedName.equals(cls.id())
                 || qualifiedName.equals(cls.name())
                 || (cls.packageName() != null
-                    && qualifiedName.equals(cls.packageName() + "." + cls.name()))) {
+                    && qualifiedName.equals(cls.packageName() + "." + cls.name()))
+                || (cls.id() != null && cls.id().startsWith(qualifiedName + "."))) {
               return cls;
             }
           }

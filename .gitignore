@@ -8,6 +8,7 @@ frontend/node/
 cli/node/
 frontend/dist/
 .idea/
+*.iml
 .DS_Store
 .uml-viewer/
 coverage/

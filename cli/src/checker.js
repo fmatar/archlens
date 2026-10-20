@@ -24,7 +24,13 @@ function findMatchingFiles(dir, predicate, maxFiles = 500, results = []) {
           entry.name === 'node_modules' ||
           entry.name === 'target' ||
           entry.name === 'dist' ||
-          entry.name === 'build'
+          entry.name === 'build' ||
+          entry.name === 'venv' ||
+          entry.name === '__pycache__' ||
+          entry.name === 'site-packages' ||
+          entry.name === 'tests' ||
+          entry.name === 'test' ||
+          entry.name.endsWith('.egg-info')
         ) {
           continue;
         }
@@ -335,6 +341,188 @@ export function suggestFeatureClusters(packages, sourceFiles = []) {
   };
 }
 
+function resolvePythonRelativeImport(packageName, imported) {
+  if (!imported || !imported.startsWith('.')) return imported;
+  let dotCount = 0;
+  while (dotCount < imported.length && imported[dotCount] === '.') dotCount++;
+  const rest = imported.slice(dotCount);
+  const pkgParts = packageName ? packageName.split('.').filter(Boolean) : [];
+  const targetLen = Math.max(0, pkgParts.length - (dotCount - 1));
+  const base = pkgParts.slice(0, targetLen).join('.');
+  if (!base) return rest;
+  return rest ? `${base}.${rest}` : base;
+}
+
+function extractPythonStatements(content) {
+  const rawLines = content.split('\n');
+  const statements = [];
+  let currentStmt = '';
+  let stmtLine = 1;
+  let inTripleDouble = false;
+  let inTripleSingle = false;
+  let parenDepth = 0;
+
+  for (let lineIdx = 0; lineIdx < rawLines.length; lineIdx++) {
+    const line = rawLines[lineIdx];
+    const lineNo = lineIdx + 1;
+    let lineBuf = '';
+    let i = 0;
+
+    while (i < line.length) {
+      if (inTripleDouble) {
+        const close = line.indexOf('"""', i);
+        if (close !== -1) {
+          inTripleDouble = false;
+          i = close + 3;
+        } else break;
+        continue;
+      }
+      if (inTripleSingle) {
+        const close = line.indexOf("'''", i);
+        if (close !== -1) {
+          inTripleSingle = false;
+          i = close + 3;
+        } else break;
+        continue;
+      }
+      if (line.startsWith('"""', i)) {
+        inTripleDouble = true;
+        i += 3;
+        continue;
+      }
+      if (line.startsWith("'''", i)) {
+        inTripleSingle = true;
+        i += 3;
+        continue;
+      }
+      const c = line[i];
+      if (c === '#') break;
+      if (c === '"' || c === "'") {
+        const quote = c;
+        lineBuf += c;
+        i++;
+        while (i < line.length) {
+          const sc = line[i];
+          lineBuf += sc;
+          if (sc === '\\' && i + 1 < line.length) {
+            i++;
+            lineBuf += line[i];
+          } else if (sc === quote) {
+            i++;
+            break;
+          }
+          i++;
+        }
+        continue;
+      }
+      if (c === '(' || c === '[' || c === '{') parenDepth++;
+      else if (c === ')' || c === ']' || c === '}') parenDepth = Math.max(0, parenDepth - 1);
+      else if (c === ';' && parenDepth === 0) {
+        const emitted = (currentStmt ? `${currentStmt} ${lineBuf}` : lineBuf).trim();
+        if (emitted) statements.push({ text: emitted, line: currentStmt ? stmtLine : lineNo });
+        currentStmt = '';
+        lineBuf = '';
+        i++;
+        continue;
+      }
+      lineBuf += c;
+      i++;
+    }
+
+    if (inTripleDouble || inTripleSingle) continue;
+
+    const trimmedRight = lineBuf.trimEnd();
+    if (trimmedRight.endsWith('\\')) {
+      if (!currentStmt) stmtLine = lineNo;
+      currentStmt += (currentStmt ? ' ' : '') + trimmedRight.slice(0, -1).trim();
+      continue;
+    }
+    if (parenDepth > 0) {
+      if (trimmedRight.trim()) {
+        if (!currentStmt) stmtLine = lineNo;
+        currentStmt += (currentStmt ? ' ' : '') + trimmedRight.trim();
+      }
+      continue;
+    }
+    if (currentStmt) {
+      const emitted = `${currentStmt} ${trimmedRight.trim()}`.trim();
+      if (emitted) statements.push({ text: emitted, line: stmtLine });
+      currentStmt = '';
+    } else if (trimmedRight.trim()) {
+      statements.push({ text: trimmedRight.trim(), line: lineNo });
+    }
+  }
+  if (currentStmt.trim()) {
+    statements.push({ text: currentStmt.trim(), line: stmtLine });
+  }
+  return statements;
+}
+
+export function extractFileImports(content, filePath, fullSrc) {
+  if (!filePath.endsWith('.py')) {
+    const results = [];
+    const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const m = importRegex.exec(lines[i]);
+      if (m) results.push({ imported: m[1], line: i + 1 });
+    }
+    return results;
+  }
+
+  let rel = fullSrc ? path.relative(fullSrc, filePath).replace(/\\/g, '/') : path.basename(filePath);
+  if (rel.startsWith('src/')) rel = rel.slice(4);
+  const isInit = path.basename(filePath) === '__init__.py';
+  const modId = rel.replace(/\.py$/, '').replace(/\/__init__$/, '').replace(/\//g, '.');
+  const packageName = isInit ? modId : (modId.includes('.') ? modId.slice(0, modId.lastIndexOf('.')) : modId);
+
+  const results = [];
+  const fromRegex = /^from\s+([a-zA-Z0-9_.]+)(?:\s+|(?<=\.))import\s+(.+)$/;
+  const directRegex = /^import\s+([a-zA-Z0-9_., ]+)$/;
+  const dynRegex = /(?:importlib\.import_module|__import__)\s*\(\s*['"]([a-zA-Z0-9_.]+)['"]/g;
+
+  for (const { text, line } of extractPythonStatements(content)) {
+    const fromMatch = fromRegex.exec(text);
+    if (fromMatch) {
+      const resolvedMod = resolvePythonRelativeImport(packageName, fromMatch[1].trim());
+      const itemsClause = fromMatch[2].replace(/[()]/g, ' ').trim();
+      let emittedSpecific = false;
+      for (const rawPart of itemsClause.split(',')) {
+        const token = rawPart.trim();
+        if (!token) continue;
+        const orig = token.split(/\s+/)[0].trim();
+        if (orig && orig !== '*' && /^[a-zA-Z_]/.test(orig)) {
+          results.push({ imported: resolvedMod ? `${resolvedMod}.${orig}` : orig, line });
+          emittedSpecific = true;
+        }
+      }
+      if (!emittedSpecific && resolvedMod) {
+        results.push({ imported: resolvedMod, line });
+      }
+      continue;
+    }
+
+    const directMatch = directRegex.exec(text);
+    if (directMatch) {
+      for (const rawPart of directMatch[1].replace(/[()]/g, ' ').split(',')) {
+        const orig = rawPart.trim().split(/\s+/)[0].trim();
+        if (orig && /^[a-zA-Z_]/.test(orig)) {
+          results.push({ imported: orig, line });
+        }
+      }
+      continue;
+    }
+
+    let dynMatch;
+    dynRegex.lastIndex = 0;
+    while ((dynMatch = dynRegex.exec(text)) !== null) {
+      const resolvedDyn = resolvePythonRelativeImport(packageName, dynMatch[1].trim());
+      if (resolvedDyn) results.push({ imported: resolvedDyn, line });
+    }
+  }
+  return results;
+}
+
 export async function checkArchitecture(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || '.');
   const policy = loadProjectPolicy(root);
@@ -360,13 +548,19 @@ export async function checkArchitecture(projectRoot, options = {}) {
   const fullSrc = path.join(root, policy.src || 'src');
   const sourceFiles = findMatchingFiles(
     fullSrc,
-    (f) => f.endsWith('.java') || f.endsWith('.kt') || f.endsWith('.ts') || f.endsWith('.js'),
+    (f) =>
+      (f.endsWith('.java') ||
+        f.endsWith('.kt') ||
+        f.endsWith('.ts') ||
+        f.endsWith('.js') ||
+        f.endsWith('.py')) &&
+      !f.startsWith('test_') &&
+      !f.endsWith('_test.py'),
     500
   );
 
   const violations = [];
   const packageEdges = new Map();
-  const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
 
   for (const file of sourceFiles) {
     try {
@@ -386,22 +580,22 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
       if (fileLevel === null) continue;
 
-      const lines = content.split('\n');
-      for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        const line = lines[lineIndex];
-        const match = importRegex.exec(line);
-        if (match) {
-          const imported = match[1];
-          const lowerImport = imported.toLowerCase();
-          for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
-            if (lowerImport.includes(targetPkg)) {
-              if (filePackage && filePackage !== targetPkg) {
-                if (!packageEdges.has(filePackage)) {
-                  packageEdges.set(filePackage, new Set());
-                }
-                packageEdges.get(filePackage).add(targetPkg);
+      const fileImports = extractFileImports(content, file, fullSrc);
+      const seenLinePkgViolations = new Set();
+      for (const { imported, line } of fileImports) {
+        const lowerImport = imported.toLowerCase();
+        for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
+          if (lowerImport.includes(targetPkg)) {
+            if (filePackage && filePackage !== targetPkg) {
+              if (!packageEdges.has(filePackage)) {
+                packageEdges.set(filePackage, new Set());
               }
-              if (fileLevel < targetLvl) {
+              packageEdges.get(filePackage).add(targetPkg);
+            }
+            if (fileLevel < targetLvl) {
+              const dedupKey = `${line}:${targetPkg}`;
+              if (!seenLinePkgViolations.has(dedupKey)) {
+                seenLinePkgViolations.add(dedupKey);
                 const baseName = path.basename(file, path.extname(file));
                 violations.push({
                   fromFile: relPath,
@@ -409,11 +603,11 @@ export async function checkArchitecture(projectRoot, options = {}) {
                   toImport: imported,
                   toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
                   portName: `${baseName}Port`,
-                  line: lineIndex + 1
+                  line
                 });
               }
-              break;
             }
+            break;
           }
         }
       }

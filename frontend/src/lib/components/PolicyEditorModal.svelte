@@ -26,7 +26,6 @@
 
   let backdropEl: HTMLDivElement | null = $state(null);
   let dialogEl: HTMLDivElement | null = $state(null);
-  let isClosing = $state(false);
 
   // Local working copy for editing
   let localLevels = $state<string[][]>([]);
@@ -95,7 +94,7 @@
 
   // GSAP animation
   $effect(() => {
-    if (isOpen && backdropEl && dialogEl && !isClosing) {
+    if (isOpen && backdropEl && dialogEl) {
       const ctx = gsap.context(() => {
         gsap.fromTo(backdropEl, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power2.out' });
         gsap.fromTo(
@@ -109,31 +108,12 @@
   });
 
   function handleClose() {
-    if (isClosing || !dialogEl || !backdropEl) {
-      diagramStore.closePolicyEditor();
-      return;
-    }
-    isClosing = true;
-    gsap.to(dialogEl, {
-      scale: 0.95,
-      y: 10,
-      opacity: 0,
-      duration: 0.18,
-      ease: 'power2.in'
-    });
-    gsap.to(backdropEl, {
-      opacity: 0,
-      duration: 0.18,
-      ease: 'power2.in',
-      onComplete: () => {
-        isClosing = false;
-        diagramStore.closePolicyEditor();
-      }
-    });
+    diagramStore.closePolicyEditor();
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
       handleClose();
     }
   }
@@ -236,15 +216,21 @@
 <svelte:window onkeydown={handleKeydown} />
 
 {#if isOpen}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={backdropEl}
     class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Concentric Architecture Policy Designer"
+    onclick={(e) => {
+      if (e.target === backdropEl) handleClose();
+    }}
   >
     <div
       bind:this={dialogEl}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Concentric Architecture Policy Designer"
+      tabindex="-1"
       class="bg-slate-900 border border-slate-700/80 rounded-xl shadow-2xl shadow-slate-950 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden text-slate-100"
     >
       <!-- Modal Header -->

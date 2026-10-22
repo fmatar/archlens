@@ -76,11 +76,7 @@
       diagramStore.isCommandPaletteOpen = true;
     } else if (e.key.toLowerCase() === 'p') {
       e.preventDefault();
-      if (diagramStore.activeProposalId) {
-        diagramStore.loadGraph(null);
-      } else if (diagramStore.policy?.proposals.length) {
-        diagramStore.loadGraph(diagramStore.policy.proposals[0].id);
-      }
+      diagramStore.togglePolicyEditor();
     } else if (e.key.toLowerCase() === 'd') {
       e.preventDefault();
       diagramStore.cycleDeclutter();
@@ -125,6 +121,14 @@
       e.preventDefault();
       diagramStore.zoom = Math.max(0.2, diagramStore.zoom * 0.85);
     } else if (e.key === 'Escape') {
+      if (diagramStore.isMainSequenceOpen) {
+        diagramStore.closeMainSequence();
+        return;
+      }
+      if (diagramStore.isPolicyEditorOpen) {
+        diagramStore.closePolicyEditor();
+        return;
+      }
       diagramStore.setFocusedNode(null);
       diagramStore.clearEdgeTooltip();
       if (diagramStore.comparisonTargetId) {
@@ -260,7 +264,7 @@
 
       <!-- Concentric Policy Designer Button -->
       <button
-        onclick={() => diagramStore.openPolicyEditor()}
+        onclick={() => diagramStore.togglePolicyEditor()}
         class={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border ${
           diagramStore.isPolicyEditorOpen
             ? 'bg-blue-600/30 border-blue-500/60 text-blue-200 shadow-sm shadow-blue-950/50'

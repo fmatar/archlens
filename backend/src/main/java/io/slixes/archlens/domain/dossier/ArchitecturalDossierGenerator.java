@@ -91,8 +91,32 @@ public class ArchitecturalDossierGenerator implements DossierGenerator {
       for (ComponentNode comp : graph.components()) {
         if (comp.classes() != null) {
           for (ClassNode cls : comp.classes()) {
-            classMap.put(cls.id(), cls);
-            classMap.put(cls.name(), cls);
+            ClassNode enriched =
+                (cls.level() == null && comp.level() != null)
+                    ? new ClassNode(
+                        cls.id(),
+                        cls.name(),
+                        cls.packageName(),
+                        cls.filePath(),
+                        cls.stereotype(),
+                        cls.isForeign(),
+                        comp.level(),
+                        cls.crap(),
+                        cls.coverage(),
+                        cls.cc(),
+                        cls.killed(),
+                        cls.survived(),
+                        cls.uncovered(),
+                        cls.fields(),
+                        cls.methods())
+                    : cls;
+            classMap.put(enriched.id(), enriched);
+            classMap.put(enriched.name(), enriched);
+            if (enriched.name() != null && enriched.id().endsWith("." + enriched.name())) {
+              String modId =
+                  enriched.id().substring(0, enriched.id().length() - enriched.name().length() - 1);
+              classMap.putIfAbsent(modId, enriched);
+            }
           }
         }
       }

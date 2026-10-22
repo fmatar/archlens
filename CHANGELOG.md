@@ -9,7 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-10] - 2026-10-21
+
+### Fixed
+- **Main Sequence Modal `Escape` Dismissal & Policy Shortcut (`P`)** ([#172](https://github.com/fmatar/archlens/issues/172)):
+  - Added window-level `Escape` key handling (`<svelte:window onkeydown={handleKeydown} />`) and immediate dismissal in `MainSequenceModal.svelte` and `PolicyEditorModal.svelte` so pressing `Esc` reliably closes the Main Sequence panel after opening with `M`.
+  - Wired the `P` global keyboard shortcut in `App.svelte` to `diagramStore.togglePolicyEditor()` to match the header `Policy (P)` button.
+
+## [0.1.0-Beta-09] - 2026-10-20
+
 ### Added
+- **Statement-Normalizing Python AST & Dependency Engine (`grimp` / `import-linter` Parity)**:
+  - Replaced single-line regex scanning in `PythonAstScanner` with a zero-dependency statement-normalizing Python lexer (`extractLogicalStatements`) that strips `"""`/`'''` docstrings and `#` comments outside string literals, joins multi-line `(...)` parenthesized imports and `\` continuations, and splits top-level `;` statements.
+  - Added full detection for nested imports inside `def`, `async def`, `try/except ImportError`, and `if TYPE_CHECKING:` blocks, including imports with trailing inline `# noqa` / `# type: ignore` directives, comma-separated `import a, b as c` statements, and dynamic `importlib.import_module()` / `__import__()` calls.
+  - Added multi-hop `__init__.py` barrel re-export symbol and submodule resolution (`resolveModuleTarget`) and proper `src/` layout root stripping (`toCanonicalRelPath`) and `__init__.py` package attribution.
+  - Added Python `.py` conformance verification to the `@fmatar/archlens-skill` headless CLI (`cli/src/checker.js`) with multi-line, nested, and relative dot-import resolution.
+  - Added zero-dependency `.importlinter` and `pyproject.toml` (`[tool.importlinter]`) configuration seeding in `cli/src/analyzer.js` to automatically map existing `import-linter` layered contracts and `root_package` into `.archlens/policy.json`.
 - **v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization** ([#166](https://github.com/fmatar/archlens/issues/166)):
   - Indexed and verified open agent skill specification for `skills.sh` (`npx skills add fmatar/archlens`) across 15+ coding agent ecosystems.
   - Documented composite GitHub Action workflow integration (`fmatar/archlens@v1`) for continuous team governance in `README.md`.
@@ -27,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Validated multi-module recursive directory discovery across nested enterprise monorepos for Java (`apps/*/src/main/java`, `libs/*/src/main/java`).
   - Added support for pnpm/Turborepo workspace package aliases (`@workspace/*`) in `TypeScriptAstScanner` to cleanly link cross-package dependencies between frontend apps and internal UI/shared libraries.
   - Added end-to-end integration tests for nested monorepo source resolution and inter-module edge tracing in `JavaAstScannerTest` and `TypeScriptAstScannerTest`.
+
+### Fixed
+- **Python Module-to-Class Edge Resolution Across Governance & UI**:
+  - Updated `PackageCycleDetector`, `ArchitecturalDossierGenerator`, `DipInversionSynthesizer`, `martinMetrics.ts`, and `Canvas.svelte` to index parent module IDs (`pkg.module`) alongside `ClassNode` IDs (`pkg.module.ClassName`) so module-level Python/TypeScript/Rust edges participate in ADP cycle detection, Robert C. Martin coupling metrics ($C_a, C_e, I, D$), DIP port synthesis, and interactive canvas rendering.
+  - Fixed `init_policy.py` and `cli/src/analyzer.js` to unwrap `src/<pkg>/__init__.py` layouts and exclude virtual environments (`.venv`, `venv`, `__pycache__`) during package prefix discovery.
 
 ## [0.1.0-Beta-08] - 2026-10-07
 

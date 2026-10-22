@@ -81,6 +81,7 @@ class DiagramState {
 
   togglePolicyEditor() {
     this.isPolicyEditorOpen = !this.isPolicyEditorOpen;
+    this.policySaveNotice = null;
   }
 
   activeComponentMetrics = $derived.by<Record<string, MartinMetrics>>(() => {

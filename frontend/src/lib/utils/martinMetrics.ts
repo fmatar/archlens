@@ -33,6 +33,9 @@ export function calculateComponentMartinMetrics(
     if (cls.packageName) {
       compClassKeys.add(`${cls.packageName}.${cls.name}`);
     }
+    if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+      compClassKeys.add(cls.id.slice(0, -(cls.name.length + 1)));
+    }
   }
 
   const totalClasses = classes.length;
@@ -185,6 +188,9 @@ export function simulateSandboxGraph(
       if (cls.packageName) {
         classToLevelMap.set(`${cls.packageName}.${cls.name}`, comp.level);
       }
+      if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+        classToLevelMap.set(cls.id.slice(0, -(cls.name.length + 1)), comp.level);
+      }
     });
   });
 
@@ -194,6 +200,9 @@ export function simulateSandboxGraph(
     classToLevelMap.set(cls.name, cls.level);
     if (cls.packageName) {
       classToLevelMap.set(`${cls.packageName}.${cls.name}`, cls.level);
+    }
+    if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+      classToLevelMap.set(cls.id.slice(0, -(cls.name.length + 1)), cls.level);
     }
   });
 

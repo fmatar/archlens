@@ -250,6 +250,9 @@
         for (const cls of comp.classes) {
           map.set(cls.id, comp.id);
           map.set(cls.name, comp.id);
+          if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+            map.set(cls.id.slice(0, -(cls.name.length + 1)), comp.id);
+          }
           if (cls.packageName) {
             map.set(cls.packageName, comp.id);
             const pSeg = cls.packageName.split('.').pop();
@@ -271,6 +274,11 @@
     if (simpleCompId) return positionedComponents.get(simpleCompId) || null;
 
     const parts = fullClassName.split('.');
+    for (let i = parts.length - 1; i >= 1; i--) {
+      const prefix = parts.slice(0, i).join('.');
+      const prefixCompId = classToNodeIdMap.get(prefix);
+      if (prefixCompId) return positionedComponents.get(prefixCompId) || null;
+    }
     if (parts.length > 2) {
       const pkgSeg = parts[parts.length - 2];
       const pkgCompId = classToNodeIdMap.get(pkgSeg);

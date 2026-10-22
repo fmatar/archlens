@@ -1,5 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mount, unmount, flushSync } from 'svelte';
 import { diagramStore } from './diagram.svelte';
+import MainSequenceModal from '../components/MainSequenceModal.svelte';
+import PolicyEditorModal from '../components/PolicyEditorModal.svelte';
+import App from '../../App.svelte';
 import type { ArchitectureGraph, ComponentNode, ClassNode } from '../types/diagram';
 
 describe('Main Sequence Scatter Plot & State Integration', () => {
@@ -134,5 +138,187 @@ describe('Main Sequence Scatter Plot & State Integration', () => {
     // Adapters: I = 1, A = 0 -> D = |0 + 1 - 1| = 0
     expect(adaptersOnly[0].distance).toBeCloseTo(0.0, 2);
     expect(adaptersOnly[0].zone).toBe('MAIN_SEQUENCE');
+  });
+
+  describe('UI Keyboard Shortcuts (M, P, and Escape dismissal)', () => {
+    let mountedApp: any = null;
+
+    beforeEach(() => {
+      document.body.innerHTML = '';
+      diagramStore.closeMainSequence();
+      diagramStore.closePolicyEditor();
+      if (typeof globalThis.ResizeObserver === 'undefined') {
+        globalThis.ResizeObserver = class {
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        } as any;
+      }
+    });
+
+    afterEach(() => {
+      if (mountedApp) {
+        unmount(mountedApp);
+        mountedApp = null;
+      }
+      vi.restoreAllMocks();
+    });
+
+    it('should close MainSequenceModal when Escape is pressed on window after opening with M', () => {
+      mountedApp = mount(MainSequenceModal, { target: document.body });
+      flushSync();
+
+      diagramStore.openMainSequence();
+      flushSync();
+      expect(diagramStore.isMainSequenceOpen).toBe(true);
+      expect(document.body.textContent).toContain('Robert C. Martin Main Sequence');
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flushSync();
+
+      expect(diagramStore.isMainSequenceOpen).toBe(false);
+    });
+
+    it('should open MainSequenceModal when M shortcut is pressed in App and close it on Escape', () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockGraph
+      } as any);
+
+      mountedApp = mount(App, { target: document.body });
+      flushSync();
+
+      expect(diagramStore.isMainSequenceOpen).toBe(false);
+
+      // Press 'm' to open Main Sequence panel
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isMainSequenceOpen).toBe(true);
+      expect(document.body.textContent).toContain('Robert C. Martin Main Sequence');
+
+      // Press 'Escape' to close Main Sequence panel
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isMainSequenceOpen).toBe(false);
+    });
+
+    it('should open PolicyEditorModal when P shortcut is pressed and close it on Escape or P', () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockGraph
+      } as any);
+
+      mountedApp = mount(App, { target: document.body });
+      flushSync();
+
+      expect(diagramStore.isPolicyEditorOpen).toBe(false);
+
+      // Press 'p' to open Policy Designer
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isPolicyEditorOpen).toBe(true);
+      expect(document.body.textContent).toContain('Concentric Policy Designer');
+
+      // Press 'Escape' to close Policy Designer
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isPolicyEditorOpen).toBe(false);
+
+      // Press 'P' (uppercase) to open and 'P' again to toggle closed
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'P', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isPolicyEditorOpen).toBe(true);
+
+      // Exercise PolicyEditorModal controls while open
+      const presetBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Preset 4-Tier')
+      );
+      presetBtn?.click();
+      flushSync();
+
+      const addTierBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Add Outer Tier')
+      );
+      addTierBtn?.click();
+      flushSync();
+
+      const resetBtn = document.querySelector('button[aria-label="Reset policy"]') as HTMLButtonElement | null;
+      resetBtn?.click();
+      flushSync();
+
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'P', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isPolicyEditorOpen).toBe(false);
+    });
+
+    it('should exercise MainSequenceModal filters, point selection, and workstation shortcuts (/, l, s, d, v, b, c, f, t, g, +, -, 0)', () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockGraph,
+        text: async () => '# Dossier'
+      } as any);
+
+      mountedApp = mount(App, { target: document.body });
+      flushSync();
+
+      // Open MainSequenceModal with 'm' and exercise tier filters & dot interactions
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isMainSequenceOpen).toBe(true);
+
+      const tierButtons = Array.from(document.querySelectorAll('button'));
+      for (const label of ['Domain (L0)', 'App (L1)', 'Adapters (L2)', 'Frameworks (L3)', 'All']) {
+        tierButtons.find((b) => b.textContent?.includes(label))?.click();
+        flushSync();
+      }
+
+      const dot = document.querySelector('svg g[role="button"]') as SVGGElement | null;
+      dot?.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      dot?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      flushSync();
+      dot?.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+      flushSync();
+
+      // Close MainSequenceModal with Escape
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isMainSequenceOpen).toBe(false);
+
+      // Command palette ('/') + navigation + Escape
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: '/', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isCommandPaletteOpen).toBe(true);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isCommandPaletteOpen).toBe(false);
+
+      // LLM Prompt modal ('l') + Escape
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'l', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isLlmPromptModalOpen).toBe(true);
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      flushSync();
+
+      // Sandbox ('s') + details drawer + exit
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isSandboxActive).toBe(true);
+      const metricsBtn = Array.from(document.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Metrics & Staged')
+      );
+      metricsBtn?.click();
+      flushSync();
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's', bubbles: true }));
+      flushSync();
+      expect(diagramStore.isSandboxActive).toBe(false);
+
+      // Declutter and zoom shortcuts
+      for (const k of ['d', 'v', 'b', 'c', 'f', 't', 'g', '+', '-', '0', 'Escape']) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true }));
+      }
+      flushSync();
+    });
   });
 });

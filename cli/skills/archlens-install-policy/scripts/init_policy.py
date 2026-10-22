@@ -60,11 +60,29 @@ def find_common_package_prefix(source_dir: Path) -> str:
     if not source_dir.exists():
         return ""
 
+    known_layer_terms = {
+        "domain", "model", "models", "entity", "entities", "core",
+        "application", "app", "usecase", "usecases", "service", "services", "port", "ports",
+        "adapter", "adapters", "controller", "controllers", "gateway", "gateways",
+        "presenter", "presenters", "repository", "repositories", "resource", "resources", "api", "dto",
+        "infrastructure", "infra", "persistence", "db", "database", "config", "configuration", "web", "server"
+    }
+
     java_files = list(source_dir.glob("**/*.java"))
     if not java_files:
         kt_files = list(source_dir.glob("**/*.kt"))
         if kt_files:
             java_files = kt_files
+
+    if not java_files:
+        excluded = {"__pycache__", "venv", ".venv", "node_modules", "tests", "test", "dist", "build", "target", "site-packages"}
+        dirs = [
+            d for d in source_dir.iterdir()
+            if d.is_dir() and not d.name.startswith(".") and d.name not in excluded and not d.name.endswith(".egg-info")
+        ]
+        if len(dirs) == 1 and dirs[0].name.lower() not in known_layer_terms and (dirs[0] / "__init__.py").exists():
+            return dirs[0].name
+        return ""
 
     packages = []
     for jf in java_files[:100]:
@@ -87,13 +105,6 @@ def find_common_package_prefix(source_dir: Path) -> str:
         else:
             break
 
-    known_layer_terms = {
-        "domain", "model", "models", "entity", "entities", "core",
-        "application", "app", "usecase", "usecases", "service", "services", "port", "ports",
-        "adapter", "adapters", "controller", "controllers", "gateway", "gateways",
-        "presenter", "presenters", "repository", "repositories", "resource", "resources", "api", "dto",
-        "infrastructure", "infra", "persistence", "db", "database", "config", "configuration", "web", "server"
-    }
     while common and common[-1].lower() in known_layer_terms:
         common.pop()
 
@@ -113,9 +124,10 @@ def discover_subpackages(source_dir: Path, prefix: str) -> list[str]:
         else:
             break
 
+    excluded = {"__pycache__", "venv", ".venv", "node_modules", "tests", "test", "dist", "build", "target", "site-packages"}
     subpackages = []
     for item in sorted(search_root.iterdir()):
-        if item.is_dir() and not item.name.startswith("."):
+        if item.is_dir() and not item.name.startswith(".") and item.name not in excluded and not item.name.endswith(".egg-info"):
             subpackages.append(item.name)
 
     return subpackages

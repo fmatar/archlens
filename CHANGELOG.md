@@ -9,8 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-10] - 2026-10-21
+
 ### Fixed
-- **Main Sequence Modal `Escape` Dismissal & Policy Shortcut (`P`)**:
+- **Main Sequence Modal `Escape` Dismissal & Policy Shortcut (`P`)** ([#172](https://github.com/fmatar/archlens/issues/172)):
   - Added window-level `Escape` key handling (`<svelte:window onkeydown={handleKeydown} />`) and immediate dismissal in `MainSequenceModal.svelte` and `PolicyEditorModal.svelte` so pressing `Esc` reliably closes the Main Sequence panel after opening with `M`.
   - Wired the `P` global keyboard shortcut in `App.svelte` to `diagramStore.togglePolicyEditor()` to match the header `Policy (P)` button.
 

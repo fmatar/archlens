@@ -1,7 +1,7 @@
 <script lang="ts">
   import { fly } from 'svelte/transition';
   import { diagramStore } from '../state/diagram.svelte';
-  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone, ShieldCheck, TrendingUp, CheckCircle2, XCircle } from '@lucide/svelte';
+  import { Layers, RefreshCw, Eye, Sparkles, FolderTree, Radio, Box, Search, X, AlertTriangle, Gauge, FlaskConical, Megaphone, ShieldCheck, TrendingUp, CheckCircle2, XCircle, Info } from '@lucide/svelte';
   import { calculateComponentMartinMetrics } from '../utils/martinMetrics';
   import type { MartinMetrics } from '../types/diagram';
 
@@ -11,6 +11,24 @@
 
   let classSearchQuery = $state('');
   let isFitnessExpanded = $state(false);
+  let showMetricHelp = $state(false);
+  let activeTab = $state<'architecture' | 'classes' | 'governance'>('architecture');
+
+  // Only switch to classes tab if user focused a new node and was already inspecting inventory,
+  // or if they had no prior tab preference. Does not hijack if user is auditing fitness or views.
+  let lastFocusedNodeId: string | null = $state(null);
+  $effect(() => {
+    const current = diagramStore.focusedNodeId;
+    if (current && current !== lastFocusedNodeId) {
+      lastFocusedNodeId = current;
+      // If user is already on views or governance, don't jerk them away; otherwise open inventory
+      if (activeTab === 'architecture' && !diagramStore.activeProposalId) {
+        activeTab = 'classes';
+      }
+    } else if (!current) {
+      lastFocusedNodeId = null;
+    }
+  });
 
   let focusedComponent = $derived(
     diagramStore.focusedNodeId && diagramStore.graph?.components
@@ -32,568 +50,578 @@
   });
 </script>
 
-<div class="w-72 bg-slate-900/90 backdrop-blur border-l border-slate-800 flex flex-col h-full select-none">
+<div class="w-80 bg-slate-900/90 backdrop-blur border-l border-slate-800 flex flex-col h-full select-none">
   <!-- Header -->
-  <div class="p-4 border-b border-slate-800">
-    <h2 class="text-sm font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
-      <Layers size={16} class="text-blue-400" />
-      Inspector
-    </h2>
+  <div class="px-3 pt-3 pb-2 border-b border-slate-800 space-y-2.5">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-bold text-slate-100 uppercase tracking-wider flex items-center gap-2">
+        <Layers size={15} class="text-blue-400" />
+        Inspector
+      </h2>
+      {#if activeViolations.length > 0}
+        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300">
+          {activeViolations.length} {activeViolations.length === 1 ? 'issue' : 'issues'}
+        </span>
+      {/if}
+    </div>
+
+    <!-- Segmented Tab Navigation -->
+    <div class="grid grid-cols-3 gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[11px] font-medium">
+      <button
+        onclick={() => activeTab = 'architecture'}
+        class={`py-1 px-2 rounded-md transition-colors cursor-pointer text-center truncate ${
+          activeTab === 'architecture'
+            ? 'bg-blue-600 text-white shadow-sm'
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+        }`}
+      >
+        Views
+      </button>
+
+      <button
+        onclick={() => activeTab = 'classes'}
+        class={`py-1 px-2 rounded-md transition-colors cursor-pointer text-center truncate relative ${
+          activeTab === 'classes'
+            ? 'bg-blue-600 text-white shadow-sm'
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+        }`}
+      >
+        <span>Inventory</span>
+        {#if focusedComponent}
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1"></span>
+        {/if}
+      </button>
+
+      <button
+        onclick={() => activeTab = 'governance'}
+        class={`py-1 px-2 rounded-md transition-colors cursor-pointer text-center truncate ${
+          activeTab === 'governance'
+            ? 'bg-blue-600 text-white shadow-sm'
+            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+        }`}
+      >
+        Fitness
+      </button>
+    </div>
   </div>
 
   <!-- Content -->
-  <div class="flex-1 overflow-y-auto p-4 space-y-6">
-    <!-- Focused Component Class Inventory (Triggered by clicking node or inspect ↗) -->
-    {#if focusedComponent}
-      <div class="p-3.5 rounded-xl bg-slate-950/80 border border-blue-500/30 space-y-3 shadow-lg shadow-blue-950/30 animate-in fade-in duration-150">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2 min-w-0">
-            <Box size={15} class="text-blue-400 shrink-0" />
-            <span class="text-xs font-semibold text-slate-100 font-mono truncate">{focusedComponent.label}</span>
-          </div>
-          <div class="flex items-center gap-1.5 shrink-0">
-            <span class="text-[9px] px-1.5 py-0.5 rounded font-mono bg-blue-500/15 border border-blue-500/30 text-blue-300">
-              Ring {focusedComponent.level ?? '?'}
-            </span>
-            <button
-              onclick={() => {
-                diagramStore.setFocusedNode(null);
-                classSearchQuery = '';
-              }}
-              class="p-0.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-              title="Clear focus"
-              aria-label="Clear focus"
-            >
-              <X size={13} />
-            </button>
-          </div>
-        </div>
-
-        <!-- Robert C. Martin Architectural Metrics Card -->
-        {#if focusedMetrics}
-          <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] font-mono space-y-1.5">
-            <div class="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
-              <span class="flex items-center gap-1 text-slate-300">
-                <Gauge size={11} class="text-blue-400" />
-                Martin Metrics
-              </span>
-              {#if focusedMetrics.zone === 'MAIN_SEQUENCE'}
-                <span class="text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Main Seq</span>
-              {:else if focusedMetrics.zone === 'ZONE_OF_PAIN'}
-                <span class="text-rose-400 bg-rose-950/60 px-1 py-0.2 rounded border border-rose-500/30">Zone of Pain</span>
-              {:else}
-                <span class="text-amber-400 bg-amber-950/60 px-1 py-0.2 rounded border border-amber-500/30">Zone of Uselessness</span>
-              {/if}
-            </div>
-
-            <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800/80">
-              <div class="bg-slate-950/50 p-1 rounded" title="Afferent Coupling (Incoming dependencies from external classes)">
-                <div class="text-slate-500 text-[8px]">$C_a$</div>
-                <div class="font-bold text-slate-200">{focusedMetrics.ca}</div>
-              </div>
-              <div class="bg-slate-950/50 p-1 rounded" title="Efferent Coupling (Outgoing dependencies to external classes)">
-                <div class="text-slate-500 text-[8px]">$C_e$</div>
-                <div class="font-bold text-slate-200">{focusedMetrics.ce}</div>
-              </div>
-              <div class="bg-slate-950/50 p-1 rounded" title="Instability = Ce / (Ca + Ce)">
-                <div class="text-slate-500 text-[8px]">$I$</div>
-                <div class="font-bold text-amber-300">{focusedMetrics.instability.toFixed(2)}</div>
-              </div>
-              <div class="bg-slate-950/50 p-1 rounded" title="Normalized Distance from Main Sequence = |A + I - 1|">
-                <div class="text-slate-500 text-[8px]">$D$</div>
-                <div class="font-bold {focusedMetrics.distance <= 0.25 ? 'text-emerald-400' : 'text-rose-400'}">
-                  {focusedMetrics.distance.toFixed(2)}
-                </div>
-              </div>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Class Search Input -->
-        <div class="relative flex items-center">
-          <Search size={12} class="absolute left-2.5 text-slate-500" />
-          <input
-            type="text"
-            bind:value={classSearchQuery}
-            placeholder={`Filter ${focusedComponent.classes.length} classes...`}
-            class="w-full bg-slate-900 border border-slate-700/80 focus:border-blue-500 rounded px-2 py-1 pl-7 pr-16 text-[11px] font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-          {#if classSearchQuery.trim()}
-            <div class="absolute right-1.5 flex items-center gap-1">
-              <span class="text-[9px] font-mono text-slate-400 bg-slate-800 px-1 rounded">
-                {filteredFocusedClasses.length}/{focusedComponent.classes.length}
-              </span>
-              <button
-                type="button"
-                onclick={() => classSearchQuery = ''}
-                class="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                title="Clear filter"
-              >
-                <X size={11} />
-              </button>
-            </div>
-          {/if}
-        </div>
-
-        <!-- Scrollable Class List -->
-        <div class="space-y-1 max-h-48 overflow-y-auto pr-0.5">
-          {#each filteredFocusedClasses as cls, i (cls.id + ':' + i)}
-            <div class="flex items-center gap-1 w-full">
-              <button
-                onclick={() => diagramStore.selectedClass = cls}
-                class="flex-1 text-left px-2 py-1.5 rounded bg-slate-900/90 hover:bg-blue-950/40 border border-slate-800 hover:border-blue-500/40 flex items-center justify-between transition-colors cursor-pointer group min-w-0"
-              >
-                <div class="flex items-center gap-1.5 truncate pr-2">
-                  <span class="text-[11px] font-mono text-slate-300 group-hover:text-blue-200 truncate">
-                    {cls.name}
-                  </span>
-                  {#if diagramStore.stagedClassMoves.has(cls.id)}
-                    <span class="text-[8px] font-mono font-bold px-1 rounded bg-amber-500/20 text-amber-300 shrink-0">
-                      Staged
-                    </span>
-                  {/if}
-                </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <span class="text-[8px] font-mono font-bold px-1 rounded bg-slate-800 text-slate-400">
-                    CRAP {Math.round(cls.crap?.mu ?? 0)}
-                  </span>
-                  <span class="w-1.5 h-1.5 rounded-full" style={`background-color: ${cls.coverage >= 0.8 ? '#10b981' : cls.coverage >= 0.5 ? '#f59e0b' : '#ef4444'}`}></span>
-                </div>
-              </button>
-            </div>
-          {/each}
-          {#if filteredFocusedClasses.length === 0}
-            <div class="text-[10px] text-slate-500 italic text-center py-2">No matching classes</div>
-          {/if}
-        </div>
-      </div>
-    {/if}
-
-    <!-- Real Diagram vs Proposals -->
-    <div>
-      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Architectural Views</div>
-      <div class="space-y-1.5">
-        <!-- Real Diagram -->
-        <button
-          onclick={() => diagramStore.loadGraph(null)}
-          class={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all duration-200 ${
-            !diagramStore.activeProposalId
-              ? 'bg-blue-600/25 text-blue-200 border border-blue-500/50 shadow-sm shadow-blue-950'
-              : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-transparent'
-          }`}
-        >
-          <span class="flex items-center gap-2">
-            <FolderTree size={14} class={!diagramStore.activeProposalId ? 'text-blue-400' : 'text-slate-400'} />
-            Real Diagram (Tree)
-          </span>
-          <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Live</span>
-        </button>
-
-        <!-- Proposals List -->
-        {#each proposals as p}
+  <div class="flex-1 overflow-y-auto p-3.5 space-y-4">
+    <!-- TAB 1: ARCHITECTURAL VIEWS & DISPLAY TRIAGE -->
+    {#if activeTab === 'architecture'}
+      <!-- Real Diagram vs Proposals -->
+      <div>
+        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 font-mono">Workstation Views</div>
+        <div class="space-y-1.5">
+          <!-- Real Diagram -->
           <button
-            onclick={() => diagramStore.loadGraph(p.id)}
+            onclick={() => diagramStore.loadGraph(null)}
             class={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all duration-200 ${
-              diagramStore.activeProposalId === p.id
-                ? 'bg-amber-500/25 text-amber-200 border border-amber-500/50 shadow-sm shadow-amber-950'
+              !diagramStore.activeProposalId
+                ? 'bg-blue-600/25 text-blue-200 border border-blue-500/50 shadow-sm shadow-blue-950'
                 : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-transparent'
             }`}
           >
             <span class="flex items-center gap-2">
-              <Sparkles size={14} class={diagramStore.activeProposalId === p.id ? 'text-amber-400' : 'text-slate-400'} />
-              {p.name}
+              <FolderTree size={14} class={!diagramStore.activeProposalId ? 'text-blue-400' : 'text-slate-400'} />
+              Live Code Graph
             </span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">Proposal</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">Live</span>
           </button>
-        {/each}
-      </div>
-    </div>
 
-    <!-- Decluttering Controls -->
-    <div>
-      <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Display & Triage Controls</div>
-      <button
-        onclick={() => diagramStore.cycleDeclutter()}
-        class="w-full px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-between border border-slate-700/80 transition-all hover:border-slate-600 mb-2.5"
-      >
-        <span class="flex items-center gap-2">
-          <Eye size={14} class="text-slate-400" />
-          Declutter
-        </span>
-        <span class="text-[10px] font-mono uppercase text-blue-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
-          {diagramStore.declutterMode}
-        </span>
-      </button>
-
-      <!-- Multi-Select Declutter Filter Matrix -->
-      <div class="space-y-1.5">
-        <!-- Edge Bundling Toggle -->
-        <button
-          onclick={() => diagramStore.toggleEdgeBundling()}
-          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-            diagramStore.isEdgeBundlingEnabled
-              ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
-              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span class="flex items-center gap-1.5 font-mono text-[11px]">
-            <span class={diagramStore.isEdgeBundlingEnabled ? 'text-blue-400 font-bold' : 'text-slate-600'}>
-              {diagramStore.isEdgeBundlingEnabled ? '[✓]' : '[ ]'}
-            </span>
-            Edge Bundling (Corridors)
-          </span>
-          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">B</span>
-        </button>
-
-        <!-- Violation X-Ray Toggle -->
-        <button
-          onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES')}
-          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-            diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')
-              ? 'bg-rose-950/50 border-rose-600/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
-              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span class="flex items-center gap-1.5 font-mono text-[11px]">
-            <span class={diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? 'text-rose-400 font-bold' : 'text-slate-600'}>
-              {diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? '[✓]' : '[ ]'}
-            </span>
-            Violation X-Ray Mode
-          </span>
-          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">V</span>
-        </button>
-
-        <!-- Compact Macro Cards Toggle -->
-        <button
-          onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CLASSES')}
-          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-            diagramStore.hasDeclutterFilter('HIDE_CLASSES')
-              ? 'bg-indigo-950/40 border-indigo-600/50 text-indigo-300'
-              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span class="flex items-center gap-1.5 font-mono text-[11px]">
-            <span class={diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? 'text-indigo-400 font-bold' : 'text-slate-600'}>
-              {diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? '[✓]' : '[ ]'}
-            </span>
-            Compact Macro Cards
-          </span>
-          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">C</span>
-        </button>
-
-        <!-- 1-Hop Neighborhood Focus Toggle -->
-        <button
-          onclick={() => diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD')}
-          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-            diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD')
-              ? 'bg-emerald-950/40 border-emerald-600/50 text-emerald-300'
-              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span class="flex items-center gap-1.5 font-mono text-[11px]">
-            <span class={diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? 'text-emerald-400 font-bold' : 'text-slate-600'}>
-              {diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? '[✓]' : '[ ]'}
-            </span>
-            1-Hop Neighborhood Focus
-          </span>
-          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">F</span>
-        </button>
-
-        <!-- Tier Lanes Toggle -->
-        <button
-          onclick={() => diagramStore.toggleDeclutterFilter('HIDE_TIER_LANES')}
-          class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-            diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')
-              ? 'bg-purple-950/40 border-purple-600/50 text-purple-300'
-              : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
-          }`}
-        >
-          <span class="flex items-center gap-1.5 font-mono text-[11px]">
-            <span class={diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? 'text-purple-400 font-bold' : 'text-slate-600'}>
-              {diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? '[✓]' : '[ ]'}
-            </span>
-            Hide Tier Backdrops
-          </span>
-          <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">T</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Screaming Architecture & Domain Cohesion (Uncle Bob Chapter 21) -->
-    {#if diagramStore.screamingMetric}
-      {@const sm = diagramStore.screamingMetric}
-      <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
-        <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
-          <span class="flex items-center gap-1.5 font-mono">
-            <Megaphone size={13} class="text-amber-400" />
-            Screaming Arch (Ch. 21)
-          </span>
-          <span
-            class="text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-rose-950/60 border-rose-500/40 text-rose-300'}"
-          >
-            {sm.classification === 'PACKAGE_BY_FEATURE' ? 'Feature-First' : sm.classification === 'HYBRID' ? 'Hybrid' : 'Layer-Heavy'}
-          </span>
-        </div>
-
-        <!-- Score Bar -->
-        <div class="space-y-1">
-          <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
-            <span>Score (SAS)</span>
-            <span class="font-bold text-slate-200">{(sm.score * 100).toFixed(0)}%</span>
-          </div>
-          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              class="h-full rounded-full transition-all duration-500 {sm.score >= 0.75 ? 'bg-emerald-500' : sm.score >= 0.40 ? 'bg-amber-500' : 'bg-rose-500'}"
-              style="width: {Math.max(4, Math.round(sm.score * 100))}%"
-            ></div>
-          </div>
-        </div>
-
-        <!-- Package Breakdown -->
-        <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono pt-1 border-t border-slate-800/80">
-          <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between" title="Domain / Feature Packages">
-            <span class="text-slate-400">Domain</span>
-            <span class="font-bold text-emerald-400">{sm.domainPackageCount}</span>
-          </div>
-          <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between" title="Technical / Framework Packages">
-            <span class="text-slate-400">Technical</span>
-            <span class="font-bold text-rose-400">{sm.technicalPackageCount}</span>
-          </div>
-        </div>
-
-        <!-- Framework Gravity Alerts -->
-        {#if sm.frameworkGravityWarnings && sm.frameworkGravityWarnings.length > 0}
-          <div class="p-2 rounded bg-amber-950/30 border border-amber-900/40 text-[10px] font-mono text-amber-300/90 space-y-1">
-            <div class="font-semibold flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400">
-              <AlertTriangle size={10} />
-              Framework Gravity
-            </div>
-            {#each sm.frameworkGravityWarnings.slice(0, 3) as w}
-              <div class="truncate text-[9px] text-amber-200/80" title={w}>&bull; {w}</div>
-            {/each}
-          </div>
-        {/if}
-
-        <!-- Package-by-Feature Migration Wizard Assistant -->
-        {#if sm.technicalPackageCount > 0}
-          <div class="pt-2 border-t border-slate-800/80 space-y-2">
+          <!-- Proposals List -->
+          {#each proposals as p}
             <button
-              type="button"
-              onclick={async () => {
-                const prop = await diagramStore.loadScreamingMigrationProposal();
-                if (prop) {
-                  diagramStore.applyScreamingMigrationToSandbox(prop);
-                }
-              }}
-              disabled={diagramStore.isLoadingScreamingMigration}
-              class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-gradient-to-r from-amber-600/30 to-purple-600/30 hover:from-amber-600/50 hover:to-purple-600/50 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-semibold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50"
-              title="Cluster classes across technical layers into package-by-feature domain slices (Uncle Bob Ch. 21)"
+              onclick={() => diagramStore.loadGraph(p.id)}
+              class={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition-all duration-200 ${
+                diagramStore.activeProposalId === p.id
+                  ? 'bg-amber-500/25 text-amber-200 border border-amber-500/50 shadow-sm shadow-amber-950'
+                  : 'hover:bg-slate-800/80 text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
             >
-              {#if diagramStore.isLoadingScreamingMigration}
-                <RefreshCw size={11} class="animate-spin text-amber-400" />
-                <span>Synthesizing Features...</span>
-              {:else}
-                <Sparkles size={11} class="text-amber-400" />
-                <span>Migrate to Features 🪄</span>
-              {/if}
-            </button>
-
-            {#if diagramStore.screamingMigrationProposal}
-              {@const prop = diagramStore.screamingMigrationProposal}
-              <div class="p-2 rounded bg-slate-900/90 border border-amber-500/30 text-[9px] font-mono space-y-1">
-                <div class="flex items-center justify-between text-amber-300 font-semibold">
-                  <span>Projected SAS Gain</span>
-                  <span class="text-emerald-400">{(prop.currentScore * 100).toFixed(0)}% &rarr; {(prop.projectedScore * 100).toFixed(0)}%</span>
-                </div>
-                <div class="text-slate-400">
-                  {prop.clusters.length} domain feature clusters ({Object.keys(prop.stagedClassMoves).length} staged moves)
-                </div>
-                {#if prop.clusters.length > 0}
-                  <div class="space-y-0.5 pt-1 border-t border-slate-800 max-h-24 overflow-y-auto pr-0.5">
-                    {#each prop.clusters as c}
-                      <div class="flex items-center justify-between text-slate-300">
-                        <span class="truncate text-amber-200 font-medium" title={c.proposedPackageName}>
-                          &bull; {c.featureName}
-                        </span>
-                        <span class="text-slate-500 text-[8px]">{c.classCount} classes</span>
-                      </div>
-                    {/each}
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/if}
-      </div>
-    {/if}
-
-    <!-- Architectural Fitness Functions & Regression Trend (Neal Ford & Uncle Bob) -->
-    {#if diagramStore.fitnessEvaluation}
-      {@const fit = diagramStore.fitnessEvaluation}
-      {@const trend = diagramStore.fitnessHistory}
-      <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
-        <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
-          <span class="flex items-center gap-1.5 font-mono">
-            <ShieldCheck size={13} class={fit.overallPassed ? 'text-emerald-400' : 'text-rose-400'} />
-            Fitness Invariants (AFI)
-          </span>
-          <div class="flex items-center gap-1.5">
-            <span class="font-mono text-[9px] px-1.5 py-0.5 rounded font-bold {
-              fit.grade === 'A' ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/30' :
-              fit.grade === 'B' ? 'bg-cyan-900/40 text-cyan-300 border border-cyan-500/30' :
-              fit.grade === 'C' ? 'bg-amber-900/40 text-amber-300 border border-amber-500/30' :
-              'bg-rose-900/40 text-rose-300 border border-rose-500/30'
-            }">
-              Grade {fit.grade}
-            </span>
-            <button
-              onclick={() => isFitnessExpanded = !isFitnessExpanded}
-              class="text-[9px] text-slate-400 hover:text-slate-200 cursor-pointer"
-            >
-              {isFitnessExpanded ? 'Hide' : 'Details'}
-            </button>
-          </div>
-        </div>
-
-        <!-- Score Bar -->
-        <div class="space-y-1">
-          <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
-            <span>Score: <strong class="text-slate-200">{(fit.fitnessScore * 100).toFixed(0)}%</strong></span>
-            <span>{fit.passedRuleCount}/{fit.totalRuleCount} invariants met</span>
-          </div>
-          <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-            <div
-              class="h-full transition-all duration-500 {fit.overallPassed ? 'bg-emerald-500' : 'bg-amber-500'}"
-              style="width: {Math.max(5, Math.min(100, fit.fitnessScore * 100))}%"
-            ></div>
-          </div>
-        </div>
-
-        <!-- Invariants Breakdown (if expanded) -->
-        {#if isFitnessExpanded}
-          <div class="space-y-1.5 pt-1 border-t border-slate-800 text-[10px] font-mono">
-            {#each fit.rules as rule}
-              <div class="flex items-start justify-between gap-1 p-1 rounded bg-slate-900/60">
-                <div class="flex items-start gap-1">
-                  {#if rule.passed}
-                    <CheckCircle2 size={11} class="text-emerald-400 mt-0.5 shrink-0" />
-                  {:else}
-                    <XCircle size={11} class="text-rose-400 mt-0.5 shrink-0" />
-                  {/if}
-                  <div class="flex flex-col">
-                    <span class="text-slate-200 font-medium">{rule.name}</span>
-                    {#if rule.failureMessage}
-                      <span class="text-[8px] text-slate-400">{rule.failureMessage}</span>
-                    {/if}
-                  </div>
-                </div>
-                <span class="text-[9px] font-bold shrink-0 {rule.passed ? 'text-emerald-400' : 'text-rose-400'}">
-                  {rule.passed ? 'PASS' : 'FAIL'}
-                </span>
-              </div>
-            {/each}
-          </div>
-        {/if}
-
-        <!-- Historical Regression Trend Sparkline -->
-        {#if trend && trend.history && trend.history.length > 1}
-          {@const pts = trend.history.map((h, i) => {
-            const x = 5 + (i / Math.max(1, trend.history.length - 1)) * 190;
-            const y = 20 - (h.fitnessScore * 16);
-            return { x, y, score: h.fitnessScore, label: h.label };
-          })}
-          <div class="pt-2 border-t border-slate-800/80 space-y-1">
-            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
-              <span class="flex items-center gap-1">
-                <TrendingUp size={11} class={trend.trendDirection === 'IMPROVING' ? 'text-emerald-400' : trend.trendDirection === 'DEGRADING' ? 'text-rose-400' : 'text-slate-400'} />
-                Trend: <strong class="{trend.trendDirection === 'IMPROVING' ? 'text-emerald-300' : trend.trendDirection === 'DEGRADING' ? 'text-rose-300' : 'text-slate-300'}">{trend.trendDirection}</strong>
+              <span class="flex items-center gap-2">
+                <Sparkles size={14} class={diagramStore.activeProposalId === p.id ? 'text-amber-400' : 'text-slate-400'} />
+                {p.name}
               </span>
-              <span class="text-[9px] font-mono text-slate-500">
-                {trend.scoreDelta >= 0 ? `+${(trend.scoreDelta * 100).toFixed(0)}%` : `${(trend.scoreDelta * 100).toFixed(0)}%`}
-              </span>
-            </div>
-            
-            <!-- SVG Sparkline -->
-            <div class="h-9 w-full bg-slate-900/80 rounded p-1 flex items-center justify-center">
-              <svg class="w-full h-full overflow-visible" viewBox="0 0 200 24" preserveAspectRatio="none">
-                <polyline
-                  fill="none"
-                  stroke={trend.trendDirection === 'DEGRADING' ? '#fb7185' : '#34d399'}
-                  stroke-width="1.75"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  points={pts.map(p => `${p.x},${p.y}`).join(' ')}
-                />
-                {#each pts as p}
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r="2.5"
-                    class="fill-slate-950 stroke-emerald-400 hover:scale-150 transition-transform"
-                    stroke-width="1.5"
-                  >
-                    <title>{p.label}: {(p.score * 100).toFixed(0)}%</title>
-                  </circle>
-                {/each}
-              </svg>
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
-
-    <!-- Active Violations & Quick DIP Remediation -->
-    {#if activeViolations.length > 0}
-      <div class="p-3 rounded-lg bg-rose-950/30 border border-rose-900/50 space-y-2 text-xs">
-        <div class="flex items-center justify-between text-rose-300 font-semibold text-[11px]">
-          <span class="flex items-center gap-1.5 font-mono">
-            <AlertTriangle size={13} class="animate-pulse text-rose-400" />
-            Breaches ({activeViolations.length})
-          </span>
-          <span class="text-[9px] font-mono text-rose-400/90 bg-rose-900/40 px-1.5 py-0.5 rounded">
-            DIP Fix
-          </span>
-        </div>
-        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-0.5">
-          {#each activeViolations.slice(0, 6) as v, i (v.from + '->' + v.to + ':' + i)}
-            <button
-              onclick={() => diagramStore.openDipInversion(v.from, v.to)}
-              class="w-full text-left p-1.5 rounded bg-slate-900/90 hover:bg-rose-950/60 border border-rose-900/30 hover:border-rose-500/50 flex items-center justify-between transition-colors cursor-pointer group"
-              title={`Invert violation: ${v.from} -> ${v.to}`}
-            >
-              <div class="min-w-0 pr-1">
-                <div class="text-[10px] font-mono text-slate-200 group-hover:text-rose-200 truncate">
-                  {v.from.split('.').pop()} ➔ {v.to.split('.').pop()}
-                </div>
-              </div>
-              <span class="text-[9px] font-mono text-rose-400 group-hover:text-white shrink-0 flex items-center gap-0.5 font-semibold">
-                ⚡ Invert
-              </span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">Proposal</span>
             </button>
           {/each}
         </div>
       </div>
+
+      <!-- Decluttering Controls -->
+      <div>
+        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 font-mono">Canvas Triage</div>
+        <button
+          onclick={() => diagramStore.cycleDeclutter()}
+          class="w-full px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-between border border-slate-700/80 transition-all hover:border-slate-600 mb-2"
+        >
+          <span class="flex items-center gap-2">
+            <Eye size={14} class="text-slate-400" />
+            Declutter Mode
+          </span>
+          <span class="text-[10px] font-mono uppercase text-blue-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
+            {diagramStore.declutterMode}
+          </span>
+        </button>
+
+        <!-- Multi-Select Declutter Filter Matrix -->
+        <div class="space-y-1.5">
+          <!-- Edge Bundling Toggle -->
+          <button
+            onclick={() => diagramStore.toggleEdgeBundling()}
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+              diagramStore.isEdgeBundlingEnabled
+                ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
+                : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span class="flex items-center gap-1.5 font-mono text-[11px]">
+              <span class={diagramStore.isEdgeBundlingEnabled ? 'text-blue-400 font-bold' : 'text-slate-600'}>
+                {diagramStore.isEdgeBundlingEnabled ? '[✓]' : '[ ]'}
+              </span>
+              Edge Bundling
+            </span>
+            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">B</span>
+          </button>
+
+          <!-- Violation X-Ray Toggle -->
+          <button
+            onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES')}
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+              diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')
+                ? 'bg-rose-950/50 border-rose-600/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
+                : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span class="flex items-center gap-1.5 font-mono text-[11px]">
+              <span class={diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? 'text-rose-400 font-bold' : 'text-slate-600'}>
+                {diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? '[✓]' : '[ ]'}
+              </span>
+              Violation X-Ray
+            </span>
+            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">V</span>
+          </button>
+
+          <!-- Compact Macro Cards Toggle -->
+          <button
+            onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CLASSES')}
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+              diagramStore.hasDeclutterFilter('HIDE_CLASSES')
+                ? 'bg-indigo-950/40 border-indigo-600/50 text-indigo-300'
+                : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span class="flex items-center gap-1.5 font-mono text-[11px]">
+              <span class={diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? 'text-indigo-400 font-bold' : 'text-slate-600'}>
+                {diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? '[✓]' : '[ ]'}
+              </span>
+              Compact Macro Cards
+            </span>
+            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">C</span>
+          </button>
+
+          <!-- 1-Hop Neighborhood Focus Toggle -->
+          <button
+            onclick={() => diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD')}
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+              diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD')
+                ? 'bg-emerald-950/40 border-emerald-600/50 text-emerald-300'
+                : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span class="flex items-center gap-1.5 font-mono text-[11px]">
+              <span class={diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? 'text-emerald-400 font-bold' : 'text-slate-600'}>
+                {diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? '[✓]' : '[ ]'}
+              </span>
+              1-Hop Neighborhood Focus
+            </span>
+            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">F</span>
+          </button>
+
+          <!-- Tier Lanes Toggle -->
+          <button
+            onclick={() => diagramStore.toggleDeclutterFilter('HIDE_TIER_LANES')}
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+              diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')
+                ? 'bg-purple-950/40 border-purple-600/50 text-purple-300'
+                : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <span class="flex items-center gap-1.5 font-mono text-[11px]">
+              <span class={diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? 'text-purple-400 font-bold' : 'text-slate-600'}>
+                {diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? '[✓]' : '[ ]'}
+              </span>
+              Hide Tier Backdrops
+            </span>
+            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">T</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Clean Architecture Legend -->
+      <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2 text-xs">
+        <div class="font-semibold text-slate-300 text-[11px] tracking-wide font-mono">Legend</div>
+        <div class="flex items-center gap-2 text-slate-300 text-[10px]">
+          <div class="w-4 h-0.5 bg-sky-400 rounded-full"></div>
+          <span>Valid (Inward Flow &rarr; Core)</span>
+        </div>
+        <div class="flex items-center gap-2 text-rose-300 text-[10px]">
+          <div class="w-4 h-1 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
+          <span>Violating (Outward Flow Breach)</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-400 text-[10px]">
+          <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+          <span>CRAP / Mutation Healthy</span>
+        </div>
+      </div>
     {/if}
 
-    <!-- Clean Architecture Legend -->
-    <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800/80 space-y-2.5 text-xs">
-      <div class="font-semibold text-slate-300 text-[11px] tracking-wide">Clean Architecture Rules</div>
-      <div class="flex items-center gap-2 text-slate-300 text-[10px]">
-        <div class="w-4 h-0.5 bg-sky-400 rounded-full"></div>
-        <span>Valid (Inward Flow &rarr; Domain)</span>
-      </div>
-      <div class="flex items-center gap-2 text-rose-300 text-[10px]">
-        <div class="w-4 h-1 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.6)]"></div>
-        <span>Violating (Outward Flow Breach)</span>
-      </div>
-      <div class="flex items-center gap-2 text-slate-400 text-[10px]">
-        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-        <span>CRAP / Mutation Coverage Healthy</span>
-      </div>
-    </div>
+    <!-- TAB 2: INVENTORY & FOCUSED COMPONENT -->
+    {#if activeTab === 'classes'}
+      {#if focusedComponent}
+        <div class="p-3 rounded-xl bg-slate-950/80 border border-blue-500/30 space-y-3 shadow-lg shadow-blue-950/30 animate-in fade-in duration-150">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 min-w-0">
+              <Box size={15} class="text-blue-400 shrink-0" />
+              <span class="text-xs font-semibold text-slate-100 font-mono truncate">{focusedComponent.label}</span>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="text-[9px] px-1.5 py-0.5 rounded font-mono bg-blue-500/15 border border-blue-500/30 text-blue-300">
+                Ring {focusedComponent.level ?? '?'}
+              </span>
+              <button
+                onclick={() => {
+                  diagramStore.setFocusedNode(null);
+                  classSearchQuery = '';
+                }}
+                class="p-0.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Clear focus"
+                aria-label="Clear focus"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+
+          <!-- Robert C. Martin Architectural Metrics Card -->
+          {#if focusedMetrics}
+            <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[10px] font-mono space-y-1.5">
+              <div class="flex items-center justify-between text-slate-400 font-semibold uppercase tracking-wider text-[9px]">
+                <div class="flex items-center gap-1.5">
+                  <span class="flex items-center gap-1 text-slate-300">
+                    <Gauge size={11} class="text-blue-400" />
+                    Martin Metrics
+                  </span>
+                  <button
+                    type="button"
+                    onclick={() => showMetricHelp = !showMetricHelp}
+                    class="p-0.5 rounded text-slate-500 hover:text-blue-300 transition-colors cursor-pointer"
+                    title="Toggle Martin Metrics formula cheat sheet"
+                    aria-label="Toggle Martin Metrics formula cheat sheet"
+                  >
+                    <Info size={10} />
+                  </button>
+                </div>
+                {#if focusedMetrics.zone === 'MAIN_SEQUENCE'}
+                  <span class="text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Main Seq</span>
+                {:else if focusedMetrics.zone === 'ZONE_OF_PAIN'}
+                  <span class="text-rose-400 bg-rose-950/60 px-1 py-0.2 rounded border border-rose-500/30">Zone of Pain</span>
+                {:else}
+                  <span class="text-amber-400 bg-amber-950/60 px-1 py-0.2 rounded border border-amber-500/30">Zone of Uselessness</span>
+                {/if}
+              </div>
+
+              {#if showMetricHelp}
+                <div class="p-2 rounded bg-slate-950 border border-slate-800 text-[9px] text-slate-400 space-y-1 font-sans animate-in fade-in duration-100">
+                  <div class="font-semibold text-slate-200 font-mono text-[10px]">Clean Architecture Formulas</div>
+                  <div>• <span class="font-mono text-slate-300">Ca</span>: Afferent Coupling (incoming dependencies)</div>
+                  <div>• <span class="font-mono text-slate-300">Ce</span>: Efferent Coupling (outgoing dependencies)</div>
+                  <div>• <span class="font-mono text-slate-300">I = Ce / (Ca + Ce)</span>: Instability (0 = Stable, 1 = Volatile)</div>
+                  <div>• <span class="font-mono text-slate-300">D = |A + I - 1|</span>: Normalized Distance from Main Sequence (ideal ≤ 0.25)</div>
+                </div>
+              {/if}
+
+              <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800/80">
+                <div class="bg-slate-950/50 p-1 rounded" title="Afferent Coupling (Incoming dependencies)">
+                  <div class="text-slate-500 text-[8px]">$C_a$</div>
+                  <div class="font-bold text-slate-200">{focusedMetrics.ca}</div>
+                </div>
+                <div class="bg-slate-950/50 p-1 rounded" title="Efferent Coupling (Outgoing dependencies)">
+                  <div class="text-slate-500 text-[8px]">$C_e$</div>
+                  <div class="font-bold text-slate-200">{focusedMetrics.ce}</div>
+                </div>
+                <div class="bg-slate-950/50 p-1 rounded" title="Instability = Ce / (Ca + Ce)">
+                  <div class="text-slate-500 text-[8px]">$I$</div>
+                  <div class="font-bold text-amber-300">{focusedMetrics.instability.toFixed(2)}</div>
+                </div>
+                <div class="bg-slate-950/50 p-1 rounded" title="Normalized Distance = |A + I - 1|">
+                  <div class="text-slate-500 text-[8px]">$D$</div>
+                  <div class="font-bold {focusedMetrics.distance <= 0.25 ? 'text-emerald-400' : 'text-rose-400'}">
+                    {focusedMetrics.distance.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          {/if}
+
+          <!-- Class Search Input -->
+          <div class="relative flex items-center">
+            <Search size={12} class="absolute left-2.5 text-slate-500" />
+            <input
+              type="text"
+              bind:value={classSearchQuery}
+              placeholder={`Filter ${focusedComponent.classes.length} classes...`}
+              class="w-full bg-slate-900 border border-slate-700/80 focus:border-blue-500 rounded px-2 py-1 pl-7 pr-16 text-[11px] font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            {#if classSearchQuery.trim()}
+              <div class="absolute right-1.5 flex items-center gap-1">
+                <span class="text-[9px] font-mono text-slate-400 bg-slate-800 px-1 rounded">
+                  {filteredFocusedClasses.length}/{focusedComponent.classes.length}
+                </span>
+                <button
+                  type="button"
+                  onclick={() => classSearchQuery = ''}
+                  class="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  title="Clear filter"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            {/if}
+          </div>
+
+          <!-- Scrollable Class List -->
+          <div class="space-y-1 max-h-64 overflow-y-auto pr-0.5">
+            {#each filteredFocusedClasses as cls, i (cls.id + ':' + i)}
+              <div class="flex items-center gap-1 w-full">
+                <button
+                  onclick={() => diagramStore.selectedClass = cls}
+                  class="flex-1 text-left px-2 py-1.5 rounded bg-slate-900/90 hover:bg-blue-950/40 border border-slate-800 hover:border-blue-500/40 flex items-center justify-between transition-colors cursor-pointer group min-w-0"
+                >
+                  <div class="flex items-center gap-1.5 truncate pr-2">
+                    <span class="text-[11px] font-mono text-slate-300 group-hover:text-blue-200 truncate">
+                      {cls.name}
+                    </span>
+                    {#if diagramStore.stagedClassMoves.has(cls.id)}
+                      <span class="text-[8px] font-mono font-bold px-1 rounded bg-amber-500/20 text-amber-300 shrink-0">
+                        Staged
+                      </span>
+                    {/if}
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <span class="text-[8px] font-mono font-bold px-1 rounded bg-slate-800 text-slate-400">
+                      CRAP {Math.round(cls.crap?.mu ?? 0)}
+                    </span>
+                    <span class="w-1.5 h-1.5 rounded-full" style={`background-color: ${cls.coverage >= 0.8 ? '#10b981' : cls.coverage >= 0.5 ? '#f59e0b' : '#ef4444'}`}></span>
+                  </div>
+                </button>
+              </div>
+            {/each}
+            {#if filteredFocusedClasses.length === 0}
+              <div class="text-[10px] text-slate-500 italic text-center py-2">No matching classes</div>
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <div class="p-6 text-center rounded-xl bg-slate-950/40 border border-slate-800/80 space-y-2">
+          <Box size={24} class="mx-auto text-slate-600" />
+          <div class="text-xs text-slate-300 font-medium">No Component Selected</div>
+          <div class="text-[11px] text-slate-500 max-w-[200px] mx-auto">Click any package node in the canvas or search with ⌘K to inspect classes.</div>
+        </div>
+      {/if}
+    {/if}
+
+    <!-- TAB 3: GOVERNANCE, INVARIANTS & REMEDIATION -->
+    {#if activeTab === 'governance'}
+      <!-- Active Violations & Quick DIP Remediation -->
+      {#if activeViolations.length > 0}
+        <div class="p-3 rounded-lg bg-rose-950/30 border border-rose-900/50 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-rose-300 font-semibold text-[11px]">
+            <span class="flex items-center gap-1.5 font-mono">
+              <AlertTriangle size={13} class="animate-pulse text-rose-400" />
+              Breaches ({activeViolations.length})
+            </span>
+            <span class="text-[9px] font-mono text-rose-400/90 bg-rose-900/40 px-1.5 py-0.5 rounded">
+              DIP Fix
+            </span>
+          </div>
+          <div class="space-y-1.5 max-h-40 overflow-y-auto pr-0.5">
+            {#each activeViolations.slice(0, 8) as v, i (v.from + '->' + v.to + ':' + i)}
+              <button
+                onclick={() => diagramStore.openDipInversion(v.from, v.to)}
+                class="w-full text-left p-1.5 rounded bg-slate-900/90 hover:bg-rose-950/60 border border-rose-900/30 hover:border-rose-500/50 flex items-center justify-between transition-colors cursor-pointer group"
+                title={`Invert violation: ${v.from} -> ${v.to}`}
+              >
+                <div class="min-w-0 pr-1">
+                  <div class="text-[10px] font-mono text-slate-200 group-hover:text-rose-200 truncate">
+                    {v.from.split('.').pop()} ➔ {v.to.split('.').pop()}
+                  </div>
+                </div>
+                <span class="text-[9px] font-mono text-rose-400 group-hover:text-white shrink-0 flex items-center gap-0.5 font-semibold">
+                  ⚡ Invert
+                </span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <!-- Screaming Architecture & Domain Cohesion (Uncle Bob Chapter 21) -->
+      {#if diagramStore.screamingMetric}
+        {@const sm = diagramStore.screamingMetric}
+        <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
+            <span class="flex items-center gap-1.5 font-mono">
+              <Megaphone size={13} class="text-amber-400" />
+              Screaming Arch (Ch. 21)
+            </span>
+            <span
+              class="text-[9px] font-mono px-1.5 py-0.5 rounded font-semibold border {sm.classification === 'PACKAGE_BY_FEATURE' ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300' : sm.classification === 'HYBRID' ? 'bg-amber-950/60 border-amber-500/40 text-amber-300' : 'bg-rose-950/60 border-rose-500/40 text-rose-300'}"
+            >
+              {sm.classification === 'PACKAGE_BY_FEATURE' ? 'Feature-First' : sm.classification === 'HYBRID' ? 'Hybrid' : 'Layer-Heavy'}
+            </span>
+          </div>
+
+          <!-- Score Bar -->
+          <div class="space-y-1">
+            <div class="flex justify-between items-center text-[10px] font-mono text-slate-400">
+              <span>Score (SAS)</span>
+              <span class="font-bold text-slate-200">{(sm.score * 100).toFixed(0)}%</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-500 {sm.score >= 0.75 ? 'bg-emerald-500' : sm.score >= 0.40 ? 'bg-amber-500' : 'bg-rose-500'}"
+                style="width: {Math.max(4, Math.round(sm.score * 100))}%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Package Breakdown -->
+          <div class="grid grid-cols-2 gap-1.5 text-[10px] font-mono pt-1 border-t border-slate-800/80">
+            <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between">
+              <span class="text-slate-400">Domain</span>
+              <span class="font-bold text-emerald-400">{sm.domainPackageCount}</span>
+            </div>
+            <div class="bg-slate-900/80 p-1.5 rounded flex items-center justify-between">
+              <span class="text-slate-400">Technical</span>
+              <span class="font-bold text-rose-400">{sm.technicalPackageCount}</span>
+            </div>
+          </div>
+
+          <!-- Framework Gravity Warnings -->
+          {#if sm.frameworkGravityWarnings && sm.frameworkGravityWarnings.length > 0}
+            <div class="p-2 rounded bg-amber-950/30 border border-amber-900/40 text-[10px] font-mono text-amber-300/90 space-y-1">
+              <div class="font-semibold flex items-center gap-1 text-[9px] uppercase tracking-wider text-amber-400">
+                <AlertTriangle size={10} />
+                Framework Gravity
+              </div>
+              {#each sm.frameworkGravityWarnings.slice(0, 3) as w}
+                <div class="truncate text-[9px] text-amber-200/80" title={w}>&bull; {w}</div>
+              {/each}
+            </div>
+          {/if}
+
+          <!-- Package-by-Feature Migration Wizard Assistant -->
+          {#if sm.technicalPackageCount > 0}
+            <div class="pt-2 border-t border-slate-800/80 space-y-2">
+              <button
+                type="button"
+                onclick={async () => {
+                  const prop = await diagramStore.loadScreamingMigrationProposal();
+                  if (prop) {
+                    diagramStore.applyScreamingMigrationToSandbox(prop);
+                  }
+                }}
+                disabled={diagramStore.isLoadingScreamingMigration}
+                class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-gradient-to-r from-amber-600/30 to-purple-600/30 hover:from-amber-600/50 hover:to-purple-600/50 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-semibold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50"
+              >
+                {#if diagramStore.isLoadingScreamingMigration}
+                  <RefreshCw size={11} class="animate-spin text-amber-400" />
+                  <span>Synthesizing Features...</span>
+                {:else}
+                  <Sparkles size={11} class="text-amber-400" />
+                  <span>Migrate to Features 🪄</span>
+                {/if}
+              </button>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      <!-- Architectural Fitness Functions & Regression Trend (Neal Ford & Uncle Bob) -->
+      {#if diagramStore.fitnessEvaluation}
+        {@const fit = diagramStore.fitnessEvaluation}
+        {@const trend = diagramStore.fitnessHistory}
+        <div class="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-2.5 text-xs">
+          <div class="flex items-center justify-between text-slate-200 font-semibold text-[11px]">
+            <span class="flex items-center gap-1.5 font-mono">
+              <ShieldCheck size={13} class={fit.overallPassed ? 'text-emerald-400' : 'text-rose-400'} />
+              Fitness Invariants (AFI)
+            </span>
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono text-[9px] px-1.5 py-0.5 rounded font-bold {
+                fit.grade === 'A' ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/30' :
+                fit.grade === 'B' ? 'bg-cyan-900/40 text-cyan-300 border border-cyan-500/30' :
+                fit.grade === 'C' ? 'bg-amber-900/40 text-amber-300 border border-amber-500/30' :
+                'bg-rose-900/40 text-rose-300 border border-rose-500/30'
+              }">
+                Grade {fit.grade}
+              </span>
+              <button
+                onclick={() => isFitnessExpanded = !isFitnessExpanded}
+                class="text-[9px] text-slate-400 hover:text-slate-200 cursor-pointer"
+              >
+                {isFitnessExpanded ? 'Hide' : 'Details'}
+              </button>
+            </div>
+          </div>
+
+          <!-- Score Bar -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span>Score: <strong class="text-slate-200">{(fit.fitnessScore * 100).toFixed(0)}%</strong></span>
+              <span>{fit.passedRuleCount}/{fit.totalRuleCount} met</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                class="h-full transition-all duration-500 {fit.overallPassed ? 'bg-emerald-500' : 'bg-amber-500'}"
+                style="width: {Math.max(5, Math.min(100, fit.fitnessScore * 100))}%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Invariants Breakdown -->
+          {#if isFitnessExpanded}
+            <div class="space-y-1 pt-1 border-t border-slate-800 text-[10px] font-mono">
+              {#each fit.rules as rule}
+                <div class="flex items-start justify-between gap-1 p-1 rounded bg-slate-900/60">
+                  <div class="flex items-start gap-1">
+                    {#if rule.passed}
+                      <CheckCircle2 size={11} class="text-emerald-400 mt-0.5 shrink-0" />
+                    {:else}
+                      <XCircle size={11} class="text-rose-400 mt-0.5 shrink-0" />
+                    {/if}
+                    <div class="flex flex-col">
+                      <span class="text-slate-200 font-medium">{rule.name}</span>
+                      {#if rule.failureMessage}
+                        <span class="text-[8px] text-slate-400">{rule.failureMessage}</span>
+                      {/if}
+                    </div>
+                  </div>
+                  <span class="text-[9px] font-bold shrink-0 {rule.passed ? 'text-emerald-400' : 'text-rose-400'}">
+                    {rule.passed ? 'PASS' : 'FAIL'}
+                  </span>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+    {/if}
   </div>
 
-  <!-- Regen Button -->
+  <!-- Regen & Agent Mailbox Dispatch Section -->
   <div class="p-4 border-t border-slate-800 bg-slate-900 space-y-2">
     {#if diagramStore.regenNotice}
       <div
@@ -608,9 +636,23 @@
       disabled={diagramStore.isRegenerating}
       onclick={() => diagramStore.triggerRegen()}
       class="w-full py-2.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700/80 text-white font-medium text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 transition-all cursor-pointer disabled:cursor-not-allowed {diagramStore.isRegenerating ? 'ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-900 shadow-emerald-500/40 shadow-xl animate-pulse' : ''}"
+      title="Re-index workspace AST, evaluate architectural policy, and sync .archlens/to-agent.json safely"
+      aria-label="Re-index AST and Wake Agent"
     >
       <RefreshCw size={14} class={diagramStore.isRegenerating ? 'animate-spin' : ''} />
-      {diagramStore.isRegenerating ? 'Agent Synthesizing Code...' : 'Regen (Wake Agent)'}
+      <span>{diagramStore.isRegenerating ? 'Agent Synthesizing Code...' : 'Regen & Sync Mailbox'}</span>
     </button>
+    <div class="p-2 rounded bg-slate-950/60 border border-slate-800/80 text-[10px] text-slate-400 space-y-1">
+      <div class="flex items-center justify-between text-slate-300 font-medium">
+        <span class="flex items-center gap-1 text-emerald-400">
+          <ShieldCheck size={11} />
+          Safe Non-Destructive Action
+        </span>
+        <span class="font-mono text-[9px] text-slate-500">.archlens/to-agent.json</span>
+      </div>
+      <p class="text-[10px] text-slate-400 leading-relaxed font-sans">
+        Signals the autonomous companion agent to re-parse the AST and evaluate policy rules. Does <span class="text-slate-200 font-semibold">not</span> overwrite unstaged Git files.
+      </p>
+    </div>
   </div>
 </div>

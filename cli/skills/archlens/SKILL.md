@@ -50,7 +50,13 @@ Archlens models codebases as concentric circular rings. Source code dependencies
 
 ## ⚡ CLI & Quickstart Commands
 
-Archlens is executed cross-platform via NPX or Node CLI:
+Install Archlens across 15+ coding agents (Antigravity, Claude Code, Cursor, Gemini CLI) via `skills.sh`:
+```bash
+# Add Archlens to your active agent skills library:
+npx skills add fmatar/archlens
+```
+
+Or execute directly on demand via NPX:
 
 ```bash
 # Initialize Clean Architecture policy in target project:

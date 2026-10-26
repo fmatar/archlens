@@ -12,7 +12,17 @@ Analyzes any project repository, detects programming languages and package hiera
 
 ## ⚡ Quickstart
 
-### Option A: Run via NPX
+### Option A: Install AI Assistant Skills via Open Skills Standard (Recommended for Agents)
+Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, you can add Archlens capabilities across 15+ AI coding assistants (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed):
+```bash
+# Add to all detected AI assistants in project or globally:
+npx skills add fmatar/archlens
+
+# Or add to a specific assistant:
+npx skills add fmatar/archlens --agent claude-code
+```
+
+### Option B: Run Policy Scaffolder via NPX
 
 ```bash
 # Production Stable (recommended)
@@ -25,13 +35,13 @@ npx @fmatar/archlens-skill@dev
 npx github:fmatar/archlens
 ```
 
-### Option B: Install Globally via NPM
+### Option C: Install Globally via NPM
 ```bash
 npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
 
-### Option C: Run from Local Repository Clone
+### Option D: Run from Local Repository Clone
 ```bash
 # Install globally from the local repository:
 npm install -g ./cli
@@ -40,7 +50,6 @@ archlens-skill
 # Or execute directly with Node:
 node ./cli/bin/index.js
 ```
-
 
 ---
 

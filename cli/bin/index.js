@@ -371,13 +371,18 @@ function executeGlobalInstall(options) {
   ui.step(2, 2, `Deploying AI Assistant Skills Globally${modeSuffix}`);
   const result = installGlobalSkills(options);
 
-  if (result.installed.length === 0) {
+  if (result.method === 'skills-cli') {
+    ui.success(`Installed Archlens skills across AI agents via vercel-labs/skills CLI${modeSuffix}`);
+  } else if (result.installed.length === 0) {
     ui.warn('No active AI agent directories found (~/.claude, ~/.gemini). Use --force to deploy anyway.');
   } else {
     for (const inst of result.installed) {
       ui.success(`Installed skill for ${inst.agent}: ${inst.path}${modeSuffix}`);
     }
   }
+
+  console.log(`\n  ${ui.colors.dim}💡 Tip: You can also manage Archlens skills with the open Skills CLI:${ui.colors.reset}`);
+  console.log(`  ${ui.colors.cyan}npx skills add fmatar/archlens${ui.colors.reset}\n`);
 }
 
 function executeUpgrade(targetRoot, options) {

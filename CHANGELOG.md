@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-11] - 2026-10-26
+
 ### Added
 - **Polyglot Surgical DIP Inverter (`DipInversionSynthesizer` & `InvertDipModal`)** ([#5887](https://github.com/fmatar/archlens/issues/5887), `CAP-03`):
   - Added polyglot Dependency Inversion Principle (DIP) port synthesis in `DipInversionSynthesizer` generating idiomatic Python `typing.Protocol` (`src/.../ports/<snake_port>.py` + `pytest`), TypeScript `export interface` (`src/.../ports/<Port>.ts` + `npm test`), Go `type ... interface` (`go test ./...`), and Rust `pub trait ...` (`cargo test`) alongside Java `public interface` (`mvn test`).

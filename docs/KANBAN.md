@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/skills/sdlc-kanban/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-10-07 21:49:01 UTC`
+> **Last Synced**: `2026-10-22 05:31:19 UTC`
 
 ---
 
@@ -13,7 +13,13 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
-|  | [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166) `[Milestone 4: Production Hardening, Distribution & Ecosystem (v1.0.0 GA)]` |  |  | [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165) `[Milestone 3: CI/CD Quality Gates & Team Governance (v1.0.0-RC.2)]` |
+| | | | | #5962: [FEAT] feat(CAP-04): What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence |
+| | | | | #5936: [FEAT] feat(CAP-03): Polyglot Surgical DIP Inverter & CLI Main Sequence Distance |
+| | | | | #5912: [FEAT] feat(CAP-02): TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner |
+|  |  |  |  | #5887: [FEAT] feat(CAP-01): Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures |
+|  |  |  |  | [#172 fix(ui): restore Policy Designer shortcut (P) and Main Sequence modal Escape dismissal](https://github.com/fmatar/archlens/issues/172) |
+|  |  |  |  | [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166) `[Milestone 4: Production Hardening, Distribution & Ecosystem (v1.0.0 GA)]` |
+|  |  |  |  | [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165) `[Milestone 3: CI/CD Quality Gates & Team Governance (v1.0.0-RC.2)]` |
 |  |  |  |  | [#164 Epic: Transactional Worktree Rollbacks & Automated Mailbox Refactoring Verification](https://github.com/fmatar/archlens/issues/164) `[Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v1.0.0-RC.1)]` |
 |  |  |  |  | [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163) `[Milestone 1: AST Depth & Polyglot Scalability (v0.1.0-Beta-09)]` |
 |  |  |  |  | [#141 feat(fitness): architecture fitness functions & continuous quality regression trend](https://github.com/fmatar/archlens/issues/141) |
@@ -64,7 +70,8 @@
 
 | Issue | Status | Priority | Component | Milestone | Spec / Contract |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166) | `status:ready` | P1 | General | Milestone 4: Production Hardening, Distribution & Ecosystem (v1.0.0 GA) | — |
+| [#172 fix(ui): restore Policy Designer shortcut (P) and Main Sequence modal Escape dismissal](https://github.com/fmatar/archlens/issues/172) | `status:done` | P2 - Medium | General | — | — |
+| [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166) | `status:done` | P1 | General | Milestone 4: Production Hardening, Distribution & Ecosystem (v1.0.0 GA) | — |
 | [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165) | `status:done` | P1 | General | Milestone 3: CI/CD Quality Gates & Team Governance (v1.0.0-RC.2) | — |
 | [#164 Epic: Transactional Worktree Rollbacks & Automated Mailbox Refactoring Verification](https://github.com/fmatar/archlens/issues/164) | `status:done` | P1 | General | Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v1.0.0-RC.1) | — |
 | [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163) | `status:done` | P1 | General | Milestone 1: AST Depth & Polyglot Scalability (v0.1.0-Beta-09) | — |

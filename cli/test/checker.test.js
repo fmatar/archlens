@@ -443,4 +443,120 @@ test('checkArchitecture enforces fitnessThreshold in options', async () => {
   }
 });
 
+test('checkArchitecture detects Python multi-line, nested, and relative import violations', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-check-python-'));
+  try {
+    const archlensDir = path.join(tmpDir, '.archlens');
+    const domainDir = path.join(tmpDir, 'src', 'myapp', 'domain');
+    const adaptersDir = path.join(tmpDir, 'src', 'myapp', 'adapters', 'persistence');
+    fs.mkdirSync(archlensDir, { recursive: true });
+    fs.mkdirSync(domainDir, { recursive: true });
+    fs.mkdirSync(adaptersDir, { recursive: true });
+
+    const policy = {
+      title: 'Python Clean App',
+      src: 'src',
+      prefix: 'myapp',
+      lang: 'python',
+      order: ['domain', 'adapters'],
+      levels: [['domain'], ['adapters']]
+    };
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(policy), 'utf8');
+
+    fs.writeFileSync(
+      path.join(domainDir, 'order_service.py'),
+      [
+        '"""',
+        'from myapp.adapters.persistence import FakeDocstringImport',
+        '"""',
+        'from ..adapters.persistence import (',
+        '    SqlOrderRepo,  # multi-line parenthesized relative import',
+        ')',
+        '',
+        'class OrderService:',
+        '    def run(self):',
+        '        import myapp.adapters.redis_cache as cache  # noqa: PLC0415',
+        '        return cache'
+      ].join('\n'),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(adaptersDir, 'sql_repo.py'),
+      'from myapp.domain.order_service import OrderService\nclass SqlOrderRepo:\n    pass\n',
+      'utf8'
+    );
+
+    const result = await checkArchitecture(tmpDir, { detectCycles: true });
+    assert.equal(result.passed, false);
+    assert.equal(result.violationsCount, 2);
+    assert.equal(result.violations[0].line, 4);
+    assert.equal(result.violations[1].line, 10);
+    assert.equal(result.cyclesCount, 1);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('checkArchitecture detects TypeScript multi-line ESM, alias, and dynamic import violations and computes real Main Sequence Distance', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-check-ts-'));
+  try {
+    const archlensDir = path.join(tmpDir, '.archlens');
+    const domainDir = path.join(tmpDir, 'src', 'domain');
+    const adaptersDir = path.join(tmpDir, 'src', 'adapters');
+    fs.mkdirSync(archlensDir, { recursive: true });
+    fs.mkdirSync(domainDir, { recursive: true });
+    fs.mkdirSync(adaptersDir, { recursive: true });
+
+    const policy = {
+      title: 'TypeScript Clean App',
+      src: 'src',
+      lang: 'typescript',
+      order: ['domain', 'adapters'],
+      levels: [['domain'], ['adapters']]
+    };
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(policy), 'utf8');
+
+    fs.writeFileSync(
+      path.join(domainDir, 'orderService.ts'),
+      [
+        '/*',
+        ' * import { Ignored } from "../adapters/sqlRepo";',
+        ' */',
+        'import {',
+        '  SqlOrderRepo,',
+        '  type SqlConfig',
+        '} from "../adapters/sqlRepo";',
+        'export interface OrderPort {',
+        '  save(): void;',
+        '}',
+        'export class OrderService {',
+        '  async run() {',
+        '    const dyn = await import("@/adapters/redisCache");',
+        '    return dyn;',
+        '  }',
+        '}'
+      ].join('\n'),
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(adaptersDir, 'sqlRepo.ts'),
+      'import { OrderPort } from "../domain/orderService";\nexport class SqlOrderRepo implements OrderPort { save() {} }\n',
+      'utf8'
+    );
+
+    const result = await checkArchitecture(tmpDir, { detectCycles: true });
+    assert.equal(result.passed, false);
+    assert.equal(result.violationsCount, 2);
+    assert.equal(result.violations[0].line, 4);
+    assert.equal(result.violations[1].line, 13);
+    assert.equal(result.cyclesCount, 1);
+    const msRule = result.fitness.rules.find((r) => r.id === 'MAIN_SEQUENCE_DISTANCE_RULE');
+    assert.ok(msRule);
+    assert.equal(typeof msRule.actualValue, 'number');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+
 

@@ -26,12 +26,23 @@ export function calculateComponentMartinMetrics(
 ): MartinMetrics {
   const compClassKeys = new Set<string>();
   const classes = comp.classes || [];
+  if (comp.id) {
+    compClassKeys.add(comp.id);
+  }
+  if (comp.packages) {
+    for (const pkg of comp.packages) {
+      compClassKeys.add(pkg);
+    }
+  }
 
   for (const cls of classes) {
     compClassKeys.add(cls.id);
     compClassKeys.add(cls.name);
     if (cls.packageName) {
       compClassKeys.add(`${cls.packageName}.${cls.name}`);
+    }
+    if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+      compClassKeys.add(cls.id.slice(0, -(cls.name.length + 1)));
     }
   }
 
@@ -177,9 +188,25 @@ export function simulateSandboxGraph(
   });
 
   // Build class-to-level mapping for re-evaluating edge violations
+  // Pass 1: component IDs, package prefixes, and module prefixes
   const classToLevelMap = new Map<string, number | null>();
   simulatedComponents.forEach((comp) => {
+    classToLevelMap.set(comp.id, comp.level);
+    (comp.packages || []).forEach((pkg) => classToLevelMap.set(pkg, comp.level));
     (comp.classes || []).forEach((cls) => {
+      if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+        classToLevelMap.set(cls.id.slice(0, -(cls.name.length + 1)), comp.level);
+      }
+    });
+  });
+
+  // Pass 2: moved classes' module prefixes and explicit class IDs/names take highest priority
+  const movedClassIds = new Set(stagedMoveRecords.map((m) => m.classId));
+  simulatedComponents.forEach((comp) => {
+    (comp.classes || []).forEach((cls) => {
+      if (movedClassIds.has(cls.id) && cls.name && cls.id.endsWith(`.${cls.name}`)) {
+        classToLevelMap.set(cls.id.slice(0, -(cls.name.length + 1)), comp.level);
+      }
       classToLevelMap.set(cls.id, comp.level);
       classToLevelMap.set(cls.name, comp.level);
       if (cls.packageName) {
@@ -194,6 +221,9 @@ export function simulateSandboxGraph(
     classToLevelMap.set(cls.name, cls.level);
     if (cls.packageName) {
       classToLevelMap.set(`${cls.packageName}.${cls.name}`, cls.level);
+    }
+    if (cls.name && cls.id.endsWith(`.${cls.name}`)) {
+      classToLevelMap.set(cls.id.slice(0, -(cls.name.length + 1)), cls.level);
     }
   });
 

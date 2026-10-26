@@ -144,15 +144,32 @@ describe('diagramStore Architectural Sandbox ("What-If") Tests', () => {
   });
 
   it('should save sandbox simulation as a living proposal and activate it', () => {
-    diagramStore.enterSandbox();
-    diagramStore.stageClassMove('c1', 'comp-adapters');
+    const originalFetch = globalThis.fetch;
+    const postPolicyMock = vi.fn().mockResolvedValue({ ok: true } as any);
+    globalThis.fetch = postPolicyMock;
 
-    const proposalId = diagramStore.saveSandboxAsProposal();
+    try {
+      diagramStore.enterSandbox();
+      diagramStore.stageClassMove('c1', 'comp-adapters');
 
-    expect(proposalId).toContain('sandbox-');
-    expect(diagramStore.isSandboxActive).toBe(false);
-    expect(diagramStore.activeProposalId).toBe(proposalId);
-    expect(diagramStore.policy?.proposals.some((p) => p.id === proposalId)).toBe(true);
+      const proposalId = diagramStore.saveSandboxAsProposal();
+
+      expect(proposalId).toContain('sandbox-');
+      expect(diagramStore.isSandboxActive).toBe(false);
+      expect(diagramStore.activeProposalId).toBe(proposalId);
+      const savedProposal = diagramStore.policy?.proposals.find((p) => p.id === proposalId);
+      expect(savedProposal).toBeDefined();
+      const adaptersLayer = savedProposal?.layers.find((l) => l.id === 'comp-adapters');
+      expect(adaptersLayer?.classes).toEqual(['c2', 'c1']);
+      expect(diagramStore.graph?.isProposal).toBe(true);
+      expect(diagramStore.graph?.activeProposalId).toBe(proposalId);
+      expect(postPolicyMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/policy'),
+        expect.objectContaining({ method: 'POST' })
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   it('should dispatch sandbox proposal to AI agent mailbox and handle timeout & errors', async () => {

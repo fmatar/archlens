@@ -116,6 +116,7 @@ export interface ProposalLayer {
   id: string;
   label: string;
   packages: string[];
+  classes?: string[];
 }
 
 export interface Proposal {
@@ -135,6 +136,7 @@ export interface ArchitecturePolicy {
   foreign: string[];
   proposals: Proposal[];
   omit: string[];
+  lang?: string;
 }
 
 export type TelemetryEventType = 'INFO' | 'SUCCESS' | 'WARNING' | 'TASK';

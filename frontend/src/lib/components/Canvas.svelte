@@ -208,10 +208,11 @@
 
     const result: RenderableEdge[] = [...unbundled];
     for (const [key, b] of bundles.entries()) {
+      const primaryEdge = b.edges.find((e) => e.isViolating) || b.edges[0];
       const representativeEdge: EdgeType = {
-        from: b.fromNode.comp.id,
-        to: b.toNode.comp.id,
-        kind: 'DEPENDENCY',
+        from: primaryEdge ? primaryEdge.from : b.fromNode.comp.id,
+        to: primaryEdge ? primaryEdge.to : b.toNode.comp.id,
+        kind: primaryEdge ? primaryEdge.kind : 'DEPENDENCY',
         isViolating: b.violationCount > 0,
         label: b.violationCount > 0 ? `! ${b.violationCount}/${b.edges.length}` : `${b.edges.length}`
       };

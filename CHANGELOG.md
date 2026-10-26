@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Polyglot Surgical DIP Inverter (`DipInversionSynthesizer` & `InvertDipModal`)** ([#5887](https://github.com/fmatar/archlens/issues/5887), `CAP-03`):
+  - Added polyglot Dependency Inversion Principle (DIP) port synthesis in `DipInversionSynthesizer` generating idiomatic Python `typing.Protocol` (`src/.../ports/<snake_port>.py` + `pytest`), TypeScript `export interface` (`src/.../ports/<Port>.ts` + `npm test`), Go `type ... interface` (`go test ./...`), and Rust `pub trait ...` (`cargo test`) alongside Java `public interface` (`mvn test`).
+  - Updated `InvertDipModal.svelte` to dynamically display the synthesized filename from `plan.portFilePath` instead of hardcoding `.java`.
+  - Updated `cli/src/checker.js` to calculate real Robert C. Martin Main Sequence Distance ($D = |A + I - 1|$) across scanned packages instead of a hardcoded `0.12` placeholder.
+- **TypeScript/JS Statement-Normalizing AST Scanner, Barrel Re-Exports & `tsconfig.json` Path Aliases** (`CAP-02`):
+  - Upgraded `TypeScriptAstScanner` with `extractLogicalTsStatements` to strip `/* ... */` and `//` comments outside string/template literals and join multi-line `import { ... } from '...'` and `export { ... } from '...'` statements.
+  - Added support for default, named, combined (`import Default, { Named }`), namespace, `import type`, side-effect, CommonJS `require(...)`, and dynamic `import(...)` imports, `tsconfig.json`/`jsconfig.json` `compilerOptions.paths` and SvelteKit `$lib/*` aliases, and multi-hop `index.ts` barrel re-export resolution.
+  - Added `Stereotype.INTERFACE` (`interface`), `Stereotype.ABSTRACT` (`abstract class`), and `Stereotype.ENUM` (`enum`) classification and method signature extraction (`args` + `returnType`) in `TypeScriptAstScanner`.
+  - Added multi-line TypeScript/JS/Svelte ESM import extraction to `cli/src/checker.js` (`extractTsJsStatements` & `extractFileImports`).
+- **Python AST Class-Level Edges, `Protocol`/`ABC`/`Enum` Stereotypes & Method Signatures** (`CAP-01`):
+  - Upgraded `PythonAstScanner` to classify `Protocol` (`Stereotype.INTERFACE`), `ABC`/`ABCMeta`/`@abstractmethod` (`Stereotype.ABSTRACT`), and `Enum` (`Stereotype.ENUM`), scope `MethodNode`s to their enclosing class with extracted parameter and return type annotations, and emit Hybrid Class-First `DependencyEdge`s.
+
+### Fixed
+- **What-If Architectural Sandbox Simulation, Class-Move Precedence & Proposal Persistence** (`CAP-04`):
+  - Updated `diagramStore.saveSandboxAsProposal()` to include `classes` in `ProposalLayer`, persist updated proposals to `.archlens/policy.json` via `POST /api/policy`, and keep the simulated proposal graph active upon exiting Sandbox mode.
+  - Updated `GraphCompiler` and `DependencyRuleValidator` so explicit `layer.classes()` reassignments override package-level `layer.packages()` membership without duplicating moved classes in their original layer.
+  - Updated `Canvas.svelte` bundled edge representation to preserve the primary violating class/module edge endpoints for `InvertDipModal`.
+
 ## [0.1.0-Beta-10] - 2026-10-21
 
 ### Fixed

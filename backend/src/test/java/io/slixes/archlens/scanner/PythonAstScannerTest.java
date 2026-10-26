@@ -90,14 +90,14 @@ class PythonAstScannerTest {
                         && e.from().endsWith("Order")
                         && e.to().equals("BaseEntity")));
 
-    // Dependency edge: agent.service -> core.entity
+    // Dependency edge: agent.service.OrderService -> core.entity.Order
     assertTrue(
         result.edges().stream()
             .anyMatch(
                 e ->
                     e.kind() == DependencyEdge.Kind.DEPENDENCY
-                        && e.from().equals("agent.service")
-                        && e.to().startsWith("core.entity")));
+                        && e.from().equals("agent.service.OrderService")
+                        && e.to().equals("core.entity.Order")));
   }
 
   @Test
@@ -290,41 +290,45 @@ class PythonAstScannerTest {
     // Docstring fake imports must not appear
     assertTrue(result.edges().stream().noneMatch(e -> e.to().contains("fake")));
 
-    // 1. __init__.py relative multi-line import: myapp.domain -> myapp.domain.order
+    // 1. __init__.py relative multi-line import: myapp.domain -> myapp.domain.order.Order
     assertTrue(
         result.edges().stream()
-            .anyMatch(e -> e.from().equals("myapp.domain") && e.to().equals("myapp.domain.order")));
+            .anyMatch(
+                e -> e.from().equals("myapp.domain") && e.to().equals("myapp.domain.order.Order")));
 
     // 2. Nested function import with inline # noqa comment & dynamic import_module:
     assertTrue(
         result.edges().stream()
             .anyMatch(
                 e ->
-                    e.from().equals("myapp.domain.order")
-                        && e.to().equals("myapp.adapters.persistence.sql_repo")));
+                    e.from().equals("myapp.domain.order.Order")
+                        && e.to()
+                            .equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")));
     assertTrue(
         result.edges().stream()
             .anyMatch(
                 e ->
-                    e.from().equals("myapp.domain.order")
-                        && e.to().equals("myapp.adapters.http_client")));
+                    e.from().equals("myapp.domain.order.Order")
+                        && e.to().equals("myapp.adapters.http_client.HttpClient")));
 
-    // 3. Backslash continuation + 3-dot relative import: sql_repo -> myapp.domain.order
+    // 3. Backslash continuation + 3-dot relative import: SqlOrderRepository -> Order
     assertTrue(
         result.edges().stream()
             .anyMatch(
                 e ->
-                    e.from().equals("myapp.adapters.persistence.sql_repo")
-                        && e.to().equals("myapp.domain.order")));
+                    e.from().equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")
+                        && e.to().equals("myapp.domain.order.Order")));
 
     // 4. Barrel re-export through adapters/__init__.py under TYPE_CHECKING:
-    // place_order imports SqlOrderRepository from myapp.adapters -> resolves to sql_repo!
+    // PlaceOrderUseCase imports SqlOrderRepository from myapp.adapters -> resolves to
+    // SqlOrderRepository!
     assertTrue(
         result.edges().stream()
             .anyMatch(
                 e ->
-                    e.from().equals("myapp.application.place_order")
-                        && e.to().equals("myapp.adapters.persistence.sql_repo")));
+                    e.from().equals("myapp.application.place_order.PlaceOrderUseCase")
+                        && e.to()
+                            .equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")));
 
     // 5. Verify end-to-end GraphCompiler, Cycle Detection, and Dossier generation on Python graph
     io.slixes.archlens.domain.policy.ArchitecturePolicy policy =
@@ -368,5 +372,81 @@ class PythonAstScannerTest {
     assertFalse(
         dossier.contains("Unknown Layer"),
         "Dossier must resolve Python module edge endpoints to their concentric ring levels");
+  }
+
+  @Test
+  void testPythonStereotypesClassScopedMethodsAndReturnTypes(@TempDir Path tempDir)
+      throws IOException {
+    Path domainDir = tempDir.resolve("domain");
+    Files.createDirectories(domainDir);
+
+    Files.writeString(
+        domainDir.resolve("contracts.py"),
+        """
+        from abc import ABC, abstractmethod
+        from enum import Enum
+        from typing import Protocol, Optional
+
+        class OrderStatus(Enum):
+            PENDING = "PENDING"
+            PAID = "PAID"
+
+        class OrderRepositoryPort(Protocol):
+            def find_by_id(self, order_id: str) -> Optional[dict]:
+                ...
+
+            def save(self, order: dict, flush: bool = True) -> bool:
+                ...
+
+        class BaseUseCase(ABC):
+            @abstractmethod
+            def execute(self, payload: dict) -> str:
+                pass
+
+        def module_helper(x: int) -> int:
+            return x + 1
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
+    var statusNode =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderStatus"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.ENUM, statusNode.stereotype());
+    assertTrue(
+        statusNode.methods().isEmpty(),
+        "Enum without methods must not inherit other class methods");
+
+    var portNode =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderRepositoryPort"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE, portNode.stereotype());
+    assertEquals(2, portNode.methods().size());
+    var findById = portNode.methods().get(0);
+    assertEquals("find_by_id", findById.name());
+    assertEquals(List.of("order_id: str"), findById.args());
+    assertEquals("Optional[dict]", findById.returnType());
+
+    var saveMethod = portNode.methods().get(1);
+    assertEquals("save", saveMethod.name());
+    assertEquals(List.of("order: dict", "flush: bool = True"), saveMethod.args());
+    assertEquals("bool", saveMethod.returnType());
+
+    var abcNode =
+        result.classes().stream()
+            .filter(c -> c.name().equals("BaseUseCase"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.ABSTRACT, abcNode.stereotype());
+    assertEquals(1, abcNode.methods().size());
+    assertEquals("execute", abcNode.methods().get(0).name());
+    assertEquals(List.of("payload: dict"), abcNode.methods().get(0).args());
+    assertEquals("str", abcNode.methods().get(0).returnType());
   }
 }

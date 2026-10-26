@@ -458,7 +458,218 @@ function extractPythonStatements(content) {
   return statements;
 }
 
+export function extractTsJsStatements(content) {
+  const statements = [];
+  const rawLines = content.split(/\r?\n/);
+  const strippedLines = [];
+  let inBlockComment = false;
+
+  for (let lineIdx = 0; lineIdx < rawLines.length; lineIdx++) {
+    const line = rawLines[lineIdx];
+    const lineNo = lineIdx + 1;
+    let clean = '';
+    let inSingle = false;
+    let inDouble = false;
+    let inTemplate = false;
+    let i = 0;
+
+    while (i < line.length) {
+      if (inBlockComment) {
+        const endIdx = line.indexOf('*/', i);
+        if (endIdx === -1) {
+          i = line.length;
+        } else {
+          inBlockComment = false;
+          i = endIdx + 2;
+        }
+        continue;
+      }
+
+      const c = line[i];
+      if ((inSingle || inDouble || inTemplate) && c === '\\' && i + 1 < line.length) {
+        clean += c + line[i + 1];
+        i += 2;
+        continue;
+      }
+
+      if (!inDouble && !inTemplate && c === "'") {
+        inSingle = !inSingle;
+        clean += c;
+        i++;
+        continue;
+      }
+      if (!inSingle && !inTemplate && c === '"') {
+        inDouble = !inDouble;
+        clean += c;
+        i++;
+        continue;
+      }
+      if (!inSingle && !inDouble && c === '`') {
+        inTemplate = !inTemplate;
+        clean += c;
+        i++;
+        continue;
+      }
+
+      if (!inSingle && !inDouble && !inTemplate && i + 1 < line.length) {
+        const next = line[i + 1];
+        if (c === '/' && next === '/') break;
+        if (c === '/' && next === '*') {
+          inBlockComment = true;
+          i += 2;
+          continue;
+        }
+      }
+
+      clean += c;
+      i++;
+    }
+
+    const trimmed = clean.trim();
+    if (trimmed) {
+      strippedLines.push({ text: trimmed, line: lineNo });
+    }
+  }
+
+  function countBraces(str) {
+    let delta = 0;
+    let inS = false;
+    let inD = false;
+    let inT = false;
+    for (let i = 0; i < str.length; i++) {
+      const c = str[i];
+      if (c === '\\' && i + 1 < str.length) {
+        i++;
+        continue;
+      }
+      if (!inD && !inT && c === "'") inS = !inS;
+      else if (!inS && !inT && c === '"') inD = !inD;
+      else if (!inS && !inD && c === '`') inT = !inT;
+      else if (!inS && !inD && !inT) {
+        if (c === '{') delta++;
+        else if (c === '}') delta--;
+      }
+    }
+    return delta;
+  }
+
+  function isIncompleteTsImportOrExport(str) {
+    const t = str.trim();
+    if (/^import\s*(?:['"]|\()/.test(t)) return false;
+    if (/^import(?:\s+|\{)/.test(t)) {
+      if (countBraces(t) > 0) return true;
+      return !/\bfrom\s*['"][^'"]+['"]\s*;?\s*$/.test(t) && !t.endsWith(';');
+    }
+    if (/^export\s+(?:type\s+)?(?:\*|\{)/.test(t)) {
+      if (countBraces(t) > 0) return true;
+      if (/\bfrom\s*$/.test(t) || /\bfrom\s+['"][^'"]*$/.test(t)) return true;
+    }
+    return false;
+  }
+
+  let acc = '';
+  let accLine = 1;
+  let accumulating = false;
+
+  for (const item of strippedLines) {
+    if (!accumulating) {
+      if (isIncompleteTsImportOrExport(item.text)) {
+        accumulating = true;
+        acc = item.text;
+        accLine = item.line;
+      } else {
+        statements.push(item);
+      }
+    } else {
+      acc += ' ' + item.text;
+      if (!isIncompleteTsImportOrExport(acc)) {
+        statements.push({ text: acc, line: accLine });
+        acc = '';
+        accumulating = false;
+      }
+    }
+  }
+
+  if (acc) {
+    statements.push({ text: acc, line: accLine });
+  }
+
+  return statements;
+}
+
+function resolveTsJsImportSpec(spec, filePath, fullSrc) {
+  let raw = spec.trim();
+  if (raw.startsWith('.')) {
+    let relDir = '';
+    if (fullSrc && filePath) {
+      let relFile = path.relative(fullSrc, filePath).replace(/\\/g, '/');
+      if (relFile.startsWith('src/')) relFile = relFile.slice(4);
+      const dir = path.posix.dirname(relFile);
+      relDir = dir === '.' ? '' : dir;
+    }
+    const combined = relDir ? `${relDir}/${raw}` : raw;
+    return path.posix
+      .normalize(combined)
+      .replace(/\.(svelte\.ts|svelte\.js|ts|tsx|js|jsx|svelte)$/, '')
+      .replace(/\/index$/, '')
+      .replace(/\//g, '.');
+  }
+  if (raw.startsWith('@/') || raw.startsWith('~/') || raw.startsWith('#/')) {
+    return raw.slice(2).replace(/\.(ts|tsx|js|jsx)$/, '').replace(/\//g, '.');
+  }
+  if (raw.startsWith('#lib/') || raw.startsWith('$lib/')) {
+    return 'lib.' + raw.slice(5).replace(/\.(ts|tsx|js|jsx)$/, '').replace(/\//g, '.');
+  }
+  if (raw.startsWith('@workspace/')) {
+    return raw.slice(11).replace(/\.(ts|tsx|js|jsx)$/, '').replace(/\//g, '.');
+  }
+  return raw.replace(/\//g, '.');
+}
+
 export function extractFileImports(content, filePath, fullSrc) {
+  if (/\.(ts|tsx|js|jsx|svelte)$/.test(filePath)) {
+    const results = [];
+    const importFromRegex = /^import\s+(?:type\s+)?(.+?)\s+from\s+['"]([^'"]+)['"]\s*;?$/;
+    const sideEffectRegex = /^import\s+['"]([^'"]+)['"]\s*;?$/;
+    const exportFromRegex =
+      /^export\s+(?:type\s+)?(\*\s+as\s+[a-zA-Z0-9_$]+|\*|\{[^}]*\})\s*from\s+['"]([^'"]+)['"]\s*;?$/;
+    const reqRegex = /\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+    const dynRegex = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+
+    for (const { text, line } of extractTsJsStatements(content)) {
+      const sideMatch = sideEffectRegex.exec(text);
+      if (sideMatch) {
+        results.push({ imported: resolveTsJsImportSpec(sideMatch[1], filePath, fullSrc), line });
+        continue;
+      }
+
+      const impMatch = importFromRegex.exec(text);
+      if (impMatch) {
+        const resolvedMod = resolveTsJsImportSpec(impMatch[2], filePath, fullSrc);
+        results.push({ imported: resolvedMod, line });
+        continue;
+      }
+
+      const expMatch = exportFromRegex.exec(text);
+      if (expMatch) {
+        const resolvedMod = resolveTsJsImportSpec(expMatch[2], filePath, fullSrc);
+        results.push({ imported: resolvedMod, line });
+        continue;
+      }
+
+      let m;
+      reqRegex.lastIndex = 0;
+      while ((m = reqRegex.exec(text)) !== null) {
+        results.push({ imported: resolveTsJsImportSpec(m[1], filePath, fullSrc), line });
+      }
+      dynRegex.lastIndex = 0;
+      while ((m = dynRegex.exec(text)) !== null) {
+        results.push({ imported: resolveTsJsImportSpec(m[1], filePath, fullSrc), line });
+      }
+    }
+    return results;
+  }
+
   if (!filePath.endsWith('.py')) {
     const results = [];
     const importRegex = /import\s+(?:static\s+)?([a-zA-Z0-9_.]+)/;
@@ -523,6 +734,63 @@ export function extractFileImports(content, filePath, fullSrc) {
   return results;
 }
 
+function countFileTypeAbstractions(content, filePath) {
+  let totalTypes = 0;
+  let abstractTypes = 0;
+  if (filePath.endsWith('.py')) {
+    const classMatches = content.match(/^\s*class\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*\(([^)]*)\))?\s*:/gm) || [];
+    const hasAbstractMethod = /@abstractmethod\b/.test(content);
+    for (const m of classMatches) {
+      totalTypes++;
+      if (/\b(?:Protocol|ABC|ABCMeta)\b/.test(m) || (classMatches.length === 1 && hasAbstractMethod)) {
+        abstractTypes++;
+      }
+    }
+  } else {
+    const ifaceMatches = content.match(/\binterface\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const absClassMatches = content.match(/\babstract\s+class\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const concreteClassMatches =
+      content.replace(/\babstract\s+class\b/g, '').match(/\bclass\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const enumMatches = content.match(/\benum\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    abstractTypes = ifaceMatches.length + absClassMatches.length;
+    totalTypes = abstractTypes + concreteClassMatches.length + enumMatches.length;
+  }
+  if (totalTypes === 0) {
+    totalTypes = 1;
+  }
+  return { totalTypes, abstractTypes };
+}
+
+export function calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges) {
+  let maxDistance = 0.0;
+  const allPackages = new Set([
+    ...Array.from(pkgTypeStats.keys()),
+    ...Array.from(packageEdges.keys())
+  ]);
+
+  for (const pkg of allPackages) {
+    const ce = packageEdges.has(pkg) ? packageEdges.get(pkg).size : 0;
+    let ca = 0;
+    for (const [otherPkg, targets] of packageEdges.entries()) {
+      if (otherPkg !== pkg && targets.has(pkg)) {
+        ca++;
+      }
+    }
+    if (ca + ce === 0) {
+      continue;
+    }
+    const stats = pkgTypeStats.get(pkg) || { totalTypes: 1, abstractTypes: 0 };
+    const abstractness = stats.totalTypes > 0 ? stats.abstractTypes / stats.totalTypes : 0.0;
+    const instability = ce / (ca + ce);
+    const distance = Math.abs(abstractness + instability - 1.0);
+    if (distance > maxDistance) {
+      maxDistance = distance;
+    }
+  }
+
+  return Math.round(maxDistance * 100) / 100;
+}
+
 export async function checkArchitecture(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || '.');
   const policy = loadProjectPolicy(root);
@@ -552,8 +820,12 @@ export async function checkArchitecture(projectRoot, options = {}) {
       (f.endsWith('.java') ||
         f.endsWith('.kt') ||
         f.endsWith('.ts') ||
+        f.endsWith('.tsx') ||
         f.endsWith('.js') ||
+        f.endsWith('.jsx') ||
+        f.endsWith('.svelte') ||
         f.endsWith('.py')) &&
+      !f.endsWith('.d.ts') &&
       !f.startsWith('test_') &&
       !f.endsWith('_test.py'),
     500
@@ -561,6 +833,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
   const violations = [];
   const packageEdges = new Map();
+  const pkgTypeStats = new Map();
 
   for (const file of sourceFiles) {
     try {
@@ -579,6 +852,13 @@ export async function checkArchitecture(projectRoot, options = {}) {
       }
 
       if (fileLevel === null) continue;
+
+      const fileTypeCounts = countFileTypeAbstractions(content, file);
+      const prevStats = pkgTypeStats.get(filePackage) || { totalTypes: 0, abstractTypes: 0 };
+      pkgTypeStats.set(filePackage, {
+        totalTypes: prevStats.totalTypes + fileTypeCounts.totalTypes,
+        abstractTypes: prevStats.abstractTypes + fileTypeCounts.abstractTypes
+      });
 
       const fileImports = extractFileImports(content, file, fullSrc);
       const seenLinePkgViolations = new Set();
@@ -623,13 +903,14 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
   const cycles = detectPackageCycles(packageEdges);
   const failOnCycles = Boolean(options.detectCycles);
+  const maxDistance = calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges);
 
   const fitness = calculateArchitectureFitness(
     {
       violationsCount: violations.length,
       cyclesCount: cycles.length,
       screamingScore: screaming.score,
-      maxDistance: 0.12
+      maxDistance
     },
     policy.fitness || {}
   );

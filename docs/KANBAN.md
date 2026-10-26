@@ -13,6 +13,10 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+| | | | | #5962: [FEAT] feat(CAP-04): What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence |
+| | | | | #5936: [FEAT] feat(CAP-03): Polyglot Surgical DIP Inverter & CLI Main Sequence Distance |
+| | | | | #5912: [FEAT] feat(CAP-02): TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner |
+|  |  |  |  | #5887: [FEAT] feat(CAP-01): Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures |
 |  |  |  |  | [#172 fix(ui): restore Policy Designer shortcut (P) and Main Sequence modal Escape dismissal](https://github.com/fmatar/archlens/issues/172) |
 |  |  |  |  | [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166) `[Milestone 4: Production Hardening, Distribution & Ecosystem (v1.0.0 GA)]` |
 |  |  |  |  | [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165) `[Milestone 3: CI/CD Quality Gates & Team Governance (v1.0.0-RC.2)]` |

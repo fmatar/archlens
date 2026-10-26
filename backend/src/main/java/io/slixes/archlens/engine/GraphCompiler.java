@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -266,6 +267,20 @@ public class GraphCompiler implements ArchitectureCompiler {
     List<ComponentNode> components = new ArrayList<>();
 
     if (activeProposal != null) {
+      // First index explicit class-level layer assignments so moved classes are not duplicated in
+      // their original package layer
+      Map<String, String> explicitLayerByClassId = new HashMap<>();
+      for (Proposal.ProposalLayer layer : activeProposal.layers()) {
+        if (layer.classes() != null) {
+          for (String cls : layer.classes()) {
+            validClasses.stream()
+                .filter(
+                    c -> c.name().equals(cls) || c.id().endsWith("." + cls) || c.id().equals(cls))
+                .forEach(c -> explicitLayerByClassId.put(c.id(), layer.id()));
+          }
+        }
+      }
+
       // Build virtual components as defined by proposal
       for (Proposal.ProposalLayer layer : activeProposal.layers()) {
         List<ClassNode> layerClasses = new ArrayList<>();
@@ -277,7 +292,13 @@ public class GraphCompiler implements ArchitectureCompiler {
                       || k.startsWith(pkg + ".")
                       || k.endsWith("." + pkg)
                       || k.contains("." + pkg + ".")) {
-                    layerClasses.addAll(v);
+                    for (ClassNode c : v) {
+                      String assignedLayer = explicitLayerByClassId.get(c.id());
+                      if ((assignedLayer == null || assignedLayer.equals(layer.id()))
+                          && !layerClasses.contains(c)) {
+                        layerClasses.add(c);
+                      }
+                    }
                   }
                 });
           }
@@ -296,6 +317,8 @@ public class GraphCompiler implements ArchitectureCompiler {
           }
         }
         Integer level = validator.resolveRank(layer.id());
+        List<ClassNode> rankedLayerClasses =
+            layerClasses.stream().map(c -> c.withLevel(level)).toList();
         components.add(
             new ComponentNode(
                 layer.id(),
@@ -304,7 +327,7 @@ public class GraphCompiler implements ArchitectureCompiler {
                 CrapScore.zero(),
                 0.9,
                 layer.packages() != null ? layer.packages() : List.of(),
-                layerClasses));
+                rankedLayerClasses));
       }
     } else {
       // Group according to packages

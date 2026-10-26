@@ -32,9 +32,12 @@ public class PythonAstScanner implements LanguageScanner {
       Pattern.compile(
           "(?:importlib\\.import_module|__import__)\\s*\\(\\s*['\"]([a-zA-Z0-9_.]+)['\"]");
   private static final Pattern CLASS_DEF_PATTERN =
-      Pattern.compile("^\\s*class\\s+([a-zA-Z0-9_]+)(?:\\(([^)]*)\\))?\\s*:");
+      Pattern.compile("^(\\s*)class\\s+([a-zA-Z0-9_]+)(?:\\(([^)]*)\\))?\\s*:");
   private static final Pattern DEF_PATTERN =
-      Pattern.compile("^(\\s*)(?:async\\s+)?def\\s+([a-zA-Z0-9_]+)\\s*\\(([^)]*)\\)");
+      Pattern.compile(
+          "^(\\s*)(?:async\\s+)?def\\s+([a-zA-Z0-9_]+)\\s*\\(([^)]*)\\)(?:\\s*->\\s*([^:]+))?\\s*:");
+  private static final Pattern ABSTRACT_DECORATOR_PATTERN =
+      Pattern.compile("^\\s*@(?:abc\\.)?abstractmethod\\b");
 
   @Override
   public String languageId() {
@@ -198,7 +201,8 @@ public class PythonAstScanner implements LanguageScanner {
     Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
     List<Path> pyFiles = discoverPythonFiles(scanPath, rootPath, omitPatterns);
 
-    Map<String, String> internalModules = new HashMap<>(); // moduleOrExportKey -> canonicalModuleId
+    Map<String, String> internalModules = new HashMap<>(); // moduleOrExportKey -> canonicalTargetId
+    Map<String, List<String>> moduleToClassIds = new HashMap<>();
     Map<Path, String> fileToModuleId = new HashMap<>();
     Map<Path, List<String>> fileLogicalLines = new HashMap<>();
 
@@ -210,8 +214,26 @@ public class PythonAstScanner implements LanguageScanner {
       fileToModuleId.put(pyFile, modId);
       internalModules.put(modId, modId);
       internalModules.putIfAbsent(rawModId, modId);
-      fileLogicalLines.put(
-          pyFile, extractLogicalStatements(Files.readAllLines(pyFile, StandardCharsets.UTF_8)));
+      List<String> logical =
+          extractLogicalStatements(Files.readAllLines(pyFile, StandardCharsets.UTF_8));
+      fileLogicalLines.put(pyFile, logical);
+
+      List<String> declaredClassIds = new ArrayList<>();
+      for (String stmt : logical) {
+        Matcher clsMatcher = CLASS_DEF_PATTERN.matcher(stmt);
+        if (clsMatcher.find()) {
+          String clsName = clsMatcher.group(2);
+          String fullClassId = modId + "." + clsName;
+          declaredClassIds.add(fullClassId);
+          internalModules.put(fullClassId, fullClassId);
+          if (!rawModId.equals(modId)) {
+            internalModules.putIfAbsent(rawModId + "." + clsName, fullClassId);
+          }
+        }
+      }
+      if (!declaredClassIds.isEmpty()) {
+        moduleToClassIds.put(modId, declaredClassIds);
+      }
     }
 
     // Pass 1.5: Index __init__.py symbol & submodule re-exports (up to 4 hops for chained barrels)
@@ -268,13 +290,25 @@ public class PythonAstScanner implements LanguageScanner {
 
       List<String> logicalLines = fileLogicalLines.getOrDefault(pyFile, List.of());
       List<FieldNode> fields = new ArrayList<>();
-      List<MethodNode> methods = new ArrayList<>();
+      List<MethodNode> moduleMethods = new ArrayList<>();
       Set<String> importedModules = new HashSet<>();
-      List<String> classNames = new ArrayList<>();
+      List<ParsedPythonClass> parsedClasses = new ArrayList<>();
+      ParsedPythonClass activeClass = null;
+      boolean pendingAbstractDecorator = false;
 
       for (String line : logicalLines) {
         String trimmed = line.trim();
         if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+          continue;
+        }
+
+        int lineIndent = countLeadingSpaces(line);
+        if (activeClass != null && lineIndent <= activeClass.indent && !trimmed.startsWith("@")) {
+          activeClass = null;
+        }
+
+        if (ABSTRACT_DECORATOR_PATTERN.matcher(line).find()) {
+          pendingAbstractDecorator = true;
           continue;
         }
 
@@ -328,13 +362,24 @@ public class PythonAstScanner implements LanguageScanner {
 
         Matcher classMatcher = CLASS_DEF_PATTERN.matcher(line);
         if (classMatcher.find()) {
-          String clsName = classMatcher.group(1);
-          classNames.add(clsName);
-          String baseClasses = classMatcher.group(2);
+          int clsIndent = classMatcher.group(1).length();
+          String clsName = classMatcher.group(2);
+          String baseClasses = classMatcher.group(3);
+          ClassNode.Stereotype stereotype = classifyPythonStereotype(baseClasses);
+          activeClass = new ParsedPythonClass(clsName, clsIndent, stereotype, new ArrayList<>());
+          parsedClasses.add(activeClass);
+          pendingAbstractDecorator = false;
+
           if (baseClasses != null && !baseClasses.isBlank()) {
-            for (String base : baseClasses.split(",")) {
+            for (String base : splitTopLevelCommas(baseClasses)) {
               String cleanBase = base.trim();
-              if (!cleanBase.isBlank() && !cleanBase.contains("=")) {
+              int genericIdx = cleanBase.indexOf('[');
+              if (genericIdx > 0) {
+                cleanBase = cleanBase.substring(0, genericIdx).trim();
+              }
+              if (!cleanBase.isBlank()
+                  && !cleanBase.contains("=")
+                  && !isStandardBaseMarker(cleanBase)) {
                 edges.add(
                     new DependencyEdge(
                         currentModule + "." + clsName,
@@ -350,16 +395,33 @@ public class PythonAstScanner implements LanguageScanner {
 
         Matcher defMatcher = DEF_PATTERN.matcher(line);
         if (defMatcher.find()) {
+          int defIndent = defMatcher.group(1).length();
           String methodName = defMatcher.group(2);
+          List<String> methodArgs = parsePythonMethodParams(defMatcher.group(3));
+          String rawReturn = defMatcher.group(4);
+          String returnType =
+              (rawReturn != null && !rawReturn.isBlank()) ? rawReturn.trim() : "Any";
           boolean isPrivate = methodName.startsWith("_") && !methodName.startsWith("__init__");
           int cc = 1; // baseline cyclomatic complexity
-          methods.add(
-              new MethodNode(methodName, List.of(), "Any", isPrivate, cc, 1.0, 1.0, 0, 0, 0, 1));
+          MethodNode methodNode =
+              new MethodNode(
+                  methodName, methodArgs, returnType, isPrivate, cc, 1.0, 1.0, 0, 0, 0, 1);
+
+          if (activeClass != null && defIndent > activeClass.indent) {
+            activeClass.methods.add(methodNode);
+            if (pendingAbstractDecorator && activeClass.stereotype == ClassNode.Stereotype.CLASS) {
+              activeClass.stereotype = ClassNode.Stereotype.ABSTRACT;
+            }
+          } else {
+            moduleMethods.add(methodNode);
+          }
+          pendingAbstractDecorator = false;
         }
       }
 
       // Add ClassNodes for discovered classes or fallback file module node
-      if (classNames.isEmpty()) {
+      List<String> sourceNodeIds = new ArrayList<>();
+      if (parsedClasses.isEmpty()) {
         String simpleName = new File(rel).getName().replace(".py", "");
         classes.add(
             new ClassNode(
@@ -377,16 +439,18 @@ public class PythonAstScanner implements LanguageScanner {
                 0,
                 0,
                 fields,
-                methods));
+                moduleMethods));
+        sourceNodeIds.add(currentModule);
       } else {
-        for (String cls : classNames) {
+        for (ParsedPythonClass cls : parsedClasses) {
+          String fullClassId = currentModule + "." + cls.name;
           classes.add(
               new ClassNode(
-                  currentModule + "." + cls,
-                  cls,
+                  fullClassId,
+                  cls.name,
                   packageName,
                   pyFile.toAbsolutePath().toString(),
-                  ClassNode.Stereotype.CLASS,
+                  cls.stereotype,
                   false,
                   null,
                   new CrapScore(1.0, 1.0, 0.0),
@@ -396,31 +460,165 @@ public class PythonAstScanner implements LanguageScanner {
                   0,
                   0,
                   fields,
-                  methods));
+                  cls.methods));
+          sourceNodeIds.add(fullClassId);
         }
       }
 
-      // Resolve edges to imported modules
-      Set<String> seenTargets = new HashSet<>();
+      // Resolve edges to imported classes or fallback modules
+      Set<String> seenEdgeKeys = new HashSet<>();
       for (String imported : importedModules) {
         String matchedTarget = resolveInternalTarget(imported, internalModules);
         boolean isForeign = matchedTarget == null;
-        String targetId = isForeign ? imported : matchedTarget;
-
-        if (targetId.equals(currentModule)
-            || targetId.isBlank()
-            || isStdlib(targetId)
-            || !seenTargets.add(targetId)) {
-          continue;
+        List<String> targetIds;
+        if (isForeign) {
+          targetIds = List.of(imported);
+        } else if (moduleToClassIds.containsKey(matchedTarget)
+            && !moduleToClassIds.get(matchedTarget).isEmpty()) {
+          targetIds = moduleToClassIds.get(matchedTarget);
+        } else {
+          targetIds = List.of(matchedTarget);
         }
 
-        edges.add(
-            new DependencyEdge(
-                currentModule, targetId, DependencyEdge.Kind.DEPENDENCY, null, false));
+        for (String targetId : targetIds) {
+          if (targetId == null
+              || targetId.isBlank()
+              || targetId.equals(currentModule)
+              || isStdlib(targetId)) {
+            continue;
+          }
+          for (String sourceId : sourceNodeIds) {
+            if (targetId.equals(sourceId) || sourceId.startsWith(targetId + ".")) {
+              continue;
+            }
+            String edgeKey = sourceId + "->" + targetId;
+            if (seenEdgeKeys.add(edgeKey)) {
+              edges.add(
+                  new DependencyEdge(
+                      sourceId, targetId, DependencyEdge.Kind.DEPENDENCY, null, false));
+            }
+          }
+        }
       }
     }
 
     return new ScanResult(classes, edges);
+  }
+
+  private static final class ParsedPythonClass {
+    final String name;
+    final int indent;
+    ClassNode.Stereotype stereotype;
+    final List<MethodNode> methods;
+
+    ParsedPythonClass(
+        String name, int indent, ClassNode.Stereotype stereotype, List<MethodNode> methods) {
+      this.name = name;
+      this.indent = indent;
+      this.stereotype = stereotype;
+      this.methods = methods;
+    }
+  }
+
+  private static int countLeadingSpaces(String line) {
+    int count = 0;
+    while (count < line.length() && (line.charAt(count) == ' ' || line.charAt(count) == '\t')) {
+      count++;
+    }
+    return count;
+  }
+
+  private static boolean isStandardBaseMarker(String base) {
+    return "ABC".equals(base)
+        || "abc.ABC".equals(base)
+        || "ABCMeta".equals(base)
+        || "abc.ABCMeta".equals(base)
+        || "Protocol".equals(base)
+        || "typing.Protocol".equals(base)
+        || "typing_extensions.Protocol".equals(base)
+        || "Enum".equals(base)
+        || "enum.Enum".equals(base)
+        || "IntEnum".equals(base)
+        || "StrEnum".equals(base)
+        || "object".equals(base);
+  }
+
+  static ClassNode.Stereotype classifyPythonStereotype(String baseClasses) {
+    if (baseClasses == null || baseClasses.isBlank()) {
+      return ClassNode.Stereotype.CLASS;
+    }
+    for (String rawBase : splitTopLevelCommas(baseClasses)) {
+      String token = rawBase.trim();
+      int genericIdx = token.indexOf('[');
+      if (genericIdx > 0) {
+        token = token.substring(0, genericIdx).trim();
+      }
+      if ("Protocol".equals(token)
+          || "typing.Protocol".equals(token)
+          || "typing_extensions.Protocol".equals(token)
+          || "zope.interface.Interface".equals(token)) {
+        return ClassNode.Stereotype.INTERFACE;
+      }
+      if ("ABC".equals(token)
+          || "abc.ABC".equals(token)
+          || "ABCMeta".equals(token)
+          || "abc.ABCMeta".equals(token)
+          || token.contains("ABCMeta")) {
+        return ClassNode.Stereotype.ABSTRACT;
+      }
+      if ("Enum".equals(token)
+          || "enum.Enum".equals(token)
+          || "IntEnum".equals(token)
+          || "enum.IntEnum".equals(token)
+          || "StrEnum".equals(token)
+          || "enum.StrEnum".equals(token)) {
+        return ClassNode.Stereotype.ENUM;
+      }
+    }
+    return ClassNode.Stereotype.CLASS;
+  }
+
+  static List<String> parsePythonMethodParams(String rawParams) {
+    if (rawParams == null || rawParams.isBlank()) {
+      return List.of();
+    }
+    List<String> args = new ArrayList<>();
+    for (String part : splitTopLevelCommas(rawParams)) {
+      String token = part.trim();
+      if (token.isEmpty()
+          || "self".equals(token)
+          || token.startsWith("self:")
+          || "cls".equals(token)
+          || token.startsWith("cls:")
+          || "*".equals(token)
+          || "/".equals(token)) {
+        continue;
+      }
+      args.add(token);
+    }
+    return args;
+  }
+
+  private static List<String> splitTopLevelCommas(String input) {
+    List<String> parts = new ArrayList<>();
+    if (input == null || input.isEmpty()) {
+      return parts;
+    }
+    int depth = 0;
+    int start = 0;
+    for (int i = 0; i < input.length(); i++) {
+      char c = input.charAt(i);
+      if (c == '[' || c == '(' || c == '{') {
+        depth++;
+      } else if (c == ']' || c == ')' || c == '}') {
+        depth = Math.max(0, depth - 1);
+      } else if (c == ',' && depth == 0) {
+        parts.add(input.substring(start, i));
+        start = i + 1;
+      }
+    }
+    parts.add(input.substring(start));
+    return parts;
   }
 
   private record ImportItem(String originalName, String exportedName) {}

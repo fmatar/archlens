@@ -8,6 +8,7 @@ import io.slixes.archlens.domain.policy.ArchitecturePolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @ApplicationScoped
 public class DipInversionSynthesizer {
@@ -76,7 +77,7 @@ public class DipInversionSynthesizer {
 
   private String resolveLanguage(ArchitecturePolicy policy, ClassNode fromNode, ClassNode toNode) {
     if (policy != null && policy.lang() != null && !policy.lang().isBlank()) {
-      String l = policy.lang().trim().toLowerCase();
+      String l = policy.lang().trim().toLowerCase(Locale.ROOT);
       if (l.equals("python") || l.equals("py")) return "python";
       if (l.equals("typescript") || l.equals("ts") || l.equals("javascript") || l.equals("js")) {
         return "typescript";
@@ -87,7 +88,7 @@ public class DipInversionSynthesizer {
     }
     for (ClassNode node : new ClassNode[] {fromNode, toNode}) {
       if (node != null && node.filePath() != null) {
-        String p = node.filePath().toLowerCase();
+        String p = node.filePath().toLowerCase(Locale.ROOT);
         if (p.endsWith(".py")) return "python";
         if (p.endsWith(".ts")
             || p.endsWith(".tsx")
@@ -749,7 +750,7 @@ public class DipInversionSynthesizer {
     return input
         .replaceAll("([a-z0-9])([A-Z])", "$1_$2")
         .replaceAll("([A-Z]+)([A-Z][a-z])", "$1_$2")
-        .toLowerCase();
+        .toLowerCase(Locale.ROOT);
   }
 
   private String toPascalCase(String input) {

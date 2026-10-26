@@ -850,10 +850,6 @@ public class PythonAstScanner implements LanguageScanner {
     return mod.replace('/', '.');
   }
 
-  private String getPackageName(String moduleId) {
-    return getPackageName(moduleId, false);
-  }
-
   private String getPackageName(String moduleId, boolean isInitFile) {
     if (isInitFile) {
       return moduleId;

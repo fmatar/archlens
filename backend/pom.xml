@@ -38,6 +38,11 @@
             <groupId>io.quarkiverse.mcp</groupId>
             <artifactId>quarkus-mcp-server-http</artifactId>
         </dependency>
+        <!-- Quarkus SmallRye Health Probes (/q/health/live & /q/health/ready) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
 
         <!-- Testing -->
         <dependency>

@@ -1,6 +1,7 @@
 package io.slixes.archlens.delivery.rest;
 
 import io.slixes.archlens.usecase.ResolveFilesystemUseCase;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -14,6 +15,7 @@ import java.util.Map;
  */
 @Path("/api")
 @ApplicationScoped
+@RunOnVirtualThread
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProjectFilesystemResource {

@@ -4,6 +4,7 @@ import io.slixes.archlens.domain.fitness.FitnessEvaluation;
 import io.slixes.archlens.domain.fitness.FitnessHistoryTrend;
 import io.slixes.archlens.usecase.EvaluateFitnessUseCase;
 import io.slixes.archlens.usecase.GetFitnessHistoryUseCase;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -16,6 +17,7 @@ import java.io.IOException;
  */
 @Path("/api/fitness")
 @ApplicationScoped
+@RunOnVirtualThread
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class FitnessResource {

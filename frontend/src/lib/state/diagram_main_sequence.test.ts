@@ -7,7 +7,7 @@ import App from '../../App.svelte';
 import type { ArchitectureGraph, ComponentNode, ClassNode } from '../types/diagram';
 
 describe('Main Sequence Scatter Plot & State Integration', () => {
-  const createMockClass = (id: string, name: string, stereotype: 'CLASS' | 'INTERFACE' = 'CLASS'): ClassNode => ({
+  const createMockClass = (id: string, name: string, stereotype: 'CLASS' | 'INTERFACE' | 'RECORD' = 'CLASS'): ClassNode => ({
     id,
     name,
     packageName: 'com.example',
@@ -90,6 +90,29 @@ describe('Main Sequence Scatter Plot & State Integration', () => {
     expect(metrics['comp-adapters'].ca).toBe(0);
     expect(metrics['comp-adapters'].ce).toBe(1);
     expect(metrics['comp-adapters'].instability).toBe(1);
+  });
+
+  it('should treat RECORD value types as immutable contracts on the Main Sequence', () => {
+    diagramStore.graph = {
+      ...mockGraph,
+      components: [
+        {
+          id: 'comp-domain',
+          label: 'domain',
+          level: 0,
+          crap: { mu: 1, max: 1, sigma: 0 },
+          mutationScore: 100,
+          childPackageIds: [],
+          classes: [createMockClass('c1', 'OrderEvent', 'RECORD'), createMockClass('c2', 'OrderPort', 'INTERFACE')]
+        },
+        mockGraph.components[1]
+      ]
+    };
+    const metrics = diagramStore.activeComponentMetrics;
+    expect(metrics['comp-domain'].instability).toBe(0);
+    expect(metrics['comp-domain'].abstractness).toBe(1);
+    expect(metrics['comp-domain'].distance).toBe(0);
+    expect(metrics['comp-domain'].zone).toBe('MAIN_SEQUENCE');
   });
 
   it('should generate activeScatterPlotPoints with accurate coordinates and levels', () => {

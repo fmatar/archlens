@@ -87,6 +87,48 @@ export const ARCHLENS_TOOL_SCHEMAS = {
       },
       required: ['snapshotId']
     }
+  },
+  synthesizeDipInversion: {
+    name: 'synthesizeDipInversion',
+    description:
+      'Generate a Dependency Inversion Principle (DIP) interface port and outward adapter blueprint to resolve a concentric ring violation.',
+    parameters: {
+      type: 'object',
+      properties: {
+        sourceClass: {
+          type: 'string',
+          description: 'Fully qualified or simple name of the inner-layer class with the outward dependency'
+        },
+        targetClass: {
+          type: 'string',
+          description: 'Fully qualified or simple name of the outer-layer class being depended upon'
+        },
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        }
+      },
+      required: ['sourceClass', 'targetClass']
+    }
+  },
+  evaluateFitness: {
+    name: 'evaluateFitness',
+    description:
+      'Evaluate the Architecture Fitness Index (AFI), Main Sequence Distance, Screaming Architecture Score, and concentric ring compliance.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        }
+      },
+      required: []
+    }
   }
 };
 

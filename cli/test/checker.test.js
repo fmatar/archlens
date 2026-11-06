@@ -558,5 +558,48 @@ test('checkArchitecture detects TypeScript multi-line ESM, alias, and dynamic im
   }
 });
 
+test('checkArchitecture treats Java records as immutable value contracts for Main Sequence Abstractness', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-check-records-'));
+  try {
+    const archlensDir = path.join(tmpDir, '.archlens');
+    const domainDir = path.join(tmpDir, 'src', 'domain');
+    const deliveryDir = path.join(tmpDir, 'src', 'delivery', 'rest');
+    fs.mkdirSync(archlensDir, { recursive: true });
+    fs.mkdirSync(domainDir, { recursive: true });
+    fs.mkdirSync(deliveryDir, { recursive: true });
+
+    const policy = {
+      title: 'Java Record App',
+      src: 'src',
+      lang: 'java',
+      order: ['domain', 'delivery.rest'],
+      levels: [['domain'], ['delivery.rest']]
+    };
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(policy), 'utf8');
+
+    fs.writeFileSync(
+      path.join(domainDir, 'ArchitectureGraph.java'),
+      'package domain;\npublic record ArchitectureGraph(String title) {}\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(deliveryDir, 'DiagramResource.java'),
+      'package delivery.rest;\nimport domain.ArchitectureGraph;\npublic class DiagramResource {}\n',
+      'utf8'
+    );
+
+    const result = await checkArchitecture(tmpDir, { detectCycles: true });
+    assert.equal(result.passed, true);
+    assert.equal(result.violationsCount, 0);
+    const msRule = result.fitness.rules.find((r) => r.id === 'MAIN_SEQUENCE_DISTANCE_RULE');
+    assert.ok(msRule);
+    assert.equal(msRule.actualValue, 0);
+    assert.equal(result.fitness.grade, 'A');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+
 
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -17,6 +18,7 @@ import java.util.Map;
  */
 @Path("/api/snapshots")
 @ApplicationScoped
+@RunOnVirtualThread
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class SnapshotResource {

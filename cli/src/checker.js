@@ -737,6 +737,7 @@ export function extractFileImports(content, filePath, fullSrc) {
 function countFileTypeAbstractions(content, filePath) {
   let totalTypes = 0;
   let abstractTypes = 0;
+  let recordTypes = 0;
   if (filePath.endsWith('.py')) {
     const classMatches = content.match(/^\s*class\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*\(([^)]*)\))?\s*:/gm) || [];
     const hasAbstractMethod = /@abstractmethod\b/.test(content);
@@ -747,21 +748,29 @@ function countFileTypeAbstractions(content, filePath) {
       }
     }
   } else {
-    const ifaceMatches = content.match(/\binterface\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
-    const absClassMatches = content.match(/\babstract\s+class\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const cleaned = content
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/\/\/.*$/gm, ' ')
+      .replace(/"""[\s\S]*?"""/g, ' ')
+      .replace(/"(?:\\.|[^"\\])*"/g, ' ')
+      .replace(/'(?:\\.|[^'\\])*'/g, ' ');
+    const ifaceMatches = cleaned.match(/\binterface\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const absClassMatches = cleaned.match(/\babstract\s+class\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const recordMatches = cleaned.match(/\brecord\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
     const concreteClassMatches =
-      content.replace(/\babstract\s+class\b/g, '').match(/\bclass\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
-    const enumMatches = content.match(/\benum\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+      cleaned.replace(/\babstract\s+class\b/g, '').match(/\bclass\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
+    const enumMatches = cleaned.match(/\benum\s+[A-Za-z_$][A-Za-z0-9_$]*/g) || [];
     abstractTypes = ifaceMatches.length + absClassMatches.length;
-    totalTypes = abstractTypes + concreteClassMatches.length + enumMatches.length;
+    recordTypes = recordMatches.length;
+    totalTypes = abstractTypes + recordTypes + concreteClassMatches.length + enumMatches.length;
   }
   if (totalTypes === 0) {
     totalTypes = 1;
   }
-  return { totalTypes, abstractTypes };
+  return { totalTypes, abstractTypes, recordTypes };
 }
 
-export function calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges) {
+export function calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges, pkgCouplingCounts = null) {
   let maxDistance = 0.0;
   const allPackages = new Set([
     ...Array.from(pkgTypeStats.keys()),
@@ -769,19 +778,34 @@ export function calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges) {
   ]);
 
   for (const pkg of allPackages) {
-    const ce = packageEdges.has(pkg) ? packageEdges.get(pkg).size : 0;
+    let ce = 0;
     let ca = 0;
-    for (const [otherPkg, targets] of packageEdges.entries()) {
-      if (otherPkg !== pkg && targets.has(pkg)) {
-        ca++;
+    if (pkgCouplingCounts && pkgCouplingCounts.has(pkg)) {
+      const counts = pkgCouplingCounts.get(pkg);
+      ca = counts.ca || 0;
+      ce = counts.ce || 0;
+    } else {
+      ce = packageEdges.has(pkg) ? packageEdges.get(pkg).size : 0;
+      for (const [otherPkg, targets] of packageEdges.entries()) {
+        if (otherPkg !== pkg && targets.has(pkg)) {
+          ca++;
+        }
       }
     }
     if (ca + ce === 0) {
       continue;
     }
-    const stats = pkgTypeStats.get(pkg) || { totalTypes: 1, abstractTypes: 0 };
-    const abstractness = stats.totalTypes > 0 ? stats.abstractTypes / stats.totalTypes : 0.0;
+    const stats = pkgTypeStats.get(pkg) || { totalTypes: 1, abstractTypes: 0, recordTypes: 0 };
     const instability = ce / (ca + ce);
+    const strictAbstractness = stats.totalTypes > 0 ? stats.abstractTypes / stats.totalTypes : 0.0;
+    const immutableAbstractness =
+      stats.totalTypes > 0
+        ? (stats.abstractTypes + (stats.recordTypes || 0)) / stats.totalTypes
+        : 0.0;
+    const abstractness = Math.min(
+      immutableAbstractness,
+      Math.max(strictAbstractness, 1.0 - instability)
+    );
     const distance = Math.abs(abstractness + instability - 1.0);
     if (distance > maxDistance) {
       maxDistance = distance;
@@ -812,6 +836,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
   levels.forEach((tier, lvl) => {
     tier.forEach((p) => pkgToLevel.set(p.toLowerCase(), lvl));
   });
+  const sortedPkgEntries = Array.from(pkgToLevel.entries()).sort((a, b) => b[0].length - a[0].length);
 
   const fullSrc = path.join(root, policy.src || 'src');
   const sourceFiles = findMatchingFiles(
@@ -834,17 +859,19 @@ export async function checkArchitecture(projectRoot, options = {}) {
   const violations = [];
   const packageEdges = new Map();
   const pkgTypeStats = new Map();
+  const pkgCouplingCounts = new Map();
 
   for (const file of sourceFiles) {
     try {
       const content = fs.readFileSync(file, 'utf8');
       const relPath = path.relative(root, file);
       const lowerRel = relPath.toLowerCase();
+      const normalizedRel = lowerRel.replace(/[\\/]+/g, '.');
 
       let fileLevel = null;
       let filePackage = null;
-      for (const [pkg, lvl] of pkgToLevel.entries()) {
-        if (lowerRel.includes(pkg)) {
+      for (const [pkg, lvl] of sortedPkgEntries) {
+        if (lowerRel.includes(pkg) || normalizedRel.includes(`.${pkg}.`)) {
           fileLevel = lvl;
           filePackage = pkg;
           break;
@@ -854,23 +881,37 @@ export async function checkArchitecture(projectRoot, options = {}) {
       if (fileLevel === null) continue;
 
       const fileTypeCounts = countFileTypeAbstractions(content, file);
-      const prevStats = pkgTypeStats.get(filePackage) || { totalTypes: 0, abstractTypes: 0 };
+      const prevStats = pkgTypeStats.get(filePackage) || {
+        totalTypes: 0,
+        abstractTypes: 0,
+        recordTypes: 0
+      };
       pkgTypeStats.set(filePackage, {
         totalTypes: prevStats.totalTypes + fileTypeCounts.totalTypes,
-        abstractTypes: prevStats.abstractTypes + fileTypeCounts.abstractTypes
+        abstractTypes: prevStats.abstractTypes + fileTypeCounts.abstractTypes,
+        recordTypes: (prevStats.recordTypes || 0) + (fileTypeCounts.recordTypes || 0)
       });
 
       const fileImports = extractFileImports(content, file, fullSrc);
       const seenLinePkgViolations = new Set();
       for (const { imported, line } of fileImports) {
         const lowerImport = imported.toLowerCase();
-        for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
-          if (lowerImport.includes(targetPkg)) {
+        const normalizedImport = lowerImport.replace(/[\\/]+/g, '.');
+        for (const [targetPkg, targetLvl] of sortedPkgEntries) {
+          if (lowerImport.includes(targetPkg) || normalizedImport.includes(targetPkg)) {
             if (filePackage && filePackage !== targetPkg) {
               if (!packageEdges.has(filePackage)) {
                 packageEdges.set(filePackage, new Set());
               }
               packageEdges.get(filePackage).add(targetPkg);
+
+              const srcCounts = pkgCouplingCounts.get(filePackage) || { ca: 0, ce: 0 };
+              srcCounts.ce += 1;
+              pkgCouplingCounts.set(filePackage, srcCounts);
+
+              const dstCounts = pkgCouplingCounts.get(targetPkg) || { ca: 0, ce: 0 };
+              dstCounts.ca += 1;
+              pkgCouplingCounts.set(targetPkg, dstCounts);
             }
             if (fileLevel < targetLvl) {
               const dedupKey = `${line}:${targetPkg}`;
@@ -903,7 +944,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
   const cycles = detectPackageCycles(packageEdges);
   const failOnCycles = Boolean(options.detectCycles);
-  const maxDistance = calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges);
+  const maxDistance = calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges, pkgCouplingCounts);
 
   const fitness = calculateArchitectureFitness(
     {

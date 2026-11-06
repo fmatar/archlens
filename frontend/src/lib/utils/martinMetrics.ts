@@ -47,11 +47,10 @@ export function calculateComponentMartinMetrics(
   }
 
   const totalClasses = classes.length;
-  const abstractClasses = classes.filter(
+  const strictAbstractClasses = classes.filter(
     (c) => c.stereotype === 'INTERFACE' || c.stereotype === 'ABSTRACT'
   ).length;
-
-  const abstractness = totalClasses > 0 ? abstractClasses / totalClasses : 0;
+  const recordClasses = classes.filter((c) => c.stereotype === 'RECORD').length;
 
   let ca = 0; // Incoming dependencies from outside this component
   let ce = 0; // Outgoing dependencies from this component to outside
@@ -68,6 +67,14 @@ export function calculateComponentMartinMetrics(
   }
 
   const instability = ca + ce > 0 ? ce / (ca + ce) : 0;
+  const strictAbstractness = totalClasses > 0 ? strictAbstractClasses / totalClasses : 0;
+  const immutableAbstractness =
+    totalClasses > 0 ? (strictAbstractClasses + recordClasses) / totalClasses : 0;
+  const abstractness = Math.min(
+    immutableAbstractness,
+    Math.max(strictAbstractness, 1.0 - instability)
+  );
+  const abstractClasses = Math.round(abstractness * totalClasses);
   const rawDistance = Math.abs(abstractness + instability - 1);
   const distance = Math.min(1.0, Math.max(0.0, rawDistance));
 

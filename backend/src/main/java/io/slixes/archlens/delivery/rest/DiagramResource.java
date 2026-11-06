@@ -19,6 +19,7 @@ import io.slixes.archlens.usecase.ExportDossierUseCase;
 import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SavePolicyUseCase;
 import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -62,7 +63,7 @@ public class DiagramResource {
 
   @Inject ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase;
 
-  @Inject ObjectMapper mapper = new ObjectMapper();
+  @Inject ObjectMapper mapper;
 
   @Inject ProjectFilesystemResource filesystemResource;
 
@@ -77,10 +78,7 @@ public class DiagramResource {
   private final BroadcastProcessor<Map<String, Object>> eventProcessor =
       BroadcastProcessor.create();
 
-  public DiagramResource() {
-    this.filesystemResource = new ProjectFilesystemResource();
-    this.fileWatcher = new ProjectFileWatcher();
-  }
+  public DiagramResource() {}
 
   public DiagramResource(
       ArchitectureCompiler graphCompiler,
@@ -138,6 +136,20 @@ public class DiagramResource {
     return WorkspacePathResolver.normalizeRoot(root);
   }
 
+  private ObjectMapper getMapper() {
+    if (mapper == null) {
+      mapper = new ObjectMapper();
+    }
+    return mapper;
+  }
+
+  private ProjectFileWatcher getFileWatcher() {
+    if (fileWatcher == null) {
+      fileWatcher = new ProjectFileWatcher();
+    }
+    return fileWatcher;
+  }
+
   private ProjectFilesystemResource getFilesystemResource() {
     if (filesystemResource == null) {
       filesystemResource = new ProjectFilesystemResource();
@@ -147,7 +159,7 @@ public class DiagramResource {
 
   private SnapshotResource getSnapshotResource() {
     if (snapshotResource == null) {
-      snapshotResource = new SnapshotResource(graphCompiler, mapper);
+      snapshotResource = new SnapshotResource(graphCompiler, getMapper());
     }
     return snapshotResource;
   }
@@ -193,6 +205,7 @@ public class DiagramResource {
 
   @GET
   @Path("/graph")
+  @RunOnVirtualThread
   public ArchitectureGraph getGraph(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -202,6 +215,7 @@ public class DiagramResource {
 
   @GET
   @Path("/diagram")
+  @RunOnVirtualThread
   public ArchitectureGraph getDiagram(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -212,6 +226,7 @@ public class DiagramResource {
   @GET
   @Path("/diagram/llm-dossier")
   @Produces(MediaType.TEXT_PLAIN)
+  @RunOnVirtualThread
   public String getLlmDossier(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -222,6 +237,7 @@ public class DiagramResource {
   @GET
   @Path("/llm-dossier")
   @Produces(MediaType.TEXT_PLAIN)
+  @RunOnVirtualThread
   public String getLlmDossierAlias(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -231,6 +247,7 @@ public class DiagramResource {
 
   @GET
   @Path("/violations/invert-plan")
+  @RunOnVirtualThread
   public DipInversionPlan getInvertPlan(
       @QueryParam("from") String fromClass,
       @QueryParam("to") String toClass,
@@ -246,13 +263,14 @@ public class DiagramResource {
 
   private SavePolicyUseCase getSavePolicyUseCase() {
     if (savePolicyUseCase == null) {
-      savePolicyUseCase = new SavePolicyUseCase(graphCompiler, mapper);
+      savePolicyUseCase = new SavePolicyUseCase(graphCompiler, getMapper());
     }
     return savePolicyUseCase;
   }
 
   @GET
   @Path("/policy")
+  @RunOnVirtualThread
   public ArchitecturePolicy getPolicy(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
     return graphCompiler.loadPolicy(normalizeRoot(projectRoot));
@@ -260,6 +278,7 @@ public class DiagramResource {
 
   @POST
   @Path("/policy")
+  @RunOnVirtualThread
   public ArchitectureGraph savePolicy(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       ArchitecturePolicy policy)
@@ -272,6 +291,7 @@ public class DiagramResource {
 
   @GET
   @Path("/cycles")
+  @RunOnVirtualThread
   public List<PackageCycle> getCycles(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -282,6 +302,7 @@ public class DiagramResource {
 
   @GET
   @Path("/screaming")
+  @RunOnVirtualThread
   public ScreamingMetric getScreamingMetric(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -292,6 +313,7 @@ public class DiagramResource {
 
   @GET
   @Path("/screaming/migration-proposal")
+  @RunOnVirtualThread
   public ScreamingMigrationProposal getScreamingMigrationProposal(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
@@ -319,13 +341,14 @@ public class DiagramResource {
   }
 
   public void ensureWatcherRunning(String projectRoot) {
-    if (fileWatcher != null && !fileWatcher.isRunning()) {
+    ProjectFileWatcher watcher = getFileWatcher();
+    if (!watcher.isRunning()) {
       Thread.ofVirtual()
           .name("archlens-watcher-starter")
           .start(
               () -> {
                 try {
-                  fileWatcher.start(
+                  watcher.start(
                       Paths.get(projectRoot),
                       path ->
                           eventProcessor.onNext(

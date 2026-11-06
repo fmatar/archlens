@@ -12,14 +12,17 @@ import {
   installMcpConfigs
 } from '../src/mcp-registry.js';
 
-test('ARCHLENS_TOOL_SCHEMAS defines 4 core Clean Architecture tools', () => {
+test('ARCHLENS_TOOL_SCHEMAS defines 6 core Clean Architecture tools', () => {
   const tools = Object.keys(ARCHLENS_TOOL_SCHEMAS);
   assert.ok(tools.includes('inspectArchitecture'));
   assert.ok(tools.includes('exportLlmDossier'));
   assert.ok(tools.includes('listSnapshots'));
   assert.ok(tools.includes('getSnapshot'));
+  assert.ok(tools.includes('synthesizeDipInversion'));
+  assert.ok(tools.includes('evaluateFitness'));
 
   assert.equal(ARCHLENS_TOOL_SCHEMAS.getSnapshot.parameters.required[0], 'snapshotId');
+  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.synthesizeDipInversion.parameters.required, ['sourceClass', 'targetClass']);
   assert.equal(typeof ARCHLENS_TOOL_SCHEMAS.inspectArchitecture.description, 'string');
 });
 

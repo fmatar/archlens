@@ -3,6 +3,7 @@ package io.slixes.archlens.delivery.rest;
 import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
 import io.slixes.archlens.domain.mailbox.MailboxGateway;
 import io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase;
+import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -15,6 +16,7 @@ import java.util.Map;
  */
 @Path("/api/mailbox")
 @ApplicationScoped
+@RunOnVirtualThread
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class MailboxResource {

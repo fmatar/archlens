@@ -7,7 +7,7 @@ on:
 jobs:
   enforce-develop-source:
     name: Enforce Merge From Develop Only
-    runs-on: ubuntu-latest
+    runs-on: local-archlens
     steps:
       - name: Validate Pull Request Source Branch
         run: |

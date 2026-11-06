@@ -22,7 +22,7 @@ concurrency:
 jobs:
   dev-docker:
     name: Build & Publish Canary Docker Image (:dev)
-    runs-on: ubuntu-latest
+    runs-on: local-archlens
 
     steps:
       - name: Checkout Code
@@ -73,7 +73,7 @@ jobs:
 
   dev-npm:
     name: Build & Publish Canary NPM Package (@dev)
-    runs-on: ubuntu-latest
+    runs-on: local-archlens
 
     steps:
       - name: Checkout Code

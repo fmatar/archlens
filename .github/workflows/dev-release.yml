@@ -52,36 +52,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Build Application Package
+      - name: Build and Push Canary Multi-Arch Container Image (Quarkus Jib)
+        env:
+          GHCR_PASSWORD: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           npm --prefix frontend install
           npm --prefix frontend run build
-          mvn -B -ntp package -DskipTests
-
-      - name: Set up QEMU (Multi-Arch)
-        uses: docker/setup-qemu-action@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push Canary Docker Image
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:dev
-            ghcr.io/${{ github.repository }}:dev-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          mvn -B -ntp package -DskipTests \
+            -Dquarkus.container-image.build=true \
+            -Dquarkus.container-image.push=true \
+            -Dquarkus.container-image.registry=ghcr.io \
+            -Dquarkus.container-image.group=${{ github.repository_owner }} \
+            -Dquarkus.container-image.name=archlens \
+            -Dquarkus.container-image.username=${{ github.actor }} \
+            -Dquarkus.container-image.password="${GHCR_PASSWORD}" \
+            -Dquarkus.container-image.tag="dev" \
+            -Dquarkus.container-image.additional-tags="dev-${GITHUB_SHA::7}"
 
   dev-npm:
     name: Build & Publish Canary NPM Package (@dev)

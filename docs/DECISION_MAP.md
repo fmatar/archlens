@@ -23,6 +23,9 @@ flowchart TD
   SPEC_04["SPEC-04 (docs/specs/cap-04.md)"]
   ADR_001["ADR-001: Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration"]
   _6262["Ticket #6262 (feature/issue-#6262-quarkus-mcp-and-sdlc-enhancement)"]
+  ADR_002["ADR-002: Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator"]
+  _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
+  ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
@@ -37,6 +40,15 @@ flowchart TD
   CAP_02 -.->|ADR Drift| ADR_001
   CAP_03 -.->|ADR Drift| ADR_001
   CAP_04 -.->|ADR Drift| ADR_001
+  _192 -->|triggered_drift_adr| ADR_002
+  CAP_01 -.->|ADR Drift| ADR_002
+  CAP_02 -.->|ADR Drift| ADR_002
+  CAP_03 -.->|ADR Drift| ADR_002
+  CAP_04 -.->|ADR Drift| ADR_002
+  CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
+  CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
+  CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
+  CAP_04 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
 ```
 
 ---
@@ -46,6 +58,7 @@ flowchart TD
 | ADR ID | Decision Title | Scope | Status | Triggered By | Supersedes / Amends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **ADR-001** | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | #6262 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `rejected` | #192 | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 
@@ -53,7 +66,7 @@ flowchart TD
 
 | Capability ID | Description | Current Status |
 | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-001)` |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-001)` |
-| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-001)` |
-| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-001)` |
+| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-002)` |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-002)` |
+| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-002)` |
+| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-002)` |

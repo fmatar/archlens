@@ -13,7 +13,9 @@ import io.slixes.archlens.domain.screaming.ScreamingMigrationProposal;
 import io.slixes.archlens.engine.GraphCompiler;
 import io.slixes.archlens.usecase.SyncAdrUseCase;
 import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -163,5 +165,34 @@ class ArchlensMcpServiceTest {
             "com.example.OrderService", "com.example.PaymentGateway", tempDir.toString());
     assertNotNull(dipPrompt);
     assertNotNull(dipPrompt.content());
+  }
+
+  @Test
+  void testDeclarativeBeanValidationAnnotationsOnMcpToolAndPromptParameters() throws Exception {
+    Method getSnapshot =
+        ArchlensMcpService.class.getMethod("getSnapshot", String.class, String.class);
+    assertTrue(
+        getSnapshot.getParameters()[0].isAnnotationPresent(NotBlank.class),
+        "getSnapshot.snapshotId must be annotated with @NotBlank");
+
+    Method synthesizeDip =
+        ArchlensMcpService.class.getMethod(
+            "synthesizeDipInversion", String.class, String.class, String.class);
+    assertTrue(
+        synthesizeDip.getParameters()[0].isAnnotationPresent(NotBlank.class),
+        "synthesizeDipInversion.fromClass must be annotated with @NotBlank");
+    assertTrue(
+        synthesizeDip.getParameters()[1].isAnnotationPresent(NotBlank.class),
+        "synthesizeDipInversion.toClass must be annotated with @NotBlank");
+
+    Method dipPrompt =
+        ArchlensMcpService.class.getMethod(
+            "dipRefactoringPrompt", String.class, String.class, String.class);
+    assertTrue(
+        dipPrompt.getParameters()[0].isAnnotationPresent(NotBlank.class),
+        "dipRefactoringPrompt.fromClass must be annotated with @NotBlank");
+    assertTrue(
+        dipPrompt.getParameters()[1].isAnnotationPresent(NotBlank.class),
+        "dipRefactoringPrompt.toClass must be annotated with @NotBlank");
   }
 }

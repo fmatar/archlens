@@ -18,7 +18,7 @@ permissions:
 jobs:
   audit-and-update:
     name: Audit & Safe Dependency Updates
-    runs-on: ubuntu-latest
+    runs-on: local-archlens
 
     steps:
       - name: Checkout develop branch

@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.slixes</groupId>
     <artifactId>archlens</artifactId>
-    <version>0.1.0-Beta-11</version>
+    <version>0.1.0-Beta-12</version>
     <packaging>pom</packaging>
     <name>Archlens — Clean Architecture Dynamic Workbench :: Parent</name>
 
@@ -54,7 +54,7 @@
         <!-- Frontend Versions (Installed automatically by frontend-maven-plugin) -->
         <node.version>v26.8.2</node.version>
         <pnpm.version>12.4.1</pnpm.version>
-        <maven.min.version>3.9.15</maven.min.version>
+        <maven.min.version>3.9.9</maven.min.version>
     </properties>
 
 

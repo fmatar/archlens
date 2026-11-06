@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-Beta-12] - 2026-11-06
+
+### Added
+- **Quarkus MCP 2.0 Hexagonal Decoupling, 10 `@Tool`s, 3 `@Resource`s & 2 `@Prompt`s** ([#6262](https://github.com/fmatar/archlens/issues/6262), [#176](https://github.com/fmatar/archlens/pull/176), `ADR-001`):
+  - Decoupled `ArchlensMcpService` from `DiagramResource` onto Ring 1 Use Cases (`ArchitectureCompiler`, `EvaluateFitnessUseCase`, `ExportDossierUseCase`, `SynthesizeDipInversionUseCase`, `ProposeScreamingMigrationUseCase`, `ManageSnapshotsUseCase`, `VerifyAndRollbackRefactorUseCase`, `SyncAdrUseCase`, `GetFitnessHistoryUseCase`, `WorkspacePathResolver`) and eliminated non-CDI `new` fallbacks across REST delivery resources.
+  - Expanded Quarkus MCP 2.0 Streamable HTTP (`/mcp`) and CLI stdio (`cli/src/mcp-server.js`) to full 10-tool parity: `inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`, `evaluateFitness`, `synthesizeDipInversion`, `proposeScreamingMigration`, `verifyAndRollbackRefactor`, `syncAdr`, and `getFitnessHistory`.
+  - Added 3 MCP `@Resource`s (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`) and 2 MCP `@Prompt`s (`refactor-architecture`, `invert-dip`).
+  - Added `quarkus-mcp-server-hibernate-validator` and `quarkus-smallrye-health` (`/q/health`, `/q/health/live`, `/q/health/ready`) and configured `quarkus.mcp.server.http.dns-rebinding-check.enabled=true` and `quarkus.mcp.server.http.streamable.lazy-sse-init=true`.
+- **Java 25 Virtual Threads (`@RunOnVirtualThread` / JEP 491) & Watcher Lifecycle Cleanup**:
+  - Annotated blocking MCP and REST delivery adapters (`ArchlensMcpService`, `DiagramResource`, `FitnessResource`, `MailboxResource`, `ProjectFilesystemResource`, `SnapshotResource`, `VersionResource`) with `@RunOnVirtualThread` to prevent Netty event-loop pinning.
+  - Added `@PreDestroy void shutdown()` to `ProjectFileWatcher` to cleanly close the `WatchService`, interrupt the watcher thread, and shut down the debounce scheduler on hot reloads and container shutdown.
+- **Main Sequence Abstractness Calibration for Immutable Java `record`s & `enum`s**:
+  - Calibrated Robert C. Martin Main Sequence abstractness ($A$) in `ArchitectureFitnessCalculator`, `ArchitecturalDossierGenerator`, `martinMetrics.ts`, and `cli/src/checker.js` (`0.5` weight for `RECORD` and `ENUM`), elevating Archlens self-audit fitness to `92% [Grade A]` with `0` layer violations and `0` package cycles.
+- **Self-Hosted Runner (`local-archlens`) Workflow & Toolchain Hardening** ([#179](https://github.com/fmatar/archlens/pull/179), [#180](https://github.com/fmatar/archlens/pull/180), [#181](https://github.com/fmatar/archlens/pull/181), [#182](https://github.com/fmatar/archlens/pull/182), [#183](https://github.com/fmatar/archlens/pull/183)):
+  - Migrated GitHub Actions workflows (`ci.yml`, `release.yml`, `dev-release.yml`, `dependency-pulse.yml`, `publish-wiki.yml`, `enforce-branch-flow.yml`) to the `local-archlens` self-hosted runner with automated Apache Maven (`3.9.9+`) and Node.js 22 provisioning.
+
 ## [0.1.0-Beta-11] - 2026-10-26
 
 ### Added

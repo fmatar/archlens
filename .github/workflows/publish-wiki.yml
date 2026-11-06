@@ -11,12 +11,16 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: publish-wiki
+  cancel-in-progress: true
+
 jobs:
   publish-wiki:
     runs-on: local-archlens
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Sync Wiki Pages
         env:

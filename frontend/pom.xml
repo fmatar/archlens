@@ -19,6 +19,9 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
+                <configuration>
+                    <installDirectory>${frontend.install.dir}</installDirectory>
+                </configuration>
                 <executions>
                     <execution>
                         <id>install node and pnpm</id>
@@ -48,6 +51,7 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <arguments>run check</arguments>
                         </configuration>
                     </execution>

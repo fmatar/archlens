@@ -1,0 +1,76 @@
+name: 'Set up Archlens Build Toolchain'
+description: 'Provisions latest Apache Maven (CDN + atomic install), Java 25, Node.js Latest LTS (lts/*), and caches on local-archlens'
+inputs:
+  setup-java:
+    description: 'Whether to set up Java 25 and Maven'
+    required: false
+    default: 'true'
+  setup-node:
+    description: 'Whether to set up Node.js Latest LTS (lts/*)'
+    required: false
+    default: 'true'
+  registry-url:
+    description: 'Optional NPM registry URL for actions/setup-node'
+    required: false
+    default: ''
+  cache-pnpm:
+    description: 'Whether to cache PNPM and frontend-maven-plugin node binaries'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Latest Apache Maven
+      if: inputs.setup-java == 'true'
+      shell: bash
+      run: |
+        METADATA_URL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml"
+        LATEST_MAVEN=$(curl -fsSL --retry 5 --retry-all-errors "$METADATA_URL" \
+          | sed -n 's:.*<version>\(3\.9\.[0-9]*\)</version>.*:\1:p' \
+          | tail -n 1)
+        MAVEN_VER="${LATEST_MAVEN:-3.9.16}"
+        MAVEN_DIR="$HOME/.local/apache-maven-${MAVEN_VER}"
+
+        if [ ! -x "${MAVEN_DIR}/bin/mvn" ]; then
+          mkdir -p "$HOME/.local"
+          TMP_DIR=$(mktemp -d "$HOME/.local/maven-tmp.XXXXXX")
+          TAR_URL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VER}/apache-maven-${MAVEN_VER}-bin.tar.gz"
+          curl -fsSL --retry 5 --retry-all-errors "$TAR_URL" | tar -xz -C "$TMP_DIR"
+          mv -n "$TMP_DIR/apache-maven-${MAVEN_VER}" "$MAVEN_DIR" || true
+          rm -rf "$TMP_DIR"
+        fi
+        echo "${MAVEN_DIR}/bin" >> "$GITHUB_PATH"
+        echo "Using Apache Maven ${MAVEN_VER} at ${MAVEN_DIR}/bin/mvn"
+
+    - name: Set up Java 25
+      if: inputs.setup-java == 'true'
+      uses: actions/setup-java@v6
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+        cache: 'maven'
+
+    - name: Set up Node.js (Latest LTS)
+      if: inputs.setup-node == 'true' && inputs.registry-url == ''
+      uses: actions/setup-node@v7
+      with:
+        node-version: 'lts/*'
+
+    - name: Set up Node.js (Latest LTS with Registry)
+      if: inputs.setup-node == 'true' && inputs.registry-url != ''
+      uses: actions/setup-node@v7
+      with:
+        node-version: 'lts/*'
+        registry-url: ${{ inputs.registry-url }}
+
+    - name: Cache Toolchain & PNPM Store
+      if: inputs.cache-pnpm == 'true'
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/archlens-node
+          ~/.local/share/pnpm/store
+        key: ${{ runner.os }}-archlens-toolchain-${{ hashFiles('pom.xml', 'frontend/pom.xml', 'cli/pom.xml', 'frontend/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-archlens-toolchain-

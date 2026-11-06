@@ -54,7 +54,8 @@
         <!-- Frontend Versions (Installed automatically by frontend-maven-plugin) -->
         <node.version>v26.8.2</node.version>
         <pnpm.version>12.4.1</pnpm.version>
-        <maven.min.version>3.9.9</maven.min.version>
+        <frontend.install.dir>${user.home}/.cache/archlens-node</frontend.install.dir>
+        <maven.min.version>3.9.14</maven.min.version>
     </properties>
 
 

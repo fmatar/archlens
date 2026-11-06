@@ -14,6 +14,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+@SuppressWarnings("deprecation")
 class WorkspacePathResolverTest {
 
   @Test

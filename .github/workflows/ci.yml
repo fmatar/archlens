@@ -13,7 +13,7 @@ concurrency:
 jobs:
   verify:
     name: Verify & Quality Gates
-    runs-on: ubuntu-latest
+    runs-on: local-archlens
 
     steps:
       - name: Checkout Code

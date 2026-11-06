@@ -31,6 +31,7 @@ import io.slixes.archlens.usecase.WorkspacePathResolver;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
 import java.util.Map;
 
@@ -143,7 +144,7 @@ public class ArchlensMcpService {
       description =
           "Retrieve the Clean Architecture model for a specific historical Git release tag or pre-compiled snapshot ID.")
   public ArchitectureGraph getSnapshot(
-      @ToolArg(description = "Snapshot identifier or Git release tag name (e.g. v1.0.0)")
+      @NotBlank @ToolArg(description = "Snapshot identifier or Git release tag name (e.g. v1.0.0)")
           String snapshotId,
       @ToolArg(
               description =
@@ -159,11 +160,13 @@ public class ArchlensMcpService {
       description =
           "Synthesize a targeted Dependency Inversion Principle (DIP) refactoring plan to fix an outward architectural breach, including synthesized Java interface port code, concrete adapter implementation diff, caller injection refactor, and step-by-step instructions.")
   public DipInversionPlan synthesizeDipInversion(
-      @ToolArg(
+      @NotBlank
+          @ToolArg(
               description =
                   "Fully qualified class name of the caller class initiating the outward breach (e.g. com.example.service.OrderService)")
           String fromClass,
-      @ToolArg(
+      @NotBlank
+          @ToolArg(
               description =
                   "Fully qualified class name of the target concrete class to invert into an interface port (e.g. com.example.repo.PostgresOrderRepo)")
           String toClass,
@@ -250,9 +253,12 @@ public class ArchlensMcpService {
                   "Absolute or relative path to the target project directory. Defaults to current directory.",
               defaultValue = ".")
           String projectRoot,
-      @ToolArg(description = "Source class initiating the outward dependency") String sourceClass,
-      @ToolArg(description = "Target outer-layer concrete class being inverted") String targetClass,
-      @ToolArg(description = "Extracted inner-layer interface port name") String interfacePortName,
+      @NotBlank @ToolArg(description = "Source class initiating the outward dependency")
+          String sourceClass,
+      @NotBlank @ToolArg(description = "Target outer-layer concrete class being inverted")
+          String targetClass,
+      @NotBlank @ToolArg(description = "Extracted inner-layer interface port name")
+          String interfacePortName,
       @ToolArg(
               description = "Architectural rationale for the DIP inversion",
               defaultValue = "Invert outward Clean Architecture dependency")
@@ -333,8 +339,9 @@ public class ArchlensMcpService {
       description =
           "Synthesize a surgical Dependency Inversion Principle (DIP) prompt to decouple an inner-ring caller from an outer-ring concrete class.")
   public PromptMessage dipRefactoringPrompt(
-      @PromptArg(description = "Fully qualified caller class name") String fromClass,
-      @PromptArg(description = "Fully qualified target concrete class name") String toClass,
+      @NotBlank @PromptArg(description = "Fully qualified caller class name") String fromClass,
+      @NotBlank @PromptArg(description = "Fully qualified target concrete class name")
+          String toClass,
       @PromptArg(
               description =
                   "Absolute or relative path to the target project directory. Defaults to current directory.",

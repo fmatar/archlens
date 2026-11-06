@@ -33,10 +33,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-jib</artifactId>
         </dependency>
-        <!-- Quarkus Model Context Protocol (MCP) Server HTTP/SSE -->
+        <!-- Quarkus Model Context Protocol (MCP) Server HTTP/SSE & Bean Validation -->
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
             <artifactId>quarkus-mcp-server-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.mcp</groupId>
+            <artifactId>quarkus-mcp-server-hibernate-validator</artifactId>
         </dependency>
         <!-- Quarkus SmallRye Health Probes (/q/health/live & /q/health/ready) -->
         <dependency>

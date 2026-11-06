@@ -3,6 +3,7 @@ package io.slixes.archlens.delivery.rest;
 import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
 import io.slixes.archlens.domain.mailbox.MailboxGateway;
 import io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase;
+import io.slixes.archlens.usecase.WorkspacePathResolver;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

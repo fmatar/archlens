@@ -1,5 +1,6 @@
 package io.slixes.archlens.engine;
 
+import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.nio.file.*;
@@ -81,6 +82,11 @@ public class ProjectFileWatcher {
     } catch (IOException e) {
       stop();
     }
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    stop();
   }
 
   public synchronized void stop() {

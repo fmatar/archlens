@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/skills/sdlc-kanban/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-10-22 05:31:19 UTC`
+> **Last Synced**: `2026-11-06 22:10:54 UTC`
 
 ---
 
@@ -13,6 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  |  | #6262: [FEAT] feat: quarkus-mcp-and-sdlc-enhancement |
 | | | | | #5962: [FEAT] feat(CAP-04): What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence |
 | | | | | #5936: [FEAT] feat(CAP-03): Polyglot Surgical DIP Inverter & CLI Main Sequence Distance |
 | | | | | #5912: [FEAT] feat(CAP-02): TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner |

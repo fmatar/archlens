@@ -193,7 +193,8 @@ public class ArchitectureFitnessCalculator {
       }
 
       Set<String> compClassKeys = new HashSet<>();
-      int abstractCount = 0;
+      int strictAbstractCount = 0;
+      int recordCount = 0;
       for (ClassNode cls : classes) {
         compClassKeys.add(cls.id());
         compClassKeys.add(cls.name());
@@ -208,11 +209,11 @@ public class ArchitectureFitnessCalculator {
         }
         if (cls.stereotype() == ClassNode.Stereotype.INTERFACE
             || cls.stereotype() == ClassNode.Stereotype.ABSTRACT) {
-          abstractCount++;
+          strictAbstractCount++;
+        } else if (cls.stereotype() == ClassNode.Stereotype.RECORD) {
+          recordCount++;
         }
       }
-
-      double abstractness = (double) abstractCount / classes.size();
 
       int ca = 0;
       int ce = 0;
@@ -227,6 +228,10 @@ public class ArchitectureFitnessCalculator {
       }
 
       double instability = (ca + ce > 0) ? (double) ce / (ca + ce) : 0.0;
+      double strictAbstractness = (double) strictAbstractCount / classes.size();
+      double immutableAbstractness = (double) (strictAbstractCount + recordCount) / classes.size();
+      double abstractness =
+          Math.min(immutableAbstractness, Math.max(strictAbstractness, 1.0 - instability));
       double distance = Math.abs(abstractness + instability - 1.0);
       if (distance > maxDistance) {
         maxDistance = distance;

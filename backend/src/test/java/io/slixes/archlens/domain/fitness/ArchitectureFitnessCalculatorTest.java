@@ -330,4 +330,50 @@ class ArchitectureFitnessCalculatorTest {
     assertEquals(0.0, (double) eval.summaryMetrics().get("maxDistance"), 0.001);
     assertTrue(eval.overallPassed());
   }
+
+  @Test
+  @DisplayName(
+      "Should treat immutable Java RECORD value objects in Ring 0 as domain contracts in Main Sequence abstractness")
+  void shouldTreatRecordValueObjectsAsDomainContractsInMainSequenceDistance() {
+    ClassNode orderRecord =
+        createClass(
+            "com.design.domain.OrderRecord",
+            "OrderRecord",
+            "com.design.domain",
+            ClassNode.Stereotype.RECORD,
+            0);
+    ClassNode orderService =
+        createClass(
+            "com.design.usecase.OrderUseCase",
+            "OrderUseCase",
+            "com.design.usecase",
+            ClassNode.Stereotype.CLASS,
+            1);
+
+    ComponentNode domainComp =
+        new ComponentNode("domain", "Domain", 0, null, null, List.of(), List.of(orderRecord));
+    ComponentNode useCaseComp =
+        new ComponentNode("usecase", "UseCase", 1, null, null, List.of(), List.of(orderService));
+
+    DependencyEdge inwardEdge =
+        new DependencyEdge(
+            orderService.id(), orderRecord.id(), DependencyEdge.Kind.DEPENDENCY, null, false);
+
+    ArchitectureGraph graph =
+        new ArchitectureGraph(
+            "Record Domain Graph",
+            false,
+            null,
+            List.of(domainComp, useCaseComp),
+            List.of(inwardEdge),
+            List.of(),
+            List.of(),
+            new ScreamingMetric(
+                1.0, 2, 0, 2, "PACKAGE_BY_FEATURE", List.of(), List.of(), List.of()));
+
+    FitnessEvaluation eval = calculator.evaluate(graph, defaultThresholds);
+    assertEquals(0.0, (double) eval.summaryMetrics().get("maxDistance"), 0.001);
+    assertTrue(eval.overallPassed());
+    assertEquals("A", eval.grade());
+  }
 }

@@ -14,13 +14,15 @@ import {
 
 test('getMcpToolsList formats tools conforming to MCP specification', () => {
   const tools = getMcpToolsList();
-  assert.equal(tools.length, 4);
+  assert.equal(tools.length, 6);
 
   const names = tools.map((t) => t.name);
   assert.ok(names.includes('inspectArchitecture'));
   assert.ok(names.includes('exportLlmDossier'));
   assert.ok(names.includes('listSnapshots'));
   assert.ok(names.includes('getSnapshot'));
+  assert.ok(names.includes('synthesizeDipInversion'));
+  assert.ok(names.includes('evaluateFitness'));
 
   for (const t of tools) {
     assert.equal(typeof t.name, 'string');
@@ -77,7 +79,7 @@ test('handleMcpMessage responds to tools/list', async () => {
   const req = { jsonrpc: '2.0', id: 3, method: 'tools/list' };
   const resp = await handleMcpMessage(req);
   assert.equal(resp.id, 3);
-  assert.equal(resp.result.tools.length, 4);
+  assert.equal(resp.result.tools.length, 6);
 });
 
 test('handleMcpMessage responds to resources/list', async () => {

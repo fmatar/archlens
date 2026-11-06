@@ -81,10 +81,10 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 
 | Capability ID | Capability Title | Functional Spec | Depends On | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| CAP-01 | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `DELIVERED` |
-| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `DELIVERED` |
-| CAP-03 | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | CAP-01, CAP-02 | `DELIVERED` |
-| CAP-04 | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | CAP-01, CAP-02 | `DELIVERED` |
+| CAP-01 | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `AMENDED (ADR-001)` |
+| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `AMENDED (ADR-001)` |
+| CAP-03 | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | CAP-01, CAP-02 | `AMENDED (ADR-001)` |
+| CAP-04 | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | CAP-01, CAP-02 | `AMENDED (ADR-001)` |
 
 ---
 
@@ -92,5 +92,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 <!-- ADR_INDEX_START -->
 | ADR ID | Title | Scope | Status | Ticket | Supersedes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| ADR-001 | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | #6262 | CAP-01, CAP-02, CAP-03, CAP-04 |
 <!-- ADR_INDEX_END -->
 

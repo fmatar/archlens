@@ -24,6 +24,11 @@ class ProjectFileWatcherTest {
 
     watcher.stop();
     assertFalse(watcher.isRunning());
+
+    watcher.start(tempDir, p -> {});
+    assertTrue(watcher.isRunning());
+    watcher.shutdown();
+    assertFalse(watcher.isRunning());
   }
 
   @Test

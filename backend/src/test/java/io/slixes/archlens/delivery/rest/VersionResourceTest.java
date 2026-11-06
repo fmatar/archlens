@@ -19,6 +19,7 @@ class VersionResourceTest {
     assertTrue(info.containsKey("branch"));
     assertTrue(info.containsKey("buildTime"));
     assertFalse(info.get("version").isBlank());
+    assertNotEquals("0.0.1-Alpha-03", info.get("version"));
     assertThrows(UnsupportedOperationException.class, () -> info.put("test", "test"));
   }
 }

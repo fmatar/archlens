@@ -55,7 +55,24 @@ Generates a markdown refactoring prompt dossier diagnosing all concentric ring b
 ---
 
 ### 4. `listSnapshots` & `getSnapshot`
-Enables historical architectural comparisons against Git release tags and pre-compiled snapshots stored in `.archlens/snapshots/`.
+Enables historical architectural comparisons against Git release tags and pre-compiled snapshots governed by `.archlens/policy.json`.
+
+---
+
+### 5. `evaluateFitness` & `getFitnessHistory`
+Computes the Architecture Fitness Index (AFI), Main Sequence Distance, Screaming Architecture Score, and historical fitness trend (`STABLE`, `IMPROVING`, `DEGRADING`).
+
+---
+
+### 6. `proposeScreamingMigration`, `getPolicy` & `syncDipAdr`
+Generates Screaming Architecture feature-slice migration proposals, inspects `.archlens/policy.json`, and mints Architecture Decision Records (ADRs) for Dependency Inversion Principle (DIP) refactorings.
+
+---
+
+## 📚 Available MCP Resources & Prompts
+
+- **Resources**: `archlens://llms.txt` (LLM Dossier), `archlens://policy` (Active Policy JSON), and `archlens://fitness` (Live AFI Report).
+- **Prompts**: `architectural-review` and `dip-refactoring-guide`.
 
 ---
 

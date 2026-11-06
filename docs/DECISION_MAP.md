@@ -21,14 +21,22 @@ flowchart TD
   SPEC_03["SPEC-03 (docs/specs/cap-03.md)"]
   CAP_04["CAP-04: What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence"]
   SPEC_04["SPEC-04 (docs/specs/cap-04.md)"]
+  ADR_001["ADR-001: Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration"]
+  _6262["Ticket #6262 (feature/issue-#6262-quarkus-mcp-and-sdlc-enhancement)"]
+  __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
   CAP_03 -->|specified_by| SPEC_03
-  CAP_01 -->|depends_on| CAP_03
-  CAP_02 -->|depends_on| CAP_03
+  CAP_03 -->|depends_on| CAP_01
+  CAP_03 -->|depends_on| CAP_02
   CAP_04 -->|specified_by| SPEC_04
-  CAP_01 -->|depends_on| CAP_04
-  CAP_02 -->|depends_on| CAP_04
+  CAP_04 -->|depends_on| CAP_01
+  CAP_04 -->|depends_on| CAP_02
+  _6262 -->|triggered_drift_adr| ADR_001
+  CAP_01 -.->|ADR Drift| ADR_001
+  CAP_02 -.->|ADR Drift| ADR_001
+  CAP_03 -.->|ADR Drift| ADR_001
+  CAP_04 -.->|ADR Drift| ADR_001
 ```
 
 ---
@@ -37,7 +45,7 @@ flowchart TD
 
 | ADR ID | Decision Title | Scope | Status | Triggered By | Supersedes / Amends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| *None* | No architectural drift ADRs recorded yet | - | - | - | - |
+| **ADR-001** | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | #6262 | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 
@@ -45,7 +53,7 @@ flowchart TD
 
 | Capability ID | Description | Current Status |
 | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `DELIVERED` |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `DELIVERED` |
-| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `DELIVERED` |
-| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `DELIVERED` |
+| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-001)` |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-001)` |
+| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-001)` |
+| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-001)` |

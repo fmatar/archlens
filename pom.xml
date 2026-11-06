@@ -30,7 +30,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <!-- Toolchain & Plugin Versions -->
-        <quarkus.platform.version>3.40.1</quarkus.platform.version>
+        <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
         <quarkus.mcp.version>2.0.3</quarkus.mcp.version>
 
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>

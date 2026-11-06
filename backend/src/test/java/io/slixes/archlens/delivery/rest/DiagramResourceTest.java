@@ -381,4 +381,14 @@ class DiagramResourceTest {
     assertFalse(snapshotList.isEmpty());
     assertEquals("v1.0.0", snapshotList.get(0).get("tag"));
   }
+
+  @Test
+  void testBindsToRing1WorkspacePathResolverUseCase() throws IOException {
+    Path sourceFile =
+        Path.of("src/main/java/io/slixes/archlens/delivery/rest/DiagramResource.java");
+    String source = Files.readString(sourceFile);
+    assertTrue(
+        source.contains("import io.slixes.archlens.usecase.WorkspacePathResolver;"),
+        "DiagramResource must explicitly import Ring 1 io.slixes.archlens.usecase.WorkspacePathResolver");
+  }
 }

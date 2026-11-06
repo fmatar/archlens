@@ -19,6 +19,7 @@ import io.slixes.archlens.usecase.ExportDossierUseCase;
 import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SavePolicyUseCase;
 import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
+import io.slixes.archlens.usecase.WorkspacePathResolver;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;

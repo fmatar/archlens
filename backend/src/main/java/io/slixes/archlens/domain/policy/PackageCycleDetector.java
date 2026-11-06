@@ -26,13 +26,18 @@ public final class PackageCycleDetector {
       return List.of();
     }
 
-    // 1. Map class IDs to their package names
+    // 1. Map class and module IDs to their package names
     Map<String, String> classToPackage = new HashMap<>();
     for (ComponentNode comp : graph.components()) {
       if (comp.classes() != null) {
         for (ClassNode cls : comp.classes()) {
           if (cls.packageName() != null && !cls.packageName().isBlank()) {
             classToPackage.put(cls.id(), cls.packageName());
+            classToPackage.putIfAbsent(cls.packageName(), cls.packageName());
+            if (cls.name() != null && cls.id().endsWith("." + cls.name())) {
+              String modId = cls.id().substring(0, cls.id().length() - cls.name().length() - 1);
+              classToPackage.putIfAbsent(modId, cls.packageName());
+            }
           }
         }
       }

@@ -64,3 +64,33 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 
 - Adherence to WCAG 2.1 AA guidelines for high-contrast color coding (ensuring red violation arrows and emerald conforming badges have sufficient contrast on dark slate backgrounds).
 - Keyboard-navigable canvas modals, explicit ARIA roles (`role="dialog"`), and legible monospace typography.
+
+---
+
+## Hard Domain & System Invariants (`INV-XX`)
+
+- **INV-01**: Zero direct commits, merges, or pushes to `main` or `develop` (enforced by 4-Layer Git Guard & Stage 7 Merkle Gate Receipts).
+- **INV-02**: 100% of code changes require an active SDLC ticket session and Dual-Gate verification ($\ge 85\%$ diff coverage, $\ge 80\%$ mutation score).
+- **INV-03**: Core Domain entities (Ring 0) must remain pure with zero imports from outer Web, DB, or framework layers (Clean Architecture Dependency Rule).
+- **INV-04**: Polyglot AST Scanners must emit class/interface-level `DependencyEdge` endpoints when symbols or classes exist (falling back to module `ClassNode` IDs for function-only modules) and classify abstract/interface stereotypes (`INTERFACE`, `ABSTRACT`) accurately for Robert C. Martin metrics ($C_a, C_e, I, A, D$).
+- **INV-05**: All architectural or contract deviations from this constitution require a linked ADR (`docs/adr/ADR-00X.md`) synchronized with `PRODUCT.md` and `docs/DECISION_MAP.md`.
+
+---
+
+## Product Capabilities & Spec Traceability Matrix (`CAP-XX`)
+
+| Capability ID | Capability Title | Functional Spec | Depends On | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| CAP-01 | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `DELIVERED` |
+| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `DELIVERED` |
+| CAP-03 | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | CAP-01, CAP-02 | `DELIVERED` |
+| CAP-04 | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | CAP-01, CAP-02 | `DELIVERED` |
+
+---
+
+## Architectural Decision Log Index (`ADR-XXX`)
+<!-- ADR_INDEX_START -->
+| ADR ID | Title | Scope | Status | Ticket | Supersedes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+<!-- ADR_INDEX_END -->
+

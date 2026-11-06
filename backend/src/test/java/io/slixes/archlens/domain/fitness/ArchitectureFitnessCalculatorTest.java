@@ -277,4 +277,57 @@ class ArchitectureFitnessCalculatorTest {
     assertFalse(rule.passed());
     assertEquals(0.20, rule.actualValue(), 0.001);
   }
+
+  @Test
+  @DisplayName(
+      "Should resolve module-prefix edges for polyglot Ca/Ce coupling and Main Sequence distance")
+  void shouldResolveModulePrefixEdgesInMainSequenceDistance() {
+    ClassNode port =
+        createClass(
+            "app.domain.ports.OrderRepoPort",
+            "OrderRepoPort",
+            "app.domain",
+            ClassNode.Stereotype.INTERFACE,
+            0);
+    ClassNode service =
+        createClass(
+            "app.service.order_service.OrderService",
+            "OrderService",
+            "app.service",
+            ClassNode.Stereotype.CLASS,
+            1);
+
+    ComponentNode domainComp =
+        new ComponentNode("app.domain", "Domain", 0, null, null, List.of(), List.of(port));
+    ComponentNode serviceComp =
+        new ComponentNode("app.service", "Service", 1, null, null, List.of(), List.of(service));
+
+    // Edge uses module prefix ("app.service.order_service" -> "app.domain.ports")
+    DependencyEdge moduleEdge =
+        new DependencyEdge(
+            "app.service.order_service",
+            "app.domain.ports",
+            DependencyEdge.Kind.DEPENDENCY,
+            null,
+            false);
+
+    ArchitectureGraph graph =
+        new ArchitectureGraph(
+            "Polyglot Graph",
+            false,
+            null,
+            List.of(domainComp, serviceComp),
+            List.of(moduleEdge),
+            List.of(),
+            List.of(),
+            new ScreamingMetric(
+                1.0, 2, 0, 2, "PACKAGE_BY_FEATURE", List.of(), List.of(), List.of()));
+
+    FitnessEvaluation eval = calculator.evaluate(graph, defaultThresholds);
+    // Domain has A = 1.0, Ca = 1, Ce = 0 -> I = 0.0 -> D = |1 + 0 - 1| = 0.0
+    // Service has A = 0.0, Ca = 0, Ce = 1 -> I = 1.0 -> D = |0 + 1 - 1| = 0.0
+    // Max distance must be 0.0 (not 1.0 which would happen if Ca/Ce were 0!)
+    assertEquals(0.0, (double) eval.summaryMetrics().get("maxDistance"), 0.001);
+    assertTrue(eval.overallPassed());
+  }
 }

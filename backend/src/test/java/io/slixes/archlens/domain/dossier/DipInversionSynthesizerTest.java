@@ -624,4 +624,170 @@ class DipInversionSynthesizerTest {
     assertEquals(1, pNullRet.targetMethods().size());
     assertTrue(pNullRet.targetMethods().get(0).startsWith("void doSomething(int arg0);"));
   }
+
+  @Test
+  @DisplayName("Should synthesize idiomatic Python typing.Protocol port and pytest verification")
+  void shouldSynthesizePythonProtocolInversionPlan() {
+    ArchitecturePolicy pyPolicy =
+        new ArchitecturePolicy(
+            "Py Shop",
+            "src",
+            "app",
+            true,
+            List.of("domain", "adapters"),
+            List.of(List.of("domain"), List.of("adapters")),
+            List.of(),
+            List.of(),
+            List.of(),
+            "python");
+
+    MethodNode initMethod =
+        new MethodNode("__init__", List.of(), "None", false, 1, 1.0, 1.0, 1, 0, 0, 5);
+    MethodNode saveMethod =
+        new MethodNode("save", List.of("order: Order"), "bool", false, 1, 1.0, 1.0, 1, 0, 0, 10);
+
+    ClassNode caller =
+        new ClassNode(
+            "app.domain.order_service.OrderService",
+            "OrderService",
+            "app.domain",
+            "src/app/domain/order_service.py",
+            ClassNode.Stereotype.CLASS,
+            false,
+            0,
+            null,
+            1.0,
+            1,
+            1,
+            0,
+            0,
+            List.of(),
+            List.of());
+    ClassNode adapter =
+        new ClassNode(
+            "app.adapters.sql_repo.SqlOrderRepository",
+            "SqlOrderRepository",
+            "app.adapters",
+            "src/app/adapters/sql_repo.py",
+            ClassNode.Stereotype.CLASS,
+            false,
+            1,
+            null,
+            1.0,
+            1,
+            1,
+            0,
+            0,
+            List.of(),
+            List.of(initMethod, saveMethod));
+
+    ComponentNode c0 =
+        new ComponentNode("app.domain", "domain", 0, null, 1.0, List.of(), List.of(caller));
+    ComponentNode c1 =
+        new ComponentNode("app.adapters", "adapters", 1, null, 1.0, List.of(), List.of(adapter));
+    ArchitectureGraph pyGraph =
+        new ArchitectureGraph("Py", false, null, List.of(c0, c1), List.of(), List.of());
+
+    // Invoke using module prefixes ("app.domain.order_service" -> "app.adapters.sql_repo")
+    DipInversionPlan plan =
+        synthesizer.synthesize(
+            pyGraph, pyPolicy, "app.domain.order_service", "app.adapters.sql_repo");
+
+    assertEquals("SqlOrderRepositoryPort", plan.portName());
+    assertEquals("app.domain.ports", plan.portPackage());
+    assertEquals("src/app/domain/ports/sql_order_repository_port.py", plan.portFilePath());
+    assertTrue(plan.portInterfaceCode().contains("from typing import Protocol"));
+    assertTrue(plan.portInterfaceCode().contains("class SqlOrderRepositoryPort(Protocol):"));
+    assertTrue(plan.portInterfaceCode().contains("def save(self, order: Order) -> bool: ..."));
+    assertFalse(plan.portInterfaceCode().contains("__init__"));
+    assertTrue(
+        plan.adapterRefactorPreview()
+            .contains("class SqlOrderRepository(SqlOrderRepositoryPort):"));
+    assertTrue(
+        plan.callerRefactorPreview()
+            .contains("def __init__(self, sql_order_repository_port: SqlOrderRepositoryPort)"));
+    assertTrue(plan.surgicalPrompt().contains("```python"));
+    assertTrue(plan.surgicalPrompt().contains("pytest"));
+  }
+
+  @Test
+  @DisplayName("Should synthesize idiomatic TypeScript interface port and npm test verification")
+  void shouldSynthesizeTypeScriptInterfaceInversionPlan() {
+    ArchitecturePolicy tsPolicy =
+        new ArchitecturePolicy(
+            "TS Shop",
+            "src",
+            "",
+            true,
+            List.of("domain", "adapters"),
+            List.of(List.of("domain"), List.of("adapters")),
+            List.of(),
+            List.of(),
+            List.of(),
+            "typescript");
+
+    MethodNode findMethod =
+        new MethodNode(
+            "findById", List.of("id: string"), "Promise<Order>", false, 1, 1.0, 1.0, 1, 0, 0, 10);
+
+    ClassNode caller =
+        new ClassNode(
+            "domain.orderService.OrderService",
+            "OrderService",
+            "domain",
+            "src/domain/orderService.ts",
+            ClassNode.Stereotype.CLASS,
+            false,
+            0,
+            null,
+            1.0,
+            1,
+            1,
+            0,
+            0,
+            List.of(),
+            List.of());
+    ClassNode adapter =
+        new ClassNode(
+            "adapters.postgresRepo.PostgresRepo",
+            "PostgresRepo",
+            "adapters",
+            "src/adapters/postgresRepo.ts",
+            ClassNode.Stereotype.CLASS,
+            false,
+            1,
+            null,
+            1.0,
+            1,
+            1,
+            0,
+            0,
+            List.of(),
+            List.of(findMethod));
+
+    ComponentNode c0 =
+        new ComponentNode("domain", "domain", 0, null, 1.0, List.of(), List.of(caller));
+    ComponentNode c1 =
+        new ComponentNode("adapters", "adapters", 1, null, 1.0, List.of(), List.of(adapter));
+    ArchitectureGraph tsGraph =
+        new ArchitectureGraph("TS", false, null, List.of(c0, c1), List.of(), List.of());
+
+    DipInversionPlan plan =
+        synthesizer.synthesize(
+            tsGraph,
+            tsPolicy,
+            "domain.orderService.OrderService",
+            "adapters.postgresRepo.PostgresRepo");
+
+    assertEquals("PostgresRepoPort", plan.portName());
+    assertEquals("domain.ports", plan.portPackage());
+    assertEquals("src/domain/ports/PostgresRepoPort.ts", plan.portFilePath());
+    assertTrue(plan.portInterfaceCode().contains("export interface PostgresRepoPort {"));
+    assertTrue(plan.portInterfaceCode().contains("findById(id: string): Promise<Order>;"));
+    assertTrue(
+        plan.adapterRefactorPreview()
+            .contains("export class PostgresRepo implements PostgresRepoPort"));
+    assertTrue(plan.surgicalPrompt().contains("```typescript"));
+    assertTrue(plan.surgicalPrompt().contains("npm test"));
+  }
 }

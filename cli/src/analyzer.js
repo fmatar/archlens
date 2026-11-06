@@ -7,6 +7,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { extractFileImports } from './checker.js';
 
 export function detectProjectLanguage(projectRoot) {
   const root = path.resolve(projectRoot);
@@ -188,8 +189,39 @@ export function findCommonPackagePrefix(sourceDir) {
     return '';
   }
 
+  const architecturalKeywords = new Set([
+    'domain', 'model', 'models', 'entity', 'entities', 'core',
+    'application', 'app', 'usecase', 'usecases', 'service', 'services', 'port', 'ports',
+    'adapter', 'adapters', 'controller', 'controllers', 'gateway', 'gateways',
+    'presenter', 'presenters', 'repository', 'repositories', 'resource', 'resources', 'api', 'dto',
+    'infrastructure', 'infra', 'persistence', 'db', 'database', 'config', 'configuration', 'web', 'server'
+  ]);
+
   const javaFiles = findMatchingFiles(resolved, (f) => f.endsWith('.java') || f.endsWith('.kt'), 100);
   if (javaFiles.length === 0) {
+    // Python package prefix detection (e.g. src/my_package/__init__.py with nested layer subpackages)
+    try {
+      const ignored = new Set([
+        '__pycache__', 'venv', '.venv', 'node_modules', 'tests', 'test', 'dist', 'build', 'target', 'site-packages'
+      ]);
+      const dirs = fs
+        .readdirSync(resolved, { withFileTypes: true })
+        .filter(
+          (e) =>
+            e.isDirectory() &&
+            !e.name.startsWith('.') &&
+            !ignored.has(e.name) &&
+            !e.name.endsWith('.egg-info')
+        );
+      if (dirs.length === 1 && !architecturalKeywords.has(dirs[0].name.toLowerCase())) {
+        const pkgDir = path.join(resolved, dirs[0].name);
+        if (fs.existsSync(path.join(pkgDir, '__init__.py'))) {
+          return dirs[0].name;
+        }
+      }
+    } catch {
+      // Ignore unreadable directories
+    }
     return '';
   }
 
@@ -226,20 +258,25 @@ export function findCommonPackagePrefix(sourceDir) {
     }
   }
 
-  const architecturalKeywords = new Set([
-    'domain', 'model', 'models', 'entity', 'entities', 'core',
-    'application', 'app', 'usecase', 'usecases', 'service', 'services', 'port', 'ports',
-    'adapter', 'adapters', 'controller', 'controllers', 'gateway', 'gateways',
-    'presenter', 'presenters', 'repository', 'repositories', 'resource', 'resources', 'api', 'dto',
-    'infrastructure', 'infra', 'persistence', 'db', 'database', 'config', 'configuration', 'web', 'server'
-  ]);
-
   while (common.length > 0 && architecturalKeywords.has(common[common.length - 1].toLowerCase())) {
     common.pop();
   }
 
   return common.join('.');
 }
+
+const EXCLUDED_SUBPACKAGE_DIRS = new Set([
+  '__pycache__',
+  'venv',
+  '.venv',
+  'node_modules',
+  'tests',
+  'test',
+  'dist',
+  'build',
+  'target',
+  'site-packages'
+]);
 
 export function discoverSubpackages(sourceDir, prefix) {
   const resolved = path.resolve(sourceDir);
@@ -266,7 +303,13 @@ export function discoverSubpackages(sourceDir, prefix) {
 
   const entries = fs.readdirSync(searchPath, { withFileTypes: true });
   return entries
-    .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+    .filter(
+      (e) =>
+        e.isDirectory() &&
+        !e.name.startsWith('.') &&
+        !EXCLUDED_SUBPACKAGE_DIRS.has(e.name) &&
+        !e.name.endsWith('.egg-info')
+    )
     .map((e) => e.name)
     .sort();
 }
@@ -325,17 +368,97 @@ export function classifyLayers(subpackages) {
   return { order, levels };
 }
 
+export function parseImportLinterConfig(projectRoot) {
+  const root = path.resolve(projectRoot);
+  for (const filename of ['.importlinter', 'pyproject.toml']) {
+    const cfgPath = path.join(root, filename);
+    if (!fs.existsSync(cfgPath)) continue;
+    try {
+      const content = fs.readFileSync(cfgPath, 'utf8');
+      if (filename === 'pyproject.toml' && !content.includes('importlinter')) continue;
+
+      let rootPackage = null;
+      const rootPkgMatch = content.match(/root_packages?\s*=\s*(?:\[\s*)?['"]?([a-zA-Z0-9_]+)['"]?/);
+      if (rootPkgMatch && rootPkgMatch[1]) {
+        rootPackage = rootPkgMatch[1].trim();
+      }
+
+      let layers = null;
+      const tomlLayersMatch = content.match(/layers\s*=\s*\[([\s\S]*?)\]/);
+      if (tomlLayersMatch) {
+        const rawEntries = tomlLayersMatch[1]
+          .split(/[,\n]/)
+          .map((s) => s.replace(/#.*$/, '').replace(/['"]/g, '').trim())
+          .filter(Boolean);
+        if (rawEntries.length > 0) {
+          layers = rawEntries;
+        }
+      } else if (filename === '.importlinter') {
+        const iniLayersMatch = content.match(/layers\s*=\s*\n((?:[ \t]+[^\n]+\n?)+)/);
+        if (iniLayersMatch) {
+          layers = iniLayersMatch[1]
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean);
+        }
+      }
+
+      if (layers && layers.length > 0) {
+        // import-linter orders layers outermost (high-level) -> innermost (low-level).
+        // Reverse into Archlens concentric rings: Level 0 (innermost domain) -> outer rings.
+        const levels = [...layers].reverse().map((entry) =>
+          entry
+            .split(':')
+            .map((pkg) => {
+              let clean = pkg.trim();
+              if (rootPackage && clean.startsWith(`${rootPackage}.`)) {
+                clean = clean.slice(rootPackage.length + 1);
+              }
+              return clean;
+            })
+            .filter(Boolean)
+        );
+        const order = [];
+        for (const group of levels) {
+          for (const p of group) {
+            if (!order.includes(p)) order.push(p);
+          }
+        }
+        return { rootPackage, levels, order };
+      }
+
+      if (rootPackage) {
+        return { rootPackage, levels: null, order: null };
+      }
+    } catch {
+      // Ignore malformed config
+    }
+  }
+  return null;
+}
+
 export function generatePolicy(projectRoot, options = {}) {
   const root = path.resolve(projectRoot);
   const lang = options.lang || detectProjectLanguage(root);
   const srcRoot = options.src || detectSourceRoot(root, lang);
   const fullSrc = path.join(root, srcRoot);
 
-  const prefix = options.prefix !== undefined ? options.prefix : findCommonPackagePrefix(fullSrc);
+  const importLinter = lang === 'python' ? parseImportLinterConfig(root) : null;
+  const prefix =
+    options.prefix !== undefined
+      ? options.prefix
+      : importLinter?.rootPackage || findCommonPackagePrefix(fullSrc);
   const title = options.title || formatProjectTitle(path.basename(root));
 
-  const subpackages = discoverSubpackages(fullSrc, prefix);
-  const { order, levels } = classifyLayers(subpackages);
+  let order;
+  let levels;
+  if (importLinter?.levels && importLinter.levels.length > 0) {
+    levels = importLinter.levels;
+    order = importLinter.order;
+  } else {
+    const subpackages = discoverSubpackages(fullSrc, prefix);
+    ({ order, levels } = classifyLayers(subpackages));
+  }
 
   const foreignMap = {
     java: ['java.', 'jakarta.', 'org.springframework.', 'io.quarkus.'],
@@ -374,7 +497,22 @@ function findMatchingFiles(dir, predicate, limit = 50, collected = []) {
     return collected;
   }
 
-  const skipDirs = new Set(['.git', 'node_modules', 'target', 'build', '.gradle', '.idea', '.vscode']);
+  const skipDirs = new Set([
+    '.git',
+    'node_modules',
+    'target',
+    'build',
+    '.gradle',
+    '.idea',
+    '.vscode',
+    'venv',
+    '.venv',
+    '__pycache__',
+    'site-packages',
+    'tests',
+    'test',
+    'dist'
+  ]);
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -383,7 +521,7 @@ function findMatchingFiles(dir, predicate, limit = 50, collected = []) {
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!skipDirs.has(entry.name)) {
+        if (!entry.name.startsWith('.') && !skipDirs.has(entry.name) && !entry.name.endsWith('.egg-info')) {
           findMatchingFiles(fullPath, predicate, limit, collected);
         }
       } else if (entry.isFile() && predicate(entry.name)) {
@@ -460,7 +598,14 @@ export async function generateLlmPrompt(projectRoot, options = {}) {
   const fullSrc = path.join(root, policy.src || 'src');
   const sourceFiles = findMatchingFiles(
     fullSrc,
-    (f) => f.endsWith('.java') || f.endsWith('.kt') || f.endsWith('.ts') || f.endsWith('.js'),
+    (f) =>
+      (f.endsWith('.java') ||
+        f.endsWith('.kt') ||
+        f.endsWith('.ts') ||
+        f.endsWith('.js') ||
+        f.endsWith('.py')) &&
+      !f.startsWith('test_') &&
+      !f.endsWith('_test.py'),
     300
   );
 
@@ -470,7 +615,6 @@ export async function generateLlmPrompt(projectRoot, options = {}) {
   });
 
   const violations = [];
-  const importRegex = /import\s+([a-zA-Z0-9_.]+)/g;
 
   for (const file of sourceFiles) {
     try {
@@ -488,21 +632,25 @@ export async function generateLlmPrompt(projectRoot, options = {}) {
 
       if (fileLevel === null) continue;
 
-      let match;
-      while ((match = importRegex.exec(content)) !== null) {
-        const imported = match[1];
+      const fileImports = extractFileImports(content, file, fullSrc);
+      const seenLinePkgViolations = new Set();
+      for (const { imported, line } of fileImports) {
         const lowerImport = imported.toLowerCase();
         for (const [targetPkg, targetLvl] of pkgToLevel.entries()) {
           if (lowerImport.includes(targetPkg)) {
             if (fileLevel < targetLvl) {
-              const baseName = path.basename(file, path.extname(file));
-              violations.push({
-                fromFile: relPath,
-                fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
-                toImport: imported,
-                toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
-                portName: `${baseName}Port`
-              });
+              const dedupKey = `${line}:${targetPkg}`;
+              if (!seenLinePkgViolations.has(dedupKey)) {
+                seenLinePkgViolations.add(dedupKey);
+                const baseName = path.basename(file, path.extname(file));
+                violations.push({
+                  fromFile: relPath,
+                  fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
+                  toImport: imported,
+                  toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
+                  portName: `${baseName}Port`
+                });
+              }
             }
             break;
           }

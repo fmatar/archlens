@@ -8,9 +8,15 @@ import java.util.Map;
 public class DependencyRuleValidator implements PolicyValidator {
 
   private final Map<String, Integer> ranks;
+  private final Map<String, Integer> classRanks;
 
   public DependencyRuleValidator(Map<String, Integer> ranks) {
+    this(ranks, Map.of());
+  }
+
+  public DependencyRuleValidator(Map<String, Integer> ranks, Map<String, Integer> classRanks) {
     this.ranks = ranks;
+    this.classRanks = classRanks != null ? classRanks : Map.of();
   }
 
   public static DependencyRuleValidator fromLevels(List<List<String>> levels) {
@@ -30,6 +36,7 @@ public class DependencyRuleValidator implements PolicyValidator {
 
   public static DependencyRuleValidator fromProposal(Proposal proposal) {
     Map<String, Integer> rankMap = new HashMap<>();
+    Map<String, Integer> explicitClassRanks = new HashMap<>();
     if (proposal != null && proposal.layers() != null) {
       for (int rank = 0; rank < proposal.layers().size(); rank++) {
         Proposal.ProposalLayer layer = proposal.layers().get(rank);
@@ -44,19 +51,26 @@ public class DependencyRuleValidator implements PolicyValidator {
         if (layer.classes() != null) {
           for (String cls : layer.classes()) {
             rankMap.put(cls, rank);
+            explicitClassRanks.put(cls, rank);
           }
         }
       }
     }
-    return new DependencyRuleValidator(rankMap);
+    return new DependencyRuleValidator(rankMap, explicitClassRanks);
   }
 
   public Integer resolveRank(String id) {
     if (id == null || id.isBlank()) return null;
+    if (classRanks.containsKey(id)) {
+      return classRanks.get(id);
+    }
+    String[] parts = id.split("\\.");
+    if (parts.length > 0 && classRanks.containsKey(parts[parts.length - 1])) {
+      return classRanks.get(parts[parts.length - 1]);
+    }
     if (ranks.containsKey(id)) {
       return ranks.get(id);
     }
-    String[] parts = id.split("\\.");
     // Check longest prefix to root (package containment)
     for (int i = parts.length; i > 0; i--) {
       String sub = String.join(".", java.util.Arrays.copyOfRange(parts, 0, i));

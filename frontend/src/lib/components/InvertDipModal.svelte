@@ -205,7 +205,7 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <FileCode size={15} class="text-rose-400" />
-                  <span class="text-xs font-mono font-bold text-slate-200">{plan.portName}.java</span>
+                  <span class="text-xs font-mono font-bold text-slate-200">{plan.portFilePath ? plan.portFilePath.split('/').pop() : `${plan.portName}.java`}</span>
                   <span class="text-[10px] text-slate-500 font-mono">({plan.portFilePath})</span>
                 </div>
                 <button

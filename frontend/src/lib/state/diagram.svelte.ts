@@ -81,6 +81,7 @@ class DiagramState {
 
   togglePolicyEditor() {
     this.isPolicyEditorOpen = !this.isPolicyEditorOpen;
+    this.policySaveNotice = null;
   }
 
   activeComponentMetrics = $derived.by<Record<string, MartinMetrics>>(() => {
@@ -333,6 +334,41 @@ class DiagramState {
     const portName = toSimple.endsWith('Impl') ? toSimple.slice(0, -4) + 'Port' : toSimple + 'Port';
     const callerPkg = fromClass.includes('.') ? fromClass.slice(0, fromClass.lastIndexOf('.')) : 'domain';
     const portPackage = callerPkg + '.ports';
+    const lang = (this.policy?.lang || 'java').toLowerCase();
+
+    if (lang === 'python' || lang === 'py') {
+      const snakePort = portName.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+      return {
+        fromClass,
+        toClass,
+        fromLevel: 1,
+        toLevel: 2,
+        portName,
+        portPackage,
+        portFilePath: `src/${portPackage.replace(/\./g, '/')}/${snakePort}.py`,
+        portInterfaceCode: `from typing import Protocol\n\n\nclass ${portName}(Protocol):\n    """Clean Architecture Port Synthesized by Archlens."""\n    ...\n`,
+        adapterRefactorPreview: `from ${portPackage}.${snakePort} import ${portName}\n\n\nclass ${toSimple}(${portName}):\n    pass\n`,
+        callerRefactorPreview: `from ${portPackage}.${snakePort} import ${portName}\n\n\nclass ${fromSimple}:\n    def __init__(self, ${snakePort}: ${portName}) -> None:\n        self._${snakePort} = ${snakePort}\n`,
+        surgicalPrompt: `# Clean Architecture DIP Refactoring Directive\nInvert outward dependency from ${fromClass} to ${toClass} using ${portName} and verify with \`pytest\`.`
+      };
+    }
+
+    if (lang === 'typescript' || lang === 'ts' || lang === 'javascript' || lang === 'js') {
+      return {
+        fromClass,
+        toClass,
+        fromLevel: 1,
+        toLevel: 2,
+        portName,
+        portPackage,
+        portFilePath: `src/${portPackage.replace(/\./g, '/')}/${portName}.ts`,
+        portInterfaceCode: `/**\n * Clean Architecture Port Synthesized by Archlens.\n */\nexport interface ${portName} {\n  // Extracted port methods for ${fromSimple}\n}\n`,
+        adapterRefactorPreview: `import type { ${portName} } from '${portPackage.replace(/\./g, '/')}/${portName}';\n\nexport class ${toSimple} implements ${portName} {\n  // Concrete adapter implementation\n}\n`,
+        callerRefactorPreview: `import type { ${portName} } from '${portPackage.replace(/\./g, '/')}/${portName}';\n\nexport class ${fromSimple} {\n  constructor(private readonly ${portName.charAt(0).toLowerCase() + portName.slice(1)}: ${portName}) {}\n}\n`,
+        surgicalPrompt: `# Clean Architecture DIP Refactoring Directive\nInvert outward dependency from ${fromClass} to ${toClass} using ${portName} and verify with \`npm test\`.`
+      };
+    }
+
     const portFilePath = `src/main/java/${portPackage.replace(/\./g, '/')}/${portName}.java`;
 
     return {
@@ -542,7 +578,8 @@ class DiagramState {
     const layers: ProposalLayer[] = sim.simulatedGraph.components.map((c) => ({
       id: c.id,
       label: c.label,
-      packages: c.packages || [c.id]
+      packages: c.packages || [c.id],
+      classes: (c.classes || []).map((cls) => cls.id)
     }));
 
     const newProposal: Proposal = {
@@ -557,8 +594,25 @@ class DiagramState {
         this.policy.proposals = [];
       }
       this.policy.proposals.push(newProposal);
+      if (typeof fetch === 'function') {
+        const params = new URLSearchParams();
+        if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+        const url = params.toString() ? `/api/policy?${params.toString()}` : '/api/policy';
+        Promise.resolve(
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(this.policy)
+          })
+        ).catch(() => {});
+      }
     }
 
+    this.baseGraph = {
+      ...sim.simulatedGraph,
+      isProposal: true,
+      activeProposalId: proposalId
+    };
     this.activeProposalId = proposalId;
     this.exitSandbox();
     this.addTelemetryEvent(

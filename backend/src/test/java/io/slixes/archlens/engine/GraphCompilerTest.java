@@ -309,4 +309,90 @@ class GraphCompilerTest {
     assertTrue(ids.contains("pkg.Duplicate"));
     assertTrue(ids.contains("pkg.Duplicate-2"));
   }
+
+  @Test
+  void testProposalClassReassignmentOverridesPackageLayerAndResolvesViolation(@TempDir Path tempDir)
+      throws IOException {
+    GraphCompiler compiler = new GraphCompiler();
+    JavaAstScanner scanner = new JavaAstScanner();
+
+    try {
+      java.lang.reflect.Field field1 = JavaAstScanner.class.getDeclaredField("crapCalculator");
+      field1.setAccessible(true);
+      field1.set(scanner, new CrapScoreCalculator());
+
+      io.slixes.archlens.scanner.LanguageScannerRegistry registry =
+          new io.slixes.archlens.scanner.LanguageScannerRegistry(java.util.List.of(scanner));
+
+      java.lang.reflect.Field field2 = GraphCompiler.class.getDeclaredField("scannerRegistry");
+      field2.setAccessible(true);
+      field2.set(compiler, registry);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    Path archlensDir = tempDir.resolve(".archlens");
+    Files.createDirectories(archlensDir);
+
+    Path srcDomain = tempDir.resolve("src/com/myapp/domain");
+    Path srcService = tempDir.resolve("src/com/myapp/service");
+    Files.createDirectories(srcDomain);
+    Files.createDirectories(srcService);
+
+    Files.writeString(
+        srcDomain.resolve("Order.java"), "package com.myapp.domain; public class Order {}");
+    // MisplacedService is in package com.myapp.domain (L0) but imports Repo in com.myapp.service
+    // (L1)
+    Files.writeString(
+        srcDomain.resolve("MisplacedService.java"),
+        "package com.myapp.domain; import com.myapp.service.Repo; public class MisplacedService { Repo r; }");
+    Files.writeString(
+        srcService.resolve("Repo.java"), "package com.myapp.service; public class Repo {}");
+
+    // Proposal moves MisplacedService from domain (L0) to service (L1) via classes array
+    String policyJson =
+        """
+        {
+          "title": "Sandbox Proposal Test",
+          "src": "src",
+          "prefix": "com.myapp",
+          "hierarchical": true,
+          "levels": [["domain"], ["service"]],
+          "proposals": [
+            {
+              "id": "sandbox-1",
+              "name": "Move MisplacedService to Service Layer",
+              "layers": [
+                {"id": "domain", "label": "Domain", "packages": ["domain"], "classes": ["Order"]},
+                {"id": "service", "label": "Service", "packages": ["service"], "classes": ["Repo", "MisplacedService"]}
+              ],
+              "omit": []
+            }
+          ]
+        }
+        """;
+    Files.writeString(archlensDir.resolve("policy.json"), policyJson);
+
+    // Base graph has 1 outward violation (MisplacedService in L0 -> Repo in L1)
+    ArchitectureGraph baseGraph = compiler.compileGraph(tempDir.toString(), null);
+    assertEquals(1, baseGraph.edges().stream().filter(e -> e.isViolating()).count());
+
+    // Proposal graph moves MisplacedService to L1: not duplicated in domain, 0 violations
+    ArchitectureGraph propGraph = compiler.compileGraph(tempDir.toString(), "sandbox-1");
+    var domainComp =
+        propGraph.components().stream()
+            .filter(c -> c.id().equals("domain"))
+            .findFirst()
+            .orElseThrow();
+    var serviceComp =
+        propGraph.components().stream()
+            .filter(c -> c.id().equals("service"))
+            .findFirst()
+            .orElseThrow();
+
+    assertEquals(1, domainComp.classes().size());
+    assertEquals("Order", domainComp.classes().get(0).name());
+    assertEquals(2, serviceComp.classes().size());
+    assertEquals(0, propGraph.edges().stream().filter(e -> e.isViolating()).count());
+  }
 }

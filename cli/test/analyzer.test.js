@@ -167,3 +167,44 @@ test('formatProjectTitle formats hyphenated and underscored names nicely', () =>
   assert.equal(formatProjectTitle('my-cool_service'), 'My Cool Service');
   assert.equal(formatProjectTitle('archlens'), 'Archlens');
 });
+
+test('generatePolicy discovers Python src/<pkg> prefix and seeds from [tool.importlinter]', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-py-policy-test-'));
+  try {
+    const pkgDir = path.join(tmpDir, 'src', 'payments');
+    fs.mkdirSync(path.join(pkgDir, 'domain'), { recursive: true });
+    fs.mkdirSync(path.join(pkgDir, 'application'), { recursive: true });
+    fs.mkdirSync(path.join(pkgDir, 'adapters'), { recursive: true });
+    fs.writeFileSync(path.join(pkgDir, '__init__.py'), '', 'utf8');
+    fs.writeFileSync(
+      path.join(tmpDir, 'pyproject.toml'),
+      [
+        '[project]',
+        'name = "payments"',
+        '',
+        '[tool.importlinter]',
+        'root_package = "payments"',
+        '',
+        '[[tool.importlinter.contracts]]',
+        'name = "Clean Architecture"',
+        'type = "layers"',
+        'layers = [',
+        '    "adapters",',
+        '    "application",',
+        '    "domain",',
+        ']'
+      ].join('\n'),
+      'utf8'
+    );
+
+    const policy = generatePolicy(tmpDir);
+    assert.equal(policy.lang, 'python');
+    assert.equal(policy.src, 'src');
+    assert.equal(policy.prefix, 'payments');
+    assert.deepEqual(policy.levels, [['domain'], ['application'], ['adapters']]);
+    assert.deepEqual(policy.order, ['domain', 'application', 'adapters']);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+

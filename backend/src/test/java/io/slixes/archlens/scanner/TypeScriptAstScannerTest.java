@@ -89,7 +89,14 @@ class TypeScriptAstScannerTest {
                         && e.from().endsWith("OrderService")
                         && e.to().equals("OrderRepository")));
 
-    // Dependency edge
+    // Dependency edge (both class-level and module-level fallback)
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.kind() == DependencyEdge.Kind.DEPENDENCY
+                        && e.from().equals("services.orderService.OrderService")
+                        && e.to().equals("domain.order.Order")));
     assertTrue(
         result.edges().stream()
             .anyMatch(
@@ -97,6 +104,167 @@ class TypeScriptAstScannerTest {
                     e.kind() == DependencyEdge.Kind.DEPENDENCY
                         && e.from().equals("services.orderService")
                         && e.to().equals("domain.order")));
+  }
+
+  @Test
+  void testMultiLineImportsBarrelsTsConfigAndStereotypes(@TempDir Path tempDir) throws IOException {
+    Files.writeString(
+        tempDir.resolve("tsconfig.json"),
+        """
+        {
+          // JSON with comments
+          "compilerOptions": {
+            "baseUrl": ".",
+            "paths": {
+              "@domain/*": ["src/domain/*"],
+              "@infra/*": ["./src/infra/*"]
+            }
+          }
+        }
+        """);
+
+    Path src = tempDir.resolve("src");
+    Path domain = src.resolve("domain");
+    Path infra = src.resolve("infra");
+    Path services = src.resolve("services");
+    Files.createDirectories(domain);
+    Files.createDirectories(infra);
+    Files.createDirectories(services);
+
+    Files.writeString(
+        domain.resolve("order.ts"),
+        """
+        export enum OrderStatus {
+          PENDING,
+          PAID
+        }
+
+        export interface OrderRepository {
+          findById(id: string): Order;
+          save(order: Order, urgent: boolean): Promise<void>;
+        }
+
+        export abstract class BaseEntity {
+          abstract validate(): boolean;
+        }
+
+        export class Order extends BaseEntity {
+          validate(): boolean {
+            return true;
+          }
+        }
+        """);
+
+    // Barrel index.ts re-exporting symbols from ./order
+    Files.writeString(
+        domain.resolve("index.ts"),
+        """
+        export {
+          Order,
+          type OrderRepository,
+          OrderStatus
+        } from './order';
+        """);
+
+    Files.writeString(
+        infra.resolve("postgresClient.ts"),
+        """
+        export default class PostgresClient {
+          query(sql: string): Promise<string[]> {
+            return Promise.resolve([]);
+          }
+        }
+        export class SqlHelper {}
+        """);
+
+    Files.writeString(
+        services.resolve("checkoutService.ts"),
+        """
+        /*
+         * Fake comment import that must be ignored:
+         * import { Bad } from '@infra/fake';
+         */
+        import PostgresClient, {
+          SqlHelper as Helper
+        } from '@infra/postgresClient';
+        import {
+          Order,
+          type OrderRepository
+        } from '@domain/index';
+
+        export class CheckoutService {
+          async checkout(orderId: string): Promise<Order> {
+            const dyn = await import('@infra/postgresClient');
+            return new Order();
+          }
+        }
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "");
+
+    var repoNode =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderRepository"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE, repoNode.stereotype());
+    assertEquals(2, repoNode.methods().size());
+    var findById =
+        repoNode.methods().stream()
+            .filter(m -> m.name().equals("findById"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(List.of("id: string"), findById.args());
+    assertEquals("Order", findById.returnType());
+
+    var baseEntityNode =
+        result.classes().stream()
+            .filter(c -> c.name().equals("BaseEntity"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.ABSTRACT, baseEntityNode.stereotype());
+
+    var statusNode =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderStatus"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.ENUM, statusNode.stereotype());
+
+    // Multi-line combined import resolved via @infra/* tsconfig alias to specific classes
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("services.checkoutService.CheckoutService")
+                        && e.to().equals("infra.postgresClient.PostgresClient")));
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("services.checkoutService.CheckoutService")
+                        && e.to().equals("infra.postgresClient.SqlHelper")));
+
+    // Multi-line import through barrel @domain/index resolved to domain.order.Order &
+    // OrderRepository
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("services.checkoutService.CheckoutService")
+                        && e.to().equals("domain.order.Order")));
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("services.checkoutService.CheckoutService")
+                        && e.to().equals("domain.order.OrderRepository")));
+
+    // Commented fake import must not appear
+    assertFalse(result.edges().stream().anyMatch(e -> e.to().contains("fake")));
   }
 
   @Test

@@ -44,4 +44,23 @@ public record ClassNode(
         fields,
         methods);
   }
+
+  public ClassNode withLevel(Integer newLevel) {
+    return new ClassNode(
+        id,
+        name,
+        packageName,
+        filePath,
+        stereotype,
+        isForeign,
+        newLevel,
+        crap,
+        coverage,
+        cc,
+        killed,
+        survived,
+        uncovered,
+        fields,
+        methods);
+  }
 }

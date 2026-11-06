@@ -23,7 +23,6 @@
 
   let backdropEl: HTMLDivElement | null = $state(null);
   let dialogEl: HTMLDivElement | null = $state(null);
-  let isClosing = $state(false);
 
   // Filters & Selection
   let tierFilter = $state<number | 'ALL'>('ALL');
@@ -62,7 +61,7 @@
   );
 
   $effect(() => {
-    if (isOpen && backdropEl && dialogEl && !isClosing) {
+    if (isOpen && backdropEl && dialogEl) {
       const ctx = gsap.context(() => {
         gsap.fromTo(backdropEl, { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power2.out' });
         gsap.fromTo(
@@ -76,29 +75,16 @@
   });
 
   function handleClose() {
-    if (isClosing || !dialogEl || !backdropEl) {
-      diagramStore.closeMainSequence();
-      return;
+    selectedPoint = null;
+    hoveredPoint = null;
+    diagramStore.closeMainSequence();
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && isOpen) {
+      e.preventDefault();
+      handleClose();
     }
-    isClosing = true;
-    gsap.to(dialogEl, {
-      scale: 0.95,
-      y: 12,
-      opacity: 0,
-      duration: 0.2,
-      ease: 'power2.in'
-    });
-    gsap.to(backdropEl, {
-      opacity: 0,
-      duration: 0.2,
-      ease: 'power2.in',
-      onComplete: () => {
-        diagramStore.closeMainSequence();
-        isClosing = false;
-        selectedPoint = null;
-        hoveredPoint = null;
-      }
-    });
   }
 
   function getTierColor(level: number | null): string {
@@ -137,23 +123,26 @@
   }
 </script>
 
+<svelte:window onkeydown={handleKeydown} />
+
 {#if isOpen}
   <!-- Backdrop -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={backdropEl}
     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
     onclick={(e) => {
       if (e.target === backdropEl) handleClose();
     }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') handleClose();
-    }}
-    tabindex="-1"
-    role="presentation"
   >
     <!-- Dialog Window -->
     <div
       bind:this={dialogEl}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Robert C. Martin Main Sequence & Stability Quadrant"
+      tabindex="-1"
       class="relative w-full max-w-5xl max-h-[92vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-slate-950 overflow-hidden font-sans"
     >
       <!-- Header -->

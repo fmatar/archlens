@@ -200,6 +200,12 @@ public class ArchitectureFitnessCalculator {
         if (cls.packageName() != null) {
           compClassKeys.add(cls.packageName() + "." + cls.name());
         }
+        if (cls.name() != null
+            && cls.id() != null
+            && cls.id().endsWith("." + cls.name())
+            && cls.id().length() > cls.name().length() + 1) {
+          compClassKeys.add(cls.id().substring(0, cls.id().length() - cls.name().length() - 1));
+        }
         if (cls.stereotype() == ClassNode.Stereotype.INTERFACE
             || cls.stereotype() == ClassNode.Stereotype.ABSTRACT) {
           abstractCount++;

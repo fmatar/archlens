@@ -3,16 +3,20 @@
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
 [![Publish Docker Image & Release](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/release.yml)
 [![Java 25](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.org/)
-[![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.39-blue.svg)](https://quarkus.io/)
+[![Quarkus 3.x](https://img.shields.io/badge/Quarkus-3.40-blue.svg)](https://quarkus.io/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5-red.svg)](https://svelte.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Single--Container-2496ED.svg)](Dockerfile)
 [![Polyglot](https://img.shields.io/badge/Scanners-Java%20%7C%20Python%20%7C%20Rust%20%7C%20TS%20%7C%20Go%20%7C%20Clojure-emerald.svg)](#polyglot-language-support)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Roadmap](https://img.shields.io/badge/Roadmap-v1.0.0%20GA-purple.svg)](ROADMAP.md)
+[![Kanban](https://img.shields.io/badge/Kanban-Living%20Board-blueviolet.svg)](docs/KANBAN.md)
 
 > *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
 > — **Robert C. Martin (Uncle Bob)**
 
 An interactive real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and autonomous AI refactoring studio for modern software systems.
+
+*(Explore the [Product Roadmap](ROADMAP.md) & [Living Kanban Board](docs/KANBAN.md))*
 
 ![Archlens Clean Architecture Dynamic Workbench](media/archlens-canvas.png)  
 *(High Definition Video: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) &bull; Extended Tour: [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) &bull; Animated Preview: [`media/archlens-teaser.gif`](media/archlens-teaser.gif))*
@@ -58,11 +62,21 @@ When an architectural violation is identified or a new package layout is designe
 
 ---
 
-## 📦 Installation
+## 📦 Installation & AI Skill Setup
 
 Choose the installation method that fits your workflow:
 
-### Option A: Zero-Install Execution via `npx` (Recommended)
+### Option A: Open Skills Ecosystem via `npx skills` (Recommended for AI Agents)
+Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, equip any AI coding agent (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed) with Archlens governance protocols and companion tools:
+```bash
+# Add to all detected AI assistants:
+npx skills add fmatar/archlens
+
+# Or add to a specific assistant:
+npx skills add fmatar/archlens --agent claude-code
+```
+
+### Option B: Zero-Install Policy Scaffolder via `npx`
 Run directly without installing any global packages:
 ```bash
 # Production Stable Track
@@ -75,7 +89,7 @@ npx @fmatar/archlens-skill@dev
 npx github:fmatar/archlens
 ```
 
-### Option B: Global CLI Installation
+### Option C: Global CLI Installation
 Install the CLI globally on your workstation:
 ```bash
 npm install -g @fmatar/archlens-skill
@@ -84,13 +98,25 @@ npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
 
-### Option C: Docker Container (Standalone Server)
+### Option D: Docker Container (Standalone Server)
 Run the all-in-one container directly via Docker:
 ```bash
 # Mount your local workspace into /workspace:
 docker run -d --name archlens-server -p 8088:8088 \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:latest
+```
+
+### Option E: Official GitHub Action for CI/CD Quality Gates
+Enforce Clean Architecture rules, Uncle Bob ADP cycle detection, and Screaming Architecture in your GitHub Actions workflows with zero setup:
+```yaml
+- name: Archlens Clean Architecture Gate
+  uses: fmatar/archlens@v1
+  with:
+    max-violations: 0
+    detect-cycles: true
+    screaming-threshold: 0.70
+    fitness-threshold: 0.85
 ```
 
 ---
@@ -189,6 +215,24 @@ Press **`M`** to open the interactive **Main Sequence Scatter Plot**:
 
 ---
 
+### 5. Screaming Architecture (Uncle Bob Ch. 21) & Feature Clustering
+Does your codebase yell its business domain, or does it whisper delivery mechanics and frameworks?
+* **Screaming Architecture Score (SAS)**: Quantifies the ratio of business domain packages versus technical framework markers (`model`, `adapter`, `resource`, `service`).
+  $$\text{SAS} = \frac{\text{Domain Packages}}{\text{Total Packages}}$$
+* **Feature Clustering**: Automatically groups related domain entities into cohesive feature modules and computes projected SAS gains.
+* **1-Click Screaming Migration**: Proposes domain verticalization restructuring plans and dispatches them directly to the AI companion via the Sandbox.
+
+---
+
+### 6. Architectural Fitness Functions & Trend Tracking
+Enforce architectural invariants directly in CI/CD and throughout developer workflows:
+* **Zero Cyclic Dependencies**: Strict enforcement of the Acyclic Dependencies Principle (ADP).
+* **Maximum Outward Breaches**: Hard limits on outward concentric violations.
+* **Minimum SAS Threshold**: Enforces domain-first package organization.
+* **Fitness History & Release Snapshots**: Tracks architectural stability and quality trends across releases.
+
+---
+
 ## 🤖 Autonomous AI Companion Integration
 
 Archlens provides two complementary communication protocols for AI coding assistants:
@@ -262,12 +306,14 @@ npx @fmatar/archlens-skill --mcp
 | `⌘O` / `Ctrl+O` | **Project Switcher** | Open native folder browser to switch active repositories |
 | `V` | **Violation X-Ray** | Toggle isolation of illicit outward dependency violations in neon crimson |
 | `B` | **Edge Bundling** | Route connections along concentric Catmull-Rom spline corridors |
+| `D` | **Declutter Mode** | Cycle through canvas declutter filters (Arrows, Elements, Classes) |
 | `S` | **Sandbox "What-If"** | Enter or exit interactive architectural sandbox simulation |
 | `M` | **Main Sequence** | Toggle 2D Cartesian scatter plot of Abstractness ($A$) vs. Instability ($I$) |
 | `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Proposals** | Toggle between live architecture and saved structural proposals |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
+| `T` | **Telemetry Drawer** | Open real-time Agent Mailbox IPC telemetry and audit stream |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
 | `⌘K` / `/` | **Command Palette** | Quick search classes, packages, and trigger workbench actions |
 | `+` / `-` / `0` | **Zoom & Pan** | Zoom in, zoom out, or reset canvas viewport |
@@ -280,11 +326,11 @@ Archlens provides native AST scanners via a modular Service Provider Interface (
 
 | Language | Ecosystem & AST Engine | File Extensions | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Java 25** | JavaParser 3.26 | `.java` | Records, Sealed Types, Interfaces, Class Hierarchies, Inward Rules |
+| **Java 25** | JavaParser 3.28 | `.java` | Records, Sealed Types, Interfaces, Class Hierarchies, Inward Rules |
 | **Python** | Python AST Visitor | `.py` | Modules, Classes, Functions, Imports, Relative Imports |
-| **TypeScript / JS** | Babel AST / Regex Scanner | `.ts`, `.tsx`, `.js`, `.jsx` | Classes, Interfaces, Named Imports, ESM Re-exports |
+| **TypeScript / JS / Svelte** | Babel AST / Regex Scanner | `.ts`, `.tsx`, `.js`, `.jsx`, `.svelte`, `.svelte.ts` | Classes, Svelte 5 Components, Runes, Interfaces, Named Imports, ESM & Subpath Re-exports (`#lib/*`) |
 | **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths |
-| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions |
+| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions, Package-level Functions |
 | **Clojure** | EDN & Regex AST Scanner | `.clj`, `.cljs`, `.edn` | Namespaces (`ns`), `(:require ...)`, `def`, `defn`, Protocols |
 
 ---

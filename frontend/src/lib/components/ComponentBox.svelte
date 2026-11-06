@@ -62,14 +62,21 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <g
   data-component-id={component.id}
   transform={`translate(${x}, ${y})`}
-  class="group select-none"
+  class="group select-none focus:outline-none"
   opacity={isDimmed ? 0.35 : 1.0}
   filter={isDragging ? 'url(#node-drag-shadow)' : undefined}
+  role="button"
+  tabindex="0"
+  aria-label={`Package ${component.label}, Ring ${component.level ?? 'unknown'}, ${component.classes?.length ?? 0} classes`}
+  onkeydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      diagramStore.setFocusedNode(isFocused ? null : component.id);
+    }
+  }}
 >
   <!-- Spotlight Target Halo (Triggered by Command Palette) -->
   {#if hasHalo}
@@ -121,6 +128,7 @@
     />
 
     <!-- Component Header Banner (Clipped cleanly by card-clip for perfect top corners) -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <rect
       x="0"
       y="0"
@@ -148,6 +156,7 @@
   </g>
 
   <!-- Outer Box Card Surface (Drawn on top with pointer-events="all" for crisp, unbroken edges and dragging) -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <rect
     data-testid="component-card"
     width={width}
@@ -167,6 +176,7 @@
     }}
   />
 
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <text
     x="12"
     y="19"
@@ -291,10 +301,12 @@
         {#each displayedClasses as cls, i (cls.id + ':' + i)}
           {@const crapCol = getCrapColor(cls.crap.mu)}
           {@const covCol = getCoverageColor(cls.coverage)}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
           <g
             transform={`translate(0, ${i * 24})`}
-            class="cursor-pointer group/row"
+            class="cursor-pointer group/row focus:outline-none"
+            role="button"
+            tabindex="0"
+            aria-label={`Class ${cls.name}, CRAP score ${Math.round(cls.crap.mu)}, coverage ${Math.round(cls.coverage * 100)} percent`}
             onpointerdown={(e) => {
               // Stop drag so user can click to inspect class
               e.stopPropagation();
@@ -302,6 +314,13 @@
             onclick={(e) => {
               e.stopPropagation();
               diagramStore.selectedClass = cls;
+            }}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.stopPropagation();
+                e.preventDefault();
+                diagramStore.selectedClass = cls;
+              }
             }}
           >
             <rect
@@ -346,16 +365,23 @@
           <!-- Interactive Stepwise Pager & Inspector Link -->
           <g transform="translate(0, 120)">
             <!-- Prev Button -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <g
-              class="cursor-pointer group/prev"
+              class="cursor-pointer group/prev focus:outline-none"
+              role="button"
+              tabindex="0"
+              aria-label="Previous classes"
               onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 classPage = (classPage - 1 + totalPages) % totalPages;
               }}
-              aria-label="Previous classes"
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  classPage = (classPage - 1 + totalPages) % totalPages;
+                }
+              }}
             >
               <rect
                 x="0"
@@ -377,14 +403,22 @@
             </g>
 
             <!-- Page Range & Inspector Trigger -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <g
-              class="cursor-pointer group/pager"
+              class="cursor-pointer group/pager focus:outline-none"
+              role="button"
+              tabindex="0"
+              aria-label="View complete class inventory in Inspector"
               onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 diagramStore.setFocusedNode(component.id);
+              }}
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  diagramStore.setFocusedNode(component.id);
+                }
               }}
             >
               <title>Click to view complete class inventory in Inspector</title>
@@ -408,16 +442,23 @@
             </g>
 
             <!-- Next Button -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
             <g
-              class="cursor-pointer group/next"
+              class="cursor-pointer group/next focus:outline-none"
+              role="button"
+              tabindex="0"
+              aria-label="Next classes"
               onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => {
                 e.stopPropagation();
                 classPage = (classPage + 1) % totalPages;
               }}
-              aria-label="Next classes"
+              onkeydown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  classPage = (classPage + 1) % totalPages;
+                }
+              }}
             >
               <rect
                 x={width - 20 - 22}

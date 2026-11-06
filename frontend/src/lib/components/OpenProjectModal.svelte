@@ -15,7 +15,8 @@
     ChevronRight,
     CornerLeftUp,
     RefreshCw,
-    Info
+    Info,
+    Check
   } from '@lucide/svelte';
 
   interface Breadcrumb {
@@ -63,7 +64,7 @@
   let directories = $state<DirectoryEntry[]>([]);
   let folderFilter = $state('');
   let isContainer = $state(false);
-  let nativePickerSupported = $state(true);
+  let nativePickerSupported = $state(false);
   let isExplorerHighlighted = $state(false);
   let filterInputRef = $state<HTMLInputElement | null>(null);
   let wasOpen = false;
@@ -118,8 +119,8 @@
         if (data.nativePickerSupported !== undefined) {
           nativePickerSupported = data.nativePickerSupported;
         }
-        // Auto-populate inputPath when empty so user can immediately open active directory
-        if (!inputPath.trim() && data.currentPath) {
+        // Auto-populate inputPath with active directory path
+        if (data.currentPath) {
           inputPath = data.currentPath;
         }
       } else {
@@ -473,6 +474,28 @@
               {/each}
             </div>
 
+            <!-- Current Directory & Quick Selection Banner -->
+            {#if fsCurrentPath}
+              <div class="flex items-center justify-between px-2.5 py-1.5 rounded bg-slate-900 border border-slate-800 text-xs">
+                <div class="flex items-center gap-1.5 min-w-0 flex-1">
+                  <FolderOpen size={13} class="text-blue-400 shrink-0" />
+                  <span class="text-slate-400 text-[11px] shrink-0">Current:</span>
+                  <span class="font-mono text-slate-200 text-[11px] truncate" title={fsCurrentPath}>
+                    {fsCurrentPath}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onclick={() => handleOpen(fsCurrentPath)}
+                  class="ml-2 px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer shrink-0 shadow-sm"
+                  title={`Open current folder: ${fsCurrentPath}`}
+                >
+                  <Check size={12} />
+                  <span>Select Current Folder</span>
+                </button>
+              </div>
+            {/if}
+
             <!-- Filter Folders Search Input -->
             <div class="relative flex items-center">
               <Search size={12} class="absolute left-2.5 text-slate-500 pointer-events-none" />
@@ -543,7 +566,7 @@
                           handleOpen(dir.path);
                         }}
                         class="px-2 py-0.5 rounded bg-blue-600/20 hover:bg-blue-600 border border-blue-500/40 hover:border-transparent text-blue-300 hover:text-white text-[10px] font-semibold transition-colors cursor-pointer {dir.isProject ? 'opacity-90 hover:opacity-100' : 'opacity-0 group-hover:opacity-100'}"
-                        title={`Open ${dir.name}`}
+                        title={`Select & open ${dir.name}`}
                       >
                         Open
                       </button>

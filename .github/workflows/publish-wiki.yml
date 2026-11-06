@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   publish-wiki:
-    runs-on: ubuntu-latest
+    runs-on: local-archlens
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4

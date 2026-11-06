@@ -13,9 +13,23 @@ import { fileURLToPath } from 'node:url';
 import { ARCHLENS_TOOL_SCHEMAS } from './mcp-registry.js';
 import { ensureServerRunning, DEFAULT_SERVER_URL } from './docker-runner.js';
 import { generateLlmPrompt, generatePolicy } from './analyzer.js';
+import { checkArchitecture } from './checker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function getPackageVersion() {
+  try {
+    const pkgPath = path.resolve(__dirname, '..', 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      if (pkg.version) return pkg.version;
+    }
+  } catch {
+    // ignore
+  }
+  return '0.1.0-Beta-11';
+}
 
 export function getMcpToolsList() {
   return Object.values(ARCHLENS_TOOL_SCHEMAS).map((tool) => ({
@@ -203,6 +217,78 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     };
   }
 
+  if (toolName === 'synthesizeDipInversion') {
+    const sourceClass = args.sourceClass;
+    const targetClass = args.targetClass;
+    if (!sourceClass || !targetClass) {
+      throw new Error("Missing required arguments: 'sourceClass' and 'targetClass'");
+    }
+
+    if (isOnline) {
+      try {
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram/synthesize-dip`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceClass, targetClass, projectRoot })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online DIP synthesis error: ${err.message}.\n`);
+      }
+    }
+
+    const simpleTarget = targetClass.split('.').pop();
+    const portName = `${simpleTarget}Port`;
+    const blueprint = {
+      sourceClass,
+      targetClass,
+      portInterfaceName: portName,
+      prescription: `Extract interface ${portName} in the inner layer of ${sourceClass} and implement it in ${targetClass}.`,
+      offline: true
+    };
+    return { content: [{ type: 'text', text: JSON.stringify(blueprint, null, 2) }] };
+  }
+
+  if (toolName === 'evaluateFitness') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/fitness?${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online fitness fetch error: ${err.message}.\n`);
+      }
+    }
+
+    const checker = deps.checkArchitecture || checkArchitecture;
+    const checkResult = await checker(projectRoot, { detectCycles: true });
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              passed: checkResult.passed,
+              violationsCount: checkResult.violationsCount,
+              cyclesCount: checkResult.cyclesCount,
+              screaming: checkResult.screaming,
+              fitness: checkResult.fitness,
+              offline: true
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  }
+
   throw new Error(`Unknown tool: ${toolName}`);
 }
 
@@ -237,7 +323,7 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
         },
         serverInfo: {
           name: 'archlens-mcp-server',
-          version: options.version || '0.1.0-Beta-04'
+          version: options.version || getPackageVersion()
         }
       }
     };

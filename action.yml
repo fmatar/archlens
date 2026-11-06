@@ -1,0 +1,83 @@
+name: 'Archlens Clean Architecture Gate'
+description: 'Enforce Clean Architecture rules, Uncle Bob ADP cycle detection, and Screaming Architecture in GitHub Actions'
+author: 'Fady Matar'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'Path to target repository to audit'
+    required: false
+    default: '.'
+  max-violations:
+    description: 'Maximum allowable outward dependency violations'
+    required: false
+    default: '0'
+  detect-cycles:
+    description: 'Enforce Acyclic Dependencies Principle (ADP)'
+    required: false
+    default: 'true'
+  screaming-threshold:
+    description: 'Minimum Screaming Architecture Score (0.0 - 1.0)'
+    required: false
+    default: ''
+  fitness-threshold:
+    description: 'Minimum Architectural Fitness Index (0.0 - 1.0)'
+    required: false
+    default: ''
+  sarif-file:
+    description: 'Output path for generated SARIF 2.1.0 report'
+    required: false
+    default: 'archlens-results.sarif'
+  upload-sarif:
+    description: 'Whether to upload SARIF report to GitHub Code Scanning'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Run Archlens Architecture Gate
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_MAX_VIOLATIONS: ${{ inputs.max-violations }}
+        INPUT_DETECT_CYCLES: ${{ inputs.detect-cycles }}
+        INPUT_SCREAMING_THRESHOLD: ${{ inputs.screaming-threshold }}
+        INPUT_FITNESS_THRESHOLD: ${{ inputs.fitness-threshold }}
+        INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
+      run: |
+        ARGS="check -p \"$INPUT_PATH\" --max-violations \"$INPUT_MAX_VIOLATIONS\" --format sarif -O \"$INPUT_SARIF_FILE\""
+        if [ "$INPUT_DETECT_CYCLES" = "true" ]; then
+          ARGS="$ARGS --detect-cycles"
+        fi
+        if [ -n "$INPUT_SCREAMING_THRESHOLD" ]; then
+          ARGS="$ARGS --screaming-threshold \"$INPUT_SCREAMING_THRESHOLD\""
+        fi
+        if [ -n "$INPUT_FITNESS_THRESHOLD" ]; then
+          ARGS="$ARGS --fitness-threshold \"$INPUT_FITNESS_THRESHOLD\""
+        fi
+
+        echo "Executing: npx -y @fmatar/archlens-skill@latest $ARGS"
+        # Run Archlens CLI and capture exit status
+        npx -y @fmatar/archlens-skill@latest $ARGS || EXIT_CODE=$?
+        EXIT_CODE=${EXIT_CODE:-0}
+
+        echo "Archlens gate check completed with code: $EXIT_CODE"
+        if [ "$EXIT_CODE" -ne 0 ]; then
+          echo "::error title=Archlens Clean Architecture Gate Failed::Violations or dependency cycles exceeded threshold."
+          exit $EXIT_CODE
+        fi
+
+    - name: Upload SARIF report to GitHub Code Scanning
+      if: always() && inputs.upload-sarif == 'true' && hashFiles(inputs.sarif-file) != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: archlens-clean-architecture

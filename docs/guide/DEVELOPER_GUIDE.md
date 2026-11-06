@@ -184,14 +184,14 @@ If any verification test fails during an update, the engine immediately rolls ba
 Archlens uses a Service Provider Interface (SPI) design for language scanners. Follow this four-step recipe to add support for a new language (e.g. Swift, C#, Scala, Ruby):
 
 ### Step 1: Implement `LanguageScanner`
-Create `backend/src/main/java/com/design/umlviewer/scanner/<Language>AstScanner.java`:
+Create `backend/src/main/java/io/slixes/archlens/scanner/<Language>AstScanner.java`:
 
 ```java
-package com.design.umlviewer.scanner;
+package io.slixes.archlens.scanner;
 
-import com.design.umlviewer.domain.model.ComponentNode;
-import com.design.umlviewer.domain.model.DependencyEdge;
-import com.design.umlviewer.domain.policy.ArchitecturePolicy;
+import io.slixes.archlens.domain.model.ComponentNode;
+import io.slixes.archlens.domain.model.DependencyEdge;
+import io.slixes.archlens.domain.policy.ArchitecturePolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.File;
 import java.io.IOException;
@@ -224,7 +224,7 @@ public class SwiftAstScanner implements LanguageScanner {
 ```
 
 ### Step 2: Register in `LanguageScannerRegistry`
-Register the scanner inside `backend/src/main/java/com/design/umlviewer/scanner/LanguageScannerRegistry.java`:
+Register the scanner inside `backend/src/main/java/io/slixes/archlens/scanner/LanguageScannerRegistry.java`:
 
 ```java
 @Inject SwiftAstScanner swiftScanner;
@@ -245,7 +245,7 @@ void init() {
 Always traverse source files using `FileScannerUtil.findFiles(...)`. This automatically skips hidden folders (`.git`, `.archlens`), dependency directories (`node_modules`, `target`, `.build`), Unix sockets, and unreadable files.
 
 ### Step 4: Add Comprehensive Tests
-Create `backend/src/test/java/com/design/umlviewer/scanner/<Language>AstScannerTest.java`:
+Create `backend/src/test/java/io/slixes/archlens/scanner/<Language>AstScannerTest.java`:
 - Provide realistic source file fixtures in `@TempDir`.
 - Verify extracted components, inner layer classifications, and outward dependencies.
 - Ensure 100% test pass rate with meaningful domain assertions.
@@ -257,7 +257,7 @@ Create `backend/src/test/java/com/design/umlviewer/scanner/<Language>AstScannerT
 Archlens exposes native MCP capabilities directly from Quarkus using `quarkus-mcp-server-http`.
 
 ### Step 1: Add a Tool Method
-In `backend/src/main/java/com/design/umlviewer/mcp/ArchlensMcpService.java`, declare your tool using `@Tool` and `@ToolArg`:
+In `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java`, declare your tool using `@Tool` and `@ToolArg`:
 
 ```java
 @Tool(description = "Verify compliance of a specific component against Clean Architecture boundaries.")

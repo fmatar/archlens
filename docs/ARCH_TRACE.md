@@ -1,0 +1,11 @@
+# 🏛️ Architectural Traceability & Mutation Ledger
+
+This document maintains an immutable audit log of all architectural transformations, Mermaid component evolutions, and Clean Architecture layer boundary shifts.
+
+> **Hard Framework Invariant**: Direct pushes to `develop` or `main` are forbidden. All architectural modifications must occur on isolated branches (`feature/*` or `arch/*`) and be recorded here before Pull Request merge.
+
+| Timestamp | Ticket | Branch | Commit | Reason | Diagrams / Components Changed | Archlens Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 2026-10-26 14:23 | [##5887](https://github.com/org/repo/issues/#5887) | `feature/issue-#5887-polyglot-ast-dip-sandbox` | `32284ee` | Polyglot AST Class-First Edges, Surgical DIP Inverter, and Sandbox Proposal Persistence | Files modified (160) | ✅ PASSED |
+| 2026-11-06 22:08 | [#6262](https://github.com/org/repo/issues/6262) | `feature/issue-#6262-quarkus-mcp-and-sdlc-enhancement` | `f2c3f3b` | Decouple ArchlensMcpService from DiagramResource onto Ring 1 UseCases, expand Quarkus MCP 2.0 to 10 @Tools + 3 @Resources + 2 @Prompts with @RunOnVirtualThread, add @PreDestroy shutdown to ProjectFileWatcher, calibrate Main Sequence abstractness for Java records to Grade A (92% AFI), and sync CLI MCP parity. | `.agent/skills/sdlc-flow/SKILL.md` (Nodes: +5/-0, Edges: +4/-0) | ✅ PASSED |
+| 2026-11-06 22:09 | [#6262](https://github.com/org/repo/issues/6262) | `feature/issue-#6262-quarkus-mcp-and-sdlc-enhancement` | `f2c3f3b` | Decouple ArchlensMcpService from DiagramResource onto Ring 1 UseCases, expand Quarkus MCP 2.0 to 10 @Tools + 3 @Resources + 2 @Prompts with @RunOnVirtualThread, add @PreDestroy shutdown to ProjectFileWatcher, calibrate Main Sequence abstractness for Java records to Grade A (92% AFI), and sync CLI MCP parity. | `wiki/Codebase-Map.md` (Nodes: +16/-0, Edges: +45/-0)<br/>`.agent/skills/sdlc-flow/SKILL.md` (Nodes: +5/-0, Edges: +4/-0) | ✅ PASSED |

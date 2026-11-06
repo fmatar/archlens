@@ -232,6 +232,11 @@
         <input
           bind:this={inputEl}
           bind:value={searchQuery}
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-controls="palette-results-list"
+          aria-activedescendant={filteredItems.length > 0 ? `palette-item-${selectedIndex}` : undefined}
+          aria-autocomplete="list"
           placeholder="Type to search classes, components, or actions..."
           class="bg-transparent text-slate-100 placeholder-slate-500 text-sm w-full outline-none font-mono"
         />
@@ -241,15 +246,29 @@
       </div>
 
       <!-- Results List -->
-      <div class="max-h-80 overflow-y-auto p-2 space-y-1">
+      <div
+        id="palette-results-list"
+        role="listbox"
+        aria-label="Commands and Architecture Items"
+        class="max-h-80 overflow-y-auto p-2 space-y-1"
+      >
         {#each filteredItems as item, idx}
           {@const isSelected = idx === selectedIndex}
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
+            id={`palette-item-${idx}`}
+            role="option"
+            aria-selected={isSelected}
+            tabindex="-1"
             onclick={() => {
               item.action();
               closePalette();
+            }}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                item.action();
+                closePalette();
+              }
             }}
             onmouseenter={() => selectedIndex = idx}
             class="px-3 py-2.5 rounded-lg flex items-center justify-between cursor-pointer transition-colors"

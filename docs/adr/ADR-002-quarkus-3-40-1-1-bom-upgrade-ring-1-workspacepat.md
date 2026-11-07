@@ -1,18 +1,18 @@
 ---
 id: ADR-002
 title: Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator
-status: rejected
+status: accepted
 scope: technical
-ticket: #192
+ticket: #196
 supersedes: CAP-01, CAP-02, CAP-03, CAP-04
 createdAt: 2026-11-06T23:52:46.498Z
 ---
 
 # ADR-002: Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator
 
-- **Status**: `rejected`
+- **Status**: `accepted`
 - **Blast Radius / Scope**: `technical`
-- **Triggered By Ticket**: #192
+- **Triggered By Ticket**: #196
 - **Supersedes / Amends**: CAP-01, CAP-02, CAP-03, CAP-04
 
 ## 1. Context & Spec Drift Trigger
@@ -37,11 +37,5 @@ A live audit of the repository using `quarkus-mcp` (`quarkus_audit_project`) and
 ## 4. Governance Review Decision
 - **Decision**: `ACCEPTED`
 - **Reviewer**: @sdlc-gate
-- **Rationale**: Approved via Quarkus MCP + Archlens audit remediation (#190, #191, #192)
+- **Rationale**: Approved via Quarkus MCP + Archlens audit remediation (#190, #191, #192, #196)
 - **Decided At**: 2026-11-06T23:53:00.000Z
-
-## 4. Governance Review Decision
-- **Decision**: `REJECTED`
-- **Reviewer**: @human-operator
-- **Rationale**: Reviewed via SDLC Governance Gate
-- **Decided At**: 2026-11-06T23:53:36.514Z

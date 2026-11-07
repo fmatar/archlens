@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-11-06
+
+### Added
+- **Declarative Bean Validation on Quarkus MCP 2.0 Tool & Prompt Arguments** ([#192](https://github.com/fmatar/archlens/issues/192), [#193](https://github.com/fmatar/archlens/pull/193), `ADR-002`):
+  - Added `io.quarkiverse.mcp:quarkus-mcp-server-hibernate-validator` to `backend/pom.xml` and enforced `@NotBlank` Jakarta Bean Validation constraints across mandatory `@ToolArg` (`getSnapshot.snapshotId`, `synthesizeDipInversion.fromClass`, `synthesizeDipInversion.toClass`, `syncDipAdr.sourceClass`, `syncDipAdr.targetClass`, `syncDipAdr.interfacePortName`) and `@PromptArg` (`dipRefactoringPrompt.fromClass`, `dipRefactoringPrompt.toClass`) parameters in `ArchlensMcpService`.
+- **Composite Toolchain Action & Daemonless Multi-Arch Jib Container Builds** ([#185](https://github.com/fmatar/archlens/pull/185), [#187](https://github.com/fmatar/archlens/pull/187), [#188](https://github.com/fmatar/archlens/pull/188), [#189](https://github.com/fmatar/archlens/pull/189)):
+  - Created `.github/actions/setup-toolchain/action.yml` provisioning `node-version: 'lts/*'` (`actions/setup-node@v7`), Java 25 (`actions/setup-java@v5`), and dynamic latest Apache Maven resolution from Maven Central's Fastly CDN with atomic `mktemp -d` + `mv -n` extraction across concurrent runner jobs.
+  - Migrated multi-arch (`linux/amd64,linux/arm64`) OCI image builds in `backend/pom.xml`, `release.yml`, and `dev-release.yml` to daemonless Quarkus Jib (`io.quarkus:quarkus-container-image-jib`) with `quarkus.container-image.labels.*` metadata.
+- **Unified Version Synchronization (`scripts/set-version.js`)** ([#196](https://github.com/fmatar/archlens/issues/196)):
+  - Extended `scripts/set-version.js` to synchronize `backend/src/main/resources/application.properties`, `VersionResource.java`, and `cli/src/mcp-server.js` alongside all Maven `pom.xml` and npm `package.json` manifests.
+
+### Changed
+- **Quarkus Platform BOM 3.40.1.1 Upgrade** ([#190](https://github.com/fmatar/archlens/issues/190), [#193](https://github.com/fmatar/archlens/pull/193)):
+  - Upgraded `quarkus.platform.version` from `3.40.1` to `3.40.1.1` in root `pom.xml`.
+- **Ring 1 `WorkspacePathResolver` Binding & Zero Deprecation Warnings** ([#191](https://github.com/fmatar/archlens/issues/191), [#193](https://github.com/fmatar/archlens/pull/193)):
+  - Bound `DiagramResource` and `MailboxResource` directly to Ring 1 `io.slixes.archlens.usecase.WorkspacePathResolver` and eliminated all `javac` deprecation warnings across the backend build.
+
 ## [0.1.0-Beta-12] - 2026-11-06
 
 ### Added

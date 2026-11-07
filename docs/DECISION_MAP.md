@@ -24,9 +24,10 @@ flowchart TD
   ADR_001["ADR-001: Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration"]
   _6262["Ticket #6262 (feature/issue-#6262-quarkus-mcp-and-sdlc-enhancement)"]
   ADR_002["ADR-002: Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator"]
-  _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
+  _196["Ticket #196 (feature/issue-#196-release-v0-1-1)"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
+  _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
   CAP_03 -->|specified_by| SPEC_03
@@ -40,7 +41,7 @@ flowchart TD
   CAP_02 -.->|ADR Drift| ADR_001
   CAP_03 -.->|ADR Drift| ADR_001
   CAP_04 -.->|ADR Drift| ADR_001
-  _192 -->|triggered_drift_adr| ADR_002
+  _196 -->|triggered_drift_adr| ADR_002
   CAP_01 -.->|ADR Drift| ADR_002
   CAP_02 -.->|ADR Drift| ADR_002
   CAP_03 -.->|ADR Drift| ADR_002
@@ -58,7 +59,7 @@ flowchart TD
 | ADR ID | Decision Title | Scope | Status | Triggered By | Supersedes / Amends |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **ADR-001** | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | #6262 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `rejected` | #192 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | #196 | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 

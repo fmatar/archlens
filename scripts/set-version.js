@@ -72,6 +72,30 @@ const files = [
         /("name":\s*"@fmatar\/archlens",[\s\S]*?"version":\s*")[^"]+(")/,
         `$1${newVersion}$2`
       )
+  },
+  {
+    path: path.join(rootDir, 'backend/src/main/resources/application.properties'),
+    update: (content) =>
+      content.replace(
+        /(quarkus\.mcp\.server\.server-info\.version=\$\{quarkus\.application\.version:)[^}]+(\})/,
+        `$1${newVersion}$2`
+      )
+  },
+  {
+    path: path.join(rootDir, 'backend/src/main/java/io/slixes/archlens/delivery/rest/VersionResource.java'),
+    update: (content) =>
+      content.replace(
+        /(private static final String DEFAULT_VERSION = ")[^"]+(";)/,
+        `$1${newVersion}$2`
+      )
+  },
+  {
+    path: path.join(rootDir, 'cli/src/mcp-server.js'),
+    update: (content) =>
+      content.replace(
+        /(function getPackageVersion\(\)[\s\S]*?return ')[^']+(';)/,
+        `$1${newVersion}$2`
+      )
   }
 ];
 

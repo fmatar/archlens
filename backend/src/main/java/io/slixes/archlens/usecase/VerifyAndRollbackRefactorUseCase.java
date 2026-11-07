@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Use case orchestrating transactional refactoring verification and workspace source/policy
@@ -67,12 +68,35 @@ public class VerifyAndRollbackRefactorUseCase {
   @Inject ArchitectureCompiler compiler;
   @Inject MailboxGateway mailboxGateway;
 
+  private TestSuiteExecutor testExecutor = this::executeDetectedTestSuite;
+
+  /** Outcome of running the target project's automated test suite during refactor verification. */
+  public record TestExecutionOutcome(
+      boolean executed, boolean passed, String command, int exitCode, String outputSummary) {}
+
+  /** Strategy interface for executing a project's test suite during closed-loop verification. */
+  @FunctionalInterface
+  public interface TestSuiteExecutor {
+    TestExecutionOutcome runTests(String projectRoot);
+  }
+
   public VerifyAndRollbackRefactorUseCase() {}
 
   public VerifyAndRollbackRefactorUseCase(
       ArchitectureCompiler compiler, MailboxGateway mailboxGateway) {
     this.compiler = compiler;
     this.mailboxGateway = mailboxGateway;
+  }
+
+  public VerifyAndRollbackRefactorUseCase(
+      ArchitectureCompiler compiler,
+      MailboxGateway mailboxGateway,
+      TestSuiteExecutor testExecutor) {
+    this.compiler = compiler;
+    this.mailboxGateway = mailboxGateway;
+    if (testExecutor != null) {
+      this.testExecutor = testExecutor;
+    }
   }
 
   /**
@@ -116,7 +140,7 @@ public class VerifyAndRollbackRefactorUseCase {
    */
   public RefactorVerificationResult verifyRefactoring(
       String projectRoot, int baselineViolations, String snapshotId) {
-    return verifyRefactoring(projectRoot, baselineViolations, -1, snapshotId);
+    return verifyRefactoring(projectRoot, baselineViolations, -1, snapshotId, false);
   }
 
   /**
@@ -125,6 +149,20 @@ public class VerifyAndRollbackRefactorUseCase {
    */
   public RefactorVerificationResult verifyRefactoring(
       String projectRoot, int baselineViolations, int baselineCycles, String snapshotId) {
+    return verifyRefactoring(projectRoot, baselineViolations, baselineCycles, snapshotId, false);
+  }
+
+  /**
+   * Verifies that an executed refactoring operation reduced or maintained outward violations, did
+   * not introduce new ADP package dependency cycles, and optionally passes the project's automated
+   * test suite before acknowledging completion in `.archlens/to-viewer.json`.
+   */
+  public RefactorVerificationResult verifyRefactoring(
+      String projectRoot,
+      int baselineViolations,
+      int baselineCycles,
+      String snapshotId,
+      boolean runTests) {
     ArchitectureGraph currentGraph;
     try {
       currentGraph = compiler.compileGraph(projectRoot, null);
@@ -169,10 +207,118 @@ public class VerifyAndRollbackRefactorUseCase {
       return cycleFailure;
     }
 
+    if (runTests && testExecutor != null) {
+      TestExecutionOutcome testOutcome = testExecutor.runTests(projectRoot);
+      if (testOutcome.executed() && !testOutcome.passed()) {
+        RefactorVerificationResult testFailure =
+            RefactorVerificationResult.ofFailure(
+                baselineViolations,
+                currentViolations,
+                "Project test suite failed ("
+                    + testOutcome.command()
+                    + ", exit code "
+                    + testOutcome.exitCode()
+                    + "): "
+                    + testOutcome.outputSummary(),
+                snapshotId);
+        recordVerificationTelemetry(projectRoot, testFailure);
+        return testFailure;
+      }
+      if (testOutcome.executed() && testOutcome.passed()) {
+        int delta = baselineViolations - currentViolations;
+        RefactorVerificationResult verifiedWithTests =
+            new RefactorVerificationResult(
+                true,
+                baselineViolations,
+                currentViolations,
+                delta,
+                "Refactoring verified: violations reduced by "
+                    + delta
+                    + " (test suite passed: "
+                    + testOutcome.command()
+                    + ")",
+                snapshotId != null && !snapshotId.isBlank(),
+                snapshotId);
+        recordVerificationTelemetry(projectRoot, verifiedWithTests);
+        return verifiedWithTests;
+      }
+    }
+
     RefactorVerificationResult success =
         RefactorVerificationResult.ofSuccess(baselineViolations, currentViolations, snapshotId);
     recordVerificationTelemetry(projectRoot, success);
     return success;
+  }
+
+  /**
+   * Detects the appropriate test runner command for a target project root across Maven, Gradle,
+   * npm, Cargo, Go, and Python.
+   */
+  public List<String> detectTestCommand(Path rootPath) {
+    if (rootPath == null || !Files.exists(rootPath)) {
+      return List.of();
+    }
+    if (Files.exists(rootPath.resolve("pom.xml"))) {
+      Path mvnw = rootPath.resolve("mvnw");
+      if (Files.exists(mvnw) && Files.isExecutable(mvnw)) {
+        return List.of("./mvnw", "-B", "-ntp", "test");
+      }
+      return List.of("mvn", "-B", "-ntp", "test");
+    }
+    if (Files.exists(rootPath.resolve("build.gradle"))
+        || Files.exists(rootPath.resolve("build.gradle.kts"))) {
+      Path gradlew = rootPath.resolve("gradlew");
+      if (Files.exists(gradlew) && Files.isExecutable(gradlew)) {
+        return List.of("./gradlew", "test");
+      }
+      return List.of("gradle", "test");
+    }
+    if (Files.exists(rootPath.resolve("Cargo.toml"))) {
+      return List.of("cargo", "test");
+    }
+    if (Files.exists(rootPath.resolve("go.mod"))) {
+      return List.of("go", "test", "./...");
+    }
+    if (Files.exists(rootPath.resolve("pyproject.toml"))
+        || Files.exists(rootPath.resolve("pytest.ini"))
+        || Files.exists(rootPath.resolve("setup.py"))) {
+      return List.of("pytest");
+    }
+    if (Files.exists(rootPath.resolve("package.json"))) {
+      return List.of("npm", "test");
+    }
+    return List.of();
+  }
+
+  private TestExecutionOutcome executeDetectedTestSuite(String projectRoot) {
+    File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    Path rootPath = root.toPath().toAbsolutePath().normalize();
+    List<String> cmd = detectTestCommand(rootPath);
+    if (cmd.isEmpty()) {
+      return new TestExecutionOutcome(false, true, "none", 0, "No test runner manifest detected");
+    }
+    String cmdLabel = String.join(" ", cmd);
+    try {
+      ProcessBuilder pb = new ProcessBuilder(cmd);
+      pb.directory(rootPath.toFile());
+      pb.redirectErrorStream(true);
+      Process proc = pb.start();
+      byte[] outputBytes = proc.getInputStream().readAllBytes();
+      boolean finished = proc.waitFor(120, TimeUnit.SECONDS);
+      if (!finished) {
+        proc.destroyForcibly();
+        return new TestExecutionOutcome(
+            true, false, cmdLabel, -1, "Test execution timed out after 120s");
+      }
+      int exitCode = proc.exitValue();
+      String rawOut = new String(outputBytes, StandardCharsets.UTF_8).trim();
+      String summary =
+          rawOut.length() > 240 ? "..." + rawOut.substring(rawOut.length() - 240) : rawOut;
+      return new TestExecutionOutcome(true, exitCode == 0, cmdLabel, exitCode, summary);
+    } catch (Exception e) {
+      return new TestExecutionOutcome(
+          true, false, cmdLabel, -1, "Failed to invoke test runner: " + e.getMessage());
+    }
   }
 
   private void recordVerificationTelemetry(

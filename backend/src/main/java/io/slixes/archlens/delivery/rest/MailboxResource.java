@@ -103,8 +103,13 @@ public class MailboxResource {
             ? n.intValue()
             : -1;
     String snapshotId = (String) request.getOrDefault("snapshotId", "");
+    boolean runTests = Boolean.TRUE.equals(request.get("runTests"));
     return verifyAndRollbackUseCase.verifyRefactoring(
-        WorkspacePathResolver.normalizeRoot(projectRoot), baseline, baselineCycles, snapshotId);
+        WorkspacePathResolver.normalizeRoot(projectRoot),
+        baseline,
+        baselineCycles,
+        snapshotId,
+        runTests);
   }
 
   @POST

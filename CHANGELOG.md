@@ -10,10 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Closed-Loop Refactor Verification, Transactional Source/Policy Snapshot Rollback & Human Architectural Intent Directives** (`#1097`):
+- **Closed-Loop Refactor Verification, Transactional Source/Policy Snapshot Rollback & Human Architectural Intent Directives** (`#1097`, `#1662`):
   - Upgraded `VerifyAndRollbackRefactorUseCase` to capture full source-tree snapshots (`.archlens/snapshots/<snapshotId>/files/` + `manifest.txt`) alongside `.archlens/policy.json` on `INVERT_DEPENDENCY` and `APPLY_PROPOSAL`, restoring modified source files and deleting newly created agent files on `POST /api/mailbox/rollback`.
-  - Enhanced `POST /api/mailbox/verify` (`verifyRefactoring`) to verify both outward layer violations (`currentViolations <= baselineViolations`) and Uncle Bob's Acyclic Dependencies Principle (`currentCycles <= baselineCycles`), recording a `VERIFY_COMPLETE` event in `.archlens/to-viewer.json`.
-  - Added 1-click **`Verify Refactor`**, **`Record ADR`**, and **`Revert Snapshot`** controls and live verification status badges (`Verified (Δ -N)` / `Verification Failed`) to `AgentDrawer.svelte`.
+  - Enhanced `POST /api/mailbox/verify` (`verifyRefactoring`) to verify outward layer violations (`currentViolations <= baselineViolations`), Uncle Bob's Acyclic Dependencies Principle (`currentCycles <= baselineCycles`), and optional polyglot test-suite execution (`runTests: true` auto-detecting `mvn test`, `gradle test`, `npm test`, `pytest`, `go test ./...`, and `cargo test`), recording a `VERIFY_COMPLETE` event in `.archlens/to-viewer.json`.
+  - Added 1-click **`Verify Refactor`** (with **`+ Tests`** toggle), **`Record ADR`**, and **`Revert Snapshot`** controls and live verification status badges (`Verified (Δ -N)` / `Verification Failed`) to `AgentDrawer.svelte`.
   - Added optional **`Architectural Intent Note`** inputs in `InvertDipModal.svelte` and `SandboxToolbar.svelte`, embedding `architecturalIntent` directly into `.archlens/to-agent.json` payloads and ADR rationale (`POST /api/mailbox/sync-adr`).
 - **Polyglot `sdlc-wiki` AST Engine, Full CLI/Backend MCP Parity & Documentation Synchronization** (`#8253`):
   - Upgraded `.agent/scripts/lib/wiki-sync.mjs` to discover and inspect Java (`backend/src/main/java`), Svelte 5 / TypeScript (`frontend/src`), and CLI (`cli/`) modules alongside `.agent/scripts/`, enforcing strict path validation and mapping 115/115 source modules across Rings 0–3 in `wiki/Codebase-Map.md`.

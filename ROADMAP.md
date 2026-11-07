@@ -1,96 +1,112 @@
-# 🗺️ Archlens Product Roadmap (v0.1.1 $\to$ v1.0.0 GA)
+# 🗺️ Archlens Product Roadmap (`v0.1.1` $\to$ `v1.0.0 GA`)
 
-An engineering roadmap outlining the strategic milestones, technical deliverables, and architectural criteria required to advance **Archlens (Dynamic Clean Architecture Workbench)** from **v0.1.1** to an enterprise-grade **v1.0.0 General Availability (GA)** release.
+An engineering and product roadmap defining the chronological Semantic Versioning (SemVer) releases, strategic themes, capability traceability (`CAP-XX` / `ADR-XXX`), and acceptance criteria advancing **Archlens (Dynamic Clean Architecture Workbench)** from its shipped **`v0.1.1`** baseline through **`v0.1.2`** and **`v0.2.0`** to **`v1.0.0 General Availability (GA)`**.
 
 ---
 
-## 🧭 Milestone Architecture
+## 🧭 Chronological Release Architecture
 
 ```mermaid
 flowchart LR
-    M1["Milestone 1 (v0.1.0-Beta-09)<br/><b>AST Depth & Precision</b><br/>Monorepos, Cross-Lang, Polyglot Dialects"]
-    M2["Milestone 2 (v1.0.0-RC.1)<br/><b>Closed-Loop Agent Autonomy</b><br/>2-Way Verification & Guardrails"]
-    M3["Milestone 3 (v1.0.0-RC.2)<br/><b>CI/CD & Enterprise Governance</b><br/>GitHub Actions, ArchFitness Gates, SARIF"]
-    M4["Milestone 4 (v1.0.0 GA)<br/><b>Production Hardening & Ecosystem</b><br/>skills.sh, Performance 100k LoC, Native Binaries"]
+    M1["<b>Milestone 1 — v0.1.1 (Shipped ✅)</b><br/>CI/CD Gates, MCP 2.0 & Governance<br/><i>Action, SARIF, Fitness, 10 MCP Tools</i>"]
+    M2["<b>Milestone 2 — v0.1.2 (Current ⚡)</b><br/>Closed-Loop Agent Autonomy<br/><i>Snapshots, Verify, Rollback & Intent</i>"]
+    M3["<b>Milestone 3 — v0.2.0 (Next Minor 🎯)</b><br/>Enterprise Monorepo & Cross-Lang AST<br/><i>Gradle/Cargo/Nx & UI-to-API Tracing</i>"]
+    M4["<b>Milestone 4 — v1.0.0 GA (Release 🚀)</b><br/>Production Scale & Ecosystem<br/><i>100k LoC WebGL, Native Binaries & Showcase</i>"]
 
     M1 --> M2 --> M3 --> M4
 ```
 
 ---
 
-## 🎯 Milestones & Traceability
+## 📊 Release Progression & Product Value Matrix
 
-### [Milestone 1: AST Depth & Polyglot Scalability (v0.1.0-Beta-09)](https://github.com/fmatar/archlens/milestone/1)
-*Focus: Ensuring AST parsing never breaks on complex enterprise architectures, monorepos, and hybrid language setups.*
-
-- **Linked Epic**: [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163)
-- **Key Deliverables**:
-  1. **Enterprise Monorepo & Multi-Module Scanners**:
-     - [x] Deep nested Maven multi-module discovery (`discoverMavenModuleSourceDirs`) and `tsconfig.json` / `jsconfig.json` path alias & barrel `index.ts` re-export resolution (`CAP-02`).
-     - [x] Cross-project boundary detection: distinguishing internal intra-repository imports vs external 3rd-party dependencies.
-     - [ ] Gradle subproject (`settings.gradle`), Nx/Turborepo workspace, and Cargo workspace (`[workspace]`) multi-module aggregation.
-  2. **Cross-Language Boundary Tracing**:
-     - [ ] Bridge frontend API client calls (Svelte 5 / TS `fetch` / `axios`) to backend entrypoints (Quarkus REST / SSE / FastAPI) within a unified cross-language graph.
-  3. **AST Parser Resiliency & Fault Tolerance**:
-     - [x] Graceful partial AST degradation: per-file exception isolation in `JavaAstScanner` (`ParserConfiguration.LanguageLevel.JAVA_25`), `TypeScriptAstScanner`, `PythonAstScanner` (`CAP-01`), `GoAstScanner`, `RustAstScanner`, and `ClojureAstScanner`.
-     - [x] Modern Java 25 syntax idioms (records, sealed classes, pattern matching) and Svelte 5 runes (`$state`, `$derived`, `$props`).
-     - [ ] Go 1.23 iterator idioms (`iter.Seq`) and Python 3.12 `type` statement aliases.
+| Release Target | Milestone Theme | Primary Persona & Outcome | Linked Epic & Specs | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **`v0.1.1`** *(Shipped)* | **Milestone 1: CI/CD Quality Gates, MCP 2.0 & Team Governance** | **DevOps & AI Pair Programmers**: Enforce Clean Architecture in GitHub Actions with inline SARIF annotations and 10-tool local/HTTP MCP parity. | [#165](https://github.com/fmatar/archlens/issues/165), [#200](https://github.com/fmatar/archlens/issues/200), `ADR-001`–`ADR-003` | **100% Complete** ✅ |
+| **`v0.1.2`** *(Current)* | **Milestone 2: Closed-Loop Agent Autonomy & Guardrails** | **Software Architects**: Dispatch DIP/Sandbox refactorings with human intent notes, verify violation/cycle deltas + test suites in 1 click, and atomically revert bad agent edits. | [#164](https://github.com/fmatar/archlens/issues/164), `#1097`, `#1662`, `CAP-04` | **100% Complete** ✅ |
+| **`v0.2.0`** *(Next Minor)* | **Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability** | **Platform & Polyglot Teams**: Analyze multi-module Gradle, Cargo, and Nx/Turborepo workspaces and trace frontend `fetch()` calls directly to backend REST endpoints. | [#163](https://github.com/fmatar/archlens/issues/163), `CAP-01`, `CAP-02`, `CAP-03` | **60% Complete** 🎯 |
+| **`v1.0.0 GA`** | **Milestone 4: Production Hardening, 100k LoC Virtualization & Ecosystem** | **Enterprise & Open-Source Community**: Zero-install native binaries, 60fps canvas rendering on 100k+ LoC codebases, and an interactive `archlens.io` showcase. | [#166](https://github.com/fmatar/archlens/issues/166) | **65% Complete** 🚀 |
 
 ---
 
-### [Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v1.0.0-RC.1)](https://github.com/fmatar/archlens/milestone/2)
-*Focus: Elevating AI agent collaboration from one-off command dispatching into a bulletproof, verifiable pair-architect workflow.*
+## 🎯 Milestones, Deliverables & Exit Criteria
 
-- **Linked Epic**: [#164 Epic: Transactional Worktree Rollbacks & Automated Mailbox Refactoring Verification](https://github.com/fmatar/archlens/issues/164)
-- **Key Deliverables**:
-  1. **Transactional "What-If" Rollback & Source/Policy Snapshot Isolation**:
-     - [x] Interactive What-If Sandbox (`simulateMode`) on the Svelte 5 canvas with live client-side violation delta (`simulatedViolationsDelta`) and Main Sequence metric recalculation (`CAP-04`).
-     - [x] Transactional pre-refactor source-tree and policy snapshots (`.archlens/snapshots/<snapshotId>/files/` + `manifest.txt` + `policy.json`) automatically captured on `INVERT_DEPENDENCY` and `APPLY_PROPOSAL`.
-     - [x] 1-click **`Revert Snapshot`** UI button in `AgentDrawer.svelte` (`POST /api/mailbox/rollback`) restoring modified source files, deleting newly created agent port files, and restoring `.archlens/policy.json`.
-  2. **Automated Verification Gate (`VERIFY_REFACTOR`)**:
-     - [x] Closed-loop AST outward violation and ADP cycle verification (`POST /api/mailbox/verify` via `VerifyAndRollbackRefactorUseCase`) confirming `currentViolations <= baselineViolations` and `currentCycles <= baselineCycles`, with a 1-click **`Verify Refactor`** UI button in `AgentDrawer.svelte` and `VERIFY_COMPLETE` telemetry in `.archlens/to-viewer.json`.
-     - [ ] Automated backend test-suite execution inside `VerifyAndRollbackRefactorUseCase` before acknowledging completion in `.archlens/to-viewer.json`.
-  3. **Dual-Agent Architectural Intent & Human Directives**:
-     - [x] Optional `reason` rationale supported in `POST /api/mailbox/sync-adr` (`syncDipAdr` MCP tool) and a 1-click **`Record ADR`** UI button in `AgentDrawer.svelte`.
-     - [x] Attach human architectural intent notes (`architecturalIntent` via `InvertDipModal.svelte` and `SandboxToolbar.svelte`) directly from the canvas UI into `.archlens/to-agent.json` payloads.
+### 1. [Milestone 1: CI/CD Quality Gates, MCP 2.0 & Team Governance (`v0.1.1` — Shipped ✅)](https://github.com/fmatar/archlens/milestone/3)
+*Focus: Shifting Archlens from a local developer studio into an enforceable CI/CD and multi-agent MCP standard.*
 
----
-
-### [Milestone 3: CI/CD Quality Gates & Team Governance (v1.0.0-RC.2)](https://github.com/fmatar/archlens/milestone/3)
-*Focus: Shifting Archlens from a local developer studio into an enforceable team standard.*
-
-- **Linked Epic**: [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165)
-- **Key Deliverables**:
+- **Linked Epics & Issues**: [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165), [#200 Multi-Agent Local MCP Setup & 10-Tool Registry Parity](https://github.com/fmatar/archlens/issues/200)
+- **Deliverables**:
   1. **Archlens Headless GitHub Action (`fmatar/archlens@v1`)**:
      - [x] Official composite GitHub Action ([`action.yml`](action.yml)) executing headless architectural audits (`npx @fmatar/archlens-skill check`) in CI workflows.
      - [x] Enforces Uncle Bob's ADP (`--detect-cycles`), maximum outward breach limits (`--max-violations`), minimum Screaming Architecture Score (`--screaming-threshold`), and Composite Architecture Fitness Index (`--fitness-threshold`).
-  2. **First-Class Pull Request Annotations (SARIF / GitHub Checks)**:
+  2. **First-Class Pull Request Annotations (SARIF v2.1.0)**:
      - [x] SARIF v2.1.0 report generation (`--format sarif -O archlens-results.sarif`) with automatic upload via `github/codeql-action/upload-sarif@v3` for inline PR annotations (`ARCH001`–`ARCH004`).
-  3. **Automated Architecture Decision Records (ADR) Sync**:
-     - [x] Automated generation and indexing of numbered ADR markdown files in `docs/adr/` (`SyncArchitecturalDecisionUseCase`, `POST /api/mailbox/sync-adr`, and `syncDipAdr` MCP tool).
-  4. **Historical Architecture Fitness Timelines**:
-     - [x] Git release/tag comparator (`SnapshotResource`, `CompareSnapshotUseCase`, `GET /api/snapshots`) and continuous Architecture Fitness Index (`FitnessEvaluator`, `.archlens/fitness-history.json`, and `FitnessModal.svelte`).
+  3. **Quarkus MCP 2.0 & Multi-Agent Stdio Parity (`ADR-001`–`ADR-003`)**:
+     - [x] Full 10-tool (`inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`, `synthesizeDipInversion`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`), 3-resource (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`), and 2-prompt (`architectural-review`, `dip-refactoring-guide`) parity across Quarkus HTTP/SSE (`/mcp`, `/mcp/sse`) and CLI Stdio (`cli/src/mcp-server.js`).
+  4. **Living ADR Sync & Historical Architecture Fitness Timelines**:
+     - [x] Automated generation and indexing of numbered ADR markdown files in `docs/adr/` (`SyncAdrUseCase`, `POST /api/mailbox/sync-adr`, and `syncDipAdr` MCP tool).
+     - [x] Git release/tag comparator (`SnapshotResource`, `ManageSnapshotsUseCase`, `GET /api/snapshots`) and continuous Architecture Fitness Index (`ArchitectureFitnessCalculator`, `.archlens/fitness-history.json`, and `FitnessModal.svelte`).
+- **Exit Criteria**: Shipped and verified in `v0.1.0-Beta-09` through `v0.1.1`.
 
 ---
 
-### [Milestone 4: Production Hardening, Distribution & Ecosystem (v1.0.0 GA)](https://github.com/fmatar/archlens/milestone/4)
-*Focus: Community distribution, extreme performance, zero friction, and comprehensive documentation.*
+### 2. [Milestone 2: Closed-Loop Agent Autonomy & Guardrails (`v0.1.2` — Current ⚡)](https://github.com/fmatar/archlens/milestone/2)
+*Focus: Elevating AI agent collaboration from one-off command dispatching into a verifiable, transactional pair-architect loop.*
+
+- **Linked Epic & Issues**: [#164 Epic: Transactional Worktree Rollbacks & Automated Mailbox Refactoring Verification](https://github.com/fmatar/archlens/issues/164), `#1097`
+- **Deliverables**:
+  1. **Transactional "What-If" Rollback & Source/Policy Snapshot Isolation (`CAP-04`, `#1097`)**:
+     - [x] Interactive What-If Sandbox (`simulateMode`) on the Svelte 5 canvas with live client-side violation delta (`simulatedViolationsDelta`) and Main Sequence metric recalculation (`CAP-04`).
+     - [x] Transactional pre-refactor source-tree and policy snapshots (`.archlens/snapshots/<snapshotId>/files/` + `manifest.txt` + `policy.json`) automatically captured on `INVERT_DEPENDENCY` and `APPLY_PROPOSAL`.
+     - [x] 1-click **`Revert Snapshot`** UI button in `AgentDrawer.svelte` (`POST /api/mailbox/rollback`) restoring modified source files, deleting newly created agent port files, and restoring `.archlens/policy.json`.
+  2. **Automated Verification Gate (`VERIFY_REFACTOR`, `#1097`, `#1662`)**:
+     - [x] Closed-loop AST outward violation and ADP cycle verification (`POST /api/mailbox/verify` via `VerifyAndRollbackRefactorUseCase`) confirming `currentViolations <= baselineViolations` and `currentCycles <= baselineCycles`, with a 1-click **`Verify Refactor`** UI button in `AgentDrawer.svelte` and `VERIFY_COMPLETE` telemetry in `.archlens/to-viewer.json`.
+     - [x] Polyglot automated build/test-suite execution (`mvn test`, `gradle test`, `npm test`, `pytest`, `go test ./...`, `cargo test`) inside `VerifyAndRollbackRefactorUseCase` (`runTests: true` via the **`+ Tests`** toggle in `AgentDrawer.svelte`) before acknowledging completion in `.archlens/to-viewer.json`.
+  3. **Dual-Agent Architectural Intent & Human Directives (`#1097`)**:
+     - [x] Optional `reason` rationale supported in `POST /api/mailbox/sync-adr` (`syncDipAdr` MCP tool) and a 1-click **`Record ADR`** UI button in `AgentDrawer.svelte`.
+     - [x] Attach human architectural intent notes (`architecturalIntent` via `InvertDipModal.svelte` and `SandboxToolbar.svelte`) directly from the canvas UI into `.archlens/to-agent.json` payloads.
+- **Exit Criteria for `v0.1.2`**: Zero outward violations, zero ADP cycles, transactional source + policy rollback verified by unit tests, and optional test-runner gate completed.
+
+---
+
+### 3. [Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability (`v0.2.0` — Next Minor 🎯)](https://github.com/fmatar/archlens/milestone/1)
+*Focus: Ensuring AST parsing scales seamlessly across polyglot enterprise monorepos, multi-build workspaces, and full-stack UI-to-API boundaries.*
+
+- **Linked Epic & Specs**: [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163), `CAP-01`, `CAP-02`, `CAP-03`
+- **Deliverables**:
+  1. **Enterprise Monorepo & Multi-Module Scanners**:
+     - [x] Deep nested Maven multi-module discovery (`discoverMavenModuleSourceDirs`) and `tsconfig.json` / `jsconfig.json` path alias & barrel `index.ts` re-export resolution (`CAP-02`).
+     - [x] Cross-project boundary detection: distinguishing internal intra-repository imports vs external 3rd-party dependencies.
+     - [ ] Gradle subproject (`settings.gradle` / `settings.gradle.kts`), Nx/Turborepo/pnpm workspace (`pnpm-workspace.yaml` / `package.json` `workspaces`), and Cargo workspace (`[workspace]`) multi-module aggregation.
+  2. **Cross-Language Boundary Tracing**:
+     - [ ] Bridge frontend API client calls (Svelte 5 / TS `fetch` / `axios`) to backend entrypoints (Quarkus REST `@Path` / SSE / FastAPI) within a unified cross-language dependency graph.
+  3. **AST Parser Resiliency & Polyglot Dialect Parity (`CAP-01`, `CAP-03`)**:
+     - [x] Graceful partial AST degradation: per-file exception isolation in `JavaAstScanner` (`ParserConfiguration.LanguageLevel.JAVA_25`), `TypeScriptAstScanner`, `PythonAstScanner` (`CAP-01`), `GoAstScanner`, `RustAstScanner`, and `ClojureAstScanner`.
+     - [x] Modern Java 25 syntax idioms (records, sealed classes, pattern matching), Svelte 5 runes (`$state`, `$derived`, `$props`), and polyglot DIP port synthesis (`DipInversionSynthesizer` for Java, Python, TypeScript, Go, and Rust — `CAP-03`).
+     - [ ] Go 1.23 iterator idioms (`iter.Seq`) and Python 3.12 `type` statement aliases.
+- **Exit Criteria for `v0.2.0`**: Multi-module Gradle/Cargo/pnpm workspace auto-discovery and cross-language REST boundary linking verified with fixture integration tests.
+
+---
+
+### 4. [Milestone 4: Production Hardening, Distribution & Ecosystem (`v1.0.0 GA` 🚀)](https://github.com/fmatar/archlens/milestone/4)
+*Focus: Community distribution, 100k+ LoC performance virtualization, native binaries, and an interactive public showcase.*
 
 - **Linked Epic**: [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166)
-- **Key Deliverables**:
+- **Deliverables**:
   1. **Ecosystem & Distribution**:
      - [x] Official multi-agent skill (`skills/archlens/SKILL.md`) for **[skills.sh](https://skills.sh)** (`npx skills add fmatar/archlens`) and zero-install CLI (`npx @fmatar/archlens-skill`).
-     - [x] Multi-arch Docker images (`linux/amd64`, `linux/arm64`) published to GHCR (`ghcr.io/fmatar/archlens`) with CycloneDX SBOM attestation, plus `-Pnative` Maven profile for GraalVM builds.
-     - [ ] Automated cross-platform GraalVM native binary builds attached to GitHub Releases and Docker Hub image publishing.
+     - [x] Daemonless Jib multi-arch OCI container images (`linux/amd64`, `linux/arm64`) published to GHCR (`ghcr.io/fmatar/archlens`) with CycloneDX SBOM attestation, plus `-Pnative` Maven profile for GraalVM builds.
+     - [ ] Automated cross-platform GraalVM native binary builds (`macos-arm64`, `linux-amd64`, `windows-amd64`) attached to GitHub Releases and Docker Hub image publishing.
   2. **Canvas Performance & Virtualization at Scale (100k+ LoC)**:
      - [x] Viewport frustum culling (`visiblePackages` with `400px` margin), 6-class card pagination, and semantic Level-of-Detail (LoD) zooming (`compactLod` automatically collapsing class details below `0.55` zoom).
      - [ ] Hybrid HTML5 Canvas / WebGL rendering fallback for extreme graphs exceeding 500+ simultaneously visible classes.
   3. **Public Interactive Showcase**:
      - [ ] Live web-based playground on `archlens.io` pre-loaded with open-source reference architectures (Spring PetClinic, Quarkus Quickstarts, RealWorld spec).
+- **Exit Criteria for `v1.0.0 GA`**: 60fps canvas rendering at 500+ visible classes, automated native binary release artifacts, and live `archlens.io` reference playground.
 
 ---
 
-## 📊 Living Kanban Board
+## 📋 Living Kanban Board
 
 Track real-time progress across all epics, milestones, and issues in [`docs/KANBAN.md`](docs/KANBAN.md).
 To synchronize the board at any time:

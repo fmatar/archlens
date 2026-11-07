@@ -143,6 +143,6 @@ In addition to `.archlens/to-agent.json` and `.archlens/to-viewer.json`, `Mailbo
 
 | Endpoint | Use Case Class | Behavior |
 | :--- | :--- | :--- |
-| `POST /api/mailbox/verify` | `VerifyAndRollbackRefactorUseCase` | Re-compiles the live AST graph, verifies `currentViolations <= baselineViolations` and `currentCycles <= baselineCycles`, and records a `VERIFY_COMPLETE` telemetry event in `.archlens/to-viewer.json`. |
+| `POST /api/mailbox/verify` | `VerifyAndRollbackRefactorUseCase` | Re-compiles the live AST graph, verifies `currentViolations <= baselineViolations` and `currentCycles <= baselineCycles`, optionally runs the project's automated test suite (`runTests: true` across Maven, Gradle, npm, Cargo, Go, and pytest), and records a `VERIFY_COMPLETE` telemetry event in `.archlens/to-viewer.json`. |
 | `POST /api/mailbox/rollback` | `VerifyAndRollbackRefactorUseCase` | Restores `.archlens/policy.json`, restores all snapshotted source files from `.archlens/snapshots/<snapshotId>/files/`, deletes any newly created source files not present in `manifest.txt`, and triggers an SSE `reload`. |
 | `POST /api/mailbox/sync-adr` | `SyncAdrUseCase` | Mints a numbered Markdown ADR in `docs/adr/` (also exposed via the `syncDipAdr` MCP tool and the **`Record ADR`** UI button). |

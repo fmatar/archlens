@@ -76,13 +76,26 @@
         {/if}
 
         <button
+          type="button"
+          aria-pressed={diagramStore.runTestsOnVerify}
+          onclick={(e) => {
+            e.stopPropagation();
+            diagramStore.runTestsOnVerify = !diagramStore.runTestsOnVerify;
+          }}
+          class="flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] cursor-pointer select-none transition-colors {diagramStore.runTestsOnVerify ? 'bg-sky-900/50 border-sky-500/70 text-sky-200' : 'bg-slate-800/80 border-slate-700/60 text-slate-400 hover:text-slate-200'}"
+          title="Also execute the project's unit test suite (mvn test / npm test / pytest / go test / cargo test) during verification"
+        >
+          <span>{diagramStore.runTestsOnVerify ? '✓ + Tests' : '+ Tests'}</span>
+        </button>
+
+        <button
           onclick={(e) => {
             e.stopPropagation();
             diagramStore.verifyLastRefactoring();
           }}
           disabled={diagramStore.isVerifyingRefactor}
           class="flex items-center gap-1 px-2 py-0.5 rounded bg-sky-900/40 hover:bg-sky-800/60 border border-sky-700/50 text-sky-300 text-[10px] transition-colors cursor-pointer disabled:opacity-50"
-          title="Re-compile AST and verify violation delta & zero ADP cycle regressions"
+          title="Re-compile AST and verify violation delta, zero ADP cycle regressions, and optional test suite"
         >
           <ShieldCheck size={11} />
           <span>{diagramStore.isVerifyingRefactor ? 'Verifying...' : 'Verify Refactor'}</span>

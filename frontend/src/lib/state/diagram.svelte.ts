@@ -315,6 +315,7 @@ class DiagramState {
   isSyncingAdr = $state<boolean>(false);
   lastSyncedAdrFilename = $state<string | null>(null);
   humanIntentNote = $state<string>('');
+  runTestsOnVerify = $state<boolean>(false);
 
   async openDipInversion(fromClass: string, toClass: string) {
     this.clearEdgeTooltip();
@@ -743,13 +744,14 @@ class DiagramState {
     }
   }
 
-  async verifyLastRefactoring(): Promise<RefactorVerificationResult | null> {
+  async verifyLastRefactoring(runTestsOverride?: boolean): Promise<RefactorVerificationResult | null> {
     if (!this.lastRefactorSnapshotId) return null;
     this.isVerifyingRefactor = true;
     try {
       const params = new URLSearchParams();
       if (this.projectRoot) params.set('projectRoot', this.projectRoot);
       const url = params.toString() ? `/api/mailbox/verify?${params.toString()}` : '/api/mailbox/verify';
+      const runTests = runTestsOverride ?? this.runTestsOnVerify;
 
       const res = await fetch(url, {
         method: 'POST',
@@ -757,7 +759,8 @@ class DiagramState {
         body: JSON.stringify({
           baselineViolations: this.lastRefactorBaselineViolations,
           baselineCycles: this.lastRefactorBaselineCycles,
-          snapshotId: this.lastRefactorSnapshotId
+          snapshotId: this.lastRefactorSnapshotId,
+          ...(runTests ? { runTests: true } : {})
         })
       });
 

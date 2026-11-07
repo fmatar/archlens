@@ -12,33 +12,49 @@ import {
   installMcpConfigs
 } from '../src/mcp-registry.js';
 
-test('ARCHLENS_TOOL_SCHEMAS defines 6 core Clean Architecture tools', () => {
+test('ARCHLENS_TOOL_SCHEMAS defines 10 Clean Architecture tools', () => {
   const tools = Object.keys(ARCHLENS_TOOL_SCHEMAS);
+  assert.equal(tools.length, 10);
   assert.ok(tools.includes('inspectArchitecture'));
   assert.ok(tools.includes('exportLlmDossier'));
   assert.ok(tools.includes('listSnapshots'));
   assert.ok(tools.includes('getSnapshot'));
   assert.ok(tools.includes('synthesizeDipInversion'));
   assert.ok(tools.includes('evaluateFitness'));
+  assert.ok(tools.includes('getFitnessHistory'));
+  assert.ok(tools.includes('proposeScreamingMigration'));
+  assert.ok(tools.includes('getPolicy'));
+  assert.ok(tools.includes('syncDipAdr'));
 
   assert.equal(ARCHLENS_TOOL_SCHEMAS.getSnapshot.parameters.required[0], 'snapshotId');
-  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.synthesizeDipInversion.parameters.required, ['sourceClass', 'targetClass']);
+  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.synthesizeDipInversion.parameters.required, ['fromClass', 'toClass']);
+  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.syncDipAdr.parameters.required, ['sourceClass', 'targetClass', 'interfacePortName']);
   assert.equal(typeof ARCHLENS_TOOL_SCHEMAS.inspectArchitecture.description, 'string');
 });
 
-test('getAntigravityInstructions produces markdown instructions', () => {
+test('getAntigravityInstructions produces markdown instructions listing all 10 tools', () => {
   const instructions = getAntigravityInstructions();
   assert.ok(instructions.includes('Archlens Clean Architecture MCP Server Instructions'));
   assert.ok(instructions.includes('Domain Core (L0)'));
   assert.ok(instructions.includes('Dependency Inversion Principle'));
+  assert.ok(instructions.includes('synthesizeDipInversion'));
+  assert.ok(instructions.includes('evaluateFitness'));
+  assert.ok(instructions.includes('getFitnessHistory'));
+  assert.ok(instructions.includes('proposeScreamingMigration'));
+  assert.ok(instructions.includes('getPolicy'));
+  assert.ok(instructions.includes('syncDipAdr'));
 });
 
-test('getClientConfigLocations returns expected client targets', () => {
+test('getClientConfigLocations returns expected multi-agent client targets', () => {
   const targets = getClientConfigLocations('/test/project', '/mock/home');
   const ids = targets.map((t) => t.id);
   assert.ok(ids.includes('claude-desktop'));
   assert.ok(ids.includes('claude-code'));
   assert.ok(ids.includes('antigravity-global'));
+  assert.ok(ids.includes('antigravity-config'));
+  assert.ok(ids.includes('gemini-cli'));
+  assert.ok(ids.includes('grok'));
+  assert.ok(ids.includes('windsurf'));
   assert.ok(ids.includes('cursor'));
   assert.ok(ids.includes('vscode'));
 });

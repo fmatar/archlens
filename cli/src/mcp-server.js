@@ -218,19 +218,16 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
   }
 
   if (toolName === 'synthesizeDipInversion') {
-    const sourceClass = args.sourceClass;
-    const targetClass = args.targetClass;
-    if (!sourceClass || !targetClass) {
-      throw new Error("Missing required arguments: 'sourceClass' and 'targetClass'");
+    const fromClass = args.fromClass || args.sourceClass;
+    const toClass = args.toClass || args.targetClass;
+    if (!fromClass || !toClass) {
+      throw new Error("Missing required arguments: 'fromClass' and 'toClass'");
     }
 
     if (isOnline) {
       try {
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram/synthesize-dip`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceClass, targetClass, projectRoot })
-        });
+        const query = new URLSearchParams({ from: fromClass, to: toClass, projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/violations/invert-plan?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -240,13 +237,17 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       }
     }
 
-    const simpleTarget = targetClass.split('.').pop();
+    const simpleTarget = toClass.split('.').pop();
     const portName = `${simpleTarget}Port`;
     const blueprint = {
-      sourceClass,
-      targetClass,
+      fromClass,
+      toClass,
+      sourceClass: fromClass,
+      targetClass: toClass,
+      portName,
       portInterfaceName: portName,
-      prescription: `Extract interface ${portName} in the inner layer of ${sourceClass} and implement it in ${targetClass}.`,
+      portInterfaceCode: `public interface ${portName} {}`,
+      prescription: `Extract interface ${portName} in the inner layer of ${fromClass} and implement it in ${toClass}.`,
       offline: true
     };
     return { content: [{ type: 'text', text: JSON.stringify(blueprint, null, 2) }] };
@@ -279,6 +280,131 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
               cyclesCount: checkResult.cyclesCount,
               screaming: checkResult.screaming,
               fitness: checkResult.fitness,
+              offline: true
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  }
+
+  if (toolName === 'getFitnessHistory') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/fitness/history?${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online fitness history error: ${err.message}.\n`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            { trendDirection: 'STABLE', trend: 'STABLE', history: [], snapshots: [], offline: true },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  }
+
+  if (toolName === 'proposeScreamingMigration') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(
+          `${serverUrl}/api/screaming/migration-proposal?${query}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online screaming migration error: ${err.message}.\n`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ clusters: [], projectedSas: 1.0, offline: true }, null, 2)
+        }
+      ]
+    };
+  }
+
+  if (toolName === 'getPolicy') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/policy?${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online policy fetch error: ${err.message}.\n`);
+      }
+    }
+    const policyFile = path.join(projectRoot, '.archlens', 'policy.json');
+    if (fs.existsSync(policyFile)) {
+      return { content: [{ type: 'text', text: fs.readFileSync(policyFile, 'utf8') }] };
+    }
+    const policy = generatePolicy(projectRoot, {});
+    return { content: [{ type: 'text', text: JSON.stringify(policy, null, 2) }] };
+  }
+
+  if (toolName === 'syncDipAdr') {
+    const sourceClass = args.sourceClass || args.fromClass;
+    const targetClass = args.targetClass || args.toClass;
+    const interfacePortName = args.interfacePortName || args.portName;
+    const reason = args.reason || 'Invert outward Clean Architecture dependency via interface port';
+    if (!sourceClass || !targetClass || !interfacePortName) {
+      throw new Error(
+        "Missing required arguments: 'sourceClass', 'targetClass', and 'interfacePortName'"
+      );
+    }
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceClass,
+            targetClass,
+            interfacePortName,
+            reason
+          })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online syncDipAdr error: ${err.message}.\n`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              sourceClass,
+              targetClass,
+              interfacePortName,
+              reason,
+              status: 'recorded-offline',
               offline: true
             },
             null,

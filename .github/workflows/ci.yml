@@ -35,8 +35,14 @@ jobs:
       - name: Full Build, Spotless, Tests & Quality Gates
         run: mvn -B -ntp clean spotless:check verify
 
+      - name: Run CLI & Script Unit Tests
+        run: npm test
+
+      - name: End-to-End Packaged Workbench & MCP Smoke Test
+        run: npm run smoke
+
       - name: Archlens Clean Architecture Conformance Gate
-        run: node cli/bin/index.js check --path . --max-violations 0 --format sarif --output archlens-results.sarif
+        run: node cli/bin/index.js check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85 --format sarif --output archlens-results.sarif
 
       - name: Upload Architecture SARIF Report
         uses: actions/upload-artifact@v7

@@ -9,6 +9,10 @@
     "archlens-init": "./cli/bin/index.js"
   },
   "scripts": {
+    "build": "mvn -B -ntp package -DskipTests",
+    "start": "java -jar backend/target/quarkus-app/quarkus-run.jar",
+    "smoke": "node scripts/smoke-test.js",
+    "smoke:build": "node scripts/smoke-test.js --build",
     "test": "npm --prefix cli test && node --test scripts/test/*.test.js",
     "cli": "node ./cli/bin/index.js",
     "deps:check": "bash scripts/update-dependencies.sh --check",

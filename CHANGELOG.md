@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Multi-Agent Local MCP Setup & 10-Tool Registry Parity** ([#200](https://github.com/fmatar/archlens/issues/200)):
+  - Enhanced `README.md` and `wiki/MCP-Integration.md` with step-by-step local MCP server setup guides across **Google Antigravity**, **Gemini CLI**, **Claude Code**, **Claude Desktop**, **Grok CLI (`xAI`)**, **Cursor**, **Windsurf**, and **VS Code** covering Stdio, Streamable HTTP (`/mcp`), and SSE (`/mcp/sse`) transports.
+  - Extended `cli/src/mcp-registry.js` and `cli/src/mcp-server.js` to expose all 10 Clean Architecture MCP tools (`inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`, `synthesizeDipInversion`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`) and auto-discover Gemini CLI (`~/.gemini/settings.json`), Google Antigravity (`~/.gemini/antigravity/mcp_config.json`), Grok CLI (`.grok/mcp.json`), and Windsurf (`~/.codeium/windsurf/mcp_config.json`).
+  - Added `CONTRIBUTORS.md` recognizing project authors and Clean Architecture pioneers.
+  - Modernized `docs/guide/USER_GUIDE.md`, `docs/guide/DEVELOPER_GUIDE.md`, and `docs/specs/C4_ARCHITECTURE.md`.
+  - Hardened `ci.yml` (enforcing ADP cycles, Screaming Architecture `>= 0.70`, and Fitness Index `>= 0.85`), fixed `dependency-pulse.yml` lockfile staging, and enabled required status check branch protection on `main` and `develop`.
+
 ## [0.1.1] - 2026-11-06
 
 ### Added

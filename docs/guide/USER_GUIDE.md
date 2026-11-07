@@ -1,6 +1,6 @@
-# Clean Architecture Dynamic UML Workbench: Comprehensive Guide
+# Archlens — Dynamic Clean Architecture Workbench: User Guide
 
-Welcome to the **Clean Architecture Dynamic UML Workbench**. This system bridges high-level architectural design with physical Java source code, enabling architects and developers to visually supervise, explore, and direct AI coding agents.
+Welcome to **Archlens**. This workbench bridges high-level Clean Architecture governance with physical source code across **Java 25, Python, TypeScript/JS/Svelte 5, Rust, Go, and Clojure**, enabling architects and developers to visually inspect, simulate, and direct autonomous AI coding agents.
 
 ---
 
@@ -8,102 +8,99 @@ Welcome to the **Clean Architecture Dynamic UML Workbench**. This system bridges
 
 ```mermaid
 flowchart TD
-    User["Human Architect"] <-->|Interacts via Browser Canvas| UI["Svelte 5 UI (Port 5173 / 5175)"]
-    UI <-->|REST & SSE Streams| Backend["Quarkus Backend (Java 25 - Port 8088)"]
+    User["Software Architect"] <-->|Interacts via Browser Canvas| UI["Svelte 5 UI (Port 8088 / 5173)"]
+    UI <-->|REST & SSE Streams (/api/events)| Backend["Quarkus 3.40 Backend (Java 25 Virtual Threads)"]
     
-    subgraph Engine ["Architectural Engine"]
-        Backend --> AST["JavaParser AST Scanner"]
-        Backend --> RuleEngine["Clean Architecture Rank Engine"]
-        Backend --> MetricsEngine["CRAP & Mutation Test Aggregator"]
+    subgraph Engine ["Polyglot AST & Governance Engine"]
+        Backend --> AST["Polyglot AST Scanners (Java, Python, TS/Svelte, Rust, Go, Clojure)"]
+        Backend --> RuleEngine["Concentric Ring & ADP Cycle Engine (.archlens/policy.json)"]
+        Backend --> MetricsEngine["Martin Metrics (Ca, Ce, I, A, D), Screaming Score (SAS) & Fitness (AFI)"]
     end
 
-    subgraph Mailbox ["Agnostic Mailbox IPC (.uml-viewer/)"]
-        UI -->|Writes REGEN / REFACTOR| Outbox["to-agent.json"]
-        Inbox["to-viewer.json"] -->|Pushes Hot Reload| Backend
+    subgraph Protocols ["Dual AI Agent Protocols"]
+        UI -->|Writes APPLY_PROPOSAL / INVERT_DEPENDENCY| Outbox[".archlens/to-agent.json"]
+        Inbox[".archlens/to-viewer.json"] -->|SSE Hot Reload| Backend
+        MCP["Quarkus MCP 2.0 Server (/mcp, /mcp/sse) & CLI Stdio Bridge"] <--> Backend
     end
 
-    Agent["Antigravity AI Agent\n(uml-workbench-companion skill)"] <--> Outbox
-    Agent -->|Refactors Java Source & Runs Tests| Disk["src/main/java"]
+    Agent["Autonomous AI Agent\n(Antigravity / Gemini / Claude / Grok / Cursor)"] <--> Outbox
+    Agent <-->|10 Tools, 3 Resources, 2 Prompts| MCP
+    Agent -->|Synthesizes DIP Ports, Moves Classes & Runs Tests| Disk["Source Code & Test Suites"]
     Agent -->|Writes Completion ACK| Inbox
 ```
 
 ---
 
-## 2. Launching the Workbench
+## 2. Launching the Workbench & Autonomous AI Lifecycle
 
-### Step 1: Start the Quarkus Backend (Java 25)
-Open your terminal:
-
+### Option A: Zero-Touch Autonomous AI Setup (Recommended for Antigravity & Claude)
+Configure your project and all installed AI coding assistants (**Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**) in one command:
 ```bash
+cd /path/to/your-project
+npx @fmatar/archlens-skill --yes --mcp
+```
+With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fmatar/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static AST analysis.
+
+### Option B: 1-Command Visual Studio Launcher
+To open the interactive browser canvas immediately on `http://localhost:8088`:
+```bash
+cd /path/to/your-project
+npx @fmatar/archlens-skill start --open
+```
+
+### Option C: Always-On Background Daemon (Auto-Restart on Boot)
+To keep the visual workbench running across system reboots:
+```bash
+docker run -d \
+  --name archlens-server \
+  --restart unless-stopped \
+  -p 8088:8088 \
+  -v "$HOME/workspace:/workspace" \
+  ghcr.io/fmatar/archlens:latest
+```
+
+### Option D: Bare-Metal Development Mode
+```bash
+# Terminal 1: Start the Quarkus Backend (Java 25, Port 8088)
 cd backend
-mvn clean quarkus:dev
-```
-* **Port**: Runs on **`http://localhost:8088`** (configured to avoid Docker port 8080 conflicts).
-* **Responsibilities**: Analyzes the Java AST, enforces Clean Architecture levels, and watches the `.uml-viewer/` mailbox.
+./mvnw clean quarkus:dev
 
-### Step 2: Start the Svelte 5 Frontend
-In a separate terminal:
-
-```bash
+# Terminal 2: Start the Svelte 5 Frontend (Port 5173)
 cd frontend
-npm run dev
+pnpm install && pnpm dev
 ```
-* Open **`http://localhost:5173`** (or the port Vite provides) in your browser.
 
 ---
 
-## 3. How to Use the Visual Workbench
+## 3. Core Visual Workflows & Keyboard Shortcuts
 
-### Canvas & Box Controls
-- **Reposition Any Box**: Click and drag the **top title banner** of any component box to move it anywhere on the canvas.
-- **Pan the Entire Canvas**: Click and hold any open dark background and drag.
-- **Zoom**: Scroll your mouse wheel or use the `+`, `-`, and `100%` buttons at the bottom-left.
-
-### Clean Architecture Dependency Rules
-Uncle Bob's Clean Architecture dictates that **source code dependencies must point inward**:
-- **Level 0 (Domain Core)**: Innermost business rules.
-- **Level 1 (Application Services)**: Use cases and orchestration.
-- **Level 2 (Infrastructure & Adapters)**: REST endpoints, databases, UI, and external libraries.
-
-**Visual Guide**:
-* **Solid Grey Curves**: Conforming dependencies (outer layer $\rightarrow$ inner layer, or same layer).
-* **Bold Red Curves**: Illegal violations (an inner layer directly importing or calling an outer layer).
-* **Top Status Badge**: Displays `[Clean Architecture Conforming]` or `[N Dependency Rule Violations]`.
-
-### Playing "What-If" Proposals (Virtual Sandbox)
-In the right-hand **Inspector**:
-1. Select **`Real Diagram (Tree)`** to view your actual Java package structure.
-2. Click **`Decoupled Clean Core`**:
-   - The yellow badge appears: `PROPOSAL — not instantiated in code`.
-   - The dependency engine immediately recalculates all arrows based on the proposed groupings.
-   - Any violating dependencies turn **bold red**.
-   - You can evaluate whether an architectural design is sound **before** moving any files or writing code.
-
-### Inspecting Class Details & Quality Metrics
-Click on any class name (e.g. `ClassNode` or `DependencyRuleValidator`) inside a box:
-- Displays **Stereotype** (`«RECORD»`, `«CLASS»`, `«INTERFACE»`).
-- Displays **CRAP score** ($\text{CRAP} = CC^2 \cdot (1 - \text{Cov})^3 + CC$), **Line Coverage**, and **Mutation testing stats** (killed vs survived mutants).
-- Lists all fields and methods with individual Cyclomatic Complexity (`CC`).
-- Click **View Source Code** to open the in-browser viewer and jump directly to that method's line of code.
-
-### Declutter Modes
-Click the **`Declutter`** button in the Inspector to cycle through:
-- `ARROWS`: Directional curves between related layers.
-- `REMOVE_ARROWS`: Replaces lines with directional triangle badges on boxes to keep large diagrams clean.
-- `CLASSES`: Collapses components into clean layer boxes.
-- `NONE`: Shows raw topology.
+| Key | Mode / Action | Purpose |
+| :--- | :--- | :--- |
+| `⌘O` / `Ctrl+O` | **Project Switcher** | Browse and switch active repositories (`nativePickerSupported` container-aware explorer) |
+| `V` | **Violation X-Ray** | Dim conforming edges and isolate outward Clean Architecture breaches in crimson |
+| `B` | **Edge Bundling** | Route edges along concentric Catmull-Rom spline corridors |
+| `D` | **Declutter Mode** | Cycle through `ARROWS`, `REMOVE_ARROWS`, `CLASSES`, and `NONE` |
+| `S` | **"What-If" Sandbox** | Simulate moving classes across concentric rings in memory and view live violation deltas ($\Delta \pm N$) |
+| `M` | **Main Sequence** | Open the 2D scatter plot of Abstractness ($A$) vs. Instability ($I$) with Zone of Pain/Uselessness overlays |
+| `C` | **Compact Cards** | Collapse class lists into macro package summaries for 100k+ LoC codebases |
+| `F` | **1-Hop Focus** | Isolate direct callers and dependencies of the selected component |
+| `P` | **Policy Designer** | Open the interactive Concentric Ring & Policy Editor modal |
+| `L` | **LLM Dossier** | Export a copy-ready Markdown refactoring prompt with DIP prescriptions |
+| `T` | **Telemetry Drawer** | View live `.archlens/` Mailbox IPC and SSE events |
+| `G` | **Release Comparator** | Compare architectural health against Git release tags and `.archlens/snapshots/` |
+| `⌘K` / `/` | **Quick Find** | WAI-ARIA combobox search across packages, classes, and commands |
 
 ---
 
-## 4. Connecting Antigravity via the Skill
+## 4. Surgical DIP Inverter & Transactional Rollback
 
-The workbench is decoupled from any proprietary AI agent. It communicates through durable JSON files in `.uml-viewer/`:
-
-1. **The Skill**: Installed in [`.agents/skills/uml-workbench-companion/SKILL.md`](file:///Users/fady/workspace/labs/unclebob-design/.agents/skills/uml-workbench-companion/SKILL.md).
-2. **Triggering Antigravity**:
-   - In the UI, click **`Regen (Wake Agent)`**.
-   - The UI writes a `REGEN` or `APPLY_PROPOSAL` command to `.uml-viewer/to-agent.json`.
-   - In Antigravity chat, tell the agent:
-     > *"Check for pending workbench commands and process them."*
-   - Antigravity activates the `uml-workbench-companion` skill, refactors the Java classes to eliminate red violations, runs `mvn test`, and writes `REGEN_COMPLETE` to `.uml-viewer/to-viewer.json`.
-   - The diagram immediately updates on your screen.
+1. Click any crimson violating edge or select a violation in the Inspector's **Fitness** tab.
+2. Click **`⚡ Invert Dependency (DIP)`** to synthesize an idiomatic interface port in the inner ring:
+   - **Java**: `public interface <Target>Port`
+   - **Python**: `class <Target>Port(Protocol):`
+   - **TypeScript**: `export interface <Target>Port`
+   - **Go**: `type <Target>Port interface`
+   - **Rust**: `pub trait <Target>Port`
+3. Click **`Dispatch to AI Agent`**:
+   - Archlens captures a pre-flight snapshot in `.archlens/snapshots/` and writes `INVERT_DEPENDENCY` to `.archlens/to-agent.json`.
+   - Your AI assistant applies the port extraction, runs the test suite, and verifies the violation count decreased via `/api/mailbox/verify` (or rolls back in 1 click via `/api/mailbox/rollback`).

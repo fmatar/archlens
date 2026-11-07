@@ -244,7 +244,9 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       toClass,
       sourceClass: fromClass,
       targetClass: toClass,
+      portName,
       portInterfaceName: portName,
+      portInterfaceCode: `public interface ${portName} {}`,
       prescription: `Extract interface ${portName} in the inner layer of ${fromClass} and implement it in ${toClass}.`,
       offline: true
     };
@@ -305,7 +307,11 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       content: [
         {
           type: 'text',
-          text: JSON.stringify({ trend: 'STABLE', snapshots: [], offline: true }, null, 2)
+          text: JSON.stringify(
+            { trendDirection: 'STABLE', trend: 'STABLE', history: [], snapshots: [], offline: true },
+            null,
+            2
+          )
         }
       ]
     };

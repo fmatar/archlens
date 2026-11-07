@@ -200,6 +200,11 @@ export const ARCHLENS_TOOL_SCHEMAS = {
           type: 'string',
           description: 'Synthesized interface port name (e.g. OrderRepositoryPort)'
         },
+        reason: {
+          type: 'string',
+          description: 'Architectural rationale for the DIP inversion',
+          default: 'Invert outward Clean Architecture dependency'
+        },
         projectRoot: {
           type: 'string',
           description:
@@ -414,11 +419,20 @@ export function installMcpConfigs(options = {}) {
         }
       }
 
-      if (!manifest.mcpServers || typeof manifest.mcpServers !== 'object') {
-        manifest.mcpServers = {};
+      if (target.id === 'vscode') {
+        if (!manifest.servers || typeof manifest.servers !== 'object') {
+          manifest.servers = {};
+        }
+        manifest.servers.archlens = {
+          type: 'stdio',
+          ...getMcpManifestEntry(serverUrl)
+        };
+      } else {
+        if (!manifest.mcpServers || typeof manifest.mcpServers !== 'object') {
+          manifest.mcpServers = {};
+        }
+        manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl);
       }
-
-      manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl);
 
       if (!dryRun) {
         fs.mkdirSync(path.dirname(target.filePath), { recursive: true });

@@ -78,7 +78,7 @@ pnpm install && pnpm dev
 | :--- | :--- | :--- |
 | `⌘O` / `Ctrl+O` | **Project Switcher** | Browse and switch active repositories (`nativePickerSupported` container-aware explorer) |
 | `V` | **Violation X-Ray** | Dim conforming edges and isolate outward Clean Architecture breaches in crimson |
-| `B` | **Edge Bundling** | Route edges along concentric Catmull-Rom spline corridors |
+| `B` | **Edge Bundling** | Route edges along concentric cubic Bézier corridors |
 | `D` | **Declutter Mode** | Cycle through `ARROWS`, `REMOVE_ARROWS`, `CLASSES`, and `NONE` |
 | `S` | **"What-If" Sandbox** | Simulate moving classes across concentric rings in memory and view live violation deltas ($\Delta \pm N$) |
 | `M` | **Main Sequence** | Open the 2D scatter plot of Abstractness ($A$) vs. Instability ($I$) with Zone of Pain/Uselessness overlays |
@@ -89,10 +89,11 @@ pnpm install && pnpm dev
 | `T` | **Telemetry Drawer** | View live `.archlens/` Mailbox IPC and SSE events |
 | `G` | **Release Comparator** | Compare architectural health against Git release tags and `.archlens/snapshots/` |
 | `⌘K` / `/` | **Quick Find** | WAI-ARIA combobox search across packages, classes, and commands |
+| `+` / `-` / `0` | **Zoom & Pan** | Zoom in, zoom out, or reset canvas viewport |
 
 ---
 
-## 4. Surgical DIP Inverter & Transactional Rollback
+## 4. Surgical DIP Inverter & Policy Snapshot Verification
 
 1. Click any crimson violating edge or select a violation in the Inspector's **Fitness** tab.
 2. Click **`⚡ Invert Dependency (DIP)`** to synthesize an idiomatic interface port in the inner ring:
@@ -102,5 +103,5 @@ pnpm install && pnpm dev
    - **Go**: `type <Target>Port interface`
    - **Rust**: `pub trait <Target>Port`
 3. Click **`Dispatch to AI Agent`**:
-   - Archlens captures a pre-flight snapshot in `.archlens/snapshots/` and writes `INVERT_DEPENDENCY` to `.archlens/to-agent.json`.
-   - Your AI assistant applies the port extraction, runs the test suite, and verifies the violation count decreased via `/api/mailbox/verify` (or rolls back in 1 click via `/api/mailbox/rollback`).
+   - Archlens writes `INVERT_DEPENDENCY` to `.archlens/to-agent.json`.
+   - Your AI assistant applies the port extraction, runs the test suite, and verifies the AST violation count decreased via `POST /api/mailbox/verify` (with policy snapshot backup/restore available via `POST /api/mailbox/rollback`).

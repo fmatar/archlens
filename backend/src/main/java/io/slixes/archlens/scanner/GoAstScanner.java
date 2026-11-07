@@ -90,6 +90,7 @@ public class GoAstScanner implements LanguageScanner {
       List<MethodNode> methods = new ArrayList<>();
       Set<String> importedPaths = new HashSet<>();
       List<String> typeNames = new ArrayList<>();
+      Set<String> interfaceNames = new HashSet<>();
       boolean inImportBlock = false;
 
       for (String line : lines) {
@@ -128,7 +129,9 @@ public class GoAstScanner implements LanguageScanner {
 
         Matcher interfaceMatcher = TYPE_INTERFACE_PATTERN.matcher(line);
         if (interfaceMatcher.find()) {
-          typeNames.add(interfaceMatcher.group(1));
+          String ifaceName = interfaceMatcher.group(1);
+          typeNames.add(ifaceName);
+          interfaceNames.add(ifaceName);
           continue;
         }
 
@@ -199,7 +202,9 @@ public class GoAstScanner implements LanguageScanner {
                   typeName,
                   currentPackage,
                   rel,
-                  ClassNode.Stereotype.CLASS,
+                  interfaceNames.contains(typeName)
+                      ? ClassNode.Stereotype.INTERFACE
+                      : ClassNode.Stereotype.CLASS,
                   false,
                   null,
                   new CrapScore(1.0, 1.0, 0.0),

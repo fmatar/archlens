@@ -484,13 +484,13 @@ Add Archlens to your workspace `.grok/mcp.json` or global `~/.grok/mcp.json`:
 | :--- | :--- | :--- |
 | `⌘O` / `Ctrl+O` | **Project Switcher** | Open native folder browser to switch active repositories |
 | `V` | **Violation X-Ray** | Toggle isolation of illicit outward dependency violations in neon crimson |
-| `B` | **Edge Bundling** | Route connections along concentric Catmull-Rom spline corridors |
+| `B` | **Edge Bundling** | Route connections along concentric cubic Bézier corridors |
 | `D` | **Declutter Mode** | Cycle through canvas declutter filters (Arrows, Elements, Classes) |
 | `S` | **Sandbox "What-If"** | Enter or exit interactive architectural sandbox simulation |
 | `M` | **Main Sequence** | Toggle 2D Cartesian scatter plot of Abstractness ($A$) vs. Instability ($I$) |
 | `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
-| `P` | **Proposals** | Toggle between live architecture and saved structural proposals |
+| `P` | **Policy Designer** | Open the interactive Concentric Ring & Policy Editor modal |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
 | `T` | **Telemetry Drawer** | Open real-time Agent Mailbox IPC telemetry and audit stream |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
@@ -536,6 +536,7 @@ Archlens provides native AST scanners via a modular Service Provider Interface (
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |
 | `--detect-cycles` | | Enforce Robert C. Martin Acyclic Dependencies Principle (ADP) | `false` |
 | `--screaming-threshold <N>` | | Enforce minimum Screaming Architecture score (`0.0`–`1.0`) | `0.60` |
+| `--suggest-features` | | Suggest Screaming Architecture feature slice clusters during `check` | `false` |
 | `--fitness-threshold <N>` | | Enforce minimum Architectural Fitness Index (`0.0`–`1.0`) | `0.80` |
 | `--format <FMT>` | | Audit output format (`pretty`, `json`, `sarif`) | `pretty` |
 | `--output <PATH>` | `-O` | Write audit report to specified file path | `stdout` |

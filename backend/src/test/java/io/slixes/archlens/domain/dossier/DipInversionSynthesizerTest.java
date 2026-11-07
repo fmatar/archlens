@@ -790,4 +790,63 @@ class DipInversionSynthesizerTest {
     assertTrue(plan.surgicalPrompt().contains("```typescript"));
     assertTrue(plan.surgicalPrompt().contains("npm test"));
   }
+
+  @Test
+  @DisplayName("Should preserve existing Java parameter names without appending duplicate arg0")
+  void shouldPreserveExistingJavaParameterNamesWithoutDuplicateArg0() {
+    MethodNode namedArgMethod =
+        new MethodNode(
+            "processOrder",
+            List.of("Order order", "int retryCount"),
+            "boolean",
+            false,
+            1,
+            1.0,
+            1.0,
+            1,
+            0,
+            0,
+            25);
+    ClassNode adapterWithNamedArgs =
+        new ClassNode(
+            "com.example.adapters.PostgresOrderRepository",
+            "PostgresOrderRepository",
+            "com.example.adapters",
+            "src/main/java/com/example/adapters/PostgresOrderRepository.java",
+            ClassNode.Stereotype.CLASS,
+            false,
+            2,
+            null,
+            0.9,
+            1,
+            2,
+            0,
+            0,
+            List.of(),
+            List.of(namedArgMethod));
+    ComponentNode appComp = graph.components().get(0);
+    ComponentNode adapterComp =
+        new ComponentNode(
+            "com.example.adapters",
+            "adapters",
+            2,
+            null,
+            0.9,
+            List.of(),
+            List.of(adapterWithNamedArgs));
+    ArchitectureGraph customGraph =
+        new ArchitectureGraph(
+            "Test Shop", false, null, List.of(appComp, adapterComp), graph.edges(), List.of());
+
+    DipInversionPlan plan =
+        synthesizer.synthesize(
+            customGraph,
+            policy,
+            "com.example.application.OrderService",
+            "com.example.adapters.PostgresOrderRepository");
+
+    assertTrue(
+        plan.portInterfaceCode().contains("boolean processOrder(Order order, int retryCount);"));
+    assertFalse(plan.portInterfaceCode().contains("arg0"));
+  }
 }

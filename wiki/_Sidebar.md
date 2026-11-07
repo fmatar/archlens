@@ -6,6 +6,7 @@
 - **[System Architecture](Architecture)**
 - **[Concentric Rings](Architecture#the-concentric-rings)**
 - **[Polyglot AST Scanners](Architecture#polyglot-ast-engine-spi)**
+- **[🗺️ Codebase Map](Codebase-Map)**
 
 ---
 
@@ -16,9 +17,11 @@
 
 ---
 
-### AI Companions
+### AI Companions & SDLC
 - **[🔌 Model Context Protocol (MCP)](MCP-Integration)**
 - **[📬 Mailbox IPC Protocol](Mailbox-IPC)**
+- **[🛠️ Skills & CLI Reference](Skills-Reference)**
+- **[🎯 Traceability & Governance](Traceability)**
 
 ---
 
@@ -30,5 +33,6 @@
 
 ### Project Links
 - [Main Repository](https://github.com/fmatar/archlens)
+- [Product Roadmap](https://github.com/fmatar/archlens/blob/develop/ROADMAP.md)
 - [Releases](https://github.com/fmatar/archlens/releases)
 - [Changelog](https://github.com/fmatar/archlens/blob/develop/CHANGELOG.md)

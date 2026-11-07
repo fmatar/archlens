@@ -17,7 +17,7 @@ This skill equips agents (Antigravity, Gemini CLI, Claude Code) to:
 2. Scaffold and maintain `.archlens/policy.json` architectural layer policies.
 3. Act as the autonomous refactoring companion to the visual workbench via mailbox queues (`.archlens/to-agent.json` and `.archlens/to-viewer.json`).
 4. Export LLM Refactoring Prompt Dossiers prescribing concrete Dependency Inversion Principle (DIP) interface ports.
-5. Invoke Archlens MCP tools (`inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`).
+5. Invoke Archlens MCP tools (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`, `listSnapshots`, `getSnapshot`), resources (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`), and prompts (`architectural-review`, `dip-refactoring-guide`).
 
 ---
 
@@ -64,6 +64,9 @@ npx @fmatar/archlens-skill --path . --yes
 
 # Launch Workbench container (auto-resurrects on demand if stopped or killed):
 npx @fmatar/archlens-skill start --open
+
+# Execute Headless Clean Architecture CI Quality Gate (ADP cycles, Screaming score, Fitness index, SARIF):
+npx @fmatar/archlens-skill check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85 --format sarif -O archlens-results.sarif
 
 # Export Clean Architecture LLM Refactoring Prompt Dossier:
 npx @fmatar/archlens-skill prompt --path .
@@ -144,5 +147,15 @@ When Archlens is registered as an MCP server, use the following tools:
 | :--- | :--- | :--- |
 | `inspectArchitecture` | Inspect concentric rings, outward violations, and instability metrics | `projectRoot` (default: `.`) |
 | `exportLlmDossier` | Generate copy-ready LLM refactoring prompt with DIP prescriptions | `projectRoot`, `proposalId` |
+| `synthesizeDipInversion` | Synthesize polyglot DIP interface port, adapter/caller diffs, and surgical prompt | `fromClass`, `toClass`, `projectRoot` |
+| `evaluateFitness` | Compute Composite Architecture Fitness Index (AFI score, grade, rule breakdown) | `projectRoot` |
+| `getFitnessHistory` | Retrieve historical fitness snapshots across Git tags and regression trend | `projectRoot` |
+| `proposeScreamingMigration` | Propose Screaming Architecture package-by-feature migration clusters | `projectRoot` |
+| `getPolicy` | Inspect active `.archlens/policy.json` concentric ring definitions | `projectRoot` |
+| `syncDipAdr` | Mint a numbered Markdown ADR in `docs/adr/` for a DIP refactoring | `fromClass`, `toClass`, `portName`, `portPackage`, `reason`, `projectRoot` |
 | `listSnapshots` | List historical Git release tags and pre-compiled architecture snapshots | `projectRoot` |
 | `getSnapshot` | Retrieve graph model for a historical release or snapshot tag | `snapshotId`, `projectRoot` |
+
+### MCP Resources & Prompts
+- **Resources**: `archlens://llms.txt`, `archlens://policy`, `archlens://fitness`
+- **Prompts**: `architectural-review` (`projectRoot`), `dip-refactoring-guide` (`fromClass`, `toClass`, `projectRoot`)

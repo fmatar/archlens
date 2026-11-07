@@ -15,8 +15,8 @@ Archlens is engineered around **Clean Architecture** and the **Dependency Invers
 flowchart TD
     subgraph Rings ["Clean Architecture Concentric Rings (.archlens/policy.json)"]
         L3["Infrastructure & Delivery (Ring 3)<br/>• REST Resources (delivery.rest) & Quarkus Server<br/>• Native Quarkus MCP 2.0 Service (mcp)<br/>• Svelte 5 Web UI Canvas & CLI Entrypoints"]
-        L2["Adapters & Scanners (Ring 2)<br/>• Mailbox IPC Adapter (mailbox.fs.FileMailboxService)<br/>• Polyglot AST Scanners (Java, Python, TS/Svelte, Rust, Go, Clojure)"]
-        L1["Application & Use Cases (Ring 1)<br/>• Use Cases (EvaluateFitness, SynthesizeDipInversion, ExportDossier, ...)<br/>• GraphCompiler, ProjectFileWatcher & CrapScoreCalculator"]
+        L2["Adapters (Ring 2)<br/>• Mailbox IPC Adapter (mailbox.fs.FileMailboxService)"]
+        L1["Application, Engine & Scanners (Ring 1)<br/>• Use Cases (EvaluateFitness, SynthesizeDipInversion, ExportDossier, ...)<br/>• GraphCompiler, ProjectFileWatcher & CrapScoreCalculator<br/>• Polyglot AST Scanners (scanner.*: Java, Python, TS/Svelte, Rust, Go, Clojure)"]
         L0["Domain Core (Ring 0)<br/>• ArchitectureGraph, ComponentNode, ClassNode, DependencyEdge<br/>• ArchitecturePolicy, DependencyRuleValidator & PackageCycleDetector<br/>• DipInversionSynthesizer, ScreamingArchitectureAnalyzer & FitnessCalculator"]
         
         L3 --> L2
@@ -27,8 +27,8 @@ flowchart TD
 
 ### The Inward Dependency Rule:
 - **Domain Core (Ring 0)**: Pure business domain models (`domain.graph`, `domain.policy`, `domain.fitness`, `domain.screaming`, `domain.dossier`, `domain.mailbox`). Zero dependencies on outer frameworks, HTTP libraries, or filesystem I/O.
-- **Application & Use Cases (Ring 1)**: Orchestrates use cases (`usecase.*`), graph compilation (`engine.GraphCompiler`), and CRAP score calculation (`metrics.CrapScoreCalculator`).
-- **Adapters & Scanners (Ring 2)**: Implements polyglot language scanner SPIs (`scanner.*`) and file mailbox communication queues (`mailbox.fs.*`).
+- **Application, Engine & Scanners (Ring 1)**: Orchestrates use cases (`usecase.*`), graph compilation (`engine.GraphCompiler`), CRAP score calculation (`metrics.CrapScoreCalculator`), and polyglot AST scanning (`scanner.*`).
+- **Adapters (Ring 2)**: Implements file mailbox communication queues (`mailbox.fs.*` implementing `domain.mailbox.MailboxGateway`).
 - **Infrastructure & Delivery (Ring 3)**: Exposes HTTP/REST APIs (`delivery.rest.*`), Server-Sent Events (SSE), Quarkus MCP 2.0 endpoints (`mcp.ArchlensMcpService`), the Svelte 5 browser canvas (`frontend/`), and the Node.js CLI (`cli/`).
 
 ---
@@ -38,14 +38,14 @@ flowchart TD
 ```text
 archlens/
 ├── backend/                  # Quarkus 3.40 Java 25 Application
-│   ├── src/main/java/        # Ring 0 (domain), Ring 1 (usecase, engine), Ring 2 (scanner, mailbox), Ring 3 (delivery, mcp)
+│   ├── src/main/java/        # Ring 0 (domain), Ring 1 (usecase, engine, scanner, metrics), Ring 2 (mailbox.fs), Ring 3 (delivery, mcp)
 │   ├── src/main/resources/   # Application properties, SpotBugs exclusions, PMD rule configurations
 │   ├── src/test/java/        # 320+ unit, scanner, MCP, and architecture verification tests
 │   └── pom.xml               # Backend Maven configuration (JaCoCo, Spotless, PMD, SpotBugs, CycloneDX)
 ├── frontend/                 # Svelte 5 + Tailwind CSS v4 Interactive Canvas
 │   ├── src/lib/components/   # Component cards, edges, modals, DIP inverter, sandbox, command palette
 │   ├── src/lib/state/        # Svelte 5 runes ($state, $derived) reactive state & sandbox engine
-│   ├── src/lib/utils/        # Martin coupling metrics (Ca, Ce, I, A, D), Catmull-Rom splines
+│   ├── src/lib/utils/        # Martin coupling metrics (Ca, Ce, I, A, D), cubic Bézier edge routing
 │   ├── package.json          # Frontend dependencies and Vite scripts
 │   └── vitest.config.ts      # Vitest component and store testing configuration
 ├── cli/                      # Zero-Dependency Multi-Agent Skill & MCP Stdio Bridge (@fmatar/archlens-skill)

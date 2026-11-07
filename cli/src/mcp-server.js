@@ -47,19 +47,63 @@ export function getMcpResourcesList() {
       description:
         'Comprehensive Clean Architecture guide, concentric ring hierarchy, CLI commands, fitness invariants, and refactoring protocols for LLMs.',
       mimeType: 'text/markdown'
+    },
+    {
+      uri: 'archlens://policy',
+      name: 'Archlens Concentric Ring Policy (.archlens/policy.json)',
+      description: 'Active Clean Architecture concentric ring policy and fitness thresholds.',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'archlens://fitness',
+      name: 'Archlens Architectural Fitness Evaluation',
+      description:
+        'Current Architectural Fitness Index (AFI), Screaming Architecture Score (SAS), and Main Sequence Distance evaluation.',
+      mimeType: 'application/json'
+    }
+  ];
+}
+
+export function getMcpPromptsList() {
+  return [
+    {
+      name: 'architectural-review',
+      description:
+        'Generate a comprehensive Clean Architecture & Robert C. Martin Main Sequence review prompt for a target workspace.',
+      arguments: [
+        {
+          name: 'projectRoot',
+          description: 'Absolute or relative path to the target project directory. Defaults to current directory.',
+          required: false
+        }
+      ]
+    },
+    {
+      name: 'dip-refactoring-guide',
+      description:
+        'Synthesize a surgical Dependency Inversion Principle (DIP) prompt to decouple an inner-ring caller from an outer-ring concrete class.',
+      arguments: [
+        { name: 'fromClass', description: 'Fully qualified caller class name', required: true },
+        { name: 'toClass', description: 'Fully qualified target concrete class name', required: true },
+        {
+          name: 'projectRoot',
+          description: 'Absolute or relative path to the target project directory. Defaults to current directory.',
+          required: false
+        }
+      ]
     }
   ];
 }
 
 export function readMcpResource(uri, options = {}, deps = {}) {
+  const projectRoot = path.resolve(options.path || '.');
+  const fileReader = deps.readFileSync || fs.readFileSync;
+  const fileExists = deps.existsSync || fs.existsSync;
+
   if (uri === 'archlens://llms.txt') {
-    const projectRoot = path.resolve(options.path || '.');
     const localLlmsPath = path.join(projectRoot, 'llms.txt');
     const cliLlmsPath = path.resolve(__dirname, '..', 'llms.txt');
     const rootLlmsPath = path.resolve(__dirname, '..', '..', 'llms.txt');
-
-    const fileReader = deps.readFileSync || fs.readFileSync;
-    const fileExists = deps.existsSync || fs.existsSync;
 
     let content = '';
     if (fileExists(localLlmsPath)) {
@@ -78,6 +122,36 @@ export function readMcpResource(uri, options = {}, deps = {}) {
           uri,
           mimeType: 'text/markdown',
           text: content
+        }
+      ]
+    };
+  }
+
+  if (uri === 'archlens://policy') {
+    const policyFile = path.join(projectRoot, '.archlens', 'policy.json');
+    const policyText = fileExists(policyFile)
+      ? fileReader(policyFile, 'utf8')
+      : JSON.stringify(generatePolicy(projectRoot, options), null, 2);
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: policyText
+        }
+      ]
+    };
+  }
+
+  if (uri === 'archlens://fitness') {
+    const checker = deps.checkArchitecture || checkArchitecture;
+    const report = checker(projectRoot, { detectCycles: true });
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: JSON.stringify(report.fitness || report, null, 2)
         }
       ]
     };
@@ -189,8 +263,10 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
 
     if (isOnline) {
       try {
-        const query = new URLSearchParams({ snapshotId, projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/snapshot?${query}`);
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(
+          `${serverUrl}/api/snapshots/${encodeURIComponent(snapshotId)}?${query}`
+        );
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -445,7 +521,8 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
         protocolVersion: '2024-11-05',
         capabilities: {
           tools: {},
-          resources: {}
+          resources: {},
+          prompts: {}
         },
         serverInfo: {
           name: 'archlens-mcp-server',
@@ -460,6 +537,48 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
       jsonrpc: '2.0',
       id,
       result: {}
+    };
+  }
+
+  if (method === 'prompts/list') {
+    return {
+      jsonrpc: '2.0',
+      id,
+      result: {
+        prompts: getMcpPromptsList()
+      }
+    };
+  }
+
+  if (method === 'prompts/get') {
+    const promptName = params?.name;
+    const args = params?.arguments || {};
+    if (promptName === 'architectural-review') {
+      const dossierRes = await executeToolCall('exportLlmDossier', args, options, deps);
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          description: 'Clean Architecture & Main Sequence review prompt',
+          messages: [{ role: 'user', content: dossierRes.content[0] }]
+        }
+      };
+    }
+    if (promptName === 'dip-refactoring-guide') {
+      const dipRes = await executeToolCall('synthesizeDipInversion', args, options, deps);
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          description: 'Surgical Dependency Inversion Principle (DIP) refactoring prompt',
+          messages: [{ role: 'user', content: dipRes.content[0] }]
+        }
+      };
+    }
+    return {
+      jsonrpc: '2.0',
+      id,
+      error: { code: -32602, message: `Unknown prompt: ${promptName}` }
     };
   }
 

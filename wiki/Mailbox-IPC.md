@@ -41,24 +41,35 @@ sequenceDiagram
 
 ## 📋 Mailbox Command Reference
 
+Commands in `.archlens/to-agent.json` are wrapped inside a transactional `MailboxEnvelope` (`{ "nextId": <int>, "queue": [ ... ] }`) managed by `FileMailboxService.java`.
+
 ### 1. `INVERT_DEPENDENCY`
-Dispatched when clicking **`Dispatch to AI Agent`** in the **Surgical DIP Inverter modal**.
+Dispatched when clicking **`Dispatch to AI Agent`** in the **Surgical DIP Inverter modal** (`InvertDipModal.svelte`).
 
 ```json
 {
-  "command": "INVERT_DEPENDENCY",
-  "commandId": "cmd-1727488000000",
-  "timestamp": "2026-09-28T02:00:00Z",
-  "payload": {
-    "fromClass": "io.slixes.archlens.mcp.ArchlensMcpService",
-    "toClass": "io.slixes.archlens.resource.DiagramResource",
-    "portName": "DiagramResourcePort",
-    "portPackage": "io.slixes.archlens.mcp.ports",
-    "portFilePath": "/workspace/src/main/java/io/slixes/archlens/mcp/ports/DiagramResourcePort.java",
-    "portInterfaceCode": "package io.slixes.archlens.mcp.ports;\n\npublic interface DiagramResourcePort {\n    // Extracted public method signatures\n}\n",
-    "adapterRefactorPreview": "...",
-    "callerRefactorPreview": "..."
-  }
+  "nextId": 2,
+  "queue": [
+    {
+      "id": 1,
+      "ts": "2026-11-07T02:00:00Z",
+      "op": "INVERT_DEPENDENCY",
+      "target": {
+        "id": "violation:io.slixes.archlens.usecase.GenerateDossierUseCase->io.slixes.archlens.delivery.rest.DiagramResource"
+      },
+      "payload": {
+        "fromClass": "io.slixes.archlens.usecase.GenerateDossierUseCase",
+        "toClass": "io.slixes.archlens.delivery.rest.DiagramResource",
+        "portName": "DiagramResourcePort",
+        "portPackage": "io.slixes.archlens.usecase.ports",
+        "portFilePath": "src/main/java/io/slixes/archlens/usecase/ports/DiagramResourcePort.java",
+        "portInterfaceCode": "package io.slixes.archlens.usecase.ports;\n\npublic interface DiagramResourcePort {\n    // Extracted method signatures\n}\n",
+        "adapterRefactorPreview": "...",
+        "callerRefactorPreview": "...",
+        "surgicalPrompt": "..."
+      }
+    }
+  ]
 }
 ```
 
@@ -66,31 +77,43 @@ Dispatched when clicking **`Dispatch to AI Agent`** in the **Surgical DIP Invert
 1. Write the synthesized port interface to `portFilePath`.
 2. Update the concrete adapter (`toClass`) to implement `portName`.
 3. Refactor caller (`fromClass`) to inject the port interface.
-4. Run project test suite (`mvn test`).
-5. Write ACK to `.archlens/to-viewer.json`.
+4. Run project test suite (`mvn test` / `npm test`).
+5. Write ACK to `.archlens/to-viewer.json` via `POST /api/mailbox/ack`.
 
 ---
 
 ### 2. `APPLY_PROPOSAL`
-Dispatched when clicking **`Dispatch to Agent`** from the **Architectural Sandbox toolbar**.
+Dispatched when clicking **`Dispatch to Agent`** from the **Architectural Sandbox toolbar** (`SandboxToolbar.svelte`).
 
 ```json
 {
-  "command": "APPLY_PROPOSAL",
-  "commandId": "cmd-1727488001000",
-  "timestamp": "2026-09-28T02:05:00Z",
-  "payload": {
-    "proposalId": "proposal-reorganize-core",
-    "stagedClassMoves": {
-      "com.example.service.LegacyService": 1,
-      "com.example.repo.RawDbAdapter": 2
+  "nextId": 3,
+  "queue": [
+    {
+      "id": 2,
+      "ts": "2026-11-07T02:05:00Z",
+      "op": "APPLY_PROPOSAL",
+      "target": {
+        "id": "proposal:sandbox-1730945100000"
+      },
+      "payload": {
+        "proposalName": "Reorganize Core Domain",
+        "moves": [
+          {
+            "className": "com.example.service.LegacyService",
+            "fromPackage": "com.example.service",
+            "toPackage": "com.example.usecase",
+            "targetLevel": 1
+          }
+        ]
+      }
     }
-  }
+  ]
 }
 ```
 
 #### Expected Agent Actions:
-1. Move classes to match the proposed concentric ring packages.
+1. Move classes to match the proposed concentric ring packages (`moves`).
 2. Update import statements across the codebase.
 3. Run test suites and verify compilation.
 4. Acknowledge completion in `.archlens/to-viewer.json`.
@@ -106,3 +129,15 @@ Dispatched when clicking the **`Regen`** button in the workbench navigation bar.
 ### 4. `REFRESH_CRAP`
 Dispatched when requesting refreshed code complexity and mutation metrics.
 - Directs the agent to run unit test coverage (JaCoCo) and mutation testing (PITest / Stryker) to update CRAP risk scores.
+
+---
+
+## 🛡️ Verification, Policy Rollback & Living ADR Endpoints
+
+In addition to `.archlens/to-agent.json` and `.archlens/to-viewer.json`, `MailboxResource.java` exposes three governance endpoints:
+
+| Endpoint | Use Case Class | Behavior |
+| :--- | :--- | :--- |
+| `POST /api/mailbox/verify` | `VerifyAndRollbackRefactorUseCase` | Re-compiles the live AST graph and verifies that `currentViolations <= baselineViolations`. |
+| `POST /api/mailbox/rollback` | `VerifyAndRollbackRefactorUseCase` | Restores `.archlens/policy.json` from `.archlens/snapshots/policy.backup.json` and triggers an SSE `reload`. |
+| `POST /api/mailbox/sync-adr` | `SyncAdrUseCase` | Mints a numbered Markdown ADR in `docs/adr/` (also exposed via the `syncDipAdr` MCP tool). |

@@ -28,6 +28,7 @@ flowchart TD
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
+  _200["Ticket #200 (feature/issue-#200-docs-mcp-ci-hardening)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
   CAP_03 -->|specified_by| SPEC_03

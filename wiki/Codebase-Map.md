@@ -163,7 +163,7 @@ flowchart TD
 | ADR ID | Decision Title | Scope | Status | Amends / Supersedes |
 | :--- | :--- | :--- | :--- | :--- |
 | **ADR-001** | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
-| **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `rejected` | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 

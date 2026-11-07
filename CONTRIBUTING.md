@@ -3,7 +3,7 @@
 Thank you for your interest in contributing to **Archlens**! We welcome contributions of all kinds: polyglot AST scanners, visualization enhancements, UI/UX polish, Model Context Protocol (MCP) tooling, bug fixes, documentation improvements, and autonomous agent workflows.
 
 > [!TIP]
-> For an in-depth architectural breakdown, instructions on adding new polyglot language scanners, MCP server extension guides, and Uncle Bob test craftsmanship standards, see the **[Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)**.
+> For an in-depth architectural breakdown, instructions on adding new polyglot language scanners, MCP server extension guides, and Uncle Bob test craftsmanship standards, see the **[Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)** and **[Contributors & Acknowledgements](CONTRIBUTORS.md)**.
 
 ---
 

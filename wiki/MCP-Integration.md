@@ -78,36 +78,106 @@ Generates Screaming Architecture feature-slice migration proposals, inspects `.a
 
 ## ⚙️ AI Client Configuration Guides
 
-### Claude Desktop
-Add Archlens to your `claude_desktop_config.json` (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
-
-```json
-{
-  "mcpServers": {
-    "archlens": {
-      "url": "http://localhost:8088/mcp/sse"
-    }
-  }
-}
-```
-
-### Claude Code (CLI)
-Add the MCP endpoint using the Claude CLI:
+### ⚡ Automated 1-Command Setup (All Detected Clients)
 ```bash
-claude mcp add archlens -- http://localhost:8088/mcp/sse
+npx @fmatar/archlens-skill --mcp
 ```
 
-### Cursor & VS Code
-Configure in `.cursor/mcp.json` or `.vscode/mcp.json`:
+### 1. Google Antigravity (`~/.gemini/antigravity/mcp_config.json`)
+`npx @fmatar/archlens-skill --mcp` automatically populates `~/.gemini/antigravity/mcp/archlens/*.json` and `instructions.md` as well as `~/.gemini/antigravity/mcp_config.json`:
 ```json
 {
   "mcpServers": {
     "archlens": {
-      "url": "http://localhost:8088/mcp/sse"
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "env": {
+        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
     }
   }
 }
 ```
 
-### Google Antigravity
-Archlens is pre-configured as an MCP toolset. When the Archlens container is active on port 8088, Antigravity agents can invoke `inspectArchitecture` or `synthesizeDipInversion` directly during coding sessions.
+### 2. Gemini CLI (`@google/gemini-cli`)
+```bash
+gemini mcp add archlens -- npx -y @fmatar/archlens-skill mcp
+```
+Or in `~/.gemini/settings.json` / `.gemini/settings.json`:
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "env": {
+        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}
+```
+
+### 3. Claude Code (CLI) & Claude Desktop
+```bash
+# Stdio bridge (online + offline static fallback):
+claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp
+
+# Direct Streamable HTTP / SSE (when Workbench is running on :8088):
+claude mcp add --transport http archlens http://localhost:8088/mcp
+```
+Or in `.mcp.json` / `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "env": {
+        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}
+```
+
+### 4. Grok CLI (`xAI`)
+Configure in `.grok/mcp.json` or `~/.grok/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "env": {
+        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}
+```
+
+### 5. Cursor, Windsurf & VS Code (GitHub Copilot)
+Configure in `.cursor/mcp.json` or `~/.codeium/windsurf/mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+    }
+  }
+}
+```
+And in `.vscode/mcp.json`:
+```json
+{
+  "servers": {
+    "archlens": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+    }
+  }
+}
+```

@@ -254,18 +254,18 @@ Create `backend/src/test/java/io/slixes/archlens/scanner/<Language>AstScannerTes
 
 ## 🤖 6. How to Extend the Model Context Protocol (MCP) Server
 
-Archlens exposes native MCP capabilities directly from Quarkus using `quarkus-mcp-server-http`.
+Archlens exposes native MCP 2.0 capabilities directly from Quarkus using `quarkus-mcp-server-http` and `quarkus-mcp-server-hibernate-validator`, decoupled onto Ring 1 Use Cases and executed on Java 25 Virtual Threads (`@RunOnVirtualThread`).
 
-### Step 1: Add a Tool Method
-In `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java`, declare your tool using `@Tool` and `@ToolArg`:
+### Step 1: Add a Tool Method in `ArchlensMcpService`
+In `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java`, inject your Ring 1 Use Case and declare your tool using `@Tool`, `@ToolArg`, and `@NotBlank`:
 
 ```java
 @Tool(description = "Verify compliance of a specific component against Clean Architecture boundaries.")
-public ComplianceReport checkComponent(
-    @ToolArg(description = "Target component name") String componentName,
+public FitnessEvaluation checkComponent(
+    @ToolArg(description = "Target component name") @NotBlank String componentName,
     @ToolArg(description = "Absolute or relative path to project root", defaultValue = ".") String projectRoot) 
     throws IOException {
-  return diagramResource.checkComponentCompliance(componentName, projectRoot);
+  return evaluateFitnessUseCase.execute(projectRoot);
 }
 ```
 
@@ -302,9 +302,9 @@ Every pull request must pass all quality gates cleanly without warnings:
 | **Spotless Auto-Fix** | `mvn spotless:apply` | Formats all modified Java files |
 | **PMD Static Analysis** | `mvn pmd:check` | 0 violations (`failOnViolation=true`) |
 | **SpotBugs Analysis** | `mvn compile spotbugs:check` | 0 bugs (`threshold=Low`, `effort=Max`) |
-| **Backend Unit Tests** | `mvn test` | 100% passing tests (61+ tests) |
-| **CLI Test Suite** | `npm --prefix cli test` | 100% passing tests (43+ tests) |
-| **Frontend Unit Tests** | `npm --prefix frontend test` | 100% passing Vitest tests (25+ tests) |
+| **Backend Unit Tests** | `mvn test` | 100% passing tests (155+ tests, >= 85% coverage) |
+| **CLI & Script Test Suite** | `npm test` | 100% passing tests (91+ tests) |
+| **Frontend Unit Tests** | `npm --prefix frontend test` | 100% passing Vitest tests (53+ tests) |
 | **Frontend Type Checking** | `npm --prefix frontend run check` | 0 TypeScript or Svelte errors |
 
 ---

@@ -256,32 +256,128 @@ For local, asynchronous pair programming, Archlens maintains bidirectional JSON 
 ---
 
 ### 2. Model Context Protocol (MCP) Integration
-Archlens includes a built-in **Model Context Protocol (MCP)** server over HTTP/SSE (`/mcp` and `/mcp/sse`) and a stdio bridge, allowing AI tools to inspect architecture and query metrics directly.
+Archlens includes a native **Model Context Protocol (MCP 2.0)** server powered by Quarkus (`quarkus-mcp-server-http` + `quarkus-mcp-server-hibernate-validator`) on Java 25 Virtual Threads (`@RunOnVirtualThread`), paired with a zero-dependency Node.js CLI stdio bridge (`@fmatar/archlens-skill`).
 
-#### Automated 1-Command Configuration:
-Automatically configure Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code:
+#### 🔌 Local MCP Transports
+Archlens supports three local MCP connection modes:
+1. **Zero-Container Stdio Bridge (Recommended for Local CLI Agents)**:
+   Runs `npx -y @fmatar/archlens-skill mcp`. Automatically bridges to a running Archlens Workbench on `http://localhost:8088` (or auto-resurrects it) and falls back to offline static AST analysis if Docker/Java is offline.
+2. **Streamable HTTP (`MCP 2.0`)**:
+   `http://localhost:8088/mcp` (when the Archlens Workbench container or `./mvnw quarkus:dev` is running on port `8088`).
+3. **Server-Sent Events (`SSE`)**:
+   `http://localhost:8088/mcp/sse`
+
+---
+
+#### ⚡ Automated 1-Command Multi-Agent Setup
+Automatically discover and configure **Google Antigravity**, **Gemini CLI**, **Claude Desktop**, **Claude Code**, **Grok CLI**, **Cursor**, **Windsurf**, and **VS Code** on your workstation:
 ```bash
 npx @fmatar/archlens-skill --mcp
 ```
 
-#### Available MCP Tools:
-* `inspectArchitecture`: Evaluates codebase concentric rings, computes instability metrics, and identifies outward dependency breaches.
-* `synthesizeDipInversion`: Synthesizes a targeted Dependency Inversion refactoring plan for any outward breach, generating port code and injection diffs.
-* `exportLlmDossier`: Produces an actionable refactoring prompt dossier diagnosing violations and prescribing concrete DIP interface ports.
-* `listSnapshots` & `getSnapshot`: Discovers and retrieves architectural models across historical Git release tags.
+---
 
-#### Manual AI Client Configurations:
-* **Cursor & VS Code (`.cursor/mcp.json` or `.vscode/mcp.json`)**:
+#### 🛠️ Local MCP Setup by AI Assistant
+
+<details open>
+<summary><b>1. Google Antigravity (IDE & Agentic Workbench)</b></summary>
+
+1. **Automated Setup** (provisions both `~/.gemini/antigravity/mcp_config.json` and lazy tool schemas + `instructions.md` in `~/.gemini/antigravity/mcp/archlens/`):
+   ```bash
+   npx @fmatar/archlens-skill --mcp
+   ```
+2. **Manual Configuration (`~/.gemini/antigravity/mcp_config.json`)**:
+   ```json
+   {
+     "mcpServers": {
+       "archlens": {
+         "command": "npx",
+         "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+         "env": {
+           "ARCHLENS_SERVER_URL": "http://localhost:8088"
+         }
+       }
+     }
+   }
+   ```
+</details>
+
+<details open>
+<summary><b>2. Gemini CLI (`@google/gemini-cli`)</b></summary>
+
+* **Via Gemini CLI Command**:
+  ```bash
+  gemini mcp add archlens -- npx -y @fmatar/archlens-skill mcp
+  ```
+* **Via Settings Manifest (`~/.gemini/settings.json` or project `.gemini/settings.json`)**:
   ```json
   {
     "mcpServers": {
       "archlens": {
-        "url": "http://localhost:8088/mcp/sse"
+        "command": "npx",
+        "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+        "env": {
+          "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        }
       }
     }
   }
   ```
-* **Claude Desktop (`claude_desktop_config.json`) & Claude Code (`.mcp.json`)**:
+  *(Or connect directly to the live Quarkus Streamable HTTP endpoint using `"httpUrl": "http://localhost:8088/mcp"`).*
+</details>
+
+<details open>
+<summary><b>3. Claude Code (CLI) & Claude Desktop</b></summary>
+
+* **Claude Code CLI (Stdio Bridge — Works Online & Offline)**:
+  ```bash
+  claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp
+  ```
+* **Claude Code CLI (Direct Streamable HTTP / SSE on Port 8088)**:
+  ```bash
+  claude mcp add --transport http archlens http://localhost:8088/mcp
+  # or SSE:
+  claude mcp add --transport sse archlens http://localhost:8088/mcp/sse
+  ```
+* **Project `.mcp.json` or Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`)**:
+  ```json
+  {
+    "mcpServers": {
+      "archlens": {
+        "command": "npx",
+        "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+        "env": {
+          "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        }
+      }
+    }
+  }
+  ```
+</details>
+
+<details open>
+<summary><b>4. Grok CLI (`xAI`)</b></summary>
+
+Add Archlens to your workspace `.grok/mcp.json` or global `~/.grok/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "npx",
+      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "env": {
+        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}
+```
+</details>
+
+<details open>
+<summary><b>5. Cursor, Windsurf & VS Code (GitHub Copilot)</b></summary>
+
+* **Cursor (`.cursor/mcp.json`) & Windsurf (`~/.codeium/windsurf/mcp_config.json`)**:
   ```json
   {
     "mcpServers": {
@@ -292,6 +388,42 @@ npx @fmatar/archlens-skill --mcp
     }
   }
   ```
+  *(Or use `"url": "http://localhost:8088/mcp/sse"` when the Archlens container is running on port `8088`).*
+* **VS Code (`.vscode/mcp.json`)**:
+  ```json
+  {
+    "servers": {
+      "archlens": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+      }
+    }
+  }
+  ```
+</details>
+
+---
+
+#### 🧰 Available MCP Tools (10), Resources (3) & Prompts (2)
+
+| Capability | Name | Description |
+| :--- | :--- | :--- |
+| **`@Tool`** | `inspectArchitecture` | Extracts the full Clean Architecture graph: concentric rings, classes, edges (`isViolating`), and ADP cycles. |
+| **`@Tool`** | `exportLlmDossier` | Generates a Markdown refactoring dossier diagnosing outward breaches and prescribing concrete DIP ports. |
+| **`@Tool`** | `synthesizeDipInversion` | Synthesizes a polyglot Dependency Inversion port (Java/Python/TS/Go/Rust) with caller & adapter diff previews. |
+| **`@Tool`** | `evaluateFitness` | Computes the Architecture Fitness Index (`AFI` 0–100%, Grade `A`–`F`), Main Sequence ($I, A, D$), and Screaming Score (`SAS`). |
+| **`@Tool`** | `getFitnessHistory` | Retrieves historical fitness snapshots and regression trajectory (`IMPROVING`, `STABLE`, `DEGRADING`). |
+| **`@Tool`** | `proposeScreamingMigration` | Proposes vertical domain feature clusters and calculates projected Screaming Architecture Score gains. |
+| **`@Tool`** | `listSnapshots` | Lists saved architecture snapshots in `.archlens/snapshots/` and historical Git release tags. |
+| **`@Tool`** | `getSnapshot` | Retrieves a specific historical release or pre-refactor architecture snapshot (`@NotBlank snapshotId`). |
+| **`@Tool`** | `getPolicy` | Returns the active `.archlens/policy.json` concentric ring governance policy. |
+| **`@Tool`** | `syncDipAdr` | Mints and synchronizes a living Architecture Decision Record (`docs/adr/ADR-*.md`) for a DIP refactoring. |
+| **`@Resource`** | `archlens://llms.txt` | Canonical `llmstxt.org` Clean Architecture rules, CLI recipes, and refactoring protocol specification. |
+| **`@Resource`** | `archlens://policy` | Active `.archlens/policy.json` concentric ring definitions and architectural proposals. |
+| **`@Resource`** | `archlens://fitness` | Live Architecture Fitness Index (`AFI`) evaluation JSON report. |
+| **`@Prompt`** | `architectural-review` | Structured prompt template for conducting a concentric ring & Main Sequence architectural review. |
+| **`@Prompt`** | `dip-refactoring-guide` | Guided prompt template (`@NotBlank fromClass`, `@NotBlank toClass`) for executing a surgical DIP inversion. |
 
 *Learn more: [Model Context Protocol (MCP) Integration](https://github.com/fmatar/archlens/wiki/MCP-Integration)*
 
@@ -326,11 +458,11 @@ Archlens provides native AST scanners via a modular Service Provider Interface (
 
 | Language | Ecosystem & AST Engine | File Extensions | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Java 25** | JavaParser 3.28 | `.java` | Records, Sealed Types, Interfaces, Class Hierarchies, Inward Rules |
-| **Python** | Python AST Visitor | `.py` | Modules, Classes, Functions, Imports, Relative Imports |
-| **TypeScript / JS / Svelte** | Babel AST / Regex Scanner | `.ts`, `.tsx`, `.js`, `.jsx`, `.svelte`, `.svelte.ts` | Classes, Svelte 5 Components, Runes, Interfaces, Named Imports, ESM & Subpath Re-exports (`#lib/*`) |
-| **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths |
-| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions, Package-level Functions |
+| **Java 25** | JavaParser 3.28 (`ThreadLocal`) | `.java` | Records, Sealed Types, Interfaces, Method Signatures, Multi-Module Monorepos, Inward Rules |
+| **Python** | Statement-Normalizing AST Lexer | `.py` | Class-First Edges, `Protocol`/`ABC`/`Enum` Stereotypes, Method Signatures, Multi-Line & Nested Imports, `__init__.py` Barrel Re-exports |
+| **TypeScript / JS / Svelte** | Statement-Normalizing AST Scanner | `.ts`, `.tsx`, `.js`, `.jsx`, `.svelte`, `.svelte.ts` | Classes, Svelte 5 Runes, `interface`/`abstract class`/`enum` Stereotypes, Multi-Line ESM, Barrel Re-exports, `tsconfig.json` & Turborepo (`@workspace/*`) Aliases |
+| **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths, Trait DIP Synthesis |
+| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions, Package-level Functions, Interface DIP Synthesis |
 | **Clojure** | EDN & Regex AST Scanner | `.clj`, `.cljs`, `.edn` | Namespaces (`ns`), `(:require ...)`, `def`, `defn`, Protocols |
 
 ---
@@ -413,6 +545,7 @@ npm --prefix frontend run test:e2e
 * [SDLC Compliance Report](docs/specs/SDLC_COMPLIANCE_REPORT.md)
 * [Changelog](CHANGELOG.md)
 * [Contribution Process](CONTRIBUTING.md)
+* [Contributors & Acknowledgements](CONTRIBUTORS.md)
 
 ---
 

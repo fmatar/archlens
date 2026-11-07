@@ -22,7 +22,8 @@ import type {
   FeatureCluster,
   ScreamingMigrationProposal,
   FitnessEvaluation,
-  FitnessHistoryTrend
+  FitnessHistoryTrend,
+  RefactorVerificationResult
 } from '../types/diagram';
 import gsap from 'gsap';
 
@@ -57,9 +58,10 @@ class DiagramState {
     this.isMainSequenceOpen = !this.isMainSequenceOpen;
   }
 
-  // Acyclic Dependencies Principle (ADP) Cycles
+  // Acyclic Dependencies Principle (ADP) Cycles & Violation Count
   packageCycles = $derived.by<PackageCycle[]>(() => this.graph?.cycles || []);
   hasCycles = $derived(this.packageCycles.length > 0);
+  violatingEdgesCount = $derived.by<number>(() => (this.graph?.edges || []).filter((e) => e.isViolating).length);
 
   // Screaming Architecture Metric (Uncle Bob Ch. 21)
   screamingMetric = $derived.by<ScreamingMetric | null>(() => this.graph?.screamingMetric || null);
@@ -295,6 +297,25 @@ class DiagramState {
   isDispatchingDip = $state<boolean>(false);
   dipDispatchNotice = $state<string | null>(null);
 
+  // Closed-Loop Refactor Verification, Snapshot Rollback & Intent State
+  lastRefactorSnapshotId = $state<string | null>(null);
+  lastRefactorBaselineViolations = $state<number>(0);
+  lastRefactorBaselineCycles = $state<number>(0);
+  lastRefactorContext = $state<{
+    type: 'DIP_INVERSION' | 'PACKAGE_REORGANIZATION';
+    fromClass?: string;
+    toClass?: string;
+    portName?: string;
+    title?: string;
+    reason?: string;
+  } | null>(null);
+  lastVerificationResult = $state<RefactorVerificationResult | null>(null);
+  isVerifyingRefactor = $state<boolean>(false);
+  isRollingBackRefactor = $state<boolean>(false);
+  isSyncingAdr = $state<boolean>(false);
+  lastSyncedAdrFilename = $state<string | null>(null);
+  humanIntentNote = $state<string>('');
+
   async openDipInversion(fromClass: string, toClass: string) {
     this.clearEdgeTooltip();
     this.isDipModalOpen = true;
@@ -394,8 +415,11 @@ class DiagramState {
       const params = new URLSearchParams();
       if (this.projectRoot) params.set('projectRoot', this.projectRoot);
       const url = params.toString() ? `/api/mailbox/to-agent?${params.toString()}` : '/api/mailbox/to-agent';
+      const baselineViolations = this.violatingEdgesCount;
+      const baselineCycles = this.packageCycles.length;
+      const intentNote = this.humanIntentNote.trim();
 
-      await fetch(url, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -409,17 +433,44 @@ class DiagramState {
             portFilePath: plan.portFilePath,
             portInterfaceCode: plan.portInterfaceCode,
             adapterRefactorPreview: plan.adapterRefactorPreview,
-            callerRefactorPreview: plan.callerRefactorPreview
+            callerRefactorPreview: plan.callerRefactorPreview,
+            baselineViolations,
+            baselineCycles,
+            ...(intentNote ? { architecturalIntent: intentNote } : {})
           }
         })
       });
 
+      let snapshotId = `snap-${Date.now()}`;
+      try {
+        if (res && res.ok) {
+          const cmd = await res.json();
+          if (cmd?.payload?.snapshotId) {
+            snapshotId = cmd.payload.snapshotId;
+          }
+        }
+      } catch (_) {}
+
+      this.lastRefactorSnapshotId = snapshotId;
+      this.lastRefactorBaselineViolations = baselineViolations;
+      this.lastRefactorBaselineCycles = baselineCycles;
+      this.lastVerificationResult = null;
+      this.lastSyncedAdrFilename = null;
+      this.lastRefactorContext = {
+        type: 'DIP_INVERSION',
+        fromClass: plan.fromClass,
+        toClass: plan.toClass,
+        portName: plan.portName,
+        reason: intentNote || `Invert outward Clean Architecture dependency via ${plan.portName}`
+      };
+      this.isTelemetryDrawerOpen = true;
+
       this.addTelemetryEvent(
         'TASK',
         `Dispatched DIP Inversion task to .archlens/to-agent.json`,
-        `Synthesized ${plan.portName} in ${plan.portPackage}`
+        `Synthesized ${plan.portName} in ${plan.portPackage} (Snapshot: ${snapshotId})`
       );
-      this.dipDispatchNotice = `Task dispatched to AI agent mailbox!`;
+      this.dipDispatchNotice = 'Task dispatched to AI agent mailbox!';
       setTimeout(() => {
         this.isDispatchingDip = false;
         this.isDipModalOpen = false;
@@ -634,8 +685,10 @@ class DiagramState {
       const params = new URLSearchParams();
       if (this.projectRoot) params.set('projectRoot', this.projectRoot);
       const url = params.toString() ? `/api/mailbox/to-agent?${params.toString()}` : '/api/mailbox/to-agent';
+      const baselineCycles = this.packageCycles.length;
+      const intentNote = this.humanIntentNote.trim();
 
-      await fetch(url, {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -645,15 +698,39 @@ class DiagramState {
             moves: sim.stagedMoves,
             baselineViolations: sim.baselineViolations,
             simulatedViolations: sim.simulatedViolations,
-            violationDelta: sim.violationDelta
+            violationDelta: sim.violationDelta,
+            baselineCycles,
+            ...(intentNote ? { architecturalIntent: intentNote } : {})
           }
         })
       });
 
+      let snapshotId = `snap-${Date.now()}`;
+      try {
+        if (res && res.ok) {
+          const cmd = await res.json();
+          if (cmd?.payload?.snapshotId) {
+            snapshotId = cmd.payload.snapshotId;
+          }
+        }
+      } catch (_) {}
+
+      this.lastRefactorSnapshotId = snapshotId;
+      this.lastRefactorBaselineViolations = sim.baselineViolations;
+      this.lastRefactorBaselineCycles = baselineCycles;
+      this.lastVerificationResult = null;
+      this.lastSyncedAdrFilename = null;
+      this.lastRefactorContext = {
+        type: 'PACKAGE_REORGANIZATION',
+        title: `Sandbox Package Reorganization (${sim.stagedMoves.length} moves)`,
+        reason: intentNote || `Reorganize ${sim.stagedMoves.length} classes across concentric Clean Architecture rings.`
+      };
+      this.isTelemetryDrawerOpen = true;
+
       this.addTelemetryEvent(
         'TASK',
         `Dispatched APPLY_PROPOSAL task to .archlens/to-agent.json`,
-        `${sim.stagedMoves.length} staged reassignments queued`
+        `${sim.stagedMoves.length} staged reassignments queued (Snapshot: ${snapshotId})`
       );
       this.sandboxDispatchNotice = 'Refactoring task dispatched to AI agent mailbox!';
       setTimeout(() => {
@@ -663,6 +740,144 @@ class DiagramState {
     } catch (e: any) {
       this.sandboxDispatchNotice = `Error dispatching task: ${e?.message || e}`;
       this.isDispatchingSandboxProposal = false;
+    }
+  }
+
+  async verifyLastRefactoring(): Promise<RefactorVerificationResult | null> {
+    if (!this.lastRefactorSnapshotId) return null;
+    this.isVerifyingRefactor = true;
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/mailbox/verify?${params.toString()}` : '/api/mailbox/verify';
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baselineViolations: this.lastRefactorBaselineViolations,
+          baselineCycles: this.lastRefactorBaselineCycles,
+          snapshotId: this.lastRefactorSnapshotId
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const verification: RefactorVerificationResult = await res.json();
+      this.lastVerificationResult = verification;
+      await this.loadGraph(this.activeProposalId);
+
+      if (verification.passed) {
+        this.addTelemetryEvent(
+          'SUCCESS',
+          `Refactor Verified: ${verification.summary}`,
+          `Baseline: ${verification.initialViolations} -> Remaining: ${verification.remainingViolations} (Snapshot: ${verification.snapshotId})`
+        );
+      } else {
+        this.addTelemetryEvent(
+          'WARNING',
+          `Verification Failed: ${verification.summary}`,
+          `Click "Revert Snapshot" to restore workspace to ${verification.snapshotId}`
+        );
+      }
+      return verification;
+    } catch (e: any) {
+      this.addTelemetryEvent('WARNING', `Failed to verify refactoring: ${e?.message || e}`);
+      return null;
+    } finally {
+      this.isVerifyingRefactor = false;
+    }
+  }
+
+  async rollbackLastRefactoring(): Promise<boolean> {
+    if (!this.lastRefactorSnapshotId) return false;
+    this.isRollingBackRefactor = true;
+    const snapId = this.lastRefactorSnapshotId;
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/mailbox/rollback?${params.toString()}` : '/api/mailbox/rollback';
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ snapshotId: snapId })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        this.lastVerificationResult = null;
+        this.lastRefactorSnapshotId = null;
+        this.lastSyncedAdrFilename = null;
+        await this.loadPolicy();
+        await this.loadGraph(this.activeProposalId);
+        this.addTelemetryEvent(
+          'SUCCESS',
+          `Reverted workspace & policy to snapshot ${snapId}`,
+          'All source files and .archlens/policy.json restored to pre-refactor state'
+        );
+        return true;
+      } else {
+        this.addTelemetryEvent('WARNING', `Snapshot rollback reported false for ${snapId}`);
+        return false;
+      }
+    } catch (e: any) {
+      this.addTelemetryEvent('WARNING', `Failed to rollback snapshot ${snapId}: ${e?.message || e}`);
+      return false;
+    } finally {
+      this.isRollingBackRefactor = false;
+    }
+  }
+
+  async syncVerifiedRefactorAdr(): Promise<string | null> {
+    const ctx = this.lastRefactorContext;
+    if (!ctx) return null;
+    this.isSyncingAdr = true;
+    try {
+      const params = new URLSearchParams();
+      if (this.projectRoot) params.set('projectRoot', this.projectRoot);
+      const url = params.toString() ? `/api/mailbox/sync-adr?${params.toString()}` : '/api/mailbox/sync-adr';
+
+      const payload =
+        ctx.type === 'PACKAGE_REORGANIZATION'
+          ? {
+              type: 'PACKAGE_REORGANIZATION',
+              title: ctx.title || 'Clean Architecture Package Reorganization',
+              context: ctx.reason || 'Reorganized packages according to Clean Architecture layers.',
+              decision: 'Adopt concentric layer hierarchy.',
+              consequences: 'Eliminated illegal outward dependencies.'
+            }
+          : {
+              type: 'DIP_INVERSION',
+              sourceClass: ctx.fromClass || '',
+              targetClass: ctx.toClass || '',
+              interfacePortName: ctx.portName || 'Port',
+              reason: ctx.reason || 'Invert outward Clean Architecture dependency'
+            };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.filename) {
+        this.lastSyncedAdrFilename = data.filename;
+        this.addTelemetryEvent(
+          'SUCCESS',
+          `Minted Living ADR: docs/adr/${data.filename}`,
+          `Recorded ${ctx.type} decision in docs/adr/`
+        );
+        return data.filename;
+      }
+      return null;
+    } catch (e: any) {
+      this.addTelemetryEvent('WARNING', `Failed to sync ADR: ${e?.message || e}`);
+      return null;
+    } finally {
+      this.isSyncingAdr = false;
     }
   }
 

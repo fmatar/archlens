@@ -8,18 +8,61 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * Use case orchestrating transactional refactoring verification and worktree snapshot rollbacks.
+ * Use case orchestrating transactional refactoring verification and workspace source/policy
+ * snapshot rollbacks.
  */
 @ApplicationScoped
 public class VerifyAndRollbackRefactorUseCase {
 
   private static final String SNAPSHOTS_DIR = ".archlens/snapshots";
+  private static final String MANIFEST_FILE = "manifest.txt";
+  private static final String FILES_BACKUP_DIR = "files";
+
+  private static final Set<String> IGNORED_DIRS =
+      Set.of(
+          ".git",
+          ".archlens",
+          ".uml-viewer",
+          ".agent",
+          ".agents",
+          ".github",
+          ".claude",
+          ".cursor",
+          ".vscode",
+          "node_modules",
+          "target",
+          "dist",
+          "build",
+          "out",
+          "coverage",
+          "__pycache__",
+          ".venv",
+          "venv",
+          ".idea",
+          ".settings",
+          ".gradle",
+          ".next",
+          ".svelte-kit");
+
+  private static final Set<String> SOURCE_EXTENSIONS =
+      Set.of(
+          ".java", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".svelte", ".go", ".rs",
+          ".clj", ".cljs", ".cljc", ".edn", ".kt");
 
   @Inject ArchitectureCompiler compiler;
   @Inject MailboxGateway mailboxGateway;
@@ -32,30 +75,56 @@ public class VerifyAndRollbackRefactorUseCase {
     this.mailboxGateway = mailboxGateway;
   }
 
-  /** Captures an isolated pre-refactor snapshot of the workspace configuration and policy. */
+  /**
+   * Captures an isolated pre-refactor snapshot of both `.archlens/policy.json` and the project's
+   * source code files so agent refactorings can be atomically rolled back.
+   */
   public String createPreRefactorSnapshot(String projectRoot) throws IOException {
     String snapshotId =
         "snap-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8);
     File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    Path rootPath = root.toPath().toAbsolutePath().normalize();
     File snapDir = new File(root, SNAPSHOTS_DIR + "/" + snapshotId);
-    Files.createDirectories(snapDir.toPath());
+    Path snapPath = snapDir.toPath();
+    Files.createDirectories(snapPath);
 
     File policy = new File(root, ".archlens/policy.json");
     if (policy.exists()) {
       Files.copy(
-          policy.toPath(),
-          snapDir.toPath().resolve("policy.json"),
-          StandardCopyOption.REPLACE_EXISTING);
+          policy.toPath(), snapPath.resolve("policy.json"), StandardCopyOption.REPLACE_EXISTING);
     }
+
+    Path filesBackupRoot = snapPath.resolve(FILES_BACKUP_DIR);
+    Files.createDirectories(filesBackupRoot);
+    List<String> trackedFiles = collectSourceFiles(rootPath);
+    for (String relPath : trackedFiles) {
+      Path sourceFile = rootPath.resolve(relPath);
+      Path backupDest = filesBackupRoot.resolve(relPath);
+      if (backupDest.getParent() != null) {
+        Files.createDirectories(backupDest.getParent());
+      }
+      Files.copy(sourceFile, backupDest, StandardCopyOption.REPLACE_EXISTING);
+    }
+    Files.write(snapPath.resolve(MANIFEST_FILE), trackedFiles, StandardCharsets.UTF_8);
+
     return snapshotId;
   }
 
   /**
    * Verifies that an executed refactoring operation reduced or maintained outward violations
-   * without regressions.
+   * without introducing new Clean Architecture violations or ADP package cycles.
    */
   public RefactorVerificationResult verifyRefactoring(
       String projectRoot, int baselineViolations, String snapshotId) {
+    return verifyRefactoring(projectRoot, baselineViolations, -1, snapshotId);
+  }
+
+  /**
+   * Verifies that an executed refactoring operation reduced or maintained outward violations and
+   * did not introduce new ADP package dependency cycles.
+   */
+  public RefactorVerificationResult verifyRefactoring(
+      String projectRoot, int baselineViolations, int baselineCycles, String snapshotId) {
     ArchitectureGraph currentGraph;
     try {
       currentGraph = compiler.compileGraph(projectRoot, null);
@@ -70,26 +139,79 @@ public class VerifyAndRollbackRefactorUseCase {
         (int) currentGraph.edges().stream().filter(e -> e.isViolating()).count();
 
     if (currentViolations > baselineViolations) {
-      return RefactorVerificationResult.ofFailure(
-          baselineViolations,
-          currentViolations,
-          "New outward Clean Architecture violations introduced (current: "
-              + currentViolations
-              + ", baseline: "
-              + baselineViolations
-              + ")",
-          snapshotId);
+      RefactorVerificationResult failure =
+          RefactorVerificationResult.ofFailure(
+              baselineViolations,
+              currentViolations,
+              "New outward Clean Architecture violations introduced (current: "
+                  + currentViolations
+                  + ", baseline: "
+                  + baselineViolations
+                  + ")",
+              snapshotId);
+      recordVerificationTelemetry(projectRoot, failure);
+      return failure;
     }
 
-    return RefactorVerificationResult.ofSuccess(baselineViolations, currentViolations, snapshotId);
+    int currentCycles = currentGraph.cycles() != null ? currentGraph.cycles().size() : 0;
+    if (baselineCycles >= 0 && currentCycles > baselineCycles) {
+      RefactorVerificationResult cycleFailure =
+          RefactorVerificationResult.ofFailure(
+              baselineViolations,
+              currentViolations,
+              "New package dependency cycle (ADP) introduced (current: "
+                  + currentCycles
+                  + ", baseline: "
+                  + baselineCycles
+                  + ")",
+              snapshotId);
+      recordVerificationTelemetry(projectRoot, cycleFailure);
+      return cycleFailure;
+    }
+
+    RefactorVerificationResult success =
+        RefactorVerificationResult.ofSuccess(baselineViolations, currentViolations, snapshotId);
+    recordVerificationTelemetry(projectRoot, success);
+    return success;
   }
 
-  /** Rolls back workspace policy to the captured pre-refactor snapshot. */
+  private void recordVerificationTelemetry(
+      String projectRoot, RefactorVerificationResult verification) {
+    if (mailboxGateway == null) {
+      return;
+    }
+    try {
+      mailboxGateway.appendCommand(
+          projectRoot,
+          false,
+          "VERIFY_COMPLETE",
+          Map.of("snapshotId", verification.snapshotId() != null ? verification.snapshotId() : ""),
+          Map.of(
+              "status",
+              verification.passed() ? "SUCCESS" : "FAILED",
+              "passed",
+              verification.passed(),
+              "violationDelta",
+              verification.violationDelta(),
+              "remainingViolations",
+              verification.remainingViolations(),
+              "summary",
+              verification.summary()));
+    } catch (IOException ignored) {
+      // Non-fatal telemetry write
+    }
+  }
+
+  /**
+   * Rolls back both `.archlens/policy.json` and modified/created source files to the captured
+   * pre-refactor snapshot.
+   */
   public boolean rollbackToSnapshot(String projectRoot, String snapshotId) throws IOException {
     if (snapshotId == null || snapshotId.isBlank()) {
       return false;
     }
     File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    Path rootPath = root.toPath().toAbsolutePath().normalize();
     File snapDir = new File(root, SNAPSHOTS_DIR + "/" + snapshotId);
     if (!snapDir.exists()) {
       return false;
@@ -102,6 +224,40 @@ public class VerifyAndRollbackRefactorUseCase {
       Files.copy(backupPolicy.toPath(), destPolicy.toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    Path snapPath = snapDir.toPath();
+    Path manifestPath = snapPath.resolve(MANIFEST_FILE);
+    Path filesBackupRoot = snapPath.resolve(FILES_BACKUP_DIR);
+    if (Files.exists(manifestPath) && Files.isDirectory(filesBackupRoot)) {
+      List<String> manifestLines = Files.readAllLines(manifestPath, StandardCharsets.UTF_8);
+      Set<String> originalFiles = new HashSet<>();
+      for (String line : manifestLines) {
+        String relPath = line.trim();
+        if (relPath.isEmpty()) {
+          continue;
+        }
+        originalFiles.add(relPath);
+        Path backupFile = filesBackupRoot.resolve(relPath);
+        Path targetFile = rootPath.resolve(relPath).normalize();
+        if (targetFile.startsWith(rootPath) && Files.exists(backupFile)) {
+          if (targetFile.getParent() != null) {
+            Files.createDirectories(targetFile.getParent());
+          }
+          Files.copy(backupFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+      }
+
+      // Remove any newly created source files that did not exist in the pre-refactor snapshot
+      List<String> currentSourceFiles = collectSourceFiles(rootPath);
+      for (String currentRel : currentSourceFiles) {
+        if (!originalFiles.contains(currentRel)) {
+          Path rogueFile = rootPath.resolve(currentRel).normalize();
+          if (rogueFile.startsWith(rootPath)) {
+            Files.deleteIfExists(rogueFile);
+          }
+        }
+      }
+    }
+
     // Acknowledge rollback in viewer mailbox
     mailboxGateway.appendCommand(
         projectRoot,
@@ -111,5 +267,54 @@ public class VerifyAndRollbackRefactorUseCase {
         Map.of("status", "SUCCESS", "message", "Workspace restored to snapshot " + snapshotId));
 
     return true;
+  }
+
+  private List<String> collectSourceFiles(Path rootPath) throws IOException {
+    List<String> result = new ArrayList<>();
+    if (!Files.exists(rootPath)) {
+      return result;
+    }
+    Files.walkFileTree(
+        rootPath,
+        new SimpleFileVisitor<>() {
+          @Override
+          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            if (!dir.equals(rootPath)) {
+              Path fileName = dir.getFileName();
+              if (fileName != null && IGNORED_DIRS.contains(fileName.toString())) {
+                return FileVisitResult.SKIP_SUBTREE;
+              }
+            }
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            if (attrs.isRegularFile() && isSourceFile(file)) {
+              String rel = rootPath.relativize(file).toString().replace('\\', '/');
+              result.add(rel);
+            }
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult visitFileFailed(Path file, IOException exc) {
+            return FileVisitResult.CONTINUE;
+          }
+        });
+    return result;
+  }
+
+  private boolean isSourceFile(Path file) {
+    Path namePath = file.getFileName();
+    if (namePath == null) {
+      return false;
+    }
+    String name = namePath.toString();
+    int dotIdx = name.lastIndexOf('.');
+    if (dotIdx < 0) {
+      return false;
+    }
+    return SOURCE_EXTENSIONS.contains(name.substring(dotIdx));
   }
 }

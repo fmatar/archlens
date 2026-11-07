@@ -285,48 +285,64 @@
       </div>
 
       <!-- Action Footer -->
-      <div class="px-6 py-4 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between gap-3">
-        <div>
-          {#if notice}
-            <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
-              <CheckCircle2 size={14} class="animate-pulse" />
-              <span>{notice}</span>
-            </div>
-          {:else}
-            <span class="text-[11px] text-slate-500 font-mono">
-              Uncle Bob Rule: High-level policies depend on abstractions.
-            </span>
-          {/if}
+      <div class="px-6 py-4 border-t border-slate-800 bg-slate-950/70 flex flex-col gap-3">
+        <!-- Optional Human Architectural Intent Input -->
+        <div class="flex items-center gap-2">
+          <label for="dip-intent-note" class="text-[11px] font-mono text-slate-400 shrink-0">
+            Architectural Intent Note:
+          </label>
+          <input
+            id="dip-intent-note"
+            type="text"
+            bind:value={diagramStore.humanIntentNote}
+            placeholder="Optional constraint or rationale for the AI agent & ADR (e.g. Keep Domain Core free of JDBC types)..."
+            class="flex-1 bg-slate-900/90 border border-slate-800 focus:border-rose-500/60 rounded-lg px-3 py-1.5 text-xs font-mono text-slate-200 placeholder:text-slate-500 outline-none"
+          />
         </div>
 
-        <div class="flex items-center gap-3">
-          <button
-            onclick={copyPrompt}
-            disabled={!plan || isLoading}
-            class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
-          >
-            {#if copiedPrompt}
-              <Check size={14} class="text-emerald-400" />
-              <span class="text-emerald-400 font-bold">Copied Prompt</span>
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            {#if notice}
+              <div class="flex items-center gap-2 text-xs font-mono text-emerald-400">
+                <CheckCircle2 size={14} class="animate-pulse" />
+                <span>{notice}</span>
+              </div>
             {:else}
-              <Copy size={14} />
-              <span>Copy Surgical Prompt</span>
+              <span class="text-[11px] text-slate-500 font-mono">
+                Uncle Bob Rule: High-level policies depend on abstractions.
+              </span>
             {/if}
-          </button>
+          </div>
 
-          <button
-            onclick={() => plan && diagramStore.dispatchDipToAgent(plan)}
-            disabled={!plan || isLoading || isDispatching}
-            class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 text-white font-medium text-xs flex items-center gap-2 shadow-lg shadow-rose-950/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {#if isDispatching}
-              <Loader2 size={14} class="animate-spin text-white" />
-              <span>Dispatching Task...</span>
-            {:else}
-              <Bot size={14} />
-              <span>Dispatch to AI Agent</span>
-            {/if}
-          </button>
+          <div class="flex items-center gap-3">
+            <button
+              onclick={copyPrompt}
+              disabled={!plan || isLoading}
+              class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {#if copiedPrompt}
+                <Check size={14} class="text-emerald-400" />
+                <span class="text-emerald-400 font-bold">Copied Prompt</span>
+              {:else}
+                <Copy size={14} />
+                <span>Copy Surgical Prompt</span>
+              {/if}
+            </button>
+
+            <button
+              onclick={() => plan && diagramStore.dispatchDipToAgent(plan)}
+              disabled={!plan || isLoading || isDispatching}
+              class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 text-white font-medium text-xs flex items-center gap-2 shadow-lg shadow-rose-950/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {#if isDispatching}
+                <Loader2 size={14} class="animate-spin text-white" />
+                <span>Dispatching Task...</span>
+              {:else}
+                <Bot size={14} />
+                <span>Dispatch to AI Agent</span>
+              {/if}
+            </button>
+          </div>
         </div>
       </div>
     </div>

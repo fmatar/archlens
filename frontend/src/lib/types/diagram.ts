@@ -299,5 +299,15 @@ export interface FitnessHistoryTrend {
   history: HistoricalFitnessSnapshot[];
 }
 
+export interface RefactorVerificationResult {
+  passed: boolean;
+  initialViolations: number;
+  remainingViolations: number;
+  violationDelta: number;
+  summary: string;
+  canRollback: boolean;
+  snapshotId: string;
+}
+
 
 

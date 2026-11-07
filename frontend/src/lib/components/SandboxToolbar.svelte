@@ -152,6 +152,21 @@
       </div>
     {/if}
 
+    {#if movesCount > 0}
+      <div class="flex items-center gap-2 px-1">
+        <label for="sandbox-intent-note" class="text-[11px] font-mono text-slate-400 shrink-0">
+          Architectural Intent:
+        </label>
+        <input
+          id="sandbox-intent-note"
+          type="text"
+          bind:value={diagramStore.humanIntentNote}
+          placeholder="Optional intent note or constraint attached to .archlens/to-agent.json..."
+          class="flex-1 bg-slate-950/80 border border-slate-800 focus:border-amber-500/60 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-200 placeholder:text-slate-500 outline-none"
+        />
+      </div>
+    {/if}
+
     <!-- Expandable Details Drawer: Staged Moves & Martin Metrics -->
     {#if isDetailsExpanded}
       <div class="pt-2 border-t border-slate-800 flex flex-col gap-3 max-h-72 overflow-y-auto pr-1">

@@ -43,16 +43,16 @@ flowchart LR
 
 - **Linked Epic**: [#164 Epic: Transactional Worktree Rollbacks & Automated Mailbox Refactoring Verification](https://github.com/fmatar/archlens/issues/164)
 - **Key Deliverables**:
-  1. **Transactional "What-If" Rollback & Git Staging Isolation**:
+  1. **Transactional "What-If" Rollback & Source/Policy Snapshot Isolation**:
      - [x] Interactive What-If Sandbox (`simulateMode`) on the Svelte 5 canvas with live client-side violation delta (`simulatedViolationsDelta`) and Main Sequence metric recalculation (`CAP-04`).
-     - [x] Policy snapshot backup (`.archlens/snapshots/policy.backup.json`) and REST rollback endpoint (`POST /api/mailbox/rollback`).
-     - [ ] Dedicated Git worktree isolation for source-code refactoring directives (`APPLY_PROPOSAL`, `INVERT_DEPENDENCY`) and a 1-click "Revert Agent Changes" button on the canvas UI.
+     - [x] Transactional pre-refactor source-tree and policy snapshots (`.archlens/snapshots/<snapshotId>/files/` + `manifest.txt` + `policy.json`) automatically captured on `INVERT_DEPENDENCY` and `APPLY_PROPOSAL`.
+     - [x] 1-click **`Revert Snapshot`** UI button in `AgentDrawer.svelte` (`POST /api/mailbox/rollback`) restoring modified source files, deleting newly created agent port files, and restoring `.archlens/policy.json`.
   2. **Automated Verification Gate (`VERIFY_REFACTOR`)**:
-     - [x] AST violation delta verification (`POST /api/mailbox/verify` via `VerifyAndRollbackRefactorUseCase`) confirming `currentViolations <= baselineViolations`.
+     - [x] Closed-loop AST outward violation and ADP cycle verification (`POST /api/mailbox/verify` via `VerifyAndRollbackRefactorUseCase`) confirming `currentViolations <= baselineViolations` and `currentCycles <= baselineCycles`, with a 1-click **`Verify Refactor`** UI button in `AgentDrawer.svelte` and `VERIFY_COMPLETE` telemetry in `.archlens/to-viewer.json`.
      - [ ] Automated backend test-suite execution inside `VerifyAndRollbackRefactorUseCase` before acknowledging completion in `.archlens/to-viewer.json`.
   3. **Dual-Agent Architectural Intent & Human Directives**:
-     - [x] Optional `reason` rationale supported in `POST /api/mailbox/sync-adr` (`syncDipAdr` MCP tool).
-     - [ ] Attach human architectural intent notes and custom constraints directly from the canvas UI into `.archlens/to-agent.json` payloads.
+     - [x] Optional `reason` rationale supported in `POST /api/mailbox/sync-adr` (`syncDipAdr` MCP tool) and a 1-click **`Record ADR`** UI button in `AgentDrawer.svelte`.
+     - [x] Attach human architectural intent notes (`architecturalIntent` via `InvertDipModal.svelte` and `SandboxToolbar.svelte`) directly from the canvas UI into `.archlens/to-agent.json` payloads.
 
 ---
 

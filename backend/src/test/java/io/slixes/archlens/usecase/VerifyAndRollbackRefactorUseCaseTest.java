@@ -25,6 +25,11 @@ class VerifyAndRollbackRefactorUseCaseTest {
     Path policyPath = archlensDir.resolve("policy.json");
     Files.writeString(policyPath, "{\"title\": \"Original Baseline Policy\"}");
 
+    Path srcDir = tempDir.resolve("src/main/java/com/example");
+    Files.createDirectories(srcDir);
+    Path serviceFile = srcDir.resolve("OrderService.java");
+    Files.writeString(serviceFile, "package com.example;\npublic class OrderService {}\n");
+
     MailboxGateway mailbox = new FileMailboxService();
     ArchitectureCompiler dummyCompiler =
         (root, proposal) ->
@@ -33,19 +38,27 @@ class VerifyAndRollbackRefactorUseCaseTest {
     VerifyAndRollbackRefactorUseCase useCase =
         new VerifyAndRollbackRefactorUseCase(dummyCompiler, mailbox);
 
-    // 1. Capture snapshot
+    // 1. Capture snapshot (both policy.json and source tree)
     String snapshotId = useCase.createPreRefactorSnapshot(tempDir.toString());
     assertNotNull(snapshotId);
     assertTrue(snapshotId.startsWith("snap-"));
 
-    // 2. Modify policy to simulate bad agent edit
+    // 2. Modify policy and source file, and create a new agent port file to simulate bad agent edit
     Files.writeString(policyPath, "{\"title\": \"Corrupted Policy by Agent\"}");
-    assertEquals("{\"title\": \"Corrupted Policy by Agent\"}", Files.readString(policyPath));
+    Files.writeString(serviceFile, "package com.example;\npublic class OrderService { BROKEN }\n");
+    Path roguePortFile = srcDir.resolve("OrderRepoPort.java");
+    Files.writeString(roguePortFile, "package com.example;\npublic interface OrderRepoPort {}\n");
+    assertTrue(Files.exists(roguePortFile));
 
     // 3. Rollback
     boolean rolledBack = useCase.rollbackToSnapshot(tempDir.toString(), snapshotId);
     assertTrue(rolledBack);
     assertEquals("{\"title\": \"Original Baseline Policy\"}", Files.readString(policyPath));
+    assertEquals(
+        "package com.example;\npublic class OrderService {}\n", Files.readString(serviceFile));
+    assertFalse(
+        Files.exists(roguePortFile),
+        "Newly created agent files not in pre-refactor snapshot must be removed on rollback");
 
     // 4. Verify viewer mailbox ACK
     MailboxEnvelope viewerMailbox = mailbox.readMailbox(tempDir.toString(), false);
@@ -87,5 +100,24 @@ class VerifyAndRollbackRefactorUseCaseTest {
     assertFalse(failResult.passed());
     assertTrue(
         failResult.summary().contains("New outward Clean Architecture violations introduced"));
+
+    // Scenario C: Violations did not increase, but new ADP package cycle was introduced -> FAILED
+    ArchitectureCompiler cycleCompiler =
+        (root, proposal) ->
+            new ArchitectureGraph(
+                "Test",
+                false,
+                null,
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(new io.slixes.archlens.domain.graph.PackageCycle(List.of("a", "b", "a"))),
+                null);
+    VerifyAndRollbackRefactorUseCase cycleUseCase =
+        new VerifyAndRollbackRefactorUseCase(cycleCompiler, mailbox);
+    RefactorVerificationResult cycleFail =
+        cycleUseCase.verifyRefactoring(tempDir.toString(), 0, 0, "snap-cycle");
+    assertFalse(cycleFail.passed());
+    assertTrue(cycleFail.summary().contains("package dependency cycle"));
   }
 }

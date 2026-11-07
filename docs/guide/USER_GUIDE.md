@@ -31,16 +31,35 @@ flowchart TD
 
 ---
 
-## 2. Launching the Workbench
+## 2. Launching the Workbench & Autonomous AI Lifecycle
 
-### Option A: 1-Command CLI Launcher (Recommended)
+### Option A: Zero-Touch Autonomous AI Setup (Recommended for Antigravity & Claude)
+Configure your project and all installed AI coding assistants (**Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**) in one command:
 ```bash
 cd /path/to/your-project
-npx @fmatar/archlens-skill
+npx @fmatar/archlens-skill --yes --mcp
+```
+With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fmatar/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static AST analysis.
+
+### Option B: 1-Command Visual Studio Launcher
+To open the interactive browser canvas immediately on `http://localhost:8088`:
+```bash
+cd /path/to/your-project
 npx @fmatar/archlens-skill start --open
 ```
 
-### Option B: Bare-Metal Development Mode
+### Option C: Always-On Background Daemon (Auto-Restart on Boot)
+To keep the visual workbench running across system reboots:
+```bash
+docker run -d \
+  --name archlens-server \
+  --restart unless-stopped \
+  -p 8088:8088 \
+  -v "$HOME/workspace:/workspace" \
+  ghcr.io/fmatar/archlens:latest
+```
+
+### Option D: Bare-Metal Development Mode
 ```bash
 # Terminal 1: Start the Quarkus Backend (Java 25, Port 8088)
 cd backend

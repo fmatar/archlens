@@ -12,7 +12,17 @@ Analyzes any project repository, detects programming languages and package hiera
 
 ## ⚡ Quickstart
 
-### Option A: Install AI Assistant Skills via Open Skills Standard (Recommended for Agents)
+### Option A: Zero-Touch Autonomous AI Setup (`--mcp` — Recommended for Antigravity & Claude)
+Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Once configured, your AI assistant **automatically starts or resurrects Archlens on demand** whenever an architectural MCP tool is invoked—no manual container management required:
+```bash
+# Scaffold .archlens/policy.json, AGENTS.md/CLAUDE.md, and auto-configure all installed AI clients:
+npx @fmatar/archlens-skill --yes --mcp
+
+# Or also install global skills into ~/.claude/skills and ~/.gemini/config/skills:
+npx @fmatar/archlens-skill --global --mcp
+```
+
+### Option B: Install AI Assistant Skills via Open Skills Standard
 Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, you can add Archlens capabilities across 15+ AI coding assistants (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed):
 ```bash
 # Add to all detected AI assistants in project or globally:
@@ -22,7 +32,7 @@ npx skills add fmatar/archlens
 npx skills add fmatar/archlens --agent claude-code
 ```
 
-### Option B: Run Policy Scaffolder via NPX
+### Option C: Run Interactive Policy Scaffolder via NPX
 
 ```bash
 # Production Stable (recommended)
@@ -35,13 +45,13 @@ npx @fmatar/archlens-skill@dev
 npx github:fmatar/archlens
 ```
 
-### Option C: Install Globally via NPM
+### Option D: Install Globally via NPM
 ```bash
 npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
 
-### Option D: Run from Local Repository Clone
+### Option E: Run from Local Repository Clone
 ```bash
 # Install globally from the local repository:
 npm install -g ./cli

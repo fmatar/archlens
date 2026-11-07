@@ -66,7 +66,18 @@ When an architectural violation is identified or a new package layout is designe
 
 Choose the installation method that fits your workflow:
 
-### Option A: Open Skills Ecosystem via `npx skills` (Recommended for AI Agents)
+### Option A: Zero-Touch Autonomous AI Setup (`--mcp` — Recommended for Antigravity & Claude)
+If you work primarily through **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, or **Gemini CLI**, you **do not** need to manually start Docker containers or manage background servers. Run one command in your repository:
+```bash
+# Scaffold .archlens/policy.json, AGENTS.md/CLAUDE.md, and auto-configure all installed AI clients:
+npx @fmatar/archlens-skill --mcp
+
+# Or also deploy global agent skills into ~/.claude/skills and ~/.gemini/config/skills:
+npx @fmatar/archlens-skill --global --mcp
+```
+Once registered, whenever your AI assistant invokes any Archlens MCP tool (e.g., `inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`, `evaluateFitness`), Archlens **automatically boots or resurrects its engine on demand** in the background (see the [4-Tier Auto-Resurrection Waterfall](#-how-automatic-startup-works-the-4-tier-auto-resurrection-waterfall)).
+
+### Option B: Open Skills Ecosystem via `npx skills`
 Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, equip any AI coding agent (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed) with Archlens governance protocols and companion tools:
 ```bash
 # Add to all detected AI assistants:
@@ -76,8 +87,8 @@ npx skills add fmatar/archlens
 npx skills add fmatar/archlens --agent claude-code
 ```
 
-### Option B: Zero-Install Policy Scaffolder via `npx`
-Run directly without installing any global packages:
+### Option C: Interactive Policy Scaffolder via `npx`
+Run the interactive terminal wizard directly without installing any global packages:
 ```bash
 # Production Stable Track
 npx @fmatar/archlens-skill
@@ -89,7 +100,7 @@ npx @fmatar/archlens-skill@dev
 npx github:fmatar/archlens
 ```
 
-### Option C: Global CLI Installation
+### Option D: Global CLI Installation
 Install the CLI globally on your workstation:
 ```bash
 npm install -g @fmatar/archlens-skill
@@ -98,16 +109,19 @@ npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
 
-### Option D: Docker Container (Standalone Server)
-Run the all-in-one container directly via Docker:
+### Option E: Always-On Docker Daemon (Persistent Visual Workbench)
+If you want the visual web workbench (`http://localhost:8088`) always running across system reboots without waiting for an MCP tool call or CLI command, run the container with `--restart unless-stopped`:
 ```bash
-# Mount your local workspace into /workspace:
-docker run -d --name archlens-server -p 8088:8088 \
+# Mount your local workspace into /workspace with automatic restart across reboots:
+docker run -d \
+  --name archlens-server \
+  --restart unless-stopped \
+  -p 8088:8088 \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:latest
 ```
 
-### Option E: Official GitHub Action for CI/CD Quality Gates
+### Option F: Official GitHub Action for CI/CD Quality Gates
 Enforce Clean Architecture rules, Uncle Bob ADP cycle detection, and Screaming Architecture in your GitHub Actions workflows with zero setup:
 ```yaml
 - name: Archlens Clean Architecture Gate
@@ -123,36 +137,32 @@ Enforce Clean Architecture rules, Uncle Bob ADP cycle detection, and Screaming A
 
 ## ⚡ 3-Step Quickstart
 
-Get full Clean Architecture visualization and autonomous AI refactoring running on any codebase in under two minutes:
+Get full Clean Architecture governance, visual ring inspection, and autonomous AI refactoring running on any codebase in under two minutes:
 
-### 1. Equip Your Repository (Scaffold Policy & Protocols)
+### 1. Equip Your Repository & AI Assistants
 Navigate to your project root and run the setup CLI:
 ```bash
 cd /path/to/my-project
-npx @fmatar/archlens-skill
+npx @fmatar/archlens-skill --yes --mcp
 ```
-*For automated, non-interactive CI/CD or agent setups:*
-```bash
-npx @fmatar/archlens-skill --yes
-```
-This scaffolds:
-* `.archlens/policy.json`: Concentric Clean Architecture tiers tailored to your repository.
-* `.archlens/workbench.config.json`: Local workbench server and mailbox IPC parameters.
-* `CLAUDE.md` & `AGENTS.md`: Contextual guidance and mailbox protocols for AI coding agents.
+This single command atomically provisions:
+* **`.archlens/policy.json`**: Concentric Clean Architecture tiers tailored to your repository's package structure.
+* **`.archlens/workbench.config.json`**: Local workbench server and mailbox IPC parameters.
+* **`CLAUDE.md` & `AGENTS.md`**: Contextual governance guidance and mailbox IPC protocols for AI coding agents.
+* **Multi-Client MCP Manifests**: Registers the `archlens` MCP stdio bridge across Google Antigravity, Claude Code (`.mcp.json`), Claude Desktop, Gemini CLI, Cursor, Windsurf, and VS Code.
 
-### 2. Launch the Studio (1-Command Lifecycle)
-Start the workbench container and open the visual canvas in your browser:
-```bash
-npx @fmatar/archlens-skill start --open
-```
-> [!TIP]
-> **Auto-Resurrection**: If the container is stopped or offline, `archlens-skill start` automatically resurrects it. The container also starts on demand whenever an AI assistant calls an Archlens MCP tool.
+### 2. Choose Your Execution Path: Autonomous AI vs. Visual Browser Studio
+
+| Workflow Path | How to Start | What Happens Under the Hood |
+| :--- | :--- | :--- |
+| **Path A: Autonomous AI Assistant**<br>*(Antigravity, Claude Code, Cursor)* | **Do nothing.** Just prompt your agent:<br>*"Inspect our Clean Architecture rings and check for outward breaches."* | The agent invokes the `archlens` MCP bridge (`npx -y @fmatar/archlens-skill mcp`), which **auto-starts** the native runner JAR or Docker container on port `8088` on demand (or falls back to offline static AST analysis). |
+| **Path B: Interactive Visual Canvas**<br>*(Browser Workbench on `:8088`)* | Run:<br>`npx @fmatar/archlens-skill start --open` | Launches or resurrects the Archlens server on `http://localhost:8088` and opens the interactive Svelte 5 concentric ring studio in your default browser. |
 
 ### 3. Inspect Architecture & 1-Click Dispatch to Agent
-Open **`http://localhost:8088`** in your browser:
-* Press **`⌘O`** / **`Ctrl+O`** to switch projects or select any mounted repository.
+Whether working in the visual browser (`http://localhost:8088`) or directly in your AI IDE:
+* Press **`⌘O`** / **`Ctrl+O`** in the browser to switch projects or select any mounted repository.
 * Press **`V`** to activate **Violation X-Ray** and isolate illegal outward dependencies in crimson.
-* Click any violating edge or enter the Sandbox (**`S`**) to stage fixes, then click **`Dispatch to Agent`** to let your AI assistant refactor the code automatically.
+* Click any violating edge (`⚡ Invert Dependency`) or enter the Sandbox (**`S`**) to stage fixes, then click **`Dispatch to Agent`** to let your AI assistant refactor the code and verify tests automatically.
 
 ---
 
@@ -255,13 +265,50 @@ For local, asynchronous pair programming, Archlens maintains bidirectional JSON 
 
 ---
 
-### 2. Model Context Protocol (MCP) Integration
+### 2. Model Context Protocol (MCP) Integration & Auto-Resurrection
 Archlens includes a native **Model Context Protocol (MCP 2.0)** server powered by Quarkus (`quarkus-mcp-server-http` + `quarkus-mcp-server-hibernate-validator`) on Java 25 Virtual Threads (`@RunOnVirtualThread`), paired with a zero-dependency Node.js CLI stdio bridge (`@fmatar/archlens-skill`).
+
+#### 🔄 How Automatic Startup Works: The 4-Tier Auto-Resurrection Waterfall
+When you register Archlens via `npx @fmatar/archlens-skill --mcp`, your AI assistant (**Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**) launches `npx -y @fmatar/archlens-skill mcp` over stdio. You **never** have to manually start the server beforehand—every MCP tool call automatically traverses a deterministic 4-tier resolution waterfall (`ensureServerRunning`):
+
+```mermaid
+flowchart TD
+    Call["AI Agent Invokes MCP Tool\n(e.g. inspectArchitecture, exportLlmDossier)"] --> T1{"Tier 1: Live Server Health\nGET http://localhost:8088/api/version"}
+    T1 -->|"200 OK (< 10ms)"| Proxy["Route Request to Active Quarkus Server"]
+    T1 -->|"Unreachable"| T2{"Tier 2: Native Runner JAR\nJava 21+ & quarkus-run.jar?"}
+    T2 -->|"Available"| SpawnJar["Spawn Detached JVM Process\njava -Dquarkus.http.port=8088 -jar ..."]
+    SpawnJar --> Poll["Poll /api/version Until Ready"] --> Proxy
+    T2 -->|"Not Found"| T3{"Tier 3: Docker Daemon\ndocker info running?"}
+    T3 -->|"Running"| SpawnDocker["Resurrect or Run Container\nghcr.io/fmatar/archlens:latest (:8088)"]
+    SpawnDocker --> Poll
+    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static AST Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
+    T4 --> Result["Return Concentric Ring Graph, Violations & DIP Ports"]
+    Proxy --> Result
+```
+
+| Tier | Resolution Strategy | Condition | Behavior |
+| :--- | :--- | :--- | :--- |
+| **Tier 1** | **Live Server Reuse** | `http://localhost:8088/api/version` responds `200 OK` | Immediately proxies the MCP tool call to the running Quarkus engine with zero startup overhead. |
+| **Tier 2** | **Native Quarkus Runner JAR** | `java -version` succeeds and a runner JAR exists (`ARCHLENS_JAR`, `~/.archlens/runner/quarkus-app/quarkus-run.jar`, or `target/quarkus-app/quarkus-run.jar`) | Spawns a detached background JVM process (`unref()`) on port `8088` and polls until healthy. |
+| **Tier 3** | **Docker Container Auto-Resurrection** | Docker daemon is active (`docker info`) | Starts existing `archlens-server` container (`docker start`) or launches `ghcr.io/fmatar/archlens:latest` mounting the workspace on port `8088`. |
+| **Tier 4** | **Offline Static AST Fallback** | Both Java and Docker are unavailable or offline | Executes the built-in zero-dependency Node.js polyglot AST scanner directly against disk files—guaranteeing MCP tools never fail in sandboxed or air-gapped environments. |
+
+---
+
+#### 🧭 Choosing a Lifecycle Mode: On-Demand vs. Studio vs. Daemon
+
+| Lifecycle Mode | Setup / Command | When It Starts | Best For |
+| :--- | :--- | :--- | :--- |
+| **1. Zero-Touch On-Demand (MCP)** | `npx @fmatar/archlens-skill --mcp` *(one-time)* | Automatically on the first MCP tool call from Antigravity or Claude | Daily AI-assisted coding in Antigravity, Claude Code, Cursor, or Windsurf with zero manual container management. |
+| **2. Interactive Visual Studio** | `npx @fmatar/archlens-skill start --open` | Immediately on command execution | Visual architecture exploration, Violation X-Ray (`V`), "What-If" Sandbox (`S`), and Main Sequence (`M`) analysis in the browser. |
+| **3. Always-On Background Daemon** | `docker run -d --name archlens-server --restart unless-stopped -p 8088:8088 -v "$HOME/workspace:/workspace" ghcr.io/fmatar/archlens:latest` | Automatically whenever Docker Desktop / OS boots | Architects who keep `http://localhost:8088` pinned in a browser tab all day across multiple repositories. |
+
+---
 
 #### 🔌 Local MCP Transports
 Archlens supports three local MCP connection modes:
-1. **Zero-Container Stdio Bridge (Recommended for Local CLI Agents)**:
-   Runs `npx -y @fmatar/archlens-skill mcp`. Automatically bridges to a running Archlens Workbench on `http://localhost:8088` (or auto-resurrects it) and falls back to offline static AST analysis if Docker/Java is offline.
+1. **Zero-Container Stdio Bridge (Recommended for Local CLI & IDE Agents)**:
+   Runs `npx -y @fmatar/archlens-skill mcp`. Automatically bridges to a running Archlens Workbench on `http://localhost:8088` (or auto-resurrects it via Tiers 1–3) and falls back to Tier 4 offline static AST analysis if Docker/Java is offline.
 2. **Streamable HTTP (`MCP 2.0`)**:
    `http://localhost:8088/mcp` (when the Archlens Workbench container or `./mvnw quarkus:dev` is running on port `8088`).
 3. **Server-Sent Events (`SSE`)**:
@@ -469,23 +516,36 @@ Archlens provides native AST scanners via a modular Service Provider Interface (
 
 ### 🛠️ CLI Reference (`@fmatar/archlens-skill`)
 
-| Flag | Shorthand | Description | Default |
+| Command / Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |
-| `start` | | Start Archlens Workbench container (auto-resurrects on demand) | |
+| `init` | | Initialize Clean Architecture policy in target project (default command) | |
+| `start` | | Start Archlens Workbench server (native JAR or Docker container; auto-resurrects on demand) | |
+| `check` | | Audit repository against Clean Architecture policy rules, ADP cycles, and fitness thresholds | |
+| `prompt` | | Export Clean Architecture LLM Refactoring Prompt Dossier | |
+| `mcp` | | Launch Model Context Protocol (MCP 2.0) stdio server with 4-tier auto-resurrection | |
+| `--mcp` | `-m` | Auto-configure MCP client manifests (Google Antigravity, Claude Code/Desktop, Cursor, Windsurf, VS Code) | `false` |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
+| `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
+| `--docker` | | Force running workbench via Docker container (`ghcr.io/fmatar/archlens:latest`) | `false` |
+| `--jar <PATH>` | | Custom path to Archlens Quarkus runner JAR (or via `ARCHLENS_JAR` env var) | Auto-discovered |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` (current directory) |
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
-| `--mcp` | `-m` | Auto-configure MCP client manifests (Claude, Antigravity, Cursor) | `false` |
+| `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |
+| `--detect-cycles` | | Enforce Robert C. Martin Acyclic Dependencies Principle (ADP) | `false` |
+| `--screaming-threshold <N>` | | Enforce minimum Screaming Architecture score (`0.0`–`1.0`) | `0.60` |
+| `--fitness-threshold <N>` | | Enforce minimum Architectural Fitness Index (`0.0`–`1.0`) | `0.80` |
+| `--format <FMT>` | | Audit output format (`pretty`, `json`, `sarif`) | `pretty` |
+| `--output <PATH>` | `-O` | Write audit report to specified file path | `stdout` |
 | `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
-| `--global` | `-g` | Install skill into global agent directories | `false` |
-| `--update` | `-u` | Re-scan code and update existing policy | `false` |
-| `--upgrade` | | Migrate legacy `.uml-viewer` to standard `.archlens` | `false` |
+| `--global` | `-g` | Install skill into global agent directories (`~/.claude/skills`, `~/.gemini/config/skills`) | `false` |
+| `--update` | `-u` | Re-scan code and update existing policy while preserving custom rules | `false` |
+| `--upgrade` | | Migrate legacy `.uml-viewer` configuration to `.archlens` | `false` |
 | `--force` | `-f` | Overwrite existing configuration files | `false` |
 | `--dry-run` | | Simulate execution without writing files | `false` |
-| `--yes` | `-y` | Accept defaults automatically (non-interactive) | `false` |
+| `--yes` | `-y` | Accept defaults automatically (non-interactive mode) | `false` |
 | `--version` | `-v` | Display package version | |
 | `--help` | `-h` | Display help reference | |
 
@@ -504,28 +564,29 @@ Archlens takes Uncle Bob's core thesis and expands it into a comprehensive archi
 
 ### 💻 Building from Source
 
-For developers wishing to contribute to Archlens locally:
+For developers wishing to contribute to Archlens locally (see the full [Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)):
 
 #### Prerequisites
 * Java 25 (OpenJDK / GraalVM)
 * Apache Maven 3.9+
-* Node.js 22+ and npm
+* Node.js 22+ and npm / pnpm
 
 ```bash
-# 1. Start the Backend
+# 1. Start the Backend (Port 8088)
 cd backend
 ./mvnw clean quarkus:dev
 
-# 2. Start the Frontend (in a separate terminal)
+# 2. Start the Frontend (in a separate terminal, Port 5173)
 cd ../frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 
-# 3. Run Quality Verification & Tests
-mvn clean verify
+# 3. Run Full-Stack Quality Verification, Unit Tests & E2E Smoke Suite
+mvn clean spotless:check verify
+npm test
+npm run smoke:build
 npm --prefix frontend run check
 npm --prefix frontend run test
-npm --prefix frontend run test:e2e
 ```
 
 ---

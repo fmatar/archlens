@@ -16,7 +16,7 @@ import net from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, execSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { handleMcpMessage } from '../cli/src/mcp-server.js';
 import { installMcpConfigs } from '../cli/src/mcp-registry.js';
 
@@ -43,11 +43,13 @@ export async function waitForServerReady(
   deps = {}
 ) {
   const fetchFn = deps.fetch || fetch;
+  const signal = deps.signal;
   const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && !signal?.aborted) {
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 1500);
+      timer.unref?.();
       const res = await fetchFn(`${serverUrl}/api/version`, { signal: controller.signal });
       clearTimeout(timer);
       if (res.ok) {
@@ -56,7 +58,15 @@ export async function waitForServerReady(
     } catch {
       // Server still booting
     }
-    await new Promise((r) => setTimeout(r, pollIntervalMs));
+    if (signal?.aborted) break;
+    await new Promise((r) => {
+      const t = setTimeout(r, pollIntervalMs);
+      t.unref?.();
+      signal?.addEventListener('abort', () => {
+        clearTimeout(t);
+        r();
+      }, { once: true });
+    });
   }
   return false;
 }
@@ -217,11 +227,22 @@ export async function runMcpStdioSmokeChecks(serverUrl, projectRoot = REPO_ROOT,
     throw new Error(`Expected 10 MCP tools, got ${tools.length}`);
   }
 
-  // 3. tools/call evaluateFitness
+  // 3. resources/list
+  const resourcesResp = await handleMcpMessage(
+    { jsonrpc: '2.0', id: 3, method: 'resources/list' },
+    options,
+    mcpDeps
+  );
+  const resources = resourcesResp?.result?.resources || [];
+  if (resources.length === 0) {
+    throw new Error('MCP resources/list returned 0 resources');
+  }
+
+  // 4. tools/call evaluateFitness
   const fitResp = await handleMcpMessage(
     {
       jsonrpc: '2.0',
-      id: 3,
+      id: 4,
       method: 'tools/call',
       params: { name: 'evaluateFitness', arguments: { projectRoot } }
     },
@@ -232,11 +253,11 @@ export async function runMcpStdioSmokeChecks(serverUrl, projectRoot = REPO_ROOT,
     throw new Error(`MCP evaluateFitness failed: ${fitResp.result.content?.[0]?.text}`);
   }
 
-  // 4. tools/call synthesizeDipInversion
+  // 5. tools/call synthesizeDipInversion
   const dipResp = await handleMcpMessage(
     {
       jsonrpc: '2.0',
-      id: 4,
+      id: 5,
       method: 'tools/call',
       params: {
         name: 'synthesizeDipInversion',
@@ -255,7 +276,26 @@ export async function runMcpStdioSmokeChecks(serverUrl, projectRoot = REPO_ROOT,
     throw new Error('MCP synthesizeDipInversion missing portName');
   }
 
-  // 5. Multi-agent installer dry-run
+  // 6. tools/call getPolicy
+  const policyResp = await handleMcpMessage(
+    {
+      jsonrpc: '2.0',
+      id: 6,
+      method: 'tools/call',
+      params: { name: 'getPolicy', arguments: { projectRoot } }
+    },
+    options,
+    mcpDeps
+  );
+  if (policyResp?.result?.isError) {
+    throw new Error(`MCP getPolicy failed: ${policyResp.result.content?.[0]?.text}`);
+  }
+  const policyData = JSON.parse(policyResp.result.content[0].text);
+  if (!Array.isArray(policyData.levels) || policyData.levels.length === 0) {
+    throw new Error('MCP getPolicy missing concentric levels');
+  }
+
+  // 7. Multi-agent installer dry-run
   const installDryRun = installMcpConfigs({ path: projectRoot, dryRun: true, serverUrl });
   if (installDryRun.dryRun !== true) {
     throw new Error('MCP installer dry-run failed');
@@ -264,7 +304,9 @@ export async function runMcpStdioSmokeChecks(serverUrl, projectRoot = REPO_ROOT,
   return {
     passed: true,
     toolsCount: tools.length,
+    resourcesCount: resources.length,
     dipPort: resolvedPort,
+    policyTitle: policyData.title || 'Archlens',
     configuredClientsCount: installDryRun.configuredClients.length
   };
 }
@@ -307,15 +349,44 @@ export async function runSmokeSuite(options = {}, deps = {}) {
     }
   );
 
-  let stderrLog = '';
-  child.stderr.on('data', (chunk) => {
-    stderrLog += chunk.toString();
-  });
+  let outputLog = '';
+  if (child.stdout) {
+    child.stdout.on('data', (chunk) => {
+      outputLog += chunk.toString();
+    });
+  }
+  if (child.stderr) {
+    child.stderr.on('data', (chunk) => {
+      outputLog += chunk.toString();
+    });
+  }
 
+  let childExited = false;
+  const earlyExitPromise = new Promise((_, reject) => {
+    child.once('error', (err) => {
+      childExited = true;
+      reject(new Error(`Failed to spawn Quarkus JVM process: ${err.message}\n${outputLog}`));
+    });
+    child.once('exit', (code, signal) => {
+      childExited = true;
+      reject(
+        new Error(
+          `Quarkus server exited prematurely (code=${code}, signal=${signal}) before becoming ready on ${serverUrl}.\n${outputLog}`
+        )
+      );
+    });
+  });
+  // Prevent unhandled rejection if server succeeds and exits later in finally block
+  earlyExitPromise.catch(() => {});
+
+  const readinessAbort = new AbortController();
   try {
-    const ready = await waitForServerReady(serverUrl, 30000, 250, deps);
+    const ready = await Promise.race([
+      waitForServerReady(serverUrl, 30000, 250, { ...deps, signal: readinessAbort.signal }),
+      earlyExitPromise
+    ]);
     if (!ready) {
-      throw new Error(`Quarkus server failed to become ready on ${serverUrl}.\n${stderrLog}`);
+      throw new Error(`Quarkus server failed to become ready on ${serverUrl}.\n${outputLog}`);
     }
 
     const httpResults = await runHttpSmokeChecks(serverUrl, expectedVersion, deps);
@@ -326,7 +397,7 @@ export async function runSmokeSuite(options = {}, deps = {}) {
 
     const mcpResults = await runMcpStdioSmokeChecks(serverUrl, repoRoot, deps);
     console.log(
-      `  ✅ MCP Stdio Bridge & Multi-Agent Registry -> ${mcpResults.toolsCount} tools verified, DIP port=${mcpResults.dipPort}`
+      `  ✅ MCP Stdio Bridge & Multi-Agent Registry -> ${mcpResults.toolsCount} tools, ${mcpResults.resourcesCount} resources verified, DIP port=${mcpResults.dipPort}`
     );
 
     if (!httpResults.passed || !mcpResults.passed) {
@@ -336,25 +407,28 @@ export async function runSmokeSuite(options = {}, deps = {}) {
     console.log(`\n🎉 All End-to-End Smoke Checks Passed (v${expectedVersion})!`);
     return { passed: true, httpResults, mcpResults };
   } finally {
-    child.kill('SIGTERM');
-    await new Promise((resolve) => {
-      const killTimer = setTimeout(() => {
-        try {
-          child.kill('SIGKILL');
-        } catch {
-          // ignore
-        }
-        resolve();
-      }, 2000);
-      child.once('exit', () => {
-        clearTimeout(killTimer);
-        resolve();
+    readinessAbort.abort();
+    if (!childExited) {
+      child.kill('SIGTERM');
+      await new Promise((resolve) => {
+        const killTimer = setTimeout(() => {
+          try {
+            child.kill('SIGKILL');
+          } catch {
+            // ignore
+          }
+          resolve();
+        }, 2000);
+        child.once('exit', () => {
+          clearTimeout(killTimer);
+          resolve();
+        });
       });
-    });
+    }
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const buildIfMissing = process.argv.includes('--build');
   runSmokeSuite({ buildIfMissing }).catch((err) => {
     console.error(`\n❌ Smoke Suite Failed: ${err.message}`);

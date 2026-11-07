@@ -108,13 +108,15 @@ describe('End-to-End Smoke Test Engine (scripts/smoke-test.js)', () => {
     assert.equal(versionCheck.passed, false);
   });
 
-  it('runMcpStdioSmokeChecks verifies JSON-RPC 2.0 initialize, 10 tools/list, and tools/call', async () => {
+  it('runMcpStdioSmokeChecks verifies JSON-RPC 2.0 initialize, 10 tools/list, resources/list, and tools/call', async () => {
     const mcpResult = await runMcpStdioSmokeChecks('http://127.0.0.1:8088', process.cwd(), {
       fetch: createMockFetch()
     });
     assert.equal(mcpResult.passed, true);
     assert.equal(mcpResult.toolsCount, 10);
+    assert.ok(mcpResult.resourcesCount >= 1);
     assert.equal(mcpResult.dipPort, 'StripeGatewayPort');
+    assert.equal(mcpResult.policyTitle, 'Archlens');
   });
 
   it('runSmokeSuite orchestrates server lifecycle, HTTP/MCP checks, and clean SIGTERM teardown', async () => {
@@ -146,5 +148,35 @@ describe('End-to-End Smoke Test Engine (scripts/smoke-test.js)', () => {
       () => runSmokeSuite({ buildIfMissing: false }, { existsSync: () => false }),
       /Packaged Quarkus JAR not found/
     );
+  });
+
+  it('runSmokeSuite fails fast immediately if child process exits prematurely during startup', async () => {
+    const crashingChild = new EventEmitter();
+    crashingChild.stdout = new EventEmitter();
+    crashingChild.stderr = new EventEmitter();
+    crashingChild.kill = () => {};
+
+    const startTime = Date.now();
+    setImmediate(() => {
+      crashingChild.stderr.emit('data', Buffer.from('BindException: Address already in use'));
+      crashingChild.emit('exit', 1);
+    });
+
+    await assert.rejects(
+      () =>
+        runSmokeSuite(
+          { port: 18089 },
+          {
+            existsSync: () => true,
+            readFileSync: () => JSON.stringify({ version: '0.1.1' }),
+            spawn: () => crashingChild,
+            fetch: async () => {
+              throw new Error('ECONNREFUSED');
+            }
+          }
+        ),
+      /BindException: Address already in use/
+    );
+    assert.ok(Date.now() - startTime < 2000, 'Should fail fast without waiting 30s timeout');
   });
 });

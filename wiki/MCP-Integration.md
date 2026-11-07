@@ -6,10 +6,36 @@ Archlens natively implements an embedded **Model Context Protocol (MCP)** server
 
 ## 🔌 Connection Endpoints
 
-The Archlens container and native server expose dual MCP transports:
-- **Server-Sent Events (SSE)**: `http://localhost:8088/mcp/sse`
-- **Streamable HTTP**: `http://localhost:8088/mcp`
-- **CLI Stdio Runner**: `npx -y @fmatar/archlens-skill mcp`
+The Archlens container and native server expose three MCP transports:
+- **Zero-Dependency CLI Stdio Bridge (Recommended)**: `npx -y @fmatar/archlens-skill mcp`
+- **Streamable HTTP (`MCP 2.0`)**: `http://localhost:8088/mcp`
+- **Server-Sent Events (`SSE`)**: `http://localhost:8088/mcp/sse`
+
+---
+
+## 🔄 Zero-Touch Startup: The 4-Tier Auto-Resurrection Waterfall
+
+When configured via the CLI stdio bridge (`npx -y @fmatar/archlens-skill mcp`), you never need to start the Archlens server manually before prompting **Google Antigravity**, **Claude Code**, **Claude Desktop**, or **Cursor**. Every MCP tool call traverses a deterministic 4-tier resolution waterfall (`ensureServerRunning` in `cli/src/docker-runner.js`):
+
+```mermaid
+flowchart TD
+    Call["AI Agent Invokes MCP Tool\n(e.g. inspectArchitecture, exportLlmDossier)"] --> T1{"Tier 1: Live Server Health\nGET http://localhost:8088/api/version"}
+    T1 -->|"200 OK (< 10ms)"| Proxy["Route Request to Active Quarkus Server"]
+    T1 -->|"Unreachable"| T2{"Tier 2: Native Runner JAR\nJava 21+ & quarkus-run.jar?"}
+    T2 -->|"Available"| SpawnJar["Spawn Detached JVM Process\njava -Dquarkus.http.port=8088 -jar ..."]
+    SpawnJar --> Poll["Poll /api/version Until Ready"] --> Proxy
+    T2 -->|"Not Found"| T3{"Tier 3: Docker Daemon\ndocker info running?"}
+    T3 -->|"Running"| SpawnDocker["Resurrect or Run Container\nghcr.io/fmatar/archlens:latest (:8088)"]
+    SpawnDocker --> Poll
+    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static AST Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
+    T4 --> Result["Return Concentric Ring Graph, Violations & DIP Ports"]
+    Proxy --> Result
+```
+
+1. **Tier 1 — Live Server Reuse**: Pings `http://localhost:8088/api/version`. If the Quarkus server is already running, routes the request immediately.
+2. **Tier 2 — Native Runner JAR**: If `java -version` succeeds and a native runner JAR exists (`ARCHLENS_JAR`, `~/.archlens/runner/quarkus-app/quarkus-run.jar`, or `target/quarkus-app/quarkus-run.jar`), launches a detached background JVM process on port `8088`.
+3. **Tier 3 — Docker Container Auto-Resurrection**: If Docker is running (`docker info`), restarts an existing `archlens-server` container or launches `ghcr.io/fmatar/archlens:latest` detached on port `8088`.
+4. **Tier 4 — Offline Static AST Fallback**: If neither Java nor Docker is available, executes the built-in Node.js static AST analyzer directly on disk—ensuring zero downtime in restricted sandboxes or offline environments.
 
 ---
 

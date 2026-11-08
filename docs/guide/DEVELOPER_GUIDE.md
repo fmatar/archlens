@@ -13,11 +13,11 @@ Archlens is engineered around **Clean Architecture** and the **Dependency Invers
 
 ```mermaid
 flowchart TD
-    subgraph Rings ["Clean Architecture Concentric Rings"]
-        L3["Infrastructure (L3)<br/>• REST Resources & Quarkus Server<br/>• Svelte 5 Web UI Canvas<br/>• CLI Entrypoints & File System"]
-        L2["Adapters (L2)<br/>• Mailbox IPC Adapter (FileMailboxService)<br/>• AST Scanner Adapters (Java, Python, Rust, Go, TS, Clojure)"]
-        L1["Application (L1)<br/>• Graph Compiler (GraphCompiler)<br/>• Architectural Dossier Generator<br/>• Quality Metrics Engine (CRAP Score)"]
-        L0["Domain Core (L0)<br/>• ArchitectureGraph & ComponentNode<br/>• ArchitecturePolicy & Rule Engine<br/>• Violation Models"]
+    subgraph Rings ["Clean Architecture Concentric Rings (.archlens/policy.json)"]
+        L3["Infrastructure & Delivery (Ring 3)<br/>• REST Resources (delivery.rest) & Quarkus Server<br/>• Native Quarkus MCP 2.0 Service (mcp)<br/>• Svelte 5 Web UI Canvas & CLI Entrypoints"]
+        L2["Adapters (Ring 2)<br/>• Mailbox IPC Adapter (mailbox.fs.FileMailboxService)"]
+        L1["Application, Engine & Scanners (Ring 1)<br/>• Use Cases (EvaluateFitness, SynthesizeDipInversion, ExportDossier, ...)<br/>• GraphCompiler, ProjectFileWatcher & CrapScoreCalculator<br/>• Polyglot AST Scanners (scanner.*: Java, Python, TS/Svelte, Rust, Go, Clojure)"]
+        L0["Domain Core (Ring 0)<br/>• ArchitectureGraph, ComponentNode, ClassNode, DependencyEdge<br/>• ArchitecturePolicy, DependencyRuleValidator & PackageCycleDetector<br/>• DipInversionSynthesizer, ScreamingArchitectureAnalyzer & FitnessCalculator"]
         
         L3 --> L2
         L2 --> L1
@@ -26,10 +26,10 @@ flowchart TD
 ```
 
 ### The Inward Dependency Rule:
-- **Domain Core (L0)**: Contains immutable models (`ArchitectureGraph`, `ComponentNode`, `ArchitecturePolicy`). Contains zero dependencies on outer frameworks or scanners.
-- **Application (L1)**: Orchestrates graph compilation, evaluates directional package imports against ring policies, and generates refactoring prompt dossiers.
-- **Adapters (L2)**: Implements language scanner SPIs, AST walkers, and file mailbox communication queues.
-- **Infrastructure (L3)**: Exposes HTTP/REST APIs, Server-Sent Events (SSE), native MCP endpoints, and renders the interactive browser canvas.
+- **Domain Core (Ring 0)**: Pure business domain models (`domain.graph`, `domain.policy`, `domain.fitness`, `domain.screaming`, `domain.dossier`, `domain.mailbox`). Zero dependencies on outer frameworks, HTTP libraries, or filesystem I/O.
+- **Application, Engine & Scanners (Ring 1)**: Orchestrates use cases (`usecase.*`), graph compilation (`engine.GraphCompiler`), CRAP score calculation (`metrics.CrapScoreCalculator`), and polyglot AST scanning (`scanner.*`).
+- **Adapters (Ring 2)**: Implements file mailbox communication queues (`mailbox.fs.*` implementing `domain.mailbox.MailboxGateway`).
+- **Infrastructure & Delivery (Ring 3)**: Exposes HTTP/REST APIs (`delivery.rest.*`), Server-Sent Events (SSE), Quarkus MCP 2.0 endpoints (`mcp.ArchlensMcpService`), the Svelte 5 browser canvas (`frontend/`), and the Node.js CLI (`cli/`).
 
 ---
 
@@ -37,28 +37,39 @@ flowchart TD
 
 ```text
 archlens/
-├── backend/                  # Quarkus 3.x Java 25 Application
-│   ├── src/main/java/        # Polyglot Scanners, Graph Compiler, MCP Service, REST Resources
+├── backend/                  # Quarkus 3.40 Java 25 Application
+│   ├── src/main/java/        # Ring 0 (domain), Ring 1 (usecase, engine, scanner, metrics), Ring 2 (mailbox.fs), Ring 3 (delivery, mcp)
 │   ├── src/main/resources/   # Application properties, SpotBugs exclusions, PMD rule configurations
-│   ├── src/test/java/        # Unit & architecture verification test suites
-│   └── pom.xml               # Backend Maven configuration
+│   ├── src/test/java/        # 320+ unit, scanner, MCP, and architecture verification tests
+│   └── pom.xml               # Backend Maven configuration (JaCoCo, Spotless, PMD, SpotBugs, CycloneDX)
 ├── frontend/                 # Svelte 5 + Tailwind CSS v4 Interactive Canvas
-│   ├── src/lib/components/   # Component cards, edges, modals, comparator, command palette
-│   ├── src/lib/state/        # Svelte 5 runes ($state, $derived) store management
-│   ├── src/lib/utils/        # D3 force layout algorithms, Catmull-Rom splines, GSAP helpers
+│   ├── src/lib/components/   # Component cards, edges, modals, DIP inverter, sandbox, command palette
+│   ├── src/lib/state/        # Svelte 5 runes ($state, $derived) reactive state & sandbox engine
+│   ├── src/lib/utils/        # Martin coupling metrics (Ca, Ce, I, A, D), cubic Bézier edge routing
 │   ├── package.json          # Frontend dependencies and Vite scripts
 │   └── vitest.config.ts      # Vitest component and store testing configuration
-├── cli/                      # Zero-Dependency Multi-Agent Skill & MCP Installer
-│   ├── bin/index.js          # CLI entrypoint (archlens-skill, archlens-init)
-│   ├── src/analyzer.js       # Lightweight offline AST classifier & dossier generator
-│   ├── src/installer.js      # Policy scaffolder and companion guideline injector
-│   ├── src/mcp-registry.js   # Host AI client manifest registry (Claude, Antigravity, Cursor)
-│   ├── src/mcp-server.js     # JSON-RPC 2.0 stdio MCP bridge server
-│   ├── src/docker-runner.js  # On-demand container runner & health checker
-│   └── test/                 # Node native test runner suite
-├── docs/                     # Specifications, User Guides, C4 Architecture, and Inspiration
-├── .archlens/                # Active repository governance policy and mailbox IPC queue
-└── pom.xml                   # Root reactor POM aggregating backend and packaging
+├── cli/                      # Zero-Dependency Multi-Agent Skill & MCP Stdio Bridge (@fmatar/archlens-skill)
+│   ├── bin/index.js          # CLI entrypoint (archlens, archlens-skill, archlens-init)
+│   ├── src/analyzer.js       # Polyglot offline AST classifier & LLM dossier generator
+│   ├── src/checker.js        # Headless CI conformance, ADP cycle, Screaming & Fitness gate engine
+│   ├── src/docker-runner.js  # 4-Tier Auto-Resurrection engine (Live -> Native JAR -> Docker -> Offline)
+│   ├── src/installer.js      # Policy scaffolder and companion guideline injector (AGENTS.md / CLAUDE.md)
+│   ├── src/mcp-registry.js   # Multi-client MCP manifest registry (Antigravity, Claude, Gemini, Cursor, VS Code)
+│   ├── src/mcp-server.js     # JSON-RPC 2.0 stdio MCP server with 10 tools, 3 resources & offline fallback
+│   ├── src/updater.js        # Safe incremental policy updater
+│   ├── src/upgrader.js       # Legacy .uml-viewer to .archlens migration tool
+│   └── test/                 # 80+ Node native test runner unit & integration tests
+├── scripts/                  # Build, Release, Telemetry & End-to-End Smoke Automation
+│   ├── smoke-test.js         # Packaged JAR + REST API + MCP SSE + MCP Stdio E2E smoke runner
+│   ├── generate-report.js    # Full-stack JaCoCo, Vitest, JUnit & Git telemetry aggregator
+│   ├── update-dependencies.sh# Automated Dual-Gate safe dependency upgrader with rollback
+│   ├── set-version.js        # Atomic polyglot version bumper across Maven & NPM manifests
+│   └── test/                 # Unit tests for smoke runner, report generator & dependency governance
+├── wiki/                     # 14 Diátaxis & Clean Architecture Wiki documentation pages
+├── docs/                     # Specifications (CAP-01..04), ADRs, User/Developer Guides & C4 Architecture
+├── .archlens/                # Active repository governance policy (.archlens/policy.json) and mailbox IPC
+├── package.json              # Root scripts (build, start, smoke, smoke:build, test, cli, deps:*)
+└── pom.xml                   # Root Maven reactor POM aggregating backend, frontend, and CLI
 ```
 
 ---
@@ -106,7 +117,7 @@ To verify, package, or execute backend unit tests:
 ```bash
 cd backend
 
-# Execute all 61 tests
+# Execute all 320+ unit, scanner, MCP, and architecture tests
 mvn test
 
 # Execute Spotless code format check
@@ -160,7 +171,28 @@ archlens-skill --version
 
 ---
 
-### Workflow D: Safe Dependency Governance & Maintenance
+### Workflow D: End-to-End Packaged Workbench & Multi-Agent MCP Smoke Suite
+
+Before opening a pull request or cutting a release, run the End-to-End Smoke Suite (`scripts/smoke-test.js`). It boots the packaged `backend/target/quarkus-app/quarkus-run.jar` on an ephemeral port (`127.0.0.1:<port>`), exercises the live server and MCP bridge, and tears down cleanly via `SIGTERM`:
+
+```bash
+# Run against an existing packaged JAR:
+npm run smoke
+
+# Or automatically package the JAR if missing and run the smoke suite:
+npm run smoke:build
+```
+
+**What `scripts/smoke-test.js` Verifies:**
+1. **Bundled Svelte 5 Workbench UI (`GET /`)**: Verifies the frontend bundle is embedded and served by Quarkus.
+2. **REST API Contracts**: Validates `/api/version`, `/api/graph`, `/api/fitness`, `/api/fitness/history`, `/api/violations/invert-plan`, and `/api/policy`.
+3. **Native Quarkus MCP 2.0 SSE Transport (`GET /mcp/sse`)**: Verifies `200 OK` and `content-type: text/event-stream`.
+4. **CLI MCP JSON-RPC 2.0 Stdio Bridge**: Verifies `initialize`, `tools/list` (`10` tools), `resources/list`, and `tools/call` (`evaluateFitness`, `synthesizeDipInversion`, `getPolicy`).
+5. **Multi-Agent MCP Installer Dry-Run**: Validates `installMcpConfigs({ dryRun: true })` across detected AI assistant targets.
+
+---
+
+### Workflow E: Safe Dependency Governance & Maintenance
 
 To keep the monorepo secure and modern without sacrificing build determinism:
 
@@ -179,9 +211,23 @@ If any verification test fails during an update, the engine immediately rolls ba
 
 ---
 
+### Workflow F: Documentation & Wiki Synchronization
+
+Keep the `wiki/` pages and `wiki/Codebase-Map.md` synchronized with live AST exports and concentric ring rules:
+
+```bash
+# Synchronize wiki/Codebase-Map.md with source AST exports and Archlens rings
+node .agent/scripts/sdlc-engine.mjs wiki sync
+
+# Audit all 14 wiki pages for broken paths or unmapped modules
+node .agent/scripts/sdlc-engine.mjs wiki audit --strict
+```
+
+---
+
 ## 🧩 5. How to Add a New Polyglot Language Scanner
 
-Archlens uses a Service Provider Interface (SPI) design for language scanners. Follow this four-step recipe to add support for a new language (e.g. Swift, C#, Scala, Ruby):
+Archlens uses a Service Provider Interface (SPI) design for language scanners. Follow this five-step recipe to add support for a new language (e.g. Swift, C#, Scala, Ruby):
 
 ### Step 1: Implement `LanguageScanner`
 Create `backend/src/main/java/io/slixes/archlens/scanner/<Language>AstScanner.java`:
@@ -189,8 +235,9 @@ Create `backend/src/main/java/io/slixes/archlens/scanner/<Language>AstScanner.ja
 ```java
 package io.slixes.archlens.scanner;
 
-import io.slixes.archlens.domain.model.ComponentNode;
-import io.slixes.archlens.domain.model.DependencyEdge;
+import io.slixes.archlens.domain.graph.ClassNode;
+import io.slixes.archlens.domain.graph.ComponentNode;
+import io.slixes.archlens.domain.graph.DependencyEdge;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.File;
@@ -215,7 +262,8 @@ public class SwiftAstScanner implements LanguageScanner {
   public ScanResult scan(File projectRoot, ArchitecturePolicy policy) throws IOException {
     List<File> sourceFiles = FileScannerUtil.findFiles(projectRoot, ".swift");
     
-    // Parse files, extract types and outward import statements
+    // Parse files, extract ClassNode/ComponentNode stereotypes (INTERFACE, ABSTRACT, CLASS)
+    // and emit class-first DependencyEdge instances
     // ...
     
     return new ScanResult(nodes, edges);
@@ -241,31 +289,34 @@ void init() {
 }
 ```
 
-### Step 3: Utilize `FileScannerUtil` for Fault-Tolerant Traversal
+### Step 3: Add Polyglot DIP Port Synthesis Template (Optional)
+In `backend/src/main/java/io/slixes/archlens/domain/dossier/DipInversionSynthesizer.java`, add the idiomatic interface/protocol template for the new language (e.g., Swift `protocol <Target>Port`) so the Surgical DIP Inverter and `synthesizeDipInversion` MCP tool generate native code diffs.
+
+### Step 4: Utilize `FileScannerUtil` for Fault-Tolerant Traversal
 Always traverse source files using `FileScannerUtil.findFiles(...)`. This automatically skips hidden folders (`.git`, `.archlens`), dependency directories (`node_modules`, `target`, `.build`), Unix sockets, and unreadable files.
 
-### Step 4: Add Comprehensive Tests
+### Step 5: Add Comprehensive Tests
 Create `backend/src/test/java/io/slixes/archlens/scanner/<Language>AstScannerTest.java`:
 - Provide realistic source file fixtures in `@TempDir`.
-- Verify extracted components, inner layer classifications, and outward dependencies.
+- Verify extracted components, `INTERFACE` / `ABSTRACT` stereotypes for Martin Abstractness ($A$), inner layer classifications, and outward dependencies.
 - Ensure 100% test pass rate with meaningful domain assertions.
 
 ---
 
 ## 🤖 6. How to Extend the Model Context Protocol (MCP) Server
 
-Archlens exposes native MCP capabilities directly from Quarkus using `quarkus-mcp-server-http`.
+Archlens exposes native MCP 2.0 capabilities directly from Quarkus using `quarkus-mcp-server-http` and `quarkus-mcp-server-hibernate-validator`, decoupled onto Ring 1 Use Cases and executed on Java 25 Virtual Threads (`@RunOnVirtualThread`).
 
-### Step 1: Add a Tool Method
-In `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java`, declare your tool using `@Tool` and `@ToolArg`:
+### Step 1: Add a Tool Method in `ArchlensMcpService`
+In `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java`, inject your Ring 1 Use Case and declare your tool using `@Tool`, `@ToolArg`, and `@NotBlank`:
 
 ```java
 @Tool(description = "Verify compliance of a specific component against Clean Architecture boundaries.")
-public ComplianceReport checkComponent(
-    @ToolArg(description = "Target component name") String componentName,
+public FitnessEvaluation checkComponent(
+    @ToolArg(description = "Target component name") @NotBlank String componentName,
     @ToolArg(description = "Absolute or relative path to project root", defaultValue = ".") String projectRoot) 
     throws IOException {
-  return diagramResource.checkComponentCompliance(componentName, projectRoot);
+  return evaluateFitnessUseCase.execute(projectRoot);
 }
 ```
 
@@ -287,8 +338,9 @@ checkComponent: {
 }
 ```
 
-### Step 3: Implement Offline Fallback in `mcp-server.js`
-In `cli/src/mcp-server.js`, handle the tool execution in `executeToolCall(...)` so AI agents receive accurate static responses even when Docker or the Quarkus server is offline.
+### Step 3: Implement Offline Fallback in `mcp-server.js` & Add Smoke Assertion
+1. In `cli/src/mcp-server.js`, handle the tool execution in `executeToolCall(...)` so AI agents receive accurate static responses even when Docker or the Quarkus server is offline.
+2. Update the tool count assertion in `scripts/smoke-test.js` (`runMcpStdioSmokeChecks`) and `cli/test/mcp-registry.test.js`.
 
 ---
 
@@ -298,14 +350,17 @@ Every pull request must pass all quality gates cleanly without warnings:
 
 | Quality Gate | Command | Passing Standard |
 | :--- | :--- | :--- |
-| **Spotless Code Formatting** | `mvn spotless:check` | 0 formatting discrepancies |
-| **Spotless Auto-Fix** | `mvn spotless:apply` | Formats all modified Java files |
+| **Full Maven Build & Gates** | `mvn -B -ntp clean spotless:check verify` | 0 formatting, PMD, SpotBugs, or test failures |
+| **Spotless Code Formatting** | `mvn spotless:check` / `mvn spotless:apply` | 0 formatting discrepancies |
 | **PMD Static Analysis** | `mvn pmd:check` | 0 violations (`failOnViolation=true`) |
-| **SpotBugs Analysis** | `mvn compile spotbugs:check` | 0 bugs (`threshold=Low`, `effort=Max`) |
-| **Backend Unit Tests** | `mvn test` | 100% passing tests (61+ tests) |
-| **CLI Test Suite** | `npm --prefix cli test` | 100% passing tests (43+ tests) |
-| **Frontend Unit Tests** | `npm --prefix frontend test` | 100% passing Vitest tests (25+ tests) |
-| **Frontend Type Checking** | `npm --prefix frontend run check` | 0 TypeScript or Svelte errors |
+| **SpotBugs Security Analysis** | `mvn compile spotbugs:check` | 0 bugs (`threshold=Low`, `effort=Max`) |
+| **Backend Unit & Arch Tests** | `mvn test` | 100% passing (320+ tests, $\ge 85\%$ JaCoCo coverage) |
+| **CLI & Script Test Suite** | `npm test` | 100% passing (101+ Node native tests, $\ge 85\%$ coverage) |
+| **E2E Packaged JAR & MCP Smoke** | `npm run smoke` (or `npm run smoke:build`) | 100% passing (UI bundle, 7 REST APIs, MCP SSE, 10 MCP tools) |
+| **Self-Governance Arch Gate** | `node cli/bin/index.js check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85` | 0 outward violations, 0 ADP cycles, Grade A Fitness |
+| **Frontend Unit Tests** | `npm --prefix frontend test` | 100% passing Vitest tests (53+ tests) |
+| **Frontend Type Checking** | `npm --prefix frontend run check` | 0 TypeScript or Svelte 5 errors |
+| **Wiki Determinism Audit** | `node .agent/scripts/sdlc-engine.mjs wiki audit --strict` | 14/14 wiki pages valid, 100% modules mapped |
 
 ---
 
@@ -327,17 +382,17 @@ To maintain clean code and protect against regression without brittle tests, adh
 ## 🌿 9. Git Workflow & Submitting Pull Requests
 
 1. **Branching Strategy**:
-   - Always branch off `develop`.
-   - Branch naming format: `feat/issue-<id>-<short-description>`, `fix/issue-<id>-<short-description>`, or `docs/issue-<id>-<short-description>`.
+   - Always branch off `develop` (direct PRs from feature branches to `main` are blocked by CI branch flow enforcement).
+   - Branch naming format: `feature/issue-#<id>-<short-description>`, `fix/issue-#<id>-<short-description>`, or `docs/issue-#<id>-<short-description>`.
 2. **Conventional Commits**:
    Follow conventional commit messages:
    - `feat(scanner): add Swift language scanner`
    - `fix(canvas): resolve edge tooltip lingering on hover leave`
-   - `docs(guide): update developer guide with MCP instructions`
+   - `docs(guide): update developer guide with MCP and smoke test workflows`
    - `refactor(mcp): sanitize snapshot identifiers against traversal`
 3. **Pull Request Checklist**:
    - [ ] Targeted against `develop`.
    - [ ] Issue referenced in summary (`Closes #<id>`).
-   - [ ] All automated checks pass (`mvn clean verify`, `npm --prefix cli test`, `npm --prefix frontend test`).
+   - [ ] All automated checks pass (`mvn clean spotless:check verify`, `npm test`, `npm run smoke`, `npm --prefix frontend test`).
    - [ ] `CHANGELOG.md` updated under `[Unreleased]`.
-   - [ ] Documentation updated to reflect changes.
+   - [ ] Documentation and `wiki/` updated to reflect changes.

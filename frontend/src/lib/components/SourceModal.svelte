@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import { X, FileCode, Copy, Check } from '@lucide/svelte';
 
   let modal = $derived(diagramStore.sourceFileModal);
@@ -83,7 +84,9 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && modal) {
+      e.preventDefault();
+      e.stopPropagation();
       handleClose();
     }
   }
@@ -112,6 +115,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={dialogEl}
+      use:focusTrap
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -199,16 +203,16 @@
                   class:target-code-row={isTarget}
                   class:code-row-idle={!isTarget}
                 >
-                  <td class="w-12 text-right pr-4 text-slate-600 select-none align-top">{lineNum}</td>
+                  <td class="w-12 text-right pr-4 text-slate-400 select-none align-top">{lineNum}</td>
                   <td class="whitespace-pre font-mono">{line}</td>
                 </tr>
               {/each}
             </tbody>
           </table>
         {:else}
-          <div class="flex flex-col items-center justify-center h-full text-slate-500 space-y-2">
+          <div class="flex flex-col items-center justify-center h-full text-slate-400 space-y-2">
             <p>No source content available for this file.</p>
-            <p class="text-[11px] font-mono text-slate-600">{modal.filePath}</p>
+            <p class="text-[11px] font-mono text-slate-400">{modal.filePath}</p>
           </div>
         {/if}
       </div>

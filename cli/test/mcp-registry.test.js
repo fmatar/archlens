@@ -12,33 +12,49 @@ import {
   installMcpConfigs
 } from '../src/mcp-registry.js';
 
-test('ARCHLENS_TOOL_SCHEMAS defines 6 core Clean Architecture tools', () => {
+test('ARCHLENS_TOOL_SCHEMAS defines 10 Clean Architecture tools', () => {
   const tools = Object.keys(ARCHLENS_TOOL_SCHEMAS);
+  assert.equal(tools.length, 10);
   assert.ok(tools.includes('inspectArchitecture'));
   assert.ok(tools.includes('exportLlmDossier'));
   assert.ok(tools.includes('listSnapshots'));
   assert.ok(tools.includes('getSnapshot'));
   assert.ok(tools.includes('synthesizeDipInversion'));
   assert.ok(tools.includes('evaluateFitness'));
+  assert.ok(tools.includes('getFitnessHistory'));
+  assert.ok(tools.includes('proposeScreamingMigration'));
+  assert.ok(tools.includes('getPolicy'));
+  assert.ok(tools.includes('syncDipAdr'));
 
   assert.equal(ARCHLENS_TOOL_SCHEMAS.getSnapshot.parameters.required[0], 'snapshotId');
-  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.synthesizeDipInversion.parameters.required, ['sourceClass', 'targetClass']);
+  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.synthesizeDipInversion.parameters.required, ['fromClass', 'toClass']);
+  assert.deepEqual(ARCHLENS_TOOL_SCHEMAS.syncDipAdr.parameters.required, ['sourceClass', 'targetClass', 'interfacePortName']);
   assert.equal(typeof ARCHLENS_TOOL_SCHEMAS.inspectArchitecture.description, 'string');
 });
 
-test('getAntigravityInstructions produces markdown instructions', () => {
+test('getAntigravityInstructions produces markdown instructions listing all 10 tools', () => {
   const instructions = getAntigravityInstructions();
   assert.ok(instructions.includes('Archlens Clean Architecture MCP Server Instructions'));
   assert.ok(instructions.includes('Domain Core (L0)'));
   assert.ok(instructions.includes('Dependency Inversion Principle'));
+  assert.ok(instructions.includes('synthesizeDipInversion'));
+  assert.ok(instructions.includes('evaluateFitness'));
+  assert.ok(instructions.includes('getFitnessHistory'));
+  assert.ok(instructions.includes('proposeScreamingMigration'));
+  assert.ok(instructions.includes('getPolicy'));
+  assert.ok(instructions.includes('syncDipAdr'));
 });
 
-test('getClientConfigLocations returns expected client targets', () => {
+test('getClientConfigLocations returns expected multi-agent client targets', () => {
   const targets = getClientConfigLocations('/test/project', '/mock/home');
   const ids = targets.map((t) => t.id);
   assert.ok(ids.includes('claude-desktop'));
   assert.ok(ids.includes('claude-code'));
   assert.ok(ids.includes('antigravity-global'));
+  assert.ok(ids.includes('antigravity-config'));
+  assert.ok(ids.includes('gemini-cli'));
+  assert.ok(ids.includes('grok'));
+  assert.ok(ids.includes('windsurf'));
   assert.ok(ids.includes('cursor'));
   assert.ok(ids.includes('vscode'));
 });
@@ -70,8 +86,9 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
       })
     );
 
-    // Setup Cursor directory
+    // Setup Cursor and VS Code directories
     fs.mkdirSync(path.join(tmpProject, '.cursor'), { recursive: true });
+    fs.mkdirSync(path.join(tmpProject, '.vscode'), { recursive: true });
 
     const result = installMcpConfigs({
       path: tmpProject,
@@ -80,7 +97,7 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
     });
 
     assert.equal(result.dryRun, false);
-    assert.ok(result.configuredClients.length >= 3);
+    assert.ok(result.configuredClients.length >= 4);
 
     // Verify Antigravity schemas
     const archlensMcpDir = path.join(antigravityParent, 'archlens');
@@ -101,6 +118,13 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
     assert.ok(fs.existsSync(cursorFile));
     const cursorConfig = JSON.parse(fs.readFileSync(cursorFile, 'utf8'));
     assert.ok(cursorConfig.mcpServers.archlens);
+
+    // Verify VS Code config uses top-level "servers" key with type "stdio"
+    const vscodeFile = path.join(tmpProject, '.vscode', 'mcp.json');
+    assert.ok(fs.existsSync(vscodeFile));
+    const vscodeConfig = JSON.parse(fs.readFileSync(vscodeFile, 'utf8'));
+    assert.ok(vscodeConfig.servers.archlens);
+    assert.equal(vscodeConfig.servers.archlens.type, 'stdio');
   } finally {
     fs.rmSync(tmpHome, { recursive: true, force: true });
     fs.rmSync(tmpProject, { recursive: true, force: true });

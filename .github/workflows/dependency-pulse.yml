@@ -65,7 +65,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH_NAME"
-          git add pom.xml backend/pom.xml frontend/package.json frontend/pnpm-lock.yaml frontend/package-lock.json
+          git add pom.xml backend/pom.xml frontend/pom.xml cli/pom.xml package.json cli/package.json frontend/package.json frontend/pnpm-lock.yaml
           git commit -m "chore(deps): safe dependency pulse updates" -m "Automated safe dependency governance update verified regression-free via Dual-Gate test suite."
           git push origin "$BRANCH_NAME"
 

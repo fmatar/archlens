@@ -60,6 +60,18 @@
     if (cov >= 0.5) return '#f59e0b';
     return '#ef4444';
   }
+
+  function getMutationColor(cls: ClassNode): string {
+    const killed = cls.killed ?? 0;
+    const survived = cls.survived ?? 0;
+    const totalMutants = killed + survived;
+    if (totalMutants === 0) {
+      return cls.coverage >= 0.8 ? '#10b981' : '#64748b';
+    }
+    if (survived === 0) return '#10b981';
+    const score = killed / totalMutants;
+    return score >= 0.8 ? '#f59e0b' : '#ef4444';
+  }
 </script>
 
 <g
@@ -301,12 +313,13 @@
         {#each displayedClasses as cls, i (cls.id + ':' + i)}
           {@const crapCol = getCrapColor(cls.crap.mu)}
           {@const covCol = getCoverageColor(cls.coverage)}
+          {@const mutCol = getMutationColor(cls)}
           <g
             transform={`translate(0, ${i * 24})`}
             class="cursor-pointer group/row focus:outline-none"
             role="button"
             tabindex="0"
-            aria-label={`Class ${cls.name}, CRAP score ${Math.round(cls.crap.mu)}, coverage ${Math.round(cls.coverage * 100)} percent`}
+            aria-label={`Class ${cls.name}, CRAP score ${Math.round(cls.crap.mu)}, coverage ${Math.round(cls.coverage * 100)} percent, survived mutants ${cls.survived ?? 0}`}
             onpointerdown={(e) => {
               // Stop drag so user can click to inspect class
               e.stopPropagation();
@@ -354,10 +367,14 @@
             </text>
 
             <!-- Coverage Dot -->
-            <circle cx={width - 32} cy="10" r="3.5" fill={covCol} />
+            <circle cx={width - 32} cy="10" r="3.5" fill={covCol}>
+              <title>{`Test Coverage: ${Math.round(cls.coverage * 100)}%`}</title>
+            </circle>
 
             <!-- Mutation Indicator Dot -->
-            <circle cx={width - 22} cy="10" r="3.5" fill="#10b981" />
+            <circle cx={width - 22} cy="10" r="3.5" fill={mutCol}>
+              <title>{`Mutation Health: ${cls.killed ?? 0}/${(cls.killed ?? 0) + (cls.survived ?? 0)} killed (${cls.survived ?? 0} survived)`}</title>
+            </circle>
           </g>
         {/each}
 
@@ -386,15 +403,15 @@
               <rect
                 x="0"
                 y="0"
-                width="22"
-                height="18"
+                width="24"
+                height="20"
                 rx="3"
                 class="fill-slate-800 hover:fill-slate-700 stroke-slate-700 hover:stroke-slate-500 transition-colors"
                 stroke-width="0.8"
               />
               <text
-                x="11"
-                y="13"
+                x="12"
+                y="14"
                 text-anchor="middle"
                 class="fill-slate-300 group-hover/prev:fill-white font-mono text-[12px] font-bold select-none"
               >
@@ -423,19 +440,19 @@
             >
               <title>Click to view complete class inventory in Inspector</title>
               <rect
-                x="26"
+                x="28"
                 y="0"
-                width={width - 20 - 52}
-                height="18"
+                width={width - 20 - 56}
+                height="20"
                 rx="3"
                 class="fill-slate-800/80 hover:fill-blue-950/60 stroke-slate-700/80 hover:stroke-blue-500/50 transition-colors"
                 stroke-width="0.8"
               />
               <text
                 x={(width - 20) / 2}
-                y="12"
+                y="13"
                 text-anchor="middle"
-                class="fill-slate-400 group-hover/pager:fill-blue-200 font-mono text-[9px] font-medium select-none"
+                class="fill-slate-300 group-hover/pager:fill-blue-200 font-mono text-[9px] font-medium select-none"
               >
                 {classPage * pageSize + 1}–{Math.min((classPage + 1) * pageSize, totalClasses)} of {totalClasses} (inspect ↗)
               </text>
@@ -461,17 +478,17 @@
               }}
             >
               <rect
-                x={width - 20 - 22}
+                x={width - 20 - 24}
                 y="0"
-                width="22"
-                height="18"
+                width="24"
+                height="20"
                 rx="3"
                 class="fill-slate-800 hover:fill-slate-700 stroke-slate-700 hover:stroke-slate-500 transition-colors"
                 stroke-width="0.8"
               />
               <text
-                x={width - 20 - 11}
-                y="13"
+                x={width - 20 - 12}
+                y="14"
                 text-anchor="middle"
                 class="fill-slate-300 group-hover/next:fill-white font-mono text-[12px] font-bold select-none"
               >

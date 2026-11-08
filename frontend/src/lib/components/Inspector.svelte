@@ -154,14 +154,17 @@
         <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 font-mono">Canvas Triage</div>
         <button
           onclick={() => diagramStore.cycleDeclutter()}
-          class="w-full px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-between border border-slate-700/80 transition-all hover:border-slate-600 mb-2"
+          class="w-full px-3 py-2 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center justify-between border border-slate-700/80 transition-all hover:border-slate-600 mb-2 cursor-pointer"
         >
           <span class="flex items-center gap-2">
             <Eye size={14} class="text-slate-400" />
             Declutter Mode
           </span>
-          <span class="text-[10px] font-mono uppercase text-blue-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
-            {diagramStore.declutterMode}
+          <span class="flex items-center gap-1.5">
+            <span class="text-[10px] font-mono uppercase text-blue-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
+              {diagramStore.declutterMode}
+            </span>
+            <span class="font-mono text-[9px] text-slate-400 bg-slate-800/60 px-1 rounded">D</span>
           </span>
         </button>
 
@@ -170,91 +173,91 @@
           <!-- Edge Bundling Toggle -->
           <button
             onclick={() => diagramStore.toggleEdgeBundling()}
-            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border cursor-pointer ${
               diagramStore.isEdgeBundlingEnabled
                 ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
                 : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
             }`}
           >
             <span class="flex items-center gap-1.5 font-mono text-[11px]">
-              <span class={diagramStore.isEdgeBundlingEnabled ? 'text-blue-400 font-bold' : 'text-slate-600'}>
+              <span class={diagramStore.isEdgeBundlingEnabled ? 'text-blue-400 font-bold' : 'text-slate-400'}>
                 {diagramStore.isEdgeBundlingEnabled ? '[✓]' : '[ ]'}
               </span>
               Edge Bundling
             </span>
-            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">B</span>
+            <span class="font-mono text-[9px] text-slate-400 bg-slate-800/60 px-1 rounded">B</span>
           </button>
 
           <!-- Violation X-Ray Toggle -->
           <button
             onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES')}
-            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-              diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border cursor-pointer ${
+              diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') || diagramStore.declutterMode === 'ELEMENTS'
                 ? 'bg-rose-950/50 border-rose-600/60 text-rose-300 shadow-[0_0_12px_rgba(244,63,94,0.2)]'
                 : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
             }`}
           >
             <span class="flex items-center gap-1.5 font-mono text-[11px]">
-              <span class={diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? 'text-rose-400 font-bold' : 'text-slate-600'}>
-                {diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ? '[✓]' : '[ ]'}
+              <span class={diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') || diagramStore.declutterMode === 'ELEMENTS' ? 'text-rose-400 font-bold' : 'text-slate-400'}>
+                {diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') || diagramStore.declutterMode === 'ELEMENTS' ? '[✓]' : '[ ]'}
               </span>
-              Violation X-Ray
+              Violation X-Ray Mode
             </span>
-            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">V</span>
+            <span class="font-mono text-[9px] text-slate-400 bg-slate-800/60 px-1 rounded">V</span>
           </button>
 
           <!-- Compact Macro Cards Toggle -->
           <button
             onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CLASSES')}
-            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-              diagramStore.hasDeclutterFilter('HIDE_CLASSES')
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border cursor-pointer ${
+              diagramStore.hasDeclutterFilter('HIDE_CLASSES') || diagramStore.declutterMode === 'CLASSES'
                 ? 'bg-indigo-950/40 border-indigo-600/50 text-indigo-300'
                 : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
             }`}
           >
             <span class="flex items-center gap-1.5 font-mono text-[11px]">
-              <span class={diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? 'text-indigo-400 font-bold' : 'text-slate-600'}>
-                {diagramStore.hasDeclutterFilter('HIDE_CLASSES') ? '[✓]' : '[ ]'}
+              <span class={diagramStore.hasDeclutterFilter('HIDE_CLASSES') || diagramStore.declutterMode === 'CLASSES' ? 'text-indigo-400 font-bold' : 'text-slate-400'}>
+                {diagramStore.hasDeclutterFilter('HIDE_CLASSES') || diagramStore.declutterMode === 'CLASSES' ? '[✓]' : '[ ]'}
               </span>
               Compact Macro Cards
             </span>
-            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">C</span>
+            <span class="font-mono text-[9px] text-slate-400 bg-slate-800/60 px-1 rounded">C</span>
           </button>
 
           <!-- 1-Hop Neighborhood Focus Toggle -->
           <button
             onclick={() => diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD')}
-            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border cursor-pointer ${
               diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD')
                 ? 'bg-emerald-950/40 border-emerald-600/50 text-emerald-300'
                 : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
             }`}
           >
             <span class="flex items-center gap-1.5 font-mono text-[11px]">
-              <span class={diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? 'text-emerald-400 font-bold' : 'text-slate-600'}>
+              <span class={diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
                 {diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD') ? '[✓]' : '[ ]'}
               </span>
               1-Hop Neighborhood Focus
             </span>
-            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">F</span>
+            <span class="font-mono text-[9px] text-slate-400 bg-slate-800/60 px-1 rounded">F</span>
           </button>
 
           <!-- Tier Lanes Toggle -->
           <button
             onclick={() => diagramStore.toggleDeclutterFilter('HIDE_TIER_LANES')}
-            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border ${
-              diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')
+            class={`w-full px-2.5 py-1.5 rounded text-xs flex items-center justify-between transition-colors border cursor-pointer ${
+              diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') || diagramStore.declutterMode === 'NONE'
                 ? 'bg-purple-950/40 border-purple-600/50 text-purple-300'
                 : 'bg-slate-900/40 border-slate-800/80 text-slate-400 hover:text-slate-200'
             }`}
           >
             <span class="flex items-center gap-1.5 font-mono text-[11px]">
-              <span class={diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? 'text-purple-400 font-bold' : 'text-slate-600'}>
-                {diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') ? '[✓]' : '[ ]'}
+              <span class={diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') || diagramStore.declutterMode === 'NONE' ? 'text-purple-400 font-bold' : 'text-slate-400'}>
+                {diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') || diagramStore.declutterMode === 'NONE' ? '[✓]' : '[ ]'}
               </span>
               Hide Tier Backdrops
             </span>
-            <span class="font-mono text-[9px] text-slate-500 bg-slate-800/60 px-1 rounded">T</span>
+            <span class="font-mono text-[9px] text-slate-400 bg-slate-800/60 px-1 rounded">R</span>
           </button>
         </div>
       </div>
@@ -295,7 +298,7 @@
                   diagramStore.setFocusedNode(null);
                   classSearchQuery = '';
                 }}
-                class="p-0.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+                class="min-h-6 min-w-6 p-1 flex items-center justify-center rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
                 title="Clear focus"
                 aria-label="Clear focus"
               >
@@ -316,47 +319,47 @@
                   <button
                     type="button"
                     onclick={() => showMetricHelp = !showMetricHelp}
-                    class="p-0.5 rounded text-slate-500 hover:text-blue-300 transition-colors cursor-pointer"
+                    class="min-h-6 min-w-6 p-1 flex items-center justify-center rounded text-slate-400 hover:text-blue-300 transition-colors cursor-pointer"
                     title="Toggle Martin Metrics formula cheat sheet"
                     aria-label="Toggle Martin Metrics formula cheat sheet"
                   >
-                    <Info size={10} />
+                    <Info size={11} />
                   </button>
                 </div>
                 {#if focusedMetrics.zone === 'MAIN_SEQUENCE'}
-                  <span class="text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30">Main Seq</span>
+                  <span class="text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">Main Seq</span>
                 {:else if focusedMetrics.zone === 'ZONE_OF_PAIN'}
-                  <span class="text-rose-400 bg-rose-950/60 px-1 py-0.2 rounded border border-rose-500/30">Zone of Pain</span>
+                  <span class="text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/30">Zone of Pain</span>
                 {:else}
-                  <span class="text-amber-400 bg-amber-950/60 px-1 py-0.2 rounded border border-amber-500/30">Zone of Uselessness</span>
+                  <span class="text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30">Zone of Uselessness</span>
                 {/if}
               </div>
 
               {#if showMetricHelp}
                 <div class="p-2 rounded bg-slate-950 border border-slate-800 text-[9px] text-slate-400 space-y-1 font-sans animate-in fade-in duration-100">
                   <div class="font-semibold text-slate-200 font-mono text-[10px]">Clean Architecture Formulas</div>
-                  <div>• <span class="font-mono text-slate-300">Ca</span>: Afferent Coupling (incoming dependencies)</div>
-                  <div>• <span class="font-mono text-slate-300">Ce</span>: Efferent Coupling (outgoing dependencies)</div>
-                  <div>• <span class="font-mono text-slate-300">I = Ce / (Ca + Ce)</span>: Instability (0 = Stable, 1 = Volatile)</div>
-                  <div>• <span class="font-mono text-slate-300">D = |A + I - 1|</span>: Normalized Distance from Main Sequence (ideal ≤ 0.25)</div>
+                  <div>• <span class="font-mono text-slate-300">C<sub>a</sub></span>: Afferent Coupling (incoming dependencies)</div>
+                  <div>• <span class="font-mono text-slate-300">C<sub>e</sub></span>: Efferent Coupling (outgoing dependencies)</div>
+                  <div>• <span class="font-mono text-slate-300">I = C<sub>e</sub> / (C<sub>a</sub> + C<sub>e</sub>)</span>: Instability (0 = Stable, 1 = Volatile)</div>
+                  <div>• <span class="font-mono text-slate-300">D = |A + I − 1|</span>: Normalized Distance from Main Sequence (ideal ≤ 0.25)</div>
                 </div>
               {/if}
 
               <div class="grid grid-cols-4 gap-1 text-center pt-1 border-t border-slate-800/80">
                 <div class="bg-slate-950/50 p-1 rounded" title="Afferent Coupling (Incoming dependencies)">
-                  <div class="text-slate-500 text-[8px]">$C_a$</div>
+                  <div class="text-slate-400 text-[9px]">C<sub>a</sub></div>
                   <div class="font-bold text-slate-200">{focusedMetrics.ca}</div>
                 </div>
                 <div class="bg-slate-950/50 p-1 rounded" title="Efferent Coupling (Outgoing dependencies)">
-                  <div class="text-slate-500 text-[8px]">$C_e$</div>
+                  <div class="text-slate-400 text-[9px]">C<sub>e</sub></div>
                   <div class="font-bold text-slate-200">{focusedMetrics.ce}</div>
                 </div>
                 <div class="bg-slate-950/50 p-1 rounded" title="Instability = Ce / (Ca + Ce)">
-                  <div class="text-slate-500 text-[8px]">$I$</div>
+                  <div class="text-slate-400 text-[9px]">I</div>
                   <div class="font-bold text-amber-300">{focusedMetrics.instability.toFixed(2)}</div>
                 </div>
                 <div class="bg-slate-950/50 p-1 rounded" title="Normalized Distance = |A + I - 1|">
-                  <div class="text-slate-500 text-[8px]">$D$</div>
+                  <div class="text-slate-400 text-[9px]">D</div>
                   <div class="font-bold {focusedMetrics.distance <= 0.25 ? 'text-emerald-400' : 'text-rose-400'}">
                     {focusedMetrics.distance.toFixed(2)}
                   </div>
@@ -375,14 +378,14 @@
               class="w-full bg-slate-900 border border-slate-700/80 focus:border-blue-500 rounded px-2 py-1 pl-7 pr-16 text-[11px] font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
             {#if classSearchQuery.trim()}
-              <div class="absolute right-1.5 flex items-center gap-1">
+              <div class="absolute right-1 flex items-center gap-1">
                 <span class="text-[9px] font-mono text-slate-400 bg-slate-800 px-1 rounded">
                   {filteredFocusedClasses.length}/{focusedComponent.classes.length}
                 </span>
                 <button
                   type="button"
                   onclick={() => classSearchQuery = ''}
-                  class="p-0.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                  class="min-h-6 min-w-6 p-1 flex items-center justify-center rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
                   title="Clear filter"
                 >
                   <X size={11} />
@@ -534,14 +537,14 @@
                   }
                 }}
                 disabled={diagramStore.isLoadingScreamingMigration}
-                class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 rounded bg-gradient-to-r from-amber-600/30 to-purple-600/30 hover:from-amber-600/50 hover:to-purple-600/50 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-semibold transition-all shadow-sm hover:shadow cursor-pointer disabled:opacity-50"
+                class="w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded bg-amber-950/60 hover:bg-amber-900/70 border border-amber-500/40 text-amber-200 text-[10px] font-mono font-semibold transition-colors shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {#if diagramStore.isLoadingScreamingMigration}
                   <RefreshCw size={11} class="animate-spin text-amber-400" />
                   <span>Synthesizing Features...</span>
                 {:else}
                   <Sparkles size={11} class="text-amber-400" />
-                  <span>Migrate to Features 🪄</span>
+                  <span>Simulate Feature Migration</span>
                 {/if}
               </button>
             </div>

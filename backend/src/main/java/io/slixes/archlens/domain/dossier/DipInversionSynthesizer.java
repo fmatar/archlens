@@ -351,7 +351,12 @@ public class DipInversionSynthesizer {
           if (m.args() != null) {
             for (int i = 0; i < m.args().size(); i++) {
               if (i > 0) sb.append(", ");
-              sb.append(m.args().get(i)).append(" arg").append(i);
+              String rawArg = m.args().get(i).trim();
+              if (rawArg.contains(" ")) {
+                sb.append(rawArg);
+              } else {
+                sb.append(rawArg).append(" arg").append(i);
+              }
             }
           }
           sb.append(");");

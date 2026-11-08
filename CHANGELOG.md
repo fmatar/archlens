@@ -9,6 +9,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-08
+
+### Added
+- **Milestone 4 (`v1.0.0 GA`) — Cross-Platform GraalVM Native Binaries, Hybrid HTML5 Canvas Renderer & Reference Showcase Presets** (`#4001`, [#166](https://github.com/fmatar/archlens/issues/166)):
+  - Added `native-binaries` matrix job (`macos-arm64`, `linux-amd64`, `windows-amd64` via GraalVM 25 `-Pnative`) and optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry OCI publishing to `.github/workflows/release.yml`.
+  - Extended `cli/src/docker-runner.js` with `findNativeBinary`, `startNativeBinary`, and `getPlatformBinarySuffix`, giving GraalVM native binaries first-priority startup in `ensureServerRunning` before JVM JAR or Docker fallbacks.
+  - Implemented Hybrid HTML5 `<canvas>` (`Fast 2D Canvas`) high-density renderer in `Canvas.svelte` and `diagram.svelte.ts` (`WEBGL_CLASS_THRESHOLD = 500`, `isWebGlRendererActive`, `toggleRenderEngineMode` / shortcut `W`) with class-pill hit-testing, CRAP dots, and overflow indicators for 60fps rendering on graphs with 500+ classes.
+  - Added 3 interactive reference architecture showcase presets (`SHOWCASE_PRESETS` in `demoData.ts`: **Spring PetClinic Java 25**, **Quarkus Reactive Microservice**, and **RealWorld Conduit Full-Stack TS + FastAPI**) selectable from the top navbar project switcher (`App.svelte`).
+- **Impeccable UI/UX & WCAG 2.2 AA Accessibility Hardening**:
+  - Added reusable `use:focusTrap` Svelte action (`frontend/src/lib/utils/focusTrap.ts`) across all 8 modal dialogs (`MainSequenceModal`, `PolicyEditorModal`, `InvertDipModal`, `ClassCard`, `LlmPromptModal`, `SourceModal`, `OpenProjectModal`, `CommandPalette`) with stacked `Escape` dismissal isolation.
+  - Defined missing `--color-slate-750` (`#293548`) and `--color-slate-850` (`#162032`) Tailwind v4 `@theme` tokens in `frontend/src/app.css`, enabled text selection inside modals/inspector, and gated infinite GSAP/CSS animations behind `prefers-reduced-motion: reduce`.
+  - Added real Pitest/mutation health coloring (`getMutationColor(cls)`) and tooltips to `ComponentBox.svelte`, 2-step confirmation to `Revert Snapshot` in `AgentDrawer.svelte`, semantic HTML `<sub>` metric typography across `Inspector.svelte`, `SandboxToolbar.svelte`, and `MainSequenceModal.svelte`, and unified all 5 `DeclutterMode` states (`ALL`, `ELEMENTS`, `CLASSES`, `EDGES`, `NONE`) with `Inspector.svelte` toggles.
+  - Resolved bottom-left HUD and `SandboxToolbar` z-index/vertical overlap when `AgentDrawer` is expanded (`bottom-60` / `bottom-72`) and separated keyboard shortcuts `T` (`AgentDrawer`) and `R` (`Hide Tier Backdrops`).
+
+## [0.2.0] - 2026-11-07
+
+### Changed
+- **Quarkus Quinoa Web UI & `pnpm` Integration (`io.quarkiverse.quinoa:quarkus-quinoa:2.9.3`)**:
+  - Replaced legacy `com.github.eirslett:frontend-maven-plugin` (`frontend/pom.xml`, `cli/pom.xml`) and `maven-resources-plugin` (`copy-frontend-dist` in `backend/pom.xml`) with the official Quarkiverse Quinoa extension (`io.quarkiverse.quinoa:quarkus-quinoa:2.9.3`).
+  - Configured `backend/src/main/resources/application.properties` (`quarkus.quinoa.ui-dir=../frontend`, `quarkus.quinoa.build-dir=dist`, `quarkus.quinoa.package-manager=pnpm`, `quarkus.quinoa.enable-spa-routing=true`, `quarkus.quinoa.ignored-path-prefixes=/api,/mcp,/q`, `%test.quarkus.quinoa=false`) and updated `scripts/update-dependencies.js` to track `io.quarkiverse.quinoa:quarkus-quinoa`.
+
+### Added
+- **Enterprise Monorepo Multi-Build Discovery, Cross-Language UI-to-API Boundary Tracing & Go 1.23 / Python 3.12 AST Idioms** (`#3001`, [#163](https://github.com/fmatar/archlens/issues/163)):
+  - Added `FileScannerUtil.discoverWorkspaceModules` and CLI `discoverWorkspaceModules` (`cli/src/analyzer.js`) supporting Gradle (`settings.gradle`, `settings.gradle.kts`), Cargo (`Cargo.toml [workspace]`), pnpm (`pnpm-workspace.yaml`), and npm/Yarn/Nx/Turborepo (`package.json workspaces`) with glob expansion across `JavaAstScanner`, `RustAstScanner`, and `TypeScriptAstScanner`.
+  - Added cross-language UI-to-API boundary tracing (`FileScannerUtil.indexBackendRestRoutes`, `extractFrontendApiCalls`, `resolveBackendEndpointForRoute`) in `TypeScriptAstScanner`, linking frontend `fetch('/api/...')` and `axios('/api/...')` calls directly to backend Java (`@Path`, `@RequestMapping`, `@GetMapping`, `@PostMapping`) and Python (`@app.get`, `@router.post`) endpoints (`HTTP /api/...` edges).
+  - Enhanced `GoAstScanner` with Go 1.23 iterator idioms (`iter.Seq[T]` / `iter.Seq2[K, V]` return types and functional iterator contract stereotypes) and `PythonAstScanner` with Python 3.12 (`PEP 695`) `type <Alias>[T] = ...` statement aliases and generic class/function type parameter syntax.
+- **Closed-Loop Refactor Verification, Transactional Source/Policy Snapshot Rollback & Human Architectural Intent Directives** (`#1097`, `#1662`):
+  - Upgraded `VerifyAndRollbackRefactorUseCase` to capture full source-tree snapshots (`.archlens/snapshots/<snapshotId>/files/` + `manifest.txt`) alongside `.archlens/policy.json` on `INVERT_DEPENDENCY` and `APPLY_PROPOSAL`, restoring modified source files and deleting newly created agent files on `POST /api/mailbox/rollback`.
+  - Enhanced `POST /api/mailbox/verify` (`verifyRefactoring`) to verify outward layer violations (`currentViolations <= baselineViolations`), Uncle Bob's Acyclic Dependencies Principle (`currentCycles <= baselineCycles`), and optional polyglot test-suite execution (`runTests: true` auto-detecting `mvn test`, `gradle test`, `npm test`, `pytest`, `go test ./...`, and `cargo test`), recording a `VERIFY_COMPLETE` event in `.archlens/to-viewer.json`.
+  - Added 1-click **`Verify Refactor`** (with **`+ Tests`** toggle), **`Record ADR`**, and **`Revert Snapshot`** controls and live verification status badges (`Verified (Δ -N)` / `Verification Failed`) to `AgentDrawer.svelte`.
+  - Added optional **`Architectural Intent Note`** inputs in `InvertDipModal.svelte` and `SandboxToolbar.svelte`, embedding `architecturalIntent` directly into `.archlens/to-agent.json` payloads and ADR rationale (`POST /api/mailbox/sync-adr`).
+- **Polyglot `sdlc-wiki` AST Engine, Full CLI/Backend MCP Parity & Documentation Synchronization** (`#8253`):
+  - Upgraded `.agent/scripts/lib/wiki-sync.mjs` to discover and inspect Java (`backend/src/main/java`), Svelte 5 / TypeScript (`frontend/src`), and CLI (`cli/`) modules alongside `.agent/scripts/`, enforcing strict path validation and mapping 115/115 source modules across Rings 0–3 in `wiki/Codebase-Map.md`.
+  - Achieved 100% parity between `cli/src/mcp-server.js` and `ArchlensMcpService.java` across all 10 MCP tools (`getSnapshot` `/api/snapshots/{snapshotId}` route fix, `syncDipAdr.reason` schema), 3 MCP resources (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`), and 2 MCP prompts (`architectural-review`, `dip-refactoring-guide`), plus VS Code `.vscode/mcp.json` (`servers` + `type: "stdio"`) support in `cli/src/mcp-registry.js`.
+  - Fixed duplicate `arg0` parameter formatting in `DipInversionSynthesizer.java` and `ClassNode.Stereotype.INTERFACE` classification for Go interfaces in `GoAstScanner.java`.
+  - Synchronized `ROADMAP.md`, `wiki/*.md`, `llms.txt`, `cli/llms.txt`, `skills/archlens/SKILL.md`, `README.md`, and `docs/**` with the live `v0.1.1` codebase.
+- **Multi-Agent Local MCP Setup & 10-Tool Registry Parity** ([#200](https://github.com/fmatar/archlens/issues/200)):
+  - Enhanced `README.md` and `wiki/MCP-Integration.md` with step-by-step local MCP server setup guides across **Google Antigravity**, **Gemini CLI**, **Claude Code**, **Claude Desktop**, **Grok CLI (`xAI`)**, **Cursor**, **Windsurf**, and **VS Code** covering Stdio, Streamable HTTP (`/mcp`), and SSE (`/mcp/sse`) transports.
+  - Extended `cli/src/mcp-registry.js` and `cli/src/mcp-server.js` to expose all 10 Clean Architecture MCP tools (`inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`, `synthesizeDipInversion`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`) and auto-discover Gemini CLI (`~/.gemini/settings.json`), Google Antigravity (`~/.gemini/antigravity/mcp_config.json`), Grok CLI (`.grok/mcp.json`), and Windsurf (`~/.codeium/windsurf/mcp_config.json`).
+  - Added `CONTRIBUTORS.md` recognizing project authors and Clean Architecture pioneers.
+  - Modernized `docs/guide/USER_GUIDE.md`, `docs/guide/DEVELOPER_GUIDE.md`, and `docs/specs/C4_ARCHITECTURE.md`.
+  - Hardened `ci.yml` (enforcing ADP cycles, Screaming Architecture `>= 0.70`, and Fitness Index `>= 0.85`), fixed `dependency-pulse.yml` lockfile staging, and enabled required status check branch protection on `main` and `develop`.
+
 ## [0.1.1] - 2026-11-06
 
 ### Added
@@ -31,8 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Quarkus MCP 2.0 Hexagonal Decoupling, 10 `@Tool`s, 3 `@Resource`s & 2 `@Prompt`s** ([#6262](https://github.com/fmatar/archlens/issues/6262), [#176](https://github.com/fmatar/archlens/pull/176), `ADR-001`):
   - Decoupled `ArchlensMcpService` from `DiagramResource` onto Ring 1 Use Cases (`ArchitectureCompiler`, `EvaluateFitnessUseCase`, `ExportDossierUseCase`, `SynthesizeDipInversionUseCase`, `ProposeScreamingMigrationUseCase`, `ManageSnapshotsUseCase`, `VerifyAndRollbackRefactorUseCase`, `SyncAdrUseCase`, `GetFitnessHistoryUseCase`, `WorkspacePathResolver`) and eliminated non-CDI `new` fallbacks across REST delivery resources.
-  - Expanded Quarkus MCP 2.0 Streamable HTTP (`/mcp`) and CLI stdio (`cli/src/mcp-server.js`) to full 10-tool parity: `inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`, `evaluateFitness`, `synthesizeDipInversion`, `proposeScreamingMigration`, `verifyAndRollbackRefactor`, `syncAdr`, and `getFitnessHistory`.
-  - Added 3 MCP `@Resource`s (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`) and 2 MCP `@Prompt`s (`refactor-architecture`, `invert-dip`).
+  - Expanded Quarkus MCP 2.0 Streamable HTTP (`/mcp`) and CLI stdio (`cli/src/mcp-server.js`) to full 10-tool parity: `inspectArchitecture`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`, `evaluateFitness`, `synthesizeDipInversion`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`, and `getFitnessHistory`.
+  - Added 3 MCP `@Resource`s (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`) and 2 MCP `@Prompt`s (`architectural-review`, `dip-refactoring-guide`).
   - Added `quarkus-mcp-server-hibernate-validator` and `quarkus-smallrye-health` (`/q/health`, `/q/health/live`, `/q/health/ready`) and configured `quarkus.mcp.server.http.dns-rebinding-check.enabled=true` and `quarkus.mcp.server.http.streamable.lazy-sse-init=true`.
 - **Java 25 Virtual Threads (`@RunOnVirtualThread` / JEP 491) & Watcher Lifecycle Cleanup**:
   - Annotated blocking MCP and REST delivery adapters (`ArchlensMcpService`, `DiagramResource`, `FitnessResource`, `MailboxResource`, `ProjectFilesystemResource`, `SnapshotResource`, `VersionResource`) with `@RunOnVirtualThread` to prevent Netty event-loop pinning.

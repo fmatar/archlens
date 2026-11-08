@@ -58,6 +58,16 @@
   });
 
   $effect(() => {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      return () => {
+        if (hoverTimeoutId) clearTimeout(hoverTimeoutId);
+      };
+    }
+
     // Svelte 5 + GSAP lifecycle management
     const ctx = gsap.context(() => {
       if (edge.isViolating) {
@@ -158,13 +168,36 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
 <g
-  class="group cursor-pointer transition-opacity duration-300"
+  class="group cursor-pointer transition-opacity duration-300 focus:outline-none"
+  role="button"
+  tabindex="0"
+  aria-label={`${edge.isViolating ? 'Violating' : 'Conforming'} dependency from ${fromLabel || edge.from} to ${toLabel || edge.to}`}
   opacity={isDimmed ? 0.35 : 1.0}
   onmouseenter={handleMouseEnter}
   onmousemove={handleMouseMove}
   onmouseleave={handleMouseLeave}
+  onkeydown={(e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (edge.isViolating) {
+        diagramStore.openDipInversion(edge.from, edge.to);
+      } else {
+        diagramStore.showEdgeTooltip({
+          edge,
+          fromLabel: fromLabel || edge.from,
+          toLabel: toLabel || edge.to,
+          fromLevel,
+          toLevel,
+          x: 240,
+          y: 200,
+          isBundled,
+          bundleCount,
+          violationCount
+        });
+      }
+    }
+  }}
 >
   <!-- Invisible Wide Hit Target (Prevents missing thin lines and stabilizes hover) -->
   <path

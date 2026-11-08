@@ -32,10 +32,14 @@ public class PythonAstScanner implements LanguageScanner {
       Pattern.compile(
           "(?:importlib\\.import_module|__import__)\\s*\\(\\s*['\"]([a-zA-Z0-9_.]+)['\"]");
   private static final Pattern CLASS_DEF_PATTERN =
-      Pattern.compile("^(\\s*)class\\s+([a-zA-Z0-9_]+)(?:\\(([^)]*)\\))?\\s*:");
+      Pattern.compile("^(\\s*)class\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?(?:\\(([^)]*)\\))?\\s*:");
   private static final Pattern DEF_PATTERN =
       Pattern.compile(
-          "^(\\s*)(?:async\\s+)?def\\s+([a-zA-Z0-9_]+)\\s*\\(([^)]*)\\)(?:\\s*->\\s*([^:]+))?\\s*:");
+          "^(\\s*)(?:async\\s+)?def\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s*\\(([^)]*)\\)(?:\\s*->\\s*([^:]+))?\\s*:");
+  private static final Pattern TYPE_STATEMENT_PATTERN =
+      Pattern.compile("^(\\s*)type\\s+([a-zA-Z_][a-zA-Z0-9_]*)(?:\\[[^\\]]*\\])?\\s*=\\s*(.+)$");
+  private static final Pattern IDENTIFIER_TOKEN_PATTERN =
+      Pattern.compile("\\b([A-Za-z_][A-Za-z0-9_.]*)\\b");
   private static final Pattern ABSTRACT_DECORATOR_PATTERN =
       Pattern.compile("^\\s*@(?:abc\\.)?abstractmethod\\b");
 
@@ -229,6 +233,17 @@ public class PythonAstScanner implements LanguageScanner {
           if (!rawModId.equals(modId)) {
             internalModules.putIfAbsent(rawModId + "." + clsName, fullClassId);
           }
+          continue;
+        }
+        Matcher typeMatcher = TYPE_STATEMENT_PATTERN.matcher(stmt);
+        if (typeMatcher.find() && typeMatcher.group(1).isEmpty()) {
+          String aliasName = typeMatcher.group(2);
+          String fullTypeId = modId + "." + aliasName;
+          declaredClassIds.add(fullTypeId);
+          internalModules.put(fullTypeId, fullTypeId);
+          if (!rawModId.equals(modId)) {
+            internalModules.putIfAbsent(rawModId + "." + aliasName, fullTypeId);
+          }
         }
       }
       if (!declaredClassIds.isEmpty()) {
@@ -393,6 +408,44 @@ public class PythonAstScanner implements LanguageScanner {
           continue;
         }
 
+        Matcher typeStmtMatcher = TYPE_STATEMENT_PATTERN.matcher(line);
+        if (typeStmtMatcher.find()) {
+          int typeIndent = typeStmtMatcher.group(1).length();
+          String aliasName = typeStmtMatcher.group(2);
+          String rhsExpr = typeStmtMatcher.group(3);
+          if (typeIndent == 0) {
+            parsedClasses.add(
+                new ParsedPythonClass(
+                    aliasName,
+                    typeIndent,
+                    ClassNode.Stereotype.INTERFACE,
+                    new ArrayList<>(),
+                    true));
+            String fullAliasId = currentModule + "." + aliasName;
+            Matcher idMatcher = IDENTIFIER_TOKEN_PATTERN.matcher(rhsExpr);
+            while (idMatcher.find()) {
+              String token = idMatcher.group(1);
+              if (token.equals(aliasName)) {
+                continue;
+              }
+              String sameModuleTarget = currentModule + "." + token;
+              if (internalModules.containsKey(sameModuleTarget)) {
+                edges.add(
+                    new DependencyEdge(
+                        fullAliasId,
+                        internalModules.get(sameModuleTarget),
+                        DependencyEdge.Kind.DEPENDENCY,
+                        "type alias",
+                        false));
+              } else if (resolveInternalTarget(token, internalModules) != null) {
+                importedModules.add(token);
+              }
+            }
+          }
+          pendingAbstractDecorator = false;
+          continue;
+        }
+
         Matcher defMatcher = DEF_PATTERN.matcher(line);
         if (defMatcher.find()) {
           int defIndent = defMatcher.group(1).length();
@@ -463,6 +516,27 @@ public class PythonAstScanner implements LanguageScanner {
                   cls.methods));
           sourceNodeIds.add(fullClassId);
         }
+        if (!moduleMethods.isEmpty() && parsedClasses.stream().allMatch(c -> c.isTypeAlias)) {
+          String simpleName = new File(rel).getName().replace(".py", "");
+          classes.add(
+              new ClassNode(
+                  currentModule,
+                  simpleName,
+                  packageName,
+                  pyFile.toAbsolutePath().toString(),
+                  ClassNode.Stereotype.CLASS,
+                  false,
+                  null,
+                  new CrapScore(1.0, 1.0, 0.0),
+                  1.0,
+                  1,
+                  0,
+                  0,
+                  0,
+                  fields,
+                  moduleMethods));
+          sourceNodeIds.add(currentModule);
+        }
       }
 
       // Resolve edges to imported classes or fallback modules
@@ -510,13 +584,24 @@ public class PythonAstScanner implements LanguageScanner {
     final int indent;
     ClassNode.Stereotype stereotype;
     final List<MethodNode> methods;
+    final boolean isTypeAlias;
 
     ParsedPythonClass(
         String name, int indent, ClassNode.Stereotype stereotype, List<MethodNode> methods) {
+      this(name, indent, stereotype, methods, false);
+    }
+
+    ParsedPythonClass(
+        String name,
+        int indent,
+        ClassNode.Stereotype stereotype,
+        List<MethodNode> methods,
+        boolean isTypeAlias) {
       this.name = name;
       this.indent = indent;
       this.stereotype = stereotype;
       this.methods = methods;
+      this.isTypeAlias = isTypeAlias;
     }
   }
 

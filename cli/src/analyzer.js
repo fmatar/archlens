@@ -121,6 +121,123 @@ function findNestedSourceRoots(dir, lang, depth = 0, maxDepth = 5, results = [])
   return results;
 }
 
+export function discoverWorkspaceModules(projectRoot) {
+  const root = path.resolve(projectRoot);
+  const discovered = new Set();
+
+  const expandGlobPattern = (pattern) => {
+    let clean = pattern.trim().replace(/^['"]|['"]$/g, '').replace(/\\/g, '/');
+    if (!clean || clean.startsWith('!')) return;
+    if (clean.startsWith(':')) {
+      clean = clean.slice(1).replace(/:/g, '/');
+    }
+    while (clean.endsWith('/')) {
+      clean = clean.slice(0, -1);
+    }
+    if (!clean) return;
+
+    if (clean.endsWith('/*') || clean.endsWith('/**')) {
+      const parentRel = clean.replace(/\/\*\*?$/, '');
+      const parentDir = path.join(root, parentRel);
+      if (fs.existsSync(parentDir) && fs.statSync(parentDir).isDirectory()) {
+        try {
+          for (const entry of fs.readdirSync(parentDir, { withFileTypes: true })) {
+            if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+              discovered.add(path.posix.join(parentRel, entry.name));
+            }
+          }
+        } catch {
+          // Ignore unreadable parent
+        }
+      }
+    } else {
+      const candidate = path.join(root, clean);
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+        discovered.add(clean);
+      }
+    }
+  };
+
+  // 1. Gradle settings.gradle / settings.gradle.kts
+  for (const gradleSettings of ['settings.gradle', 'settings.gradle.kts']) {
+    const settingsPath = path.join(root, gradleSettings);
+    if (fs.existsSync(settingsPath)) {
+      try {
+        const content = fs.readFileSync(settingsPath, 'utf8');
+        const includeRegex = /\binclude\s*\(?([^)\n]+)\)?/g;
+        let match;
+        while ((match = includeRegex.exec(content)) !== null) {
+          const strRegex = /['"]([^'"]+)['"]/g;
+          let strMatch;
+          while ((strMatch = strRegex.exec(match[1])) !== null) {
+            expandGlobPattern(strMatch[1]);
+          }
+        }
+      } catch {
+        // Ignore malformed Gradle settings
+      }
+    }
+  }
+
+  // 2. Cargo.toml [workspace] members
+  const cargoPath = path.join(root, 'Cargo.toml');
+  if (fs.existsSync(cargoPath)) {
+    try {
+      const content = fs.readFileSync(cargoPath, 'utf8');
+      if (/\[workspace\]/.test(content)) {
+        const membersMatch = content.match(/\bmembers\s*=\s*\[([\s\S]*?)\]/);
+        if (membersMatch) {
+          const strRegex = /['"]([^'"]+)['"]/g;
+          let strMatch;
+          while ((strMatch = strRegex.exec(membersMatch[1])) !== null) {
+            expandGlobPattern(strMatch[1]);
+          }
+        }
+      }
+    } catch {
+      // Ignore malformed Cargo.toml
+    }
+  }
+
+  // 3. pnpm-workspace.yaml
+  const pnpmPath = path.join(root, 'pnpm-workspace.yaml');
+  if (fs.existsSync(pnpmPath)) {
+    try {
+      const content = fs.readFileSync(pnpmPath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const itemMatch = line.match(/^\s*-\s*['"]?([^'"#]+)['"]?/);
+        if (itemMatch) {
+          expandGlobPattern(itemMatch[1]);
+        }
+      }
+    } catch {
+      // Ignore malformed pnpm-workspace.yaml
+    }
+  }
+
+  // 4. package.json workspaces (npm / Yarn / Nx / Turborepo)
+  const pkgJsonPath = path.join(root, 'package.json');
+  if (fs.existsSync(pkgJsonPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
+      const workspaces = Array.isArray(pkg.workspaces)
+        ? pkg.workspaces
+        : Array.isArray(pkg.workspaces?.packages)
+          ? pkg.workspaces.packages
+          : [];
+      for (const pattern of workspaces) {
+        if (typeof pattern === 'string') {
+          expandGlobPattern(pattern);
+        }
+      }
+    } catch {
+      // Ignore malformed package.json
+    }
+  }
+
+  return Array.from(discovered);
+}
+
 export function detectSourceRoot(projectRoot, lang) {
   const root = path.resolve(projectRoot);
 
@@ -142,6 +259,24 @@ export function detectSourceRoot(projectRoot, lang) {
     const p = path.join(root, cand);
     if (fs.existsSync(p) && fs.statSync(p).isDirectory()) {
       return cand;
+    }
+  }
+
+  // Check multi-build workspace manifests (Gradle, Cargo, pnpm, npm/Nx/Turborepo)
+  const workspaceMods = discoverWorkspaceModules(root);
+  for (const modRel of workspaceMods) {
+    if (lang === 'java') {
+      const javaSrc = path.posix.join(modRel, 'src/main/java');
+      if (fs.existsSync(path.join(root, javaSrc))) return javaSrc;
+    } else if (lang === 'kotlin') {
+      const ktSrc = path.posix.join(modRel, 'src/main/kotlin');
+      if (fs.existsSync(path.join(root, ktSrc))) return ktSrc;
+      const javaSrc = path.posix.join(modRel, 'src/main/java');
+      if (fs.existsSync(path.join(root, javaSrc))) return javaSrc;
+    } else {
+      const modSrc = path.posix.join(modRel, 'src');
+      if (fs.existsSync(path.join(root, modSrc))) return modSrc;
+      if (fs.existsSync(path.join(root, modRel))) return modRel;
     }
   }
 

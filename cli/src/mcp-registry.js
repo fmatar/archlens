@@ -95,13 +95,13 @@ export const ARCHLENS_TOOL_SCHEMAS = {
     parameters: {
       type: 'object',
       properties: {
-        sourceClass: {
+        fromClass: {
           type: 'string',
-          description: 'Fully qualified or simple name of the inner-layer class with the outward dependency'
+          description: 'Fully qualified or simple name of the inner-layer class with the outward dependency (alias: sourceClass)'
         },
-        targetClass: {
+        toClass: {
           type: 'string',
-          description: 'Fully qualified or simple name of the outer-layer class being depended upon'
+          description: 'Fully qualified or simple name of the outer-layer class being depended upon (alias: targetClass)'
         },
         projectRoot: {
           type: 'string',
@@ -110,7 +110,7 @@ export const ARCHLENS_TOOL_SCHEMAS = {
           default: '.'
         }
       },
-      required: ['sourceClass', 'targetClass']
+      required: ['fromClass', 'toClass']
     }
   },
   evaluateFitness: {
@@ -128,6 +128,91 @@ export const ARCHLENS_TOOL_SCHEMAS = {
         }
       },
       required: []
+    }
+  },
+  getFitnessHistory: {
+    name: 'getFitnessHistory',
+    description:
+      'Retrieve historical Architecture Fitness Index (AFI) snapshots and regression trend (IMPROVING, STABLE, DEGRADING).',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        }
+      },
+      required: []
+    }
+  },
+  proposeScreamingMigration: {
+    name: 'proposeScreamingMigration',
+    description:
+      'Generate a Screaming Architecture package-by-feature verticalization migration proposal.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        }
+      },
+      required: []
+    }
+  },
+  getPolicy: {
+    name: 'getPolicy',
+    description:
+      'Retrieve the active .archlens/policy.json concentric ring governance policy for the target project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        }
+      },
+      required: []
+    }
+  },
+  syncDipAdr: {
+    name: 'syncDipAdr',
+    description:
+      'Generate and synchronize an Architecture Decision Record (ADR) documenting a Dependency Inversion Principle (DIP) port extraction.',
+    parameters: {
+      type: 'object',
+      properties: {
+        sourceClass: {
+          type: 'string',
+          description: 'Fully qualified or simple name of the inner-layer class'
+        },
+        targetClass: {
+          type: 'string',
+          description: 'Fully qualified or simple name of the outer-layer class'
+        },
+        interfacePortName: {
+          type: 'string',
+          description: 'Synthesized interface port name (e.g. OrderRepositoryPort)'
+        },
+        reason: {
+          type: 'string',
+          description: 'Architectural rationale for the DIP inversion',
+          default: 'Invert outward Clean Architecture dependency'
+        },
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        }
+      },
+      required: ['sourceClass', 'targetClass', 'interfacePortName']
     }
   }
 };
@@ -152,14 +237,24 @@ It strictly enforces Uncle Bob's Dependency Rule: source code dependencies must 
 - **Main Sequence Balance Invariant**: Distance from Main Sequence $D = |A + I - 1| \le 0.35$ avoiding Zones of Pain and Uselessness.
 - **Architectural Fitness Index (AFI)**: Composite fitness score (0-100%) and letter grade (A-F) tracking regression trends.
 
-## Available MCP Tools:
+## Available MCP Tools (10):
 - \`exportLlmDossier\`: Primary tool to diagnose architectural drift and generate copy-ready LLM refactoring instructions with Dependency Inversion Principle (DIP) interface port prescriptions. Accepts \`{ "projectRoot": "." }\`.
 - \`inspectArchitecture\`: Returns full structural JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics.
+- \`synthesizeDipInversion\`: Synthesizes a polyglot Dependency Inversion port (Java/Python/TS/Go/Rust) with caller and adapter diff previews. Accepts \`{ "fromClass": "...", "toClass": "...", "projectRoot": "." }\`.
+- \`evaluateFitness\`: Evaluates the Architecture Fitness Index (\`AFI\` 0-100%, Grade \`A\`-\`F\`), Main Sequence metrics ($I, A, D$), and Screaming Architecture Score (\`SAS\`).
+- \`getFitnessHistory\`: Retrieves historical Architecture Fitness Index snapshots and regression trajectory (\`IMPROVING\`, \`STABLE\`, \`DEGRADING\`).
+- \`proposeScreamingMigration\`: Generates a Screaming Architecture package-by-feature verticalization migration proposal.
 - \`listSnapshots\`: Lists historical architecture release snapshots in \`.archlens/snapshots/\` and Git release tags.
 - \`getSnapshot\`: Retrieves architectural graph models for a specific historical release tag or snapshot ID.
+- \`getPolicy\`: Retrieves the active \`.archlens/policy.json\` concentric ring governance policy.
+- \`syncDipAdr\`: Mints and synchronizes a living Architecture Decision Record (\`docs/adr/ADR-*.md\`) for a DIP port extraction.
 
-## Available MCP Resources:
+## Available MCP Resources (3) & Prompts (2):
 - \`archlens://llms.txt\`: Canonical reference guide, architectural rules, CLI commands, and refactoring protocols.
+- \`archlens://policy\`: Active \`.archlens/policy.json\` concentric ring policy and refactoring proposals.
+- \`archlens://fitness\`: Live Architecture Fitness Index (\`AFI\`) evaluation JSON report.
+- \`architectural-review\` (Prompt): Structured prompt template for conducting a concentric ring & Main Sequence architectural review.
+- \`dip-refactoring-guide\` (Prompt): Guided prompt template for executing a surgical Dependency Inversion refactoring.
 
 ## Refactoring Guidelines (Remediating Architectural Drift):
 Whenever outward breaches are detected from inner layers (Domain Core or Application) to outer layers (Adapters or Infrastructure):
@@ -208,11 +303,43 @@ export function getClientConfigLocations(projectRoot = '.', homedir = os.homedir
     },
     {
       id: 'antigravity-global',
-      name: 'Google Antigravity & Gemini CLI',
+      name: 'Google Antigravity & Gemini CLI (Schema Directory)',
       type: 'tool-directory',
       scope: 'global',
       filePath: path.join(homedir, '.gemini', 'antigravity', 'mcp', 'archlens'),
       parentDir: path.join(homedir, '.gemini', 'antigravity', 'mcp')
+    },
+    {
+      id: 'antigravity-config',
+      name: 'Google Antigravity (mcp_config.json)',
+      type: 'json-manifest',
+      scope: 'global',
+      filePath: path.join(homedir, '.gemini', 'antigravity', 'mcp_config.json'),
+      parentDir: path.join(homedir, '.gemini', 'antigravity')
+    },
+    {
+      id: 'gemini-cli',
+      name: 'Gemini CLI',
+      type: 'json-manifest',
+      scope: 'global',
+      filePath: path.join(homedir, '.gemini', 'settings.json'),
+      parentDir: path.join(homedir, '.gemini')
+    },
+    {
+      id: 'grok',
+      name: 'Grok CLI (xAI)',
+      type: 'json-manifest',
+      scope: 'local',
+      filePath: path.join(root, '.grok', 'mcp.json'),
+      parentDir: path.join(root, '.grok')
+    },
+    {
+      id: 'windsurf',
+      name: 'Windsurf',
+      type: 'json-manifest',
+      scope: 'global',
+      filePath: path.join(homedir, '.codeium', 'windsurf', 'mcp_config.json'),
+      parentDir: path.join(homedir, '.codeium', 'windsurf')
     },
     {
       id: 'cursor',
@@ -292,11 +419,20 @@ export function installMcpConfigs(options = {}) {
         }
       }
 
-      if (!manifest.mcpServers || typeof manifest.mcpServers !== 'object') {
-        manifest.mcpServers = {};
+      if (target.id === 'vscode') {
+        if (!manifest.servers || typeof manifest.servers !== 'object') {
+          manifest.servers = {};
+        }
+        manifest.servers.archlens = {
+          type: 'stdio',
+          ...getMcpManifestEntry(serverUrl)
+        };
+      } else {
+        if (!manifest.mcpServers || typeof manifest.mcpServers !== 'object') {
+          manifest.mcpServers = {};
+        }
+        manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl);
       }
-
-      manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl);
 
       if (!dryRun) {
         fs.mkdirSync(path.dirname(target.filePath), { recursive: true });

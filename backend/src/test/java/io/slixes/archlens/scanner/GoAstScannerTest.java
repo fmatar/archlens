@@ -80,8 +80,20 @@ class GoAstScannerTest {
     LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
     assertFalse(result.classes().isEmpty());
 
-    assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("Order")));
-    assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("OrderRepository")));
+    assertTrue(
+        result.classes().stream()
+            .anyMatch(
+                c ->
+                    c.name().equals("Order")
+                        && c.stereotype()
+                            == io.slixes.archlens.domain.graph.ClassNode.Stereotype.CLASS));
+    assertTrue(
+        result.classes().stream()
+            .anyMatch(
+                c ->
+                    c.name().equals("OrderRepository")
+                        && c.stereotype()
+                            == io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE));
     assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("OrderHandler")));
 
     // Dependency edge
@@ -130,5 +142,60 @@ class GoAstScannerTest {
     assertEquals(2, ids.stream().distinct().count(), "All class IDs must be strictly unique!");
     assertTrue(ids.contains("pkg.auth.pkce"));
     assertTrue(ids.contains("pkg.auth.rbac"));
+  }
+
+  @Test
+  void testGo123IteratorSeqSignaturesAndContracts(@TempDir Path tempDir) throws IOException {
+    Files.writeString(tempDir.resolve("go.mod"), "module github.com/example/orders\n\ngo 1.23\n");
+
+    Path domainDir = tempDir.resolve("internal/domain");
+    Files.createDirectories(domainDir);
+    Files.writeString(
+        domainDir.resolve("stream.go"),
+        """
+        package domain
+
+        import "iter"
+
+        type OrderStream[T any] iter.Seq[T]
+
+        type Order struct {
+            ID string
+        }
+
+        func (o *Order) Items() iter.Seq[string] {
+            return nil
+        }
+
+        func StreamPairs[K comparable, V any]() iter.Seq2[K, V] {
+            return nil
+        }
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
+    var streamContract =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderStream"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE,
+        streamContract.stereotype());
+
+    var orderClass =
+        result.classes().stream().filter(c -> c.name().equals("Order")).findFirst().orElseThrow();
+    var itemsMethod =
+        orderClass.methods().stream()
+            .filter(m -> m.name().equals("Items"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals("iter.Seq[string]", itemsMethod.returnType());
+
+    var streamPairsMethod =
+        orderClass.methods().stream()
+            .filter(m -> m.name().equals("StreamPairs"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals("iter.Seq2[K, V]", streamPairsMethod.returnType());
   }
 }

@@ -44,8 +44,8 @@
     <!-- Switch View Button -->
     <button
       onclick={() => diagramStore.loadGraph(null)}
-      class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-[11px]"
-      title="Return to live code tree (Key: P)"
+      class="min-h-6 flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer text-[11px]"
+      title="Return to live code graph"
     >
       <ArrowLeftRight size={13} />
       <span>Compare Real (Live)</span>

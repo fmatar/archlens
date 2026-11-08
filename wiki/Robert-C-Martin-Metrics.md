@@ -23,11 +23,11 @@ $$I = \frac{C_e}{C_a + C_e}$$
 - $I = 1.0$ $\rightarrow$ **Maximally Instable**: No incoming dependencies ($C_a = 0$) and many outgoing dependencies ($C_e > 0$). Easy to change because no other components rely on it.
 
 ### 4. Abstractness ($A$)
-The ratio of abstract classes and interfaces to total classes in the component.
+The ratio of abstract classes, interfaces, and immutable Domain Core `RECORD` value objects to total classes in the component.
 $$A = \frac{N_a}{N_c}$$
-- Where $N_a$ is the count of interfaces and abstract classes, and $N_c$ is the total class count.
-- $A = 0.0$ $\rightarrow$ Purely concrete component.
-- $A = 1.0$ $\rightarrow$ Purely abstract interface package.
+- Where $N_a$ is the count of `INTERFACE`, `ABSTRACT`, and immutable `RECORD` stereotypes (per `docs/adr/ADR-001-quarkus-3-40-mcp-2-0-hexagonal-decoupling-virtua.md`), and $N_c$ is the total class count.
+- $A = 0.0$ $\rightarrow$ Purely mutable concrete component.
+- $A = 1.0$ $\rightarrow$ Purely abstract / immutable domain contract package.
 
 ---
 
@@ -85,9 +85,12 @@ Abstractness (A)
 - **Risk**: Dead code or speculative over-engineering.
 - **Remedy**: Consolidate or eliminate unused abstractions.
 
-### 🟢 The Balanced Zone ($D \le 0.4$)
-- **Characteristics**: Components that track closely along the Main Sequence line.
-- **Outcome**: Concrete components are instable (easy to change, few dependents), and stable components are abstract (extensible via polymorphism).
+### 🟢 The Balanced Zone ($D \le 0.25$ on Scatter Plot / $D \le 0.35$ in Fitness Gate)
+- **Characteristics**: Components that track closely along the Main Sequence line ($A + I = 1$).
+- **Calibration**:
+  - **Interactive Main Sequence Scatter Plot (`martinMetrics.ts`)**: Highlights the strict Balanced Corridor at $|A + I - 1| \le 0.25$, classifying off-corridor components into the Zone of Pain ($A + I < 1$) or Zone of Uselessness ($A + I > 1$).
+  - **Automated Architecture Fitness Gate (`FitnessThresholds.java`)**: Enforces a default repository-wide maximum average distance threshold of $D \le 0.35$ (`maxAvgDistanceFromMainSequence = 0.35`).
+- **Outcome**: Concrete components are instable (easy to change, few dependents), and stable components are abstract (extensible via polymorphism or immutable value records).
 
 ---
 

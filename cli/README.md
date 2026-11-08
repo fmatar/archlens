@@ -12,7 +12,17 @@ Analyzes any project repository, detects programming languages and package hiera
 
 ## ⚡ Quickstart
 
-### Option A: Install AI Assistant Skills via Open Skills Standard (Recommended for Agents)
+### Option A: Zero-Touch Autonomous AI Setup (`--mcp` — Recommended for Antigravity & Claude)
+Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Once configured, your AI assistant **automatically starts or resurrects Archlens on demand** whenever an architectural MCP tool is invoked—no manual container management required:
+```bash
+# Scaffold .archlens/policy.json, AGENTS.md/CLAUDE.md, and auto-configure all installed AI clients:
+npx @fmatar/archlens-skill --yes --mcp
+
+# Or also install global skills into ~/.claude/skills and ~/.gemini/config/skills:
+npx @fmatar/archlens-skill --global --mcp
+```
+
+### Option B: Install AI Assistant Skills via Open Skills Standard
 Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, you can add Archlens capabilities across 15+ AI coding assistants (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed):
 ```bash
 # Add to all detected AI assistants in project or globally:
@@ -22,7 +32,7 @@ npx skills add fmatar/archlens
 npx skills add fmatar/archlens --agent claude-code
 ```
 
-### Option B: Run Policy Scaffolder via NPX
+### Option C: Run Interactive Policy Scaffolder via NPX
 
 ```bash
 # Production Stable (recommended)
@@ -35,13 +45,13 @@ npx @fmatar/archlens-skill@dev
 npx github:fmatar/archlens
 ```
 
-### Option C: Install Globally via NPM
+### Option D: Install Globally via NPM
 ```bash
 npm install -g @fmatar/archlens-skill
 archlens-skill
 ```
 
-### Option D: Run from Local Repository Clone
+### Option E: Run from Local Repository Clone
 ```bash
 # Install globally from the local repository:
 npm install -g ./cli
@@ -148,20 +158,33 @@ npx @fmatar/archlens-skill start --path /path/to/project --port 8088 --open
 
 ### Command-Line Options
 
-| Flag | Shorthand | Description | Default |
+| Flag / Command | Shorthand | Description | Default |
 |------|-----------|-------------|---------|
-| `start` | | Start Archlens Workbench container (auto-resurrects on demand) | |
+| `check` | `--check` | Run headless Clean Architecture CI quality gate | |
+| `start` | | Start Archlens Workbench (Native Binary / JAR / Docker fallback) | |
+| `prompt` | `--prompt` | Export LLM Refactoring Prompt Dossier | |
+| `mcp` | | Run MCP stdio server bridge (online + offline static fallback) | |
+| `update` | `--update`, `-u` | Re-scan code and update existing `.archlens/policy.json` | `false` |
+| `upgrade` | `--upgrade` | Migrate legacy `.uml-viewer` to `.archlens` | `false` |
+| `global` | `--global`, `-g` | Install skills into global agent directories | `false` |
+| `--max-violations <N>` | | Maximum allowed outward layer violations in `check` | `0` |
+| `--detect-cycles` | | Fail `check` if package dependency cycles (ADP) are detected | `false` |
+| `--screaming-threshold <N>` | | Minimum Screaming Architecture Score (`0.0`–`1.0`) | |
+| `--suggest-features` | | Suggest Screaming Architecture feature slice clusters in `check` | `false` |
+| `--fitness-threshold <N>` | | Minimum Composite Architecture Fitness Index (`0.0`–`1.0`) | |
+| `--format <FMT>` | | Output format for `check` (`text`, `json`, `sarif`) | `text` |
+| `--output <FILE>` | `-O` | Write `check` output report (e.g. SARIF) to file | |
+| `--native` | | Force native JVM runner mode on `start` | `false` |
+| `--docker` | | Force Docker container mode on `start` | `false` |
+| `--jar <PATH>` | | Custom path to `quarkus-run.jar` for native mode | Auto-detected |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` (current directory) |
 | `--title <NAME>` | `-t` | Project title in visual workbench | Formatted folder name |
 | `--prefix <PKG>` | | Common package prefix (e.g. `com.example.service`) | Auto-detected |
 | `--server-url <URL>` | | Visual Workbench server endpoint | `http://localhost:8088` |
-| `--mcp` | `-m` | Auto-configure MCP client manifests (Claude, Antigravity, Cursor) | `false` |
+| `--mcp` | `-m` | Auto-configure MCP client manifests (Claude, Antigravity, Cursor, Gemini, Grok, Windsurf, VS Code) | `false` |
 | `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
-| `--global` | `-g` | Install skill into global agent directories | `false` |
-| `--update` | `-u` | Re-scan code and update existing policy | `false` |
-| `--upgrade` | | Migrate legacy `.uml-viewer` to `.archlens` | `false` |
 | `--force` | `-f` | Overwrite existing configuration files | `false` |
 | `--dry-run` | | Simulate execution without writing files | `false` |
 | `--yes` | `-y` | Accept defaults automatically (non-interactive) | `false` |

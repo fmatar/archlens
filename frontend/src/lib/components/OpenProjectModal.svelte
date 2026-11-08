@@ -1,6 +1,7 @@
 <script lang="ts">
   import { untrack } from 'svelte';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import {
     Folder,
     FolderOpen,
@@ -252,6 +253,7 @@
   >
     <!-- Modal Card -->
     <div
+      use:focusTrap
       class="bg-slate-900 border border-slate-800 rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col font-sans animate-in zoom-in-95 duration-150 select-text"
       role="dialog"
       aria-modal="true"

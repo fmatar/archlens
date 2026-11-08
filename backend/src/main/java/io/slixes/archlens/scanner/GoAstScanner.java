@@ -28,13 +28,17 @@ public class GoAstScanner implements LanguageScanner {
   private static final Pattern SINGLE_IMPORT_PATTERN =
       Pattern.compile("^\\s*import\\s+(?:[a-zA-Z0-9_]+\\s+)?\"([^\"]+)\"");
   private static final Pattern TYPE_STRUCT_PATTERN =
-      Pattern.compile("^\\s*type\\s+([a-zA-Z0-9_]+)\\s+struct\\s*\\{");
+      Pattern.compile("^\\s*type\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s+struct\\s*\\{");
   private static final Pattern TYPE_INTERFACE_PATTERN =
-      Pattern.compile("^\\s*type\\s+([a-zA-Z0-9_]+)\\s+interface\\s*\\{");
+      Pattern.compile("^\\s*type\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s+interface\\s*\\{");
+  private static final Pattern TYPE_ITERATOR_CONTRACT_PATTERN =
+      Pattern.compile(
+          "^\\s*type\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s+(?:=\\s*)?(?:iter\\.Seq2?\\b|func\\s*\\(\\s*yield\\s+func\\b).*");
   private static final Pattern METHOD_RECEIVER_PATTERN =
-      Pattern.compile("^\\s*func\\s*\\([^)]*\\*?([a-zA-Z0-9_]+)\\)\\s*([a-zA-Z0-9_]+)\\s*\\(");
+      Pattern.compile(
+          "^\\s*func\\s*\\([^)]*\\*?([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\)\\s*([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s*\\(([^)]*)\\)\\s*([^{]*)");
   private static final Pattern FUNC_PATTERN =
-      Pattern.compile("^\\s*func\\s+([a-zA-Z0-9_]+)\\s*\\(");
+      Pattern.compile("^\\s*func\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s*\\(([^)]*)\\)\\s*([^{]*)");
 
   @Override
   public String languageId() {
@@ -90,6 +94,7 @@ public class GoAstScanner implements LanguageScanner {
       List<MethodNode> methods = new ArrayList<>();
       Set<String> importedPaths = new HashSet<>();
       List<String> typeNames = new ArrayList<>();
+      Set<String> interfaceNames = new HashSet<>();
       boolean inImportBlock = false;
 
       for (String line : lines) {
@@ -128,7 +133,17 @@ public class GoAstScanner implements LanguageScanner {
 
         Matcher interfaceMatcher = TYPE_INTERFACE_PATTERN.matcher(line);
         if (interfaceMatcher.find()) {
-          typeNames.add(interfaceMatcher.group(1));
+          String ifaceName = interfaceMatcher.group(1);
+          typeNames.add(ifaceName);
+          interfaceNames.add(ifaceName);
+          continue;
+        }
+
+        Matcher iterContractMatcher = TYPE_ITERATOR_CONTRACT_PATTERN.matcher(line);
+        if (iterContractMatcher.find()) {
+          String iterTypeName = iterContractMatcher.group(1);
+          typeNames.add(iterTypeName);
+          interfaceNames.add(iterTypeName);
           continue;
         }
 
@@ -136,19 +151,23 @@ public class GoAstScanner implements LanguageScanner {
         if (methodMatcher.find()) {
           String receiver = methodMatcher.group(1);
           String methodName = methodMatcher.group(2);
+          String rawRet = methodMatcher.group(4) != null ? methodMatcher.group(4).trim() : "";
+          String returnType = rawRet.isEmpty() ? "void" : rawRet;
           boolean isPrivate = Character.isLowerCase(methodName.charAt(0));
           methods.add(
               new MethodNode(
-                  methodName, List.of(receiver), "void", isPrivate, 1, 1.0, 1.0, 0, 0, 0, 1));
+                  methodName, List.of(receiver), returnType, isPrivate, 1, 1.0, 1.0, 0, 0, 0, 1));
           continue;
         }
 
         Matcher fnMatcher = FUNC_PATTERN.matcher(line);
         if (fnMatcher.find()) {
           String fnName = fnMatcher.group(1);
+          String rawRet = fnMatcher.group(3) != null ? fnMatcher.group(3).trim() : "";
+          String returnType = rawRet.isEmpty() ? "void" : rawRet;
           boolean isPrivate = Character.isLowerCase(fnName.charAt(0));
           methods.add(
-              new MethodNode(fnName, List.of(), "void", isPrivate, 1, 1.0, 1.0, 0, 0, 0, 1));
+              new MethodNode(fnName, List.of(), returnType, isPrivate, 1, 1.0, 1.0, 0, 0, 0, 1));
         }
       }
 
@@ -199,7 +218,9 @@ public class GoAstScanner implements LanguageScanner {
                   typeName,
                   currentPackage,
                   rel,
-                  ClassNode.Stereotype.CLASS,
+                  interfaceNames.contains(typeName)
+                      ? ClassNode.Stereotype.INTERFACE
+                      : ClassNode.Stereotype.CLASS,
                   false,
                   null,
                   new CrapScore(1.0, 1.0, 0.0),

@@ -98,9 +98,18 @@ public class MailboxResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       Map<String, Object> request) {
     int baseline = ((Number) request.getOrDefault("baselineViolations", 0)).intValue();
+    int baselineCycles =
+        request.containsKey("baselineCycles") && request.get("baselineCycles") instanceof Number n
+            ? n.intValue()
+            : -1;
     String snapshotId = (String) request.getOrDefault("snapshotId", "");
+    boolean runTests = Boolean.TRUE.equals(request.get("runTests"));
     return verifyAndRollbackUseCase.verifyRefactoring(
-        WorkspacePathResolver.normalizeRoot(projectRoot), baseline, snapshotId);
+        WorkspacePathResolver.normalizeRoot(projectRoot),
+        baseline,
+        baselineCycles,
+        snapshotId,
+        runTests);
   }
 
   @POST

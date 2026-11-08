@@ -28,7 +28,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '0.1.1';
+  return '1.0.0';
 }
 
 export function getMcpToolsList() {
@@ -47,19 +47,63 @@ export function getMcpResourcesList() {
       description:
         'Comprehensive Clean Architecture guide, concentric ring hierarchy, CLI commands, fitness invariants, and refactoring protocols for LLMs.',
       mimeType: 'text/markdown'
+    },
+    {
+      uri: 'archlens://policy',
+      name: 'Archlens Concentric Ring Policy (.archlens/policy.json)',
+      description: 'Active Clean Architecture concentric ring policy and fitness thresholds.',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'archlens://fitness',
+      name: 'Archlens Architectural Fitness Evaluation',
+      description:
+        'Current Architectural Fitness Index (AFI), Screaming Architecture Score (SAS), and Main Sequence Distance evaluation.',
+      mimeType: 'application/json'
+    }
+  ];
+}
+
+export function getMcpPromptsList() {
+  return [
+    {
+      name: 'architectural-review',
+      description:
+        'Generate a comprehensive Clean Architecture & Robert C. Martin Main Sequence review prompt for a target workspace.',
+      arguments: [
+        {
+          name: 'projectRoot',
+          description: 'Absolute or relative path to the target project directory. Defaults to current directory.',
+          required: false
+        }
+      ]
+    },
+    {
+      name: 'dip-refactoring-guide',
+      description:
+        'Synthesize a surgical Dependency Inversion Principle (DIP) prompt to decouple an inner-ring caller from an outer-ring concrete class.',
+      arguments: [
+        { name: 'fromClass', description: 'Fully qualified caller class name', required: true },
+        { name: 'toClass', description: 'Fully qualified target concrete class name', required: true },
+        {
+          name: 'projectRoot',
+          description: 'Absolute or relative path to the target project directory. Defaults to current directory.',
+          required: false
+        }
+      ]
     }
   ];
 }
 
 export function readMcpResource(uri, options = {}, deps = {}) {
+  const projectRoot = path.resolve(options.path || '.');
+  const fileReader = deps.readFileSync || fs.readFileSync;
+  const fileExists = deps.existsSync || fs.existsSync;
+
   if (uri === 'archlens://llms.txt') {
-    const projectRoot = path.resolve(options.path || '.');
     const localLlmsPath = path.join(projectRoot, 'llms.txt');
     const cliLlmsPath = path.resolve(__dirname, '..', 'llms.txt');
     const rootLlmsPath = path.resolve(__dirname, '..', '..', 'llms.txt');
-
-    const fileReader = deps.readFileSync || fs.readFileSync;
-    const fileExists = deps.existsSync || fs.existsSync;
 
     let content = '';
     if (fileExists(localLlmsPath)) {
@@ -78,6 +122,36 @@ export function readMcpResource(uri, options = {}, deps = {}) {
           uri,
           mimeType: 'text/markdown',
           text: content
+        }
+      ]
+    };
+  }
+
+  if (uri === 'archlens://policy') {
+    const policyFile = path.join(projectRoot, '.archlens', 'policy.json');
+    const policyText = fileExists(policyFile)
+      ? fileReader(policyFile, 'utf8')
+      : JSON.stringify(generatePolicy(projectRoot, options), null, 2);
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: policyText
+        }
+      ]
+    };
+  }
+
+  if (uri === 'archlens://fitness') {
+    const checker = deps.checkArchitecture || checkArchitecture;
+    const report = checker(projectRoot, { detectCycles: true });
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: 'application/json',
+          text: JSON.stringify(report.fitness || report, null, 2)
         }
       ]
     };
@@ -189,8 +263,10 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
 
     if (isOnline) {
       try {
-        const query = new URLSearchParams({ snapshotId, projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/snapshot?${query}`);
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(
+          `${serverUrl}/api/snapshots/${encodeURIComponent(snapshotId)}?${query}`
+        );
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -218,19 +294,16 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
   }
 
   if (toolName === 'synthesizeDipInversion') {
-    const sourceClass = args.sourceClass;
-    const targetClass = args.targetClass;
-    if (!sourceClass || !targetClass) {
-      throw new Error("Missing required arguments: 'sourceClass' and 'targetClass'");
+    const fromClass = args.fromClass || args.sourceClass;
+    const toClass = args.toClass || args.targetClass;
+    if (!fromClass || !toClass) {
+      throw new Error("Missing required arguments: 'fromClass' and 'toClass'");
     }
 
     if (isOnline) {
       try {
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram/synthesize-dip`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceClass, targetClass, projectRoot })
-        });
+        const query = new URLSearchParams({ from: fromClass, to: toClass, projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/violations/invert-plan?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -240,13 +313,17 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       }
     }
 
-    const simpleTarget = targetClass.split('.').pop();
+    const simpleTarget = toClass.split('.').pop();
     const portName = `${simpleTarget}Port`;
     const blueprint = {
-      sourceClass,
-      targetClass,
+      fromClass,
+      toClass,
+      sourceClass: fromClass,
+      targetClass: toClass,
+      portName,
       portInterfaceName: portName,
-      prescription: `Extract interface ${portName} in the inner layer of ${sourceClass} and implement it in ${targetClass}.`,
+      portInterfaceCode: `public interface ${portName} {}`,
+      prescription: `Extract interface ${portName} in the inner layer of ${fromClass} and implement it in ${toClass}.`,
       offline: true
     };
     return { content: [{ type: 'text', text: JSON.stringify(blueprint, null, 2) }] };
@@ -289,6 +366,131 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     };
   }
 
+  if (toolName === 'getFitnessHistory') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/fitness/history?${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online fitness history error: ${err.message}.\n`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            { trendDirection: 'STABLE', trend: 'STABLE', history: [], snapshots: [], offline: true },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  }
+
+  if (toolName === 'proposeScreamingMigration') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(
+          `${serverUrl}/api/screaming/migration-proposal?${query}`
+        );
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online screaming migration error: ${err.message}.\n`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({ clusters: [], projectedSas: 1.0, offline: true }, null, 2)
+        }
+      ]
+    };
+  }
+
+  if (toolName === 'getPolicy') {
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/policy?${query}`);
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online policy fetch error: ${err.message}.\n`);
+      }
+    }
+    const policyFile = path.join(projectRoot, '.archlens', 'policy.json');
+    if (fs.existsSync(policyFile)) {
+      return { content: [{ type: 'text', text: fs.readFileSync(policyFile, 'utf8') }] };
+    }
+    const policy = generatePolicy(projectRoot, {});
+    return { content: [{ type: 'text', text: JSON.stringify(policy, null, 2) }] };
+  }
+
+  if (toolName === 'syncDipAdr') {
+    const sourceClass = args.sourceClass || args.fromClass;
+    const targetClass = args.targetClass || args.toClass;
+    const interfacePortName = args.interfacePortName || args.portName;
+    const reason = args.reason || 'Invert outward Clean Architecture dependency via interface port';
+    if (!sourceClass || !targetClass || !interfacePortName) {
+      throw new Error(
+        "Missing required arguments: 'sourceClass', 'targetClass', and 'interfacePortName'"
+      );
+    }
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({ projectRoot });
+        const res = await (deps.fetch || fetch)(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceClass,
+            targetClass,
+            interfacePortName,
+            reason
+          })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
+        }
+      } catch (err) {
+        process.stderr.write(`[archlens-mcp] Online syncDipAdr error: ${err.message}.\n`);
+      }
+    }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              sourceClass,
+              targetClass,
+              interfacePortName,
+              reason,
+              status: 'recorded-offline',
+              offline: true
+            },
+            null,
+            2
+          )
+        }
+      ]
+    };
+  }
+
   throw new Error(`Unknown tool: ${toolName}`);
 }
 
@@ -319,7 +521,8 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
         protocolVersion: '2024-11-05',
         capabilities: {
           tools: {},
-          resources: {}
+          resources: {},
+          prompts: {}
         },
         serverInfo: {
           name: 'archlens-mcp-server',
@@ -334,6 +537,48 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
       jsonrpc: '2.0',
       id,
       result: {}
+    };
+  }
+
+  if (method === 'prompts/list') {
+    return {
+      jsonrpc: '2.0',
+      id,
+      result: {
+        prompts: getMcpPromptsList()
+      }
+    };
+  }
+
+  if (method === 'prompts/get') {
+    const promptName = params?.name;
+    const args = params?.arguments || {};
+    if (promptName === 'architectural-review') {
+      const dossierRes = await executeToolCall('exportLlmDossier', args, options, deps);
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          description: 'Clean Architecture & Main Sequence review prompt',
+          messages: [{ role: 'user', content: dossierRes.content[0] }]
+        }
+      };
+    }
+    if (promptName === 'dip-refactoring-guide') {
+      const dipRes = await executeToolCall('synthesizeDipInversion', args, options, deps);
+      return {
+        jsonrpc: '2.0',
+        id,
+        result: {
+          description: 'Surgical Dependency Inversion Principle (DIP) refactoring prompt',
+          messages: [{ role: 'user', content: dipRes.content[0] }]
+        }
+      };
+    }
+    return {
+      jsonrpc: '2.0',
+      id,
+      error: { code: -32602, message: `Unknown prompt: ${promptName}` }
     };
   }
 

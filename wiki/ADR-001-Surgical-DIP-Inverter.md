@@ -31,4 +31,5 @@ We implemented an automated **Surgical DIP Inverter** spanning the Quarkus backe
 - Clean separation of concerns: the workbench synthesizes the architecture plan, while companion agents (Claude / Antigravity) execute the code modifications and test suites.
 
 ### Negative / Trade-offs
-- Port extraction currently targets Java ASTs via JavaParser; polyglot support for Python, TypeScript, and Go interface ports will follow the same pattern in subsequent phases.
+- Initial port extraction in PR #112 targeted Java ASTs via JavaParser; full polyglot port synthesis (`CAP-03`: Python `typing.Protocol`, TypeScript `export interface`, Go `type ... interface`, and Rust `pub trait`) was subsequently delivered in `v0.1.0-Beta-11` (`#5936`).
+- Method extraction operates on non-private `MethodNode` signatures captured on the target concretion node in `ArchitectureGraph`.

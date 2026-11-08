@@ -9,8 +9,8 @@ An engineering and product roadmap defining the chronological Semantic Versionin
 ```mermaid
 flowchart LR
     M1["<b>Milestone 1 — v0.1.1 (Shipped ✅)</b><br/>CI/CD Gates, MCP 2.0 & Governance<br/><i>Action, SARIF, Fitness, 10 MCP Tools</i>"]
-    M2["<b>Milestone 2 — v0.1.2 (Current ⚡)</b><br/>Closed-Loop Agent Autonomy<br/><i>Snapshots, Verify, Rollback & Intent</i>"]
-    M3["<b>Milestone 3 — v0.2.0 (Next Minor 🎯)</b><br/>Enterprise Monorepo & Cross-Lang AST<br/><i>Gradle/Cargo/Nx & UI-to-API Tracing</i>"]
+    M2["<b>Milestone 2 — v0.1.2 (Complete ✅)</b><br/>Closed-Loop Agent Autonomy<br/><i>Snapshots, Verify, Rollback & Intent</i>"]
+    M3["<b>Milestone 3 — v0.2.0 (Complete ✅)</b><br/>Enterprise Monorepo & Cross-Lang AST<br/><i>Gradle/Cargo/Nx & UI-to-API Tracing</i>"]
     M4["<b>Milestone 4 — v1.0.0 GA (Release 🚀)</b><br/>Production Scale & Ecosystem<br/><i>100k LoC WebGL, Native Binaries & Showcase</i>"]
 
     M1 --> M2 --> M3 --> M4
@@ -23,8 +23,8 @@ flowchart LR
 | Release Target | Milestone Theme | Primary Persona & Outcome | Linked Epic & Specs | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **`v0.1.1`** *(Shipped)* | **Milestone 1: CI/CD Quality Gates, MCP 2.0 & Team Governance** | **DevOps & AI Pair Programmers**: Enforce Clean Architecture in GitHub Actions with inline SARIF annotations and 10-tool local/HTTP MCP parity. | [#165](https://github.com/fmatar/archlens/issues/165), [#200](https://github.com/fmatar/archlens/issues/200), `ADR-001`–`ADR-003` | **100% Complete** ✅ |
-| **`v0.1.2`** *(Current)* | **Milestone 2: Closed-Loop Agent Autonomy & Guardrails** | **Software Architects**: Dispatch DIP/Sandbox refactorings with human intent notes, verify violation/cycle deltas + test suites in 1 click, and atomically revert bad agent edits. | [#164](https://github.com/fmatar/archlens/issues/164), `#1097`, `#1662`, `CAP-04` | **100% Complete** ✅ |
-| **`v0.2.0`** *(Next Minor)* | **Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability** | **Platform & Polyglot Teams**: Analyze multi-module Gradle, Cargo, and Nx/Turborepo workspaces and trace frontend `fetch()` calls directly to backend REST endpoints. | [#163](https://github.com/fmatar/archlens/issues/163), `CAP-01`, `CAP-02`, `CAP-03` | **60% Complete** 🎯 |
+| **`v0.1.2`** *(Complete)* | **Milestone 2: Closed-Loop Agent Autonomy & Guardrails** | **Software Architects**: Dispatch DIP/Sandbox refactorings with human intent notes, verify violation/cycle deltas + test suites in 1 click, and atomically revert bad agent edits. | [#164](https://github.com/fmatar/archlens/issues/164), `#1097`, `#1662`, `CAP-04` | **100% Complete** ✅ |
+| **`v0.2.0`** *(Complete)* | **Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability** | **Platform & Polyglot Teams**: Analyze multi-module Gradle, Cargo, and Nx/Turborepo workspaces and trace frontend `fetch()` calls directly to backend REST endpoints. | [#163](https://github.com/fmatar/archlens/issues/163), `#3001`, `CAP-01`, `CAP-02`, `CAP-03` | **100% Complete** ✅ |
 | **`v1.0.0 GA`** | **Milestone 4: Production Hardening, 100k LoC Virtualization & Ecosystem** | **Enterprise & Open-Source Community**: Zero-install native binaries, 60fps canvas rendering on 100k+ LoC codebases, and an interactive `archlens.io` showcase. | [#166](https://github.com/fmatar/archlens/issues/166) | **65% Complete** 🚀 |
 
 ---
@@ -69,21 +69,21 @@ flowchart LR
 
 ---
 
-### 3. [Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability (`v0.2.0` — Next Minor 🎯)](https://github.com/fmatar/archlens/milestone/1)
+### 3. [Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability (`v0.2.0` — Complete ✅)](https://github.com/fmatar/archlens/milestone/1)
 *Focus: Ensuring AST parsing scales seamlessly across polyglot enterprise monorepos, multi-build workspaces, and full-stack UI-to-API boundaries.*
 
-- **Linked Epic & Specs**: [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163), `CAP-01`, `CAP-02`, `CAP-03`
+- **Linked Epic & Specs**: [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163), `#3001`, `CAP-01`, `CAP-02`, `CAP-03`
 - **Deliverables**:
-  1. **Enterprise Monorepo & Multi-Module Scanners**:
+  1. **Enterprise Monorepo & Multi-Module Scanners (`#3001`, `CAP-02`)**:
      - [x] Deep nested Maven multi-module discovery (`discoverMavenModuleSourceDirs`) and `tsconfig.json` / `jsconfig.json` path alias & barrel `index.ts` re-export resolution (`CAP-02`).
      - [x] Cross-project boundary detection: distinguishing internal intra-repository imports vs external 3rd-party dependencies.
-     - [ ] Gradle subproject (`settings.gradle` / `settings.gradle.kts`), Nx/Turborepo/pnpm workspace (`pnpm-workspace.yaml` / `package.json` `workspaces`), and Cargo workspace (`[workspace]`) multi-module aggregation.
-  2. **Cross-Language Boundary Tracing**:
-     - [ ] Bridge frontend API client calls (Svelte 5 / TS `fetch` / `axios`) to backend entrypoints (Quarkus REST `@Path` / SSE / FastAPI) within a unified cross-language dependency graph.
-  3. **AST Parser Resiliency & Polyglot Dialect Parity (`CAP-01`, `CAP-03`)**:
+     - [x] Gradle subproject (`settings.gradle` / `settings.gradle.kts`), Nx/Turborepo/pnpm workspace (`pnpm-workspace.yaml` / `package.json` `workspaces`), and Cargo workspace (`[workspace]`) multi-module aggregation across `FileScannerUtil.discoverWorkspaceModules`, `JavaAstScanner`, `RustAstScanner`, `TypeScriptAstScanner`, and `cli/src/analyzer.js`.
+  2. **Cross-Language Boundary Tracing (`#3001`)**:
+     - [x] Bridge frontend API client calls (Svelte 5 / TS `fetch('/api/...')` / `axios('/api/...')`) to backend entrypoints (Quarkus/Spring REST `@Path` / `@RequestMapping` and FastAPI/Flask `@app.get` / `@router.post` via `FileScannerUtil.indexBackendRestRoutes`) within a unified cross-language dependency graph (`HTTP /api/...` edges).
+  3. **AST Parser Resiliency & Polyglot Dialect Parity (`CAP-01`, `CAP-03`, `#3001`)**:
      - [x] Graceful partial AST degradation: per-file exception isolation in `JavaAstScanner` (`ParserConfiguration.LanguageLevel.JAVA_25`), `TypeScriptAstScanner`, `PythonAstScanner` (`CAP-01`), `GoAstScanner`, `RustAstScanner`, and `ClojureAstScanner`.
      - [x] Modern Java 25 syntax idioms (records, sealed classes, pattern matching), Svelte 5 runes (`$state`, `$derived`, `$props`), and polyglot DIP port synthesis (`DipInversionSynthesizer` for Java, Python, TypeScript, Go, and Rust — `CAP-03`).
-     - [ ] Go 1.23 iterator idioms (`iter.Seq`) and Python 3.12 `type` statement aliases.
+     - [x] Go 1.23 iterator idioms (`iter.Seq[T]` / `iter.Seq2[K, V]` signatures and functional iterator contracts in `GoAstScanner`) and Python 3.12 (`PEP 695`) `type <Alias>[T] = ...` statement aliases and generic classes/functions in `PythonAstScanner`.
 - **Exit Criteria for `v0.2.0`**: Multi-module Gradle/Cargo/pnpm workspace auto-discovery and cross-language REST boundary linking verified with fixture integration tests.
 
 ---

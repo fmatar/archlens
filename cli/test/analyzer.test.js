@@ -7,6 +7,7 @@ import * as os from 'node:os';
 import {
   detectProjectLanguage,
   detectSourceRoot,
+  discoverWorkspaceModules,
   findCommonPackagePrefix,
   discoverSubpackages,
   classifyLayers,
@@ -207,4 +208,46 @@ test('generatePolicy discovers Python src/<pkg> prefix and seeds from [tool.impo
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('discoverWorkspaceModules and detectSourceRoot support Gradle, Cargo, pnpm, and npm workspaces', () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-workspace-test-'));
+  try {
+    fs.mkdirSync(path.join(tmpDir, 'services', 'orders', 'src', 'main', 'java'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'crates', 'core-engine', 'src'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'apps', 'web', 'src'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'packages', 'shared-ui', 'src'), { recursive: true });
+
+    fs.writeFileSync(
+      path.join(tmpDir, 'settings.gradle.kts'),
+      'include(":services:orders")\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'Cargo.toml'),
+      '[workspace]\nmembers = ["crates/*"]\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'pnpm-workspace.yaml'),
+      'packages:\n  - "apps/*"\n',
+      'utf8'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, 'package.json'),
+      JSON.stringify({ name: 'monorepo', workspaces: ['packages/*'] }),
+      'utf8'
+    );
+
+    const mods = discoverWorkspaceModules(tmpDir);
+    assert.ok(mods.includes('services/orders'));
+    assert.ok(mods.includes('crates/core-engine'));
+    assert.ok(mods.includes('apps/web'));
+    assert.ok(mods.includes('packages/shared-ui'));
+
+    assert.equal(detectSourceRoot(tmpDir, 'java'), 'services/orders/src/main/java');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
 

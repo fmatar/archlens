@@ -136,8 +136,17 @@ public class JavaAstScanner implements LanguageScanner {
       return dirs;
     }
 
-    // 3. Multi-module discovery: look for nested **/src/main/java
+    // 3. Multi-module discovery: check Gradle/workspace manifests and nested **/src/main/java
     if (root.exists() && root.isDirectory()) {
+      for (Path wsModule : FileScannerUtil.discoverWorkspaceModules(root.toPath())) {
+        for (String subCand : List.of("src/main/java", "src/main/kotlin", "src")) {
+          File candidate = wsModule.resolve(subCand).toFile();
+          if (candidate.isDirectory() && !dirs.contains(candidate)) {
+            dirs.add(candidate);
+            break;
+          }
+        }
+      }
       List<Path> subModuleDirs =
           FileScannerUtil.findDirectories(
               root.toPath(),

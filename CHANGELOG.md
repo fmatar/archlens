@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-07
+
+### Added
+- **Milestone 4 (`v1.0.0 GA`) — Cross-Platform GraalVM Native Binaries, Hybrid HTML5 Canvas/WebGL Renderer & Reference Showcase Presets** (`#4001`, [#166](https://github.com/fmatar/archlens/issues/166)):
+  - Added `native-binaries` matrix job (`macos-arm64`, `linux-amd64`, `windows-amd64` via GraalVM 25 `-Pnative`) and optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry OCI publishing to `.github/workflows/release.yml`.
+  - Extended `cli/src/docker-runner.js` with `findNativeBinary`, `startNativeBinary`, and `getPlatformBinarySuffix`, giving GraalVM native binaries first-priority startup in `ensureServerRunning` before JVM JAR or Docker fallbacks.
+  - Implemented Hybrid HTML5 `<canvas>` / WebGL high-density renderer in `Canvas.svelte` and `diagram.svelte.ts` (`WEBGL_CLASS_THRESHOLD = 500`, `isWebGlRendererActive`, `toggleRenderEngineMode` / shortcut `W`) for 60fps rendering on graphs with 500+ classes.
+  - Added 3 interactive reference architecture showcase presets (`SHOWCASE_PRESETS` in `demoData.ts`: **Spring PetClinic Java 25**, **Quarkus Reactive Microservice**, and **RealWorld Conduit Full-Stack TS + FastAPI**) selectable from the top navbar project switcher (`App.svelte`).
+
+## [0.2.0] - 2026-11-07
+
+### Changed
+- **Quarkus Quinoa Web UI & `pnpm` Integration (`io.quarkiverse.quinoa:quarkus-quinoa:2.9.3`)**:
+  - Replaced legacy `com.github.eirslett:frontend-maven-plugin` (`frontend/pom.xml`, `cli/pom.xml`) and `maven-resources-plugin` (`copy-frontend-dist` in `backend/pom.xml`) with the official Quarkiverse Quinoa extension (`io.quarkiverse.quinoa:quarkus-quinoa:2.9.3`).
+  - Configured `backend/src/main/resources/application.properties` (`quarkus.quinoa.ui-dir=../frontend`, `quarkus.quinoa.build-dir=dist`, `quarkus.quinoa.package-manager=pnpm`, `quarkus.quinoa.enable-spa-routing=true`, `quarkus.quinoa.ignored-path-prefixes=/api,/mcp,/q`, `%test.quarkus.quinoa=false`) and updated `scripts/update-dependencies.js` to track `io.quarkiverse.quinoa:quarkus-quinoa`.
+
 ### Added
 - **Enterprise Monorepo Multi-Build Discovery, Cross-Language UI-to-API Boundary Tracing & Go 1.23 / Python 3.12 AST Idioms** (`#3001`, [#163](https://github.com/fmatar/archlens/issues/163)):
   - Added `FileScannerUtil.discoverWorkspaceModules` and CLI `discoverWorkspaceModules` (`cli/src/analyzer.js`) supporting Gradle (`settings.gradle`, `settings.gradle.kts`), Cargo (`Cargo.toml [workspace]`), pnpm (`pnpm-workspace.yaml`), and npm/Yarn/Nx/Turborepo (`package.json workspaces`) with glob expansion across `JavaAstScanner`, `RustAstScanner`, and `TypeScriptAstScanner`.

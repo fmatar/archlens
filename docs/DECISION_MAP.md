@@ -30,6 +30,10 @@ flowchart TD
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
+  _8253["Ticket #8253 (feature/issue-#8253-wiki-roadmap-docs-drift-sync)"]
+  _1097["Ticket #1097 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
+  _1662["Ticket #1662 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
+  _3001["Ticket #3001 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
   CAP_03 -->|specified_by| SPEC_03

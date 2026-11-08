@@ -348,10 +348,10 @@ public final class FileScannerUtil {
             12,
             p -> {
               String s = p.toString();
+              Path fn = p.getFileName();
+              String fnStr = fn != null ? fn.toString() : "";
               return (s.endsWith(".java") && !s.endsWith("Test.java"))
-                  || (s.endsWith(".py")
-                      && !s.endsWith("_test.py")
-                      && !p.getFileName().toString().startsWith("test_"));
+                  || (s.endsWith(".py") && !s.endsWith("_test.py") && !fnStr.startsWith("test_"));
             });
 
     for (Path file : backendFiles) {
@@ -370,10 +370,9 @@ public final class FileScannerUtil {
             Matcher pkgMatcher = JAVA_PACKAGE_PATTERN.matcher(content);
             String pkg = pkgMatcher.find() ? pkgMatcher.group(1).trim() : "";
             Matcher clsMatcher = JAVA_CLASS_PATTERN.matcher(content);
-            String clsName =
-                clsMatcher.find()
-                    ? clsMatcher.group(1).trim()
-                    : file.getFileName().toString().replace(".java", "");
+            Path fn = file.getFileName();
+            String fallbackCls = fn != null ? fn.toString().replace(".java", "") : "Endpoint";
+            String clsName = clsMatcher.find() ? clsMatcher.group(1).trim() : fallbackCls;
             String fullId = pkg.isEmpty() ? clsName : pkg + "." + clsName;
             routeToBackendId.putIfAbsent(routes.get(0), fullId);
           }
@@ -439,10 +438,9 @@ public final class FileScannerUtil {
     }
     String bestMatchKey = null;
     for (String key : backendRoutes.keySet()) {
-      if (normalized.startsWith(key + "/") || key.startsWith(normalized + "/")) {
-        if (bestMatchKey == null || key.length() > bestMatchKey.length()) {
-          bestMatchKey = key;
-        }
+      if ((normalized.startsWith(key + "/") || key.startsWith(normalized + "/"))
+          && (bestMatchKey == null || key.length() > bestMatchKey.length())) {
+        bestMatchKey = key;
       }
     }
     return bestMatchKey != null ? backendRoutes.get(bestMatchKey) : null;

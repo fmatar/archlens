@@ -392,4 +392,78 @@ describe('diagramStore state management', () => {
       diagramStore.humanIntentNote = '';
     }
   });
+
+  it('automatically activates WebGL/Canvas renderer at 500+ classes and supports manual renderEngineMode overrides', () => {
+    diagramStore.setRenderEngineMode('auto');
+    diagramStore.graph = DEMO_GRAPH_REAL;
+    expect(diagramStore.totalClassCount).toBeLessThan(500);
+    expect(diagramStore.isWebGlRendererActive).toBe(false);
+
+    // Cycle to explicit WebGL mode
+    diagramStore.toggleRenderEngineMode();
+    expect(diagramStore.renderEngineMode).toBe('webgl');
+    expect(diagramStore.isWebGlRendererActive).toBe(true);
+
+    // Cycle to explicit SVG mode
+    diagramStore.toggleRenderEngineMode();
+    expect(diagramStore.renderEngineMode).toBe('svg');
+    expect(diagramStore.isWebGlRendererActive).toBe(false);
+
+    // Cycle back to Auto mode and load a 505-class synthetic graph
+    diagramStore.toggleRenderEngineMode();
+    expect(diagramStore.renderEngineMode).toBe('auto');
+    const manyClasses = Array.from({ length: 505 }, (_, i) => ({
+      id: `com.acme.domain.Entity${i}`,
+      name: `Entity${i}`,
+      packageName: 'com.acme.domain',
+      filePath: `Entity${i}.java`,
+      stereotype: 'CLASS' as const,
+      isForeign: false,
+      level: 0,
+      crap: { mu: 1, max: 1, sigma: 0 },
+      coverage: 1,
+      cc: 1,
+      killed: 1,
+      survived: 0,
+      uncovered: 0,
+      fields: [],
+      methods: []
+    }));
+    diagramStore.graph = {
+      ...DEMO_GRAPH_REAL,
+      components: [
+        {
+          id: 'domain',
+          label: 'domain',
+          level: 0,
+          crap: { mu: 1, max: 1, sigma: 0 },
+          mutationScore: 1,
+          childPackageIds: [],
+          classes: manyClasses
+        }
+      ]
+    };
+    expect(diagramStore.totalClassCount).toBe(505);
+    expect(diagramStore.isWebGlRendererActive).toBe(true);
+  });
+
+  it('loads curated interactive reference architecture showcase presets (PetClinic, Quarkus, RealWorld)', async () => {
+    expect(diagramStore.showcasePresets.length).toBeGreaterThanOrEqual(3);
+
+    await diagramStore.setProjectRoot('preset:spring-petclinic', false);
+    expect(diagramStore.activeShowcasePresetId).toBe('spring-petclinic');
+    expect(diagramStore.graph?.title).toBe('Spring PetClinic Clean Architecture');
+    expect(diagramStore.violatingEdgesCount).toBe(1);
+
+    await diagramStore.setProjectRoot('preset:quarkus-quickstart', false);
+    expect(diagramStore.activeShowcasePresetId).toBe('quarkus-quickstart');
+    expect(diagramStore.violatingEdgesCount).toBe(0);
+
+    await diagramStore.setProjectRoot('preset:realworld-conduit', false);
+    expect(diagramStore.activeShowcasePresetId).toBe('realworld-conduit');
+    expect(diagramStore.hasCycles).toBe(true);
+    expect(
+      diagramStore.graph?.edges.some((e) => e.label === 'HTTP /api/articles')
+    ).toBe(true);
+  });
 });

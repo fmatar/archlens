@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-06 22:14:04 UTC`
+> **Last Synced**: `2026-11-08 05:18:34 UTC`
 
 ---
 
@@ -13,7 +13,8 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
-|  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |  |
+|  |  |  |  | #7896: [FEAT] feat: milestone-3-monorepo-cross-lang-and-ast-idioms |
+|  |  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |
 |  |  |  |  | #1097: [FEAT] feat(mailbox): closed-loop-refactor-verification-and-rollback `[Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v0.1.2)]` |
 |  |  |  |  | #8253: [FIX] fix: wiki-roadmap-docs-drift-sync `[Milestone 1: CI/CD Quality Gates, MCP 2.0 & Team Governance (v0.1.1)]` |
 |  |  |  |  | #6262: [FEAT] feat: quarkus-mcp-and-sdlc-enhancement |

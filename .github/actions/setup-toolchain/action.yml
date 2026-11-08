@@ -14,7 +14,7 @@ inputs:
     required: false
     default: ''
   cache-pnpm:
-    description: 'Whether to cache PNPM and frontend-maven-plugin node binaries'
+    description: 'Whether to cache PNPM and Quarkus Quinoa node binaries'
     required: false
     default: 'false'
 

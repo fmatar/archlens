@@ -92,6 +92,9 @@
     } else if (e.key.toLowerCase() === 'f') {
       e.preventDefault();
       diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD');
+    } else if (e.key.toLowerCase() === 'w') {
+      e.preventDefault();
+      diagramStore.toggleRenderEngineMode();
     } else if (e.key.toLowerCase() === 't') {
       e.preventDefault();
       diagramStore.isTelemetryDrawerOpen = !diagramStore.isTelemetryDrawerOpen;
@@ -168,6 +171,12 @@
         >
           <optgroup label="Active Workspace">
             <option value=".">📁 Active Workspace (Local)</option>
+          </optgroup>
+
+          <optgroup label="Reference Showcase (archlens.io)">
+            {#each diagramStore.showcasePresets as preset}
+              <option value={`preset:${preset.id}`}>🏛️ {preset.name}</option>
+            {/each}
           </optgroup>
 
           {#if diagramStore.availableProjects.length > 0}

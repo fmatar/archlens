@@ -21,7 +21,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @Produces(MediaType.APPLICATION_JSON)
 public class VersionResource {
 
-  private static final String DEFAULT_VERSION = "0.1.1";
+  private static final String DEFAULT_VERSION = "1.0.0";
 
   @ConfigProperty(name = "quarkus.application.version", defaultValue = DEFAULT_VERSION)
   String configuredVersion = DEFAULT_VERSION;

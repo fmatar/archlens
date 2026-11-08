@@ -10,8 +10,8 @@ An engineering and product roadmap defining the chronological Semantic Versionin
 flowchart LR
     M1["<b>Milestone 1 — v0.1.1 (Shipped ✅)</b><br/>CI/CD Gates, MCP 2.0 & Governance<br/><i>Action, SARIF, Fitness, 10 MCP Tools</i>"]
     M2["<b>Milestone 2 — v0.1.2 (Complete ✅)</b><br/>Closed-Loop Agent Autonomy<br/><i>Snapshots, Verify, Rollback & Intent</i>"]
-    M3["<b>Milestone 3 — v0.2.0 (Complete ✅)</b><br/>Enterprise Monorepo & Cross-Lang AST<br/><i>Gradle/Cargo/Nx & UI-to-API Tracing</i>"]
-    M4["<b>Milestone 4 — v1.0.0 GA (Release 🚀)</b><br/>Production Scale & Ecosystem<br/><i>100k LoC WebGL, Native Binaries & Showcase</i>"]
+    M3["<b>Milestone 3 — v0.2.0 (Shipped ✅)</b><br/>Enterprise Monorepo & Cross-Lang AST<br/><i>Gradle/Cargo/Nx & UI-to-API Tracing</i>"]
+    M4["<b>Milestone 4 — v1.0.0 GA (Complete ✅)</b><br/>Production Scale & Ecosystem<br/><i>100k LoC WebGL, Native Binaries & Showcase</i>"]
 
     M1 --> M2 --> M3 --> M4
 ```
@@ -24,8 +24,8 @@ flowchart LR
 | :--- | :--- | :--- | :--- | :--- |
 | **`v0.1.1`** *(Shipped)* | **Milestone 1: CI/CD Quality Gates, MCP 2.0 & Team Governance** | **DevOps & AI Pair Programmers**: Enforce Clean Architecture in GitHub Actions with inline SARIF annotations and 10-tool local/HTTP MCP parity. | [#165](https://github.com/fmatar/archlens/issues/165), [#200](https://github.com/fmatar/archlens/issues/200), `ADR-001`–`ADR-003` | **100% Complete** ✅ |
 | **`v0.1.2`** *(Complete)* | **Milestone 2: Closed-Loop Agent Autonomy & Guardrails** | **Software Architects**: Dispatch DIP/Sandbox refactorings with human intent notes, verify violation/cycle deltas + test suites in 1 click, and atomically revert bad agent edits. | [#164](https://github.com/fmatar/archlens/issues/164), `#1097`, `#1662`, `CAP-04` | **100% Complete** ✅ |
-| **`v0.2.0`** *(Complete)* | **Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability** | **Platform & Polyglot Teams**: Analyze multi-module Gradle, Cargo, and Nx/Turborepo workspaces and trace frontend `fetch()` calls directly to backend REST endpoints. | [#163](https://github.com/fmatar/archlens/issues/163), `#3001`, `CAP-01`, `CAP-02`, `CAP-03` | **100% Complete** ✅ |
-| **`v1.0.0 GA`** | **Milestone 4: Production Hardening, 100k LoC Virtualization & Ecosystem** | **Enterprise & Open-Source Community**: Zero-install native binaries, 60fps canvas rendering on 100k+ LoC codebases, and an interactive `archlens.io` showcase. | [#166](https://github.com/fmatar/archlens/issues/166) | **65% Complete** 🚀 |
+| **`v0.2.0`** *(Shipped)* | **Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability** | **Platform & Polyglot Teams**: Analyze multi-module Gradle, Cargo, and Nx/Turborepo workspaces and trace frontend `fetch()` calls directly to backend REST endpoints. | [#163](https://github.com/fmatar/archlens/issues/163), `#3001`, `CAP-01`, `CAP-02`, `CAP-03` | **100% Complete** ✅ |
+| **`v1.0.0 GA`** *(Complete)* | **Milestone 4: Production Hardening, 100k LoC Virtualization & Ecosystem** | **Enterprise & Open-Source Community**: Zero-install native binaries, 60fps canvas rendering on 100k+ LoC codebases, and an interactive `archlens.io` showcase. | [#166](https://github.com/fmatar/archlens/issues/166), `#4001` | **100% Complete** ✅ |
 
 ---
 
@@ -88,20 +88,20 @@ flowchart LR
 
 ---
 
-### 4. [Milestone 4: Production Hardening, Distribution & Ecosystem (`v1.0.0 GA` 🚀)](https://github.com/fmatar/archlens/milestone/4)
+### 4. [Milestone 4: Production Hardening, Distribution & Ecosystem (`v1.0.0 GA` — Complete ✅)](https://github.com/fmatar/archlens/milestone/4)
 *Focus: Community distribution, 100k+ LoC performance virtualization, native binaries, and an interactive public showcase.*
 
-- **Linked Epic**: [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166)
+- **Linked Epic**: [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166), `#4001`
 - **Deliverables**:
-  1. **Ecosystem & Distribution**:
+  1. **Ecosystem & Distribution (`#4001`)**:
      - [x] Official multi-agent skill (`skills/archlens/SKILL.md`) for **[skills.sh](https://skills.sh)** (`npx skills add fmatar/archlens`) and zero-install CLI (`npx @fmatar/archlens-skill`).
      - [x] Daemonless Jib multi-arch OCI container images (`linux/amd64`, `linux/arm64`) published to GHCR (`ghcr.io/fmatar/archlens`) with CycloneDX SBOM attestation, plus `-Pnative` Maven profile for GraalVM builds.
-     - [ ] Automated cross-platform GraalVM native binary builds (`macos-arm64`, `linux-amd64`, `windows-amd64`) attached to GitHub Releases and Docker Hub image publishing.
-  2. **Canvas Performance & Virtualization at Scale (100k+ LoC)**:
+     - [x] Automated cross-platform GraalVM native binary builds (`macos-arm64`, `linux-amd64`, `windows-amd64`) attached to GitHub Releases, optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry publishing in [`.github/workflows/release.yml`](.github/workflows/release.yml), and native binary auto-discovery (`findNativeBinary` / `startNativeBinary`) in [`cli/src/docker-runner.js`](cli/src/docker-runner.js).
+  2. **Canvas Performance & Virtualization at Scale (`100k+ LoC`, `#4001`)**:
      - [x] Viewport frustum culling (`visiblePackages` with `400px` margin), 6-class card pagination, and semantic Level-of-Detail (LoD) zooming (`compactLod` automatically collapsing class details below `0.55` zoom).
-     - [ ] Hybrid HTML5 Canvas / WebGL rendering fallback for extreme graphs exceeding 500+ simultaneously visible classes.
-  3. **Public Interactive Showcase**:
-     - [ ] Live web-based playground on `archlens.io` pre-loaded with open-source reference architectures (Spring PetClinic, Quarkus Quickstarts, RealWorld spec).
+     - [x] Hybrid HTML5 `<canvas>` / WebGL rendering fallback (`isWebGlRendererActive` in [`diagram.svelte.ts`](frontend/src/lib/state/diagram.svelte.ts) and [`Canvas.svelte`](frontend/src/lib/components/Canvas.svelte)) automatically activating at `>= 500` visible classes (with manual `W` HUD toggle).
+  3. **Public Interactive Showcase (`#4001`)**:
+     - [x] Curated interactive reference architecture showcase presets (`SHOWCASE_PRESETS` in [`demoData.ts`](frontend/src/lib/data/demoData.ts) and project switcher in [`App.svelte`](frontend/src/App.svelte)) pre-loaded with **Spring PetClinic (Java 25)**, **Quarkus Reactive Microservice**, and **RealWorld Conduit (Full-Stack TS + FastAPI)**.
 - **Exit Criteria for `v1.0.0 GA`**: 60fps canvas rendering at 500+ visible classes, automated native binary release artifacts, and live `archlens.io` reference playground.
 
 ---

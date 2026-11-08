@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.slixes</groupId>
         <artifactId>archlens</artifactId>
-        <version>0.1.1</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -47,6 +47,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
+        <!-- Quarkus Quinoa SPA Web UI Extension (Svelte 5 + Vite + pnpm) -->
+        <dependency>
+            <groupId>io.quarkiverse.quinoa</groupId>
+            <artifactId>quarkus-quinoa</artifactId>
+        </dependency>
 
         <!-- Testing -->
         <dependency>
@@ -63,30 +68,6 @@
 
     <build>
         <plugins>
-            <!-- Copy compiled frontend/dist into META-INF/resources so Quarkus serves it directly -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-frontend-dist</id>
-                        <phase>process-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.basedir}/../frontend/dist</directory>
-                                    <filtering>false</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>io.quarkus.platform</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>

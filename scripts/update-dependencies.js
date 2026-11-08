@@ -167,9 +167,9 @@ const MAVEN_REGISTRY = [
   },
   {
     file: 'pom.xml',
-    prop: 'frontend-plugin.version',
-    name: 'com.github.eirslett:frontend-maven-plugin',
-    url: 'https://repo1.maven.org/maven2/com/github/eirslett/frontend-maven-plugin/maven-metadata.xml'
+    prop: 'quarkus.quinoa.version',
+    name: 'io.quarkiverse.quinoa:quarkus-quinoa',
+    url: 'https://repo1.maven.org/maven2/io/quarkiverse/quinoa/quarkus-quinoa/maven-metadata.xml'
   },
   {
     file: 'backend/pom.xml',

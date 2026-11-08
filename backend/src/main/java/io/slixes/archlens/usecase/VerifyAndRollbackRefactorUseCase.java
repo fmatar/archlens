@@ -124,8 +124,9 @@ public class VerifyAndRollbackRefactorUseCase {
     for (String relPath : trackedFiles) {
       Path sourceFile = rootPath.resolve(relPath);
       Path backupDest = filesBackupRoot.resolve(relPath);
-      if (backupDest.getParent() != null) {
-        Files.createDirectories(backupDest.getParent());
+      Path backupParent = backupDest.getParent();
+      if (backupParent != null) {
+        Files.createDirectories(backupParent);
       }
       Files.copy(sourceFile, backupDest, StandardCopyOption.REPLACE_EXISTING);
     }
@@ -315,7 +316,10 @@ public class VerifyAndRollbackRefactorUseCase {
       String summary =
           rawOut.length() > 240 ? "..." + rawOut.substring(rawOut.length() - 240) : rawOut;
       return new TestExecutionOutcome(true, exitCode == 0, cmdLabel, exitCode, summary);
-    } catch (Exception e) {
+    } catch (IOException | InterruptedException | RuntimeException e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       return new TestExecutionOutcome(
           true, false, cmdLabel, -1, "Failed to invoke test runner: " + e.getMessage());
     }
@@ -385,8 +389,9 @@ public class VerifyAndRollbackRefactorUseCase {
         Path backupFile = filesBackupRoot.resolve(relPath);
         Path targetFile = rootPath.resolve(relPath).normalize();
         if (targetFile.startsWith(rootPath) && Files.exists(backupFile)) {
-          if (targetFile.getParent() != null) {
-            Files.createDirectories(targetFile.getParent());
+          Path targetParent = targetFile.getParent();
+          if (targetParent != null) {
+            Files.createDirectories(targetParent);
           }
           Files.copy(backupFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
         }

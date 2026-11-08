@@ -1,4 +1,4 @@
-import { DEMO_POLICY, DEMO_GRAPH_REAL, DEMO_GRAPH_PROPOSAL } from '../data/demoData';
+import { DEMO_POLICY, DEMO_GRAPH_REAL, DEMO_GRAPH_PROPOSAL, SHOWCASE_PRESETS, type ShowcasePreset } from '../data/demoData';
 import { simulateSandboxGraph, calculateAllMartinMetrics, buildScatterPlotPoints } from '../utils/martinMetrics';
 import type {
   ArchitectureGraph,
@@ -30,7 +30,57 @@ import gsap from 'gsap';
 export type DeclutterMode = 'NONE' | 'ARROWS' | 'REMOVE_ARROWS' | 'ELEMENTS' | 'CLASSES';
 
 class DiagramState {
+  static readonly WEBGL_CLASS_THRESHOLD = 500;
+
   baseGraph = $state<ArchitectureGraph | null>(null);
+
+  // Hybrid HTML5 Canvas / WebGL Rendering Fallback (500+ visible classes)
+  renderEngineMode = $state<'auto' | 'svg' | 'webgl'>('auto');
+  totalClassCount = $derived.by<number>(() =>
+    (this.graph?.components || []).reduce((acc, c) => acc + (c.classes?.length || 0), 0)
+  );
+  isWebGlRendererActive = $derived.by<boolean>(() =>
+    this.renderEngineMode === 'webgl' ||
+    (this.renderEngineMode === 'auto' && this.totalClassCount >= DiagramState.WEBGL_CLASS_THRESHOLD)
+  );
+
+  setRenderEngineMode(mode: 'auto' | 'svg' | 'webgl') {
+    this.renderEngineMode = mode;
+    this.addTelemetryEvent(
+      'INFO',
+      `Canvas renderer mode set to ${mode.toUpperCase()} (${this.isWebGlRendererActive ? 'WebGL/Canvas 2D active' : 'SVG DOM active'})`
+    );
+  }
+
+  toggleRenderEngineMode() {
+    const order: Array<'auto' | 'webgl' | 'svg'> = ['auto', 'webgl', 'svg'];
+    const next = order[(order.indexOf(this.renderEngineMode) + 1) % order.length];
+    this.setRenderEngineMode(next);
+  }
+
+  // Interactive Reference Architecture Showcase Presets (archlens.io)
+  showcasePresets: ShowcasePreset[] = SHOWCASE_PRESETS;
+  activeShowcasePresetId = $state<string | null>(null);
+
+  loadShowcasePreset(presetId: string): boolean {
+    const cleanId = presetId.startsWith('preset:') ? presetId.slice('preset:'.length) : presetId;
+    const preset = this.showcasePresets.find((p) => p.id === cleanId);
+    if (!preset) return false;
+
+    this.activeShowcasePresetId = preset.id;
+    this.projectRoot = `preset:${preset.id}`;
+    this.activeProposalId = null;
+    this.stagedClassMoves = new Map();
+    this.policy = structuredClone(preset.policy);
+    this.baseGraph = structuredClone(preset.graph);
+    this.resetLayout(true);
+    this.addTelemetryEvent(
+      'SUCCESS',
+      `Loaded Showcase Preset: ${preset.name}`,
+      preset.subtitle
+    );
+    return true;
+  }
 
   // Architectural Sandbox ("What-If" Prototyping) State
   isSandboxActive = $state<boolean>(false);
@@ -1027,6 +1077,11 @@ class DiagramState {
   }
 
   async setProjectRoot(root: string, updateUrl = true) {
+    if (root && root.startsWith('preset:')) {
+      this.loadShowcasePreset(root);
+      return;
+    }
+    this.activeShowcasePresetId = null;
     this.projectRoot = root;
     this.activeProposalId = null;
     if (root && root !== '.') {

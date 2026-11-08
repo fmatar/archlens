@@ -8,6 +8,9 @@ import {
   isContainerExisting,
   startContainer,
   isJavaAvailable,
+  getPlatformBinarySuffix,
+  findNativeBinary,
+  startNativeBinary,
   findNativeJar,
   startNativeJar,
   ensureServerRunning,
@@ -333,4 +336,52 @@ test('executeStart handles custom port and offline states', async () => {
   assert.equal(res.port, '9099');
   assert.equal(res.serverUrl, 'http://localhost:9099');
 });
+
+test('findNativeBinary, startNativeBinary, and ensureServerRunning support GraalVM native binaries', async () => {
+  assert.equal(getPlatformBinarySuffix('darwin', 'arm64'), 'macos-arm64');
+  assert.equal(getPlatformBinarySuffix('linux', 'x64'), 'linux-amd64');
+  assert.equal(getPlatformBinarySuffix('win32', 'x64'), 'windows-amd64.exe');
+
+  const binCandidate = path.resolve('/my/workspace/backend/target/archlens-macos-arm64');
+  const foundBin = findNativeBinary(
+    { workspace: '/my/workspace' },
+    { existsSync: (p) => p === binCandidate, platform: 'darwin', arch: 'arm64' }
+  );
+  assert.equal(foundBin, binCandidate);
+
+  const spawned = [];
+  const started = startNativeBinary(
+    binCandidate,
+    { port: '8091' },
+    {
+      spawn: (cmd, args, opts) => {
+        spawned.push({ cmd, args, opts });
+        return { pid: 7777, unref: () => {} };
+      }
+    }
+  );
+  assert.equal(started.mode, 'binary');
+  assert.equal(started.pid, 7777);
+  assert.equal(spawned[0].cmd, binCandidate);
+  assert.deepEqual(spawned[0].args, ['-Dquarkus.http.port=8091']);
+
+  let healthChecks = 0;
+  const status = await ensureServerRunning(
+    { serverUrl: 'http://localhost:8088', maxWaitMs: 2000 },
+    {
+      checkServerHealth: async () => {
+        healthChecks += 1;
+        return healthChecks === 1 ? { ok: false } : { ok: true, version: '0.2.0' };
+      },
+      findNativeBinary: () => binCandidate,
+      startNativeBinary: () => ({ action: 'started_binary', mode: 'binary', binaryPath: binCandidate }),
+      isJavaAvailable: () => false,
+      isDockerAvailable: () => false
+    }
+  );
+  assert.equal(status.status, 'running');
+  assert.equal(status.mode, 'binary');
+  assert.equal(status.binaryPath, binCandidate);
+});
+
 

@@ -82,16 +82,20 @@ Generates a markdown refactoring prompt dossier diagnosing all concentric ring b
 
 ### 4. `listSnapshots` & `getSnapshot`
 Enables historical architectural comparisons against Git release tags and pre-compiled snapshots governed by `.archlens/policy.json`.
+- `listSnapshots`: Lists available historical snapshots (`projectRoot`).
+- `getSnapshot`: Compiles or loads a historical snapshot by `snapshotId` (calls `GET /api/snapshots/{snapshotId}`) for release-over-release diffing.
 
 ---
 
 ### 5. `evaluateFitness` & `getFitnessHistory`
-Computes the Architecture Fitness Index (AFI), Main Sequence Distance, Screaming Architecture Score, and historical fitness trend (`STABLE`, `IMPROVING`, `DEGRADING`).
+Computes the Composite Architecture Fitness Index (AFI, `0`–`100`, Grade `A`–`F`), Main Sequence Distance, Screaming Architecture Score, ADP cycle count, and historical fitness trend (`STABLE`, `IMPROVING`, `DEGRADING`).
 
 ---
 
 ### 6. `proposeScreamingMigration`, `getPolicy` & `syncDipAdr`
-Generates Screaming Architecture feature-slice migration proposals, inspects `.archlens/policy.json`, and mints Architecture Decision Records (ADRs) for Dependency Inversion Principle (DIP) refactorings.
+- `proposeScreamingMigration`: Generates a Screaming Architecture package-by-feature migration plan (`projectRoot`).
+- `getPolicy`: Returns the active `.archlens/policy.json` concentric ring hierarchy (`projectRoot`).
+- `syncDipAdr`: Mints a numbered Markdown ADR in `docs/adr/` for a Dependency Inversion Principle refactoring (`fromClass`, `toClass`, `portName`, `portPackage`, optional `reason`, `projectRoot`).
 
 ---
 

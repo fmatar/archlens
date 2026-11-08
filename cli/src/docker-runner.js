@@ -11,6 +11,7 @@ import * as os from 'node:os';
 
 export const DEFAULT_SERVER_URL = 'http://localhost:8088';
 export const DEFAULT_DOCKER_IMAGE = 'ghcr.io/fmatar/archlens:latest';
+export const DEFAULT_DOCKERHUB_IMAGE = 'docker.io/fmatar/archlens:latest';
 export const DEFAULT_CONTAINER_NAME = 'archlens-server';
 
 export async function checkServerHealth(serverUrl = DEFAULT_SERVER_URL, timeoutMs = 1500) {
@@ -36,6 +37,89 @@ export function isJavaAvailable(customExec = execSync) {
   } catch {
     return false;
   }
+}
+
+export function getPlatformBinarySuffix(platform = process.platform, arch = process.arch) {
+  if (platform === 'darwin') {
+    return arch === 'arm64' ? 'macos-arm64' : 'macos-amd64';
+  }
+  if (platform === 'win32') {
+    return 'windows-amd64.exe';
+  }
+  return arch === 'arm64' ? 'linux-arm64' : 'linux-amd64';
+}
+
+export function findNativeBinary(options = {}, deps = {}) {
+  const exists = deps.existsSync || fs.existsSync;
+  const homedir = (deps.os && deps.os.homedir)
+    ? deps.os.homedir()
+    : os.homedir
+      ? os.homedir()
+      : process.env.HOME || '';
+  const workspace = path.resolve(options.workspace || options.path || '.');
+  const cwd = (deps.process && deps.process.cwd) ? deps.process.cwd() : process.cwd();
+  const suffix = getPlatformBinarySuffix(deps.platform || process.platform, deps.arch || process.arch);
+  const isWin = (deps.platform || process.platform) === 'win32';
+  const runnerName = isWin ? 'archlens-runner.exe' : 'archlens-runner';
+
+  const candidates = [];
+  if (options.binaryPath) candidates.push(path.resolve(options.binaryPath));
+  if (process.env.ARCHLENS_BINARY) candidates.push(path.resolve(process.env.ARCHLENS_BINARY));
+
+  if (homedir) {
+    candidates.push(path.join(homedir, '.archlens', 'bin', `archlens-${suffix}`));
+    candidates.push(path.join(homedir, '.archlens', 'bin', isWin ? 'archlens.exe' : 'archlens'));
+    candidates.push(path.join(homedir, '.archlens', `archlens-${suffix}`));
+  }
+
+  const projectRoots = [workspace];
+  if (cwd && cwd !== workspace) {
+    projectRoots.push(cwd);
+  }
+
+  for (const root of projectRoots) {
+    candidates.push(path.resolve(root, 'backend', 'target', `archlens-${suffix}`));
+    candidates.push(path.resolve(root, 'backend', 'target', runnerName));
+    candidates.push(path.resolve(root, 'target', `archlens-${suffix}`));
+    candidates.push(path.resolve(root, 'target', runnerName));
+  }
+
+  for (const candidate of candidates) {
+    try {
+      if (candidate && exists(candidate)) {
+        return candidate;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
+export function startNativeBinary(binaryPath, options = {}, deps = {}) {
+  const port = options.port || '8088';
+  const customSpawn = deps.spawn || spawn;
+  const args = [`-Dquarkus.http.port=${port}`];
+
+  if (options.jvmArgs && Array.isArray(options.jvmArgs)) {
+    args.unshift(...options.jvmArgs);
+  }
+
+  const child = customSpawn(binaryPath, args, {
+    detached: true,
+    stdio: 'ignore'
+  });
+
+  if (child && typeof child.unref === 'function') {
+    child.unref();
+  }
+
+  return {
+    action: 'started_binary',
+    mode: 'binary',
+    binaryPath,
+    pid: child ? child.pid : undefined
+  };
 }
 
 export function findNativeJar(options = {}, deps = {}) {
@@ -195,6 +279,8 @@ export async function ensureServerRunning(options = {}, deps = {}) {
   const spawnDocker = options.spawnDocker !== false;
 
   const healthChecker = deps.checkServerHealth || checkServerHealth;
+  const binaryFinder = deps.findNativeBinary || (deps.findNativeJar ? () => null : findNativeBinary);
+  const binaryStarter = deps.startNativeBinary || startNativeBinary;
   const javaChecker = deps.isJavaAvailable || isJavaAvailable;
   const jarFinder = deps.findNativeJar || findNativeJar;
   const jarStarter = deps.startNativeJar || startNativeJar;
@@ -214,9 +300,24 @@ export async function ensureServerRunning(options = {}, deps = {}) {
 
   let launchedMode = null;
   let launchedJarPath = null;
+  let launchedBinaryPath = null;
 
-  // 2. Try native JAR first if preferNative is true
-  if (preferNative && javaChecker(deps.execSync || execSync)) {
+  // 2a. Try GraalVM native binary first if preferNative is true
+  if (preferNative) {
+    const binPath = binaryFinder(options, deps);
+    if (binPath) {
+      try {
+        binaryStarter(binPath, options, deps);
+        launchedMode = 'binary';
+        launchedBinaryPath = binPath;
+      } catch {
+        // Fall back to JAR or Docker if native binary launch throws
+      }
+    }
+  }
+
+  // 2b. Try native JAR if preferNative is true and no native binary launched
+  if (!launchedMode && preferNative && javaChecker(deps.execSync || execSync)) {
     const jarPath = jarFinder(options, deps);
     if (jarPath) {
       try {
@@ -229,7 +330,7 @@ export async function ensureServerRunning(options = {}, deps = {}) {
     }
   }
 
-  // 3. Fallback to Docker if native JAR was not launched
+  // 3. Fallback to Docker if native binary/JAR was not launched
   if (!launchedMode) {
     const dockerAvailable = spawnDocker && dockerChecker(deps.execSync || execSync);
     if (dockerAvailable) {
@@ -266,7 +367,8 @@ export async function ensureServerRunning(options = {}, deps = {}) {
         version: probe.version,
         spawned: true,
         mode: launchedMode,
-        jarPath: launchedJarPath
+        jarPath: launchedJarPath,
+        binaryPath: launchedBinaryPath
       };
     }
   }
@@ -277,7 +379,8 @@ export async function ensureServerRunning(options = {}, deps = {}) {
     spawned: true,
     mode: launchedMode,
     jarPath: launchedJarPath,
-    message: `Archlens ${launchedMode === 'jar' ? 'native server' : 'container'} launched; service is warming up.`
+    binaryPath: launchedBinaryPath,
+    message: `Archlens ${launchedMode === 'jar' || launchedMode === 'binary' ? 'native server' : 'container'} launched; service is warming up.`
   };
 }
 

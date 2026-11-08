@@ -38,12 +38,14 @@ test('getMcpToolsList formats tools conforming to MCP specification', () => {
   }
 });
 
-test('getMcpResourcesList defines canonical llms.txt resource', () => {
+test('getMcpResourcesList defines canonical llms.txt, policy, and fitness resources', () => {
   const resources = getMcpResourcesList();
-  assert.equal(resources.length, 1);
+  assert.equal(resources.length, 3);
   assert.equal(resources[0].uri, 'archlens://llms.txt');
   assert.equal(resources[0].mimeType, 'text/markdown');
   assert.ok(resources[0].description.includes('Clean Architecture'));
+  assert.equal(resources[1].uri, 'archlens://policy');
+  assert.equal(resources[2].uri, 'archlens://fitness');
 });
 
 test('readMcpResource returns markdown content of llms.txt', () => {
@@ -89,12 +91,19 @@ test('handleMcpMessage responds to tools/list', async () => {
   assert.equal(resp.result.tools.length, 10);
 });
 
-test('handleMcpMessage responds to resources/list', async () => {
+test('handleMcpMessage responds to resources/list and prompts/list', async () => {
   const req = { jsonrpc: '2.0', id: 4, method: 'resources/list' };
   const resp = await handleMcpMessage(req);
   assert.equal(resp.id, 4);
-  assert.equal(resp.result.resources.length, 1);
+  assert.equal(resp.result.resources.length, 3);
   assert.equal(resp.result.resources[0].uri, 'archlens://llms.txt');
+
+  const promptReq = { jsonrpc: '2.0', id: 41, method: 'prompts/list' };
+  const promptResp = await handleMcpMessage(promptReq);
+  assert.equal(promptResp.id, 41);
+  assert.equal(promptResp.result.prompts.length, 2);
+  assert.equal(promptResp.result.prompts[0].name, 'architectural-review');
+  assert.equal(promptResp.result.prompts[1].name, 'dip-refactoring-guide');
 });
 
 test('handleMcpMessage responds to resources/read', async () => {

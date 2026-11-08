@@ -28,5 +28,6 @@ reports/
 .agent/
 .claude/
 .junie/
+.quarkus/
 .env
 .envrc

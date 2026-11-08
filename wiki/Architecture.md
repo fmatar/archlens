@@ -23,8 +23,8 @@ flowchart LR
             Metrics["Quality Metrics Engine<br/>(CRAP Score & Mutation Stats)"]
         end
         
-        subgraph McpServer ["MCP Service (/mcp & /mcp/sse)"]
-            Tools["synthesizeDipInversion<br/>inspectArchitecture<br/>exportLlmDossier"]
+        subgraph McpServer ["MCP Service (/mcp & /mcp/sse + CLI Stdio)"]
+            Tools["10 Tools (inspectArchitecture, synthesizeDipInversion, evaluateFitness, ...)<br/>3 Resources (llms.txt, policy, fitness)<br/>2 Prompts (architectural-review, dip-refactoring-guide)"]
         end
     end
 
@@ -81,13 +81,13 @@ graph TD
 
 ## ⚡ Polyglot AST Engine (SPI)
 
-The backend employs an extensible Service Provider Interface (SPI) for scanning multiple languages:
-- **Java**: JavaParser 3.26 full AST parsing (records, sealed interfaces, classes, annotations, imports).
-- **TypeScript & JavaScript**: Babel AST parser and regex tokenization for ESM modules and barrel exports.
-- **Python**: Python AST token visitor for modules, classes, and intra-package imports.
-- **Go**: Go standard AST parser detecting packages, structs, and interfaces.
-- **Rust**: Syn / Cargo metadata extractor detecting crates, modules, and `use` declarations.
-- **Clojure**: EDN reader and namespace dependency parser.
+The backend employs an extensible Service Provider Interface (`LanguageScanner` SPI) for scanning polyglot codebases:
+- **Java (`JavaAstScanner`)**: JavaParser `3.28.2` (`ParserConfiguration.LanguageLevel.JAVA_25`) full AST parsing of records, sealed classes, interfaces, annotations, method signatures, and type references, plus JaCoCo XML and PITest mutation report correlation.
+- **TypeScript, JavaScript & Svelte 5 (`TypeScriptAstScanner`)**: Statement-normalizing ESM parser supporting multi-line `import`/`export ... from` statements, barrel `index.ts` re-exports, `tsconfig.json`/`jsconfig.json` `paths` & `baseUrl` aliases, and Svelte `<script>` extraction (`CAP-02`).
+- **Python (`PythonAstScanner`)**: Indentation-aware statement scanner detecting classes, `ABC`/`@abstractmethod` (`ABSTRACT`), `Protocol` (`INTERFACE`), `@dataclass`/`NamedTuple`/`TypedDict` (`RECORD`), method signatures, and type annotations (`CAP-01`).
+- **Go (`GoAstScanner`)**: Package, `struct`, and `interface` declaration scanner with intra-module import resolution via `go.mod`.
+- **Rust (`RustAstScanner`)**: Crate and module scanner detecting `struct`, `enum`, `trait` (`INTERFACE`), `fn` signatures, and `use crate::` / `super::` paths.
+- **Clojure (`ClojureAstScanner`)**: Namespace (`ns`) declaration, `:require` dependency, and `defn`/`defprotocol`/`defrecord` scanner.
 
 ---
 

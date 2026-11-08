@@ -97,7 +97,8 @@ public class TypeScriptAstScanner implements LanguageScanner {
       List<MethodNode> moduleFunctions,
       List<ImportRef> imports,
       Map<String, String> barrelSymbolToModule,
-      List<String> barrelWildcardModules) {}
+      List<String> barrelWildcardModules,
+      Set<String> apiCalls) {}
 
   @Override
   public String languageId() {
@@ -131,13 +132,22 @@ public class TypeScriptAstScanner implements LanguageScanner {
       String projectRoot, String srcRelativePath, String basePrefix, ArchitecturePolicy policy)
       throws IOException {
     File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
-    if (!scanDir.exists()) {
-      return new ScanResult(List.of(), List.of());
-    }
-
     Path rootPath = new File(projectRoot != null ? projectRoot : ".").toPath();
     Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
-    List<Path> tsFiles = discoverTypeScriptFiles(scanDir.toPath(), rootPath, omitPatterns);
+    List<Path> tsFiles = new ArrayList<>();
+    if (scanDir.exists()) {
+      tsFiles.addAll(discoverTypeScriptFiles(scanDir.toPath(), rootPath, omitPatterns));
+    }
+    if (tsFiles.isEmpty() && Files.exists(rootPath)) {
+      for (Path wsMod : FileScannerUtil.discoverWorkspaceModules(rootPath)) {
+        Path modSrc = wsMod.resolve("src");
+        Path targetScan = Files.isDirectory(modSrc) ? modSrc : wsMod;
+        tsFiles.addAll(discoverTypeScriptFiles(targetScan, rootPath, omitPatterns));
+      }
+    }
+    if (tsFiles.isEmpty()) {
+      return new ScanResult(List.of(), List.of());
+    }
     Map<String, String> pathAliases = loadTsConfigPathAliases(rootPath, srcRelativePath);
 
     List<ParsedTsFile> parsedFiles = new ArrayList<>();
@@ -341,6 +351,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
         barrelWildcardsByModule.put(currentModule, barrelWildcardModules);
       }
 
+      Set<String> apiCalls = FileScannerUtil.extractFrontendApiCalls(statements);
       parsedFiles.add(
           new ParsedTsFile(
               tsFile,
@@ -352,8 +363,13 @@ public class TypeScriptAstScanner implements LanguageScanner {
               moduleFunctions,
               imports,
               barrelSymbolToModule,
-              barrelWildcardModules));
+              barrelWildcardModules,
+              apiCalls));
     }
+
+    boolean hasAnyApiCalls = parsedFiles.stream().anyMatch(p -> !p.apiCalls().isEmpty());
+    Map<String, String> backendRoutes =
+        hasAnyApiCalls ? FileScannerUtil.indexBackendRestRoutes(rootPath) : Map.of();
 
     List<ClassNode> classes = new ArrayList<>();
     List<DependencyEdge> edges = new ArrayList<>();
@@ -453,6 +469,38 @@ public class TypeScriptAstScanner implements LanguageScanner {
                   DependencyEdge.Kind.DEPENDENCY,
                   null,
                   false));
+        }
+      }
+
+      if (!backendRoutes.isEmpty() && !parsed.apiCalls().isEmpty()) {
+        for (String apiRoute : parsed.apiCalls()) {
+          String backendEndpointId =
+              FileScannerUtil.resolveBackendEndpointForRoute(apiRoute, backendRoutes);
+          if (backendEndpointId != null && !backendEndpointId.isBlank()) {
+            for (String fromId : sourceNodeIds) {
+              if (!fromId.equals(backendEndpointId)
+                  && emittedEdges.add(fromId + "->" + backendEndpointId)) {
+                edges.add(
+                    new DependencyEdge(
+                        fromId,
+                        backendEndpointId,
+                        DependencyEdge.Kind.DEPENDENCY,
+                        "HTTP " + apiRoute,
+                        false));
+              }
+            }
+            if (!sourceNodeIds.contains(parsed.currentModule())
+                && !parsed.currentModule().equals(backendEndpointId)
+                && emittedEdges.add(parsed.currentModule() + "->" + backendEndpointId)) {
+              edges.add(
+                  new DependencyEdge(
+                      parsed.currentModule(),
+                      backendEndpointId,
+                      DependencyEdge.Kind.DEPENDENCY,
+                      "HTTP " + apiRoute,
+                      false));
+            }
+          }
         }
       }
     }

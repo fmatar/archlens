@@ -1,6 +1,7 @@
 <script lang="ts">
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import type { ScatterPlotPoint } from '../types/diagram';
   import {
     X,
@@ -139,6 +140,7 @@
     <!-- Dialog Window -->
     <div
       bind:this={dialogEl}
+      use:focusTrap
       role="dialog"
       aria-modal="true"
       aria-label="Robert C. Martin Main Sequence & Stability Quadrant"
@@ -163,7 +165,7 @@
               {/if}
             </div>
             <p class="text-xs text-slate-400">
-              Evaluates component Abstractness ($A$) vs. Instability ($I$) and deviation from the optimal Main Sequence ($A + I = 1$).
+              Evaluates component Abstractness (<span class="font-mono text-slate-300">A</span>) vs. Instability (<span class="font-mono text-slate-300">I</span>) and deviation from the optimal Main Sequence (<span class="font-mono text-slate-300">A + I = 1</span>).
             </p>
           </div>
         </div>
@@ -182,11 +184,11 @@
       <div class="px-6 py-2.5 bg-slate-950/50 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs">
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-1.5 text-slate-300">
-            <span class="text-slate-500">Components:</span>
+            <span class="text-slate-400">Components:</span>
             <span class="font-mono font-semibold text-white">{totalCount}</span>
           </div>
           <div class="flex items-center gap-1.5 text-slate-300">
-            <span class="text-slate-500">Mean Distance ($D$):</span>
+            <span class="text-slate-400">Mean Distance (<span class="font-mono">D</span>):</span>
             <span class="font-mono font-semibold text-blue-300">{meanDistance}</span>
           </div>
         </div>
@@ -492,10 +494,10 @@
             >
               Instability (I = Ce / (Ca + Ce))
             </text>
-            <text x="60" y="525" fill="#475569" font-size="9" text-anchor="start">
+            <text x="60" y="525" fill="#94a3b8" font-size="9" text-anchor="start">
               ← 0.0 Stable (Foundational)
             </text>
-            <text x="500" y="525" fill="#475569" font-size="9" text-anchor="end">
+            <text x="500" y="525" fill="#94a3b8" font-size="9" text-anchor="end">
               1.0 Instable (Leaf) →
             </text>
 
@@ -515,7 +517,7 @@
             <text
               x="42"
               y="480"
-              fill="#475569"
+              fill="#94a3b8"
               font-size="9"
               text-anchor="middle"
               transform="rotate(-90, 42, 480)"
@@ -525,7 +527,7 @@
             <text
               x="42"
               y="60"
-              fill="#475569"
+              fill="#94a3b8"
               font-size="9"
               text-anchor="middle"
               transform="rotate(-90, 42, 60)"
@@ -684,48 +686,48 @@
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-750">
                   <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Instability ($I$)
+                    Instability (I)
                   </div>
                   <div class="text-lg font-mono font-bold text-blue-400">
                     {activePoint.instability.toFixed(3)}
                   </div>
-                  <div class="text-[10px] text-slate-500">
-                    $C_e$: {activePoint.ce} &bull; $C_a$: {activePoint.ca}
+                  <div class="text-[10px] text-slate-400">
+                    C<sub>e</sub>: {activePoint.ce} &bull; C<sub>a</sub>: {activePoint.ca}
                   </div>
                 </div>
 
                 <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-750">
                   <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Abstractness ($A$)
+                    Abstractness (A)
                   </div>
                   <div class="text-lg font-mono font-bold text-purple-400">
                     {activePoint.abstractness.toFixed(3)}
                   </div>
-                  <div class="text-[10px] text-slate-500">
+                  <div class="text-[10px] text-slate-400">
                     {activePoint.abstractCount} / {activePoint.classCount} classes
                   </div>
                 </div>
 
                 <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-750">
                   <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Distance from Main ($D$)
+                    Distance from Main (D)
                   </div>
                   <div class="text-lg font-mono font-bold text-emerald-400">
                     {activePoint.distance.toFixed(3)}
                   </div>
-                  <div class="text-[10px] text-slate-500">
-                    Formula: $|A + I - 1|$
+                  <div class="text-[10px] text-slate-400">
+                    Formula: |A + I − 1|
                   </div>
                 </div>
 
                 <div class="p-2.5 rounded-lg bg-slate-800/60 border border-slate-750">
                   <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                    Total Classes ($N_c$)
+                    Total Classes (N<sub>c</sub>)
                   </div>
                   <div class="text-lg font-mono font-bold text-white">
                     {activePoint.classCount}
                   </div>
-                  <div class="text-[10px] text-slate-500">
+                  <div class="text-[10px] text-slate-400">
                     Interfaces: {activePoint.abstractCount}
                   </div>
                 </div>
@@ -747,7 +749,7 @@
                 {:else if activePoint.zone === 'ZONE_OF_USELESSNESS'}
                   <strong>Architectural Advisory:</strong> This component contains abstract interfaces that have zero dependents, indicating speculative over-engineering or dead abstractions.
                 {:else}
-                  <strong>Architecturally Balanced:</strong> This component tracks closely along Uncle Bob's Main Sequence ($A + I = 1$), striking an optimal balance between extensibility and stability.
+                  <strong>Architecturally Balanced:</strong> This component tracks closely along Uncle Bob's Main Sequence (<span class="font-mono">A + I = 1</span>), striking an optimal balance between extensibility and stability.
                 {/if}
               </div>
 
@@ -770,21 +772,21 @@
 
               <div class="text-xs text-slate-300 space-y-2.5 leading-relaxed">
                 <p>
-                  In <em>Clean Architecture</em>, Robert C. Martin established that components should ideally adhere to the <strong>Main Sequence line</strong> ($A + I = 1$):
+                  In <em>Clean Architecture</em>, Robert C. Martin established that components should ideally adhere to the <strong>Main Sequence line</strong> (<span class="font-mono">A + I = 1</span>):
                 </p>
                 <ul class="list-disc pl-4 space-y-1 text-slate-400">
-                  <li><strong>Stable packages</strong> ($I \to 0$) should be <strong>abstract</strong> ($A \to 1$) so they can be easily extended.</li>
-                  <li><strong>Instable packages</strong> ($I \to 1$) should be <strong>concrete</strong> ($A \to 0$) since they are easy to modify.</li>
+                  <li><strong>Stable packages</strong> (<span class="font-mono">I → 0</span>) should be <strong>abstract</strong> (<span class="font-mono">A → 1</span>) so they can be easily extended.</li>
+                  <li><strong>Instable packages</strong> (<span class="font-mono">I → 1</span>) should be <strong>concrete</strong> (<span class="font-mono">A → 0</span>) since they are easy to modify.</li>
                 </ul>
 
                 <div class="p-3 rounded-lg bg-slate-800/60 border border-slate-750 space-y-1.5 font-mono text-[11px]">
-                  <div class="text-blue-300">Instability: I = Ce / (Ca + Ce)</div>
-                  <div class="text-purple-300">Abstractness: A = Na / Nc</div>
-                  <div class="text-emerald-300">Distance: D = |A + I - 1|</div>
+                  <div class="text-blue-300">Instability: I = C<sub>e</sub> / (C<sub>a</sub> + C<sub>e</sub>)</div>
+                  <div class="text-purple-300">Abstractness: A = N<sub>a</sub> / N<sub>c</sub></div>
+                  <div class="text-emerald-300">Distance: D = |A + I − 1|</div>
                 </div>
 
                 <p class="text-[11px] text-slate-400">
-                  Hover over or click any component dot on the scatter plot to inspect its coupling telemetry, exact $(I, A)$ coordinates, and targeted DIP recommendations.
+                  Hover or click any component dot on the scatter plot to inspect its coupling telemetry and <span class="font-mono">(I, A)</span> coordinates, or double-click a dot to focus that component directly on the canvas.
                 </p>
               </div>
             </div>

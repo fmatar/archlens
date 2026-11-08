@@ -44,7 +44,7 @@
   <aside
     bind:this={toolbarEl}
     aria-label="Architectural Sandbox Control Bar"
-    class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-4xl bg-slate-900/95 backdrop-blur-xl border border-amber-500/50 rounded-2xl shadow-2xl shadow-amber-950/40 p-3 flex flex-col gap-3 transition-all"
+    class="fixed {diagramStore.isTelemetryDrawerOpen ? 'bottom-72' : 'bottom-24'} left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-4xl bg-slate-900/95 backdrop-blur-xl border border-amber-500/50 rounded-2xl shadow-2xl shadow-amber-950/40 p-3 flex flex-col gap-3 transition-all duration-300"
   >
     <!-- Top Action Bar -->
     <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -152,6 +152,21 @@
       </div>
     {/if}
 
+    {#if movesCount > 0}
+      <div class="flex items-center gap-2 px-1">
+        <label for="sandbox-intent-note" class="text-[11px] font-mono text-slate-400 shrink-0">
+          Architectural Intent:
+        </label>
+        <input
+          id="sandbox-intent-note"
+          type="text"
+          bind:value={diagramStore.humanIntentNote}
+          placeholder="Optional intent note or constraint attached to .archlens/to-agent.json..."
+          class="flex-1 bg-slate-950/80 border border-slate-800 focus:border-amber-500/60 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-200 placeholder:text-slate-500 outline-none"
+        />
+      </div>
+    {/if}
+
     <!-- Expandable Details Drawer: Staged Moves & Martin Metrics -->
     {#if isDetailsExpanded}
       <div class="pt-2 border-t border-slate-800 flex flex-col gap-3 max-h-72 overflow-y-auto pr-1">
@@ -159,7 +174,7 @@
         <div>
           <h4 class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mb-1.5 flex items-center gap-1.5">
             <span>Staged Class Reassignments</span>
-            <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-amber-300 font-mono">{movesCount}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 font-mono">{movesCount}</span>
           </h4>
 
           {#if movesCount === 0}
@@ -180,8 +195,9 @@
 
                   <button
                     onclick={() => diagramStore.unstageClassMove(move.classId)}
-                    class="p-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
+                    class="min-h-6 min-w-6 p-1 flex items-center justify-center rounded hover:bg-slate-800 text-slate-400 hover:text-rose-400 transition-colors cursor-pointer"
                     title="Remove staged move"
+                    aria-label={`Remove staged move for ${move.className}`}
                   >
                     <X size={12} />
                   </button>
@@ -197,7 +213,7 @@
             <div class="flex items-center justify-between mb-1.5">
               <h4 class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
                 <span>Robert C. Martin Coupling & Stability Metrics</span>
-                <span class="text-[10px] text-slate-400 font-normal">($C_a, C_e, I, A, D$)</span>
+                <span class="text-[10px] text-slate-400 font-normal">(C<sub>a</sub>, C<sub>e</sub>, I, A, D)</span>
               </h4>
 
               <button
@@ -215,11 +231,11 @@
                 <thead>
                   <tr class="border-b border-slate-800 text-slate-400 text-[10px]">
                     <th class="py-1 px-2">Component</th>
-                    <th class="py-1 px-2" title="Afferent Coupling (Incoming dependencies from external components)">$C_a$</th>
-                    <th class="py-1 px-2" title="Efferent Coupling (Outgoing dependencies to external components)">$C_e$</th>
-                    <th class="py-1 px-2" title="Instability = Ce / (Ca + Ce)">$I$</th>
-                    <th class="py-1 px-2" title="Abstractness = Interfaces / Total Classes">$A$</th>
-                    <th class="py-1 px-2" title="Normalized Distance from Main Sequence = |A + I - 1|">$D$</th>
+                    <th class="py-1 px-2" title="Afferent Coupling (Incoming dependencies from external components)">C<sub>a</sub></th>
+                    <th class="py-1 px-2" title="Efferent Coupling (Outgoing dependencies to external components)">C<sub>e</sub></th>
+                    <th class="py-1 px-2" title="Instability = Ce / (Ca + Ce)">I</th>
+                    <th class="py-1 px-2" title="Abstractness = Interfaces / Total Classes">A</th>
+                    <th class="py-1 px-2" title="Normalized Distance from Main Sequence = |A + I - 1|">D</th>
                     <th class="py-1 px-2">Zone</th>
                   </tr>
                 </thead>

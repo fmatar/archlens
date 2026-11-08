@@ -96,6 +96,14 @@ const files = [
         /(function getPackageVersion\(\)[\s\S]*?return ')[^']+(';)/,
         `$1${newVersion}$2`
       )
+  },
+  {
+    path: path.join(rootDir, 'scripts/smoke-test.js'),
+    update: (content) =>
+      content.replace(
+        /(export async function runHttpSmokeChecks\(serverUrl, expectedVersion = ')[^']+(')/,
+        `$1${newVersion}$2`
+      )
   }
 ];
 

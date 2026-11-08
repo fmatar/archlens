@@ -280,4 +280,190 @@ describe('diagramStore state management', () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it('should dispatch DIP with intent note, verify refactoring, sync ADR, and rollback snapshot', async () => {
+    const originalFetch = globalThis.fetch;
+    const calls: { url: string; body: any }[] = [];
+
+    globalThis.fetch = async (url: any, init?: any) => {
+      const u = url.toString();
+      const parsedBody = init?.body ? JSON.parse(init.body) : null;
+      calls.push({ url: u, body: parsedBody });
+
+      if (u.includes('/api/mailbox/to-agent')) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: 1,
+            op: 'INVERT_DEPENDENCY',
+            payload: { snapshotId: 'snap-test-999' }
+          })
+        } as any;
+      }
+      if (u.includes('/api/mailbox/verify')) {
+        return {
+          ok: true,
+          json: async () => ({
+            passed: true,
+            initialViolations: 2,
+            remainingViolations: 0,
+            violationDelta: 2,
+            summary: 'Refactoring verified: violations reduced by 2',
+            canRollback: true,
+            snapshotId: 'snap-test-999'
+          })
+        } as any;
+      }
+      if (u.includes('/api/mailbox/sync-adr')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            filename: 'ADR-0004-invert-order-repo.md',
+            index: 4
+          })
+        } as any;
+      }
+      if (u.includes('/api/mailbox/rollback')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            snapshotId: 'snap-test-999'
+          })
+        } as any;
+      }
+      if (u.includes('/api/graph')) {
+        return {
+          ok: true,
+          json: async () => DEMO_GRAPH_REAL
+        } as any;
+      }
+      if (u.includes('/api/policy')) {
+        return {
+          ok: true,
+          json: async () => ({ title: 'Demo' })
+        } as any;
+      }
+      if (u.includes('/api/fitness')) {
+        return {
+          ok: true,
+          json: async () => ({ fitnessScore: 95, grade: 'A', overallPassed: true, rules: [] })
+        } as any;
+      }
+      return originalFetch(url, init);
+    };
+
+    try {
+      diagramStore.graph = DEMO_GRAPH_REAL;
+      diagramStore.humanIntentNote = 'Keep Domain Core free of JDBC drivers';
+
+      const mockPlan = diagramStore.createFallbackDipPlan(
+        'com.example.domain.OrderService',
+        'com.example.adapters.JdbcOrderRepo'
+      );
+      await diagramStore.dispatchDipToAgent(mockPlan);
+
+      expect(diagramStore.lastRefactorSnapshotId).toBe('snap-test-999');
+      expect(diagramStore.isTelemetryDrawerOpen).toBe(true);
+      const dispatchCall = calls.find((c) => c.url.includes('/api/mailbox/to-agent'));
+      expect(dispatchCall?.body.payload.architecturalIntent).toBe(
+        'Keep Domain Core free of JDBC drivers'
+      );
+
+      // Verify Refactoring
+      const verifyRes = await diagramStore.verifyLastRefactoring();
+      expect(verifyRes?.passed).toBe(true);
+      expect(verifyRes?.violationDelta).toBe(2);
+      expect(diagramStore.lastVerificationResult?.passed).toBe(true);
+
+      // Sync Living ADR
+      const adrFile = await diagramStore.syncVerifiedRefactorAdr();
+      expect(adrFile).toBe('ADR-0004-invert-order-repo.md');
+      expect(diagramStore.lastSyncedAdrFilename).toBe('ADR-0004-invert-order-repo.md');
+
+      // Rollback Snapshot
+      const rolledBack = await diagramStore.rollbackLastRefactoring();
+      expect(rolledBack).toBe(true);
+      expect(diagramStore.lastRefactorSnapshotId).toBeNull();
+      expect(diagramStore.lastVerificationResult).toBeNull();
+    } finally {
+      globalThis.fetch = originalFetch;
+      diagramStore.humanIntentNote = '';
+    }
+  });
+
+  it('automatically activates WebGL/Canvas renderer at 500+ classes and supports manual renderEngineMode overrides', () => {
+    diagramStore.setRenderEngineMode('auto');
+    diagramStore.graph = DEMO_GRAPH_REAL;
+    expect(diagramStore.totalClassCount).toBeLessThan(500);
+    expect(diagramStore.isWebGlRendererActive).toBe(false);
+
+    // Cycle to explicit WebGL mode
+    diagramStore.toggleRenderEngineMode();
+    expect(diagramStore.renderEngineMode).toBe('webgl');
+    expect(diagramStore.isWebGlRendererActive).toBe(true);
+
+    // Cycle to explicit SVG mode
+    diagramStore.toggleRenderEngineMode();
+    expect(diagramStore.renderEngineMode).toBe('svg');
+    expect(diagramStore.isWebGlRendererActive).toBe(false);
+
+    // Cycle back to Auto mode and load a 505-class synthetic graph
+    diagramStore.toggleRenderEngineMode();
+    expect(diagramStore.renderEngineMode).toBe('auto');
+    const manyClasses = Array.from({ length: 505 }, (_, i) => ({
+      id: `com.acme.domain.Entity${i}`,
+      name: `Entity${i}`,
+      packageName: 'com.acme.domain',
+      filePath: `Entity${i}.java`,
+      stereotype: 'CLASS' as const,
+      isForeign: false,
+      level: 0,
+      crap: { mu: 1, max: 1, sigma: 0 },
+      coverage: 1,
+      cc: 1,
+      killed: 1,
+      survived: 0,
+      uncovered: 0,
+      fields: [],
+      methods: []
+    }));
+    diagramStore.graph = {
+      ...DEMO_GRAPH_REAL,
+      components: [
+        {
+          id: 'domain',
+          label: 'domain',
+          level: 0,
+          crap: { mu: 1, max: 1, sigma: 0 },
+          mutationScore: 1,
+          childPackageIds: [],
+          classes: manyClasses
+        }
+      ]
+    };
+    expect(diagramStore.totalClassCount).toBe(505);
+    expect(diagramStore.isWebGlRendererActive).toBe(true);
+  });
+
+  it('loads curated interactive reference architecture showcase presets (PetClinic, Quarkus, RealWorld)', async () => {
+    expect(diagramStore.showcasePresets.length).toBeGreaterThanOrEqual(3);
+
+    await diagramStore.setProjectRoot('preset:spring-petclinic', false);
+    expect(diagramStore.activeShowcasePresetId).toBe('spring-petclinic');
+    expect(diagramStore.graph?.title).toBe('Spring PetClinic Clean Architecture');
+    expect(diagramStore.violatingEdgesCount).toBe(1);
+
+    await diagramStore.setProjectRoot('preset:quarkus-quickstart', false);
+    expect(diagramStore.activeShowcasePresetId).toBe('quarkus-quickstart');
+    expect(diagramStore.violatingEdgesCount).toBe(0);
+
+    await diagramStore.setProjectRoot('preset:realworld-conduit', false);
+    expect(diagramStore.activeShowcasePresetId).toBe('realworld-conduit');
+    expect(diagramStore.hasCycles).toBe(true);
+    expect(
+      diagramStore.graph?.edges.some((e) => e.label === 'HTTP /api/articles')
+    ).toBe(true);
+  });
 });

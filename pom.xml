@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.slixes</groupId>
     <artifactId>archlens</artifactId>
-    <version>0.1.1</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
     <name>Archlens — Clean Architecture Dynamic Workbench :: Parent</name>
 
@@ -32,6 +32,7 @@
         <!-- Toolchain & Plugin Versions -->
         <quarkus.platform.version>3.40.1.1</quarkus.platform.version>
         <quarkus.mcp.version>2.0.3</quarkus.mcp.version>
+        <quarkus.quinoa.version>2.9.3</quarkus.quinoa.version>
 
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -46,15 +47,10 @@
         <spotbugs-plugin.version>4.10.5.0</spotbugs-plugin.version>
         <findsecbugs-plugin.version>1.13.0</findsecbugs-plugin.version>
         <asm.version>9.11.1</asm.version>
-        <frontend-plugin.version>2.0.2</frontend-plugin.version>
         <resources-plugin.version>3.3.1</resources-plugin.version>
         <versions-plugin.version>2.18.0</versions-plugin.version>
         <cyclonedx-plugin.version>2.9.3</cyclonedx-plugin.version>
         <git-commit-id-plugin.version>10.0.1</git-commit-id-plugin.version>
-        <!-- Frontend Versions (Installed automatically by frontend-maven-plugin) -->
-        <node.version>v26.8.2</node.version>
-        <pnpm.version>12.4.1</pnpm.version>
-        <frontend.install.dir>${user.home}/.cache/archlens-node</frontend.install.dir>
         <maven.min.version>3.9.14</maven.min.version>
     </properties>
 
@@ -79,6 +75,11 @@
                 <version>${quarkus.mcp.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkiverse.quinoa</groupId>
+                <artifactId>quarkus-quinoa</artifactId>
+                <version>${quarkus.quinoa.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -110,11 +111,6 @@
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>com.github.eirslett</groupId>
-                    <artifactId>frontend-maven-plugin</artifactId>
-                    <version>${frontend-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.cyclonedx</groupId>

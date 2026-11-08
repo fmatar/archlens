@@ -56,16 +56,25 @@ public class RustAstScanner implements LanguageScanner {
       throws IOException {
     File rootDir = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
     File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
-    if (!scanDir.exists()) {
+    List<Path> rsFiles = new ArrayList<>();
+    if (scanDir.exists()) {
+      rsFiles.addAll(
+          FileScannerUtil.findFiles(scanDir.toPath(), p -> p.toString().endsWith(".rs")));
+    }
+    if (rsFiles.isEmpty() && rootDir.exists()) {
+      for (Path memberDir : FileScannerUtil.discoverWorkspaceModules(rootDir.toPath())) {
+        Path memberSrc = memberDir.resolve("src");
+        Path targetScan = Files.isDirectory(memberSrc) ? memberSrc : memberDir;
+        rsFiles.addAll(FileScannerUtil.findFiles(targetScan, p -> p.toString().endsWith(".rs")));
+      }
+    }
+    if (rsFiles.isEmpty()) {
       return new ScanResult(List.of(), List.of());
     }
 
     List<ClassNode> classes = new ArrayList<>();
     List<DependencyEdge> edges = new ArrayList<>();
     Map<String, String> internalModules = new HashMap<>();
-
-    List<Path> rsFiles =
-        FileScannerUtil.findFiles(scanDir.toPath(), p -> p.toString().endsWith(".rs"));
 
     Path rootPath = rootDir.toPath();
     for (Path rsFile : rsFiles) {
@@ -152,12 +161,17 @@ public class RustAstScanner implements LanguageScanner {
     String mod = relPath.replace('\\', '/');
     if (mod.startsWith("src/")) {
       mod = mod.substring(4);
+    } else {
+      mod = mod.replace("/src/", "/");
     }
     if (mod.endsWith(".rs")) {
       mod = mod.substring(0, mod.length() - 3);
     }
-    if (mod.endsWith("/mod")) {
-      mod = mod.substring(0, mod.length() - 4);
+    if (mod.endsWith("/mod") || mod.endsWith("/lib") || mod.endsWith("/main")) {
+      int lastSlash = mod.lastIndexOf('/');
+      if (lastSlash > 0) {
+        mod = mod.substring(0, lastSlash);
+      }
     }
     return mod.replace('/', '.');
   }

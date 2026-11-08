@@ -63,7 +63,7 @@ Archlens CLI requires zero external dependencies and runs cross-platform via Nod
 ```bash
 # 1. Audit Codebase Conformance & Detect All Architectural Drifts:
 npx @fmatar/archlens-skill check
-npx @fmatar/archlens-skill check --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85
+npx @fmatar/archlens-skill check --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85
 npx @fmatar/archlens-skill check --format json
 npx @fmatar/archlens-skill check --format sarif -O arch-drift.sarif
 
@@ -89,18 +89,32 @@ npx @fmatar/archlens-skill mcp        # Launch MCP stdio bridge server
 
 When Archlens is registered as an MCP server, AI assistants can query it using standard MCP primitives:
 
-### MCP Tools:
+### MCP Tools (10):
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
 | `exportLlmDossier` | `projectRoot` (default: `.`), `proposalId` | Diagnoses outward dependency breaches and outputs a Markdown refactoring prompt with concrete DIP interface port prescriptions. |
 | `inspectArchitecture` | `projectRoot` (default: `.`) | Returns full JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics. |
+| `synthesizeDipInversion` | `fromClass` (required), `toClass` (required), `projectRoot` | Synthesizes a complete Dependency Inversion Principle (DIP) interface port (`Java`, `Python`, `TypeScript`, `Go`, `Rust`), adapter/caller diffs, and surgical prompt. |
+| `evaluateFitness` | `projectRoot` (default: `.`) | Evaluates the Composite Architecture Fitness Index (AFI score `0`–`100`, grade `A`–`F`, rule breakdowns). |
+| `getFitnessHistory` | `projectRoot` (default: `.`) | Returns historical fitness snapshots across Git release tags and computes the regression trend (`STABLE`, `IMPROVING`, `DEGRADING`). |
+| `proposeScreamingMigration` | `projectRoot` (default: `.`) | Generates a Screaming Architecture package-by-feature migration plan from technical layers into domain feature slices. |
+| `getPolicy` | `projectRoot` (default: `.`) | Returns the active `.archlens/policy.json` concentric ring definitions and omission rules. |
+| `syncDipAdr` | `fromClass`, `toClass`, `portName`, `portPackage`, `reason`, `projectRoot` | Mints a numbered Markdown ADR in `docs/adr/` documenting a Dependency Inversion Principle refactoring. |
 | `listSnapshots` | `projectRoot` (default: `.`) | Lists historical architecture release snapshots in `.archlens/snapshots/` and Git release tags. |
 | `getSnapshot` | `snapshotId` (required), `projectRoot` | Retrieves the graph model of a specific historical snapshot or Git tag for temporal drift diffing. |
 
-### MCP Resources:
+### MCP Resources (3):
 | Resource URI | MIME Type | Description |
 | :--- | :--- | :--- |
 | `archlens://llms.txt` | `text/markdown` | This authoritative reference guide, Clean Architecture rules, CLI recipes, and refactoring protocols. |
+| `archlens://policy` | `application/json` | The active `.archlens/policy.json` concentric Clean Architecture layer policy for the workspace. |
+| `archlens://fitness` | `application/json` | Live Architecture Fitness Index (AFI) evaluation report, grade, and rule breakdown. |
+
+### MCP Prompts (2):
+| Prompt Name | Arguments | Description |
+| :--- | :--- | :--- |
+| `architectural-review` | `projectRoot` (optional) | Comprehensive Clean Architecture review prompt combining the LLM Dossier and Fitness evaluation. |
+| `dip-refactoring-guide` | `fromClass` (required), `toClass` (required), `projectRoot` | Step-by-step Dependency Inversion Principle (DIP) refactoring prompt for a specific outward violation. |
 
 ---
 

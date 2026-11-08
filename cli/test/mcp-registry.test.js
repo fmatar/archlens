@@ -86,8 +86,9 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
       })
     );
 
-    // Setup Cursor directory
+    // Setup Cursor and VS Code directories
     fs.mkdirSync(path.join(tmpProject, '.cursor'), { recursive: true });
+    fs.mkdirSync(path.join(tmpProject, '.vscode'), { recursive: true });
 
     const result = installMcpConfigs({
       path: tmpProject,
@@ -96,7 +97,7 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
     });
 
     assert.equal(result.dryRun, false);
-    assert.ok(result.configuredClients.length >= 3);
+    assert.ok(result.configuredClients.length >= 4);
 
     // Verify Antigravity schemas
     const archlensMcpDir = path.join(antigravityParent, 'archlens');
@@ -117,6 +118,13 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
     assert.ok(fs.existsSync(cursorFile));
     const cursorConfig = JSON.parse(fs.readFileSync(cursorFile, 'utf8'));
     assert.ok(cursorConfig.mcpServers.archlens);
+
+    // Verify VS Code config uses top-level "servers" key with type "stdio"
+    const vscodeFile = path.join(tmpProject, '.vscode', 'mcp.json');
+    assert.ok(fs.existsSync(vscodeFile));
+    const vscodeConfig = JSON.parse(fs.readFileSync(vscodeFile, 'utf8'));
+    assert.ok(vscodeConfig.servers.archlens);
+    assert.equal(vscodeConfig.servers.archlens.type, 'stdio');
   } finally {
     fs.rmSync(tmpHome, { recursive: true, force: true });
     fs.rmSync(tmpProject, { recursive: true, force: true });

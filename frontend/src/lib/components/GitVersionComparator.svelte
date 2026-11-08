@@ -60,12 +60,13 @@
     <button
       onclick={toggleDropdown}
       class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-colors text-xs font-medium cursor-pointer shadow-sm"
-      title="Compare architecture against Git tags and release snapshots (Shift+V)"
+      title="Compare architecture against Git tags and release snapshots (G)"
       aria-haspopup="true"
       aria-expanded={isOpen}
     >
       <GitCompare size={14} class="text-blue-400" />
       <span>Compare Release</span>
+      <kbd class="px-1 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400 hidden sm:inline">G</kbd>
       <ChevronDown size={12} class="text-slate-400 transition-transform {isOpen ? 'rotate-180' : ''}" />
     </button>
   {:else}

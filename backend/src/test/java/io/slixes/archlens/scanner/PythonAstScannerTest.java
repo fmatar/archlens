@@ -449,4 +449,71 @@ class PythonAstScannerTest {
     assertEquals(List.of("payload: dict"), abcNode.methods().get(0).args());
     assertEquals("str", abcNode.methods().get(0).returnType());
   }
+
+  @Test
+  void testPython312TypeStatementAliasesAndPep695Generics(@TempDir Path tempDir)
+      throws IOException {
+    Path domainDir = tempDir.resolve("domain");
+    Path appDir = tempDir.resolve("application");
+    Files.createDirectories(domainDir);
+    Files.createDirectories(appDir);
+
+    Files.writeString(
+        domainDir.resolve("order.py"),
+        """
+        from collections.abc import Callable
+
+        class Order:
+            pass
+
+        type OrderPredicate[T] = Callable[[T, Order], bool]
+        """);
+
+    Files.writeString(
+        appDir.resolve("service.py"),
+        """
+        from domain.order import Order, OrderPredicate
+
+        class OrderService[T]:
+            def filter_orders[U](self, items: list[T], pred: OrderPredicate[T]) -> list[T]:
+                return items
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
+
+    var predicateAlias =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderPredicate"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(
+        io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE,
+        predicateAlias.stereotype());
+
+    // Type alias references Order in the same module
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("domain.order.OrderPredicate")
+                        && e.to().equals("domain.order.Order")));
+
+    // Generic PEP 695 class & method in application layer
+    var serviceClass =
+        result.classes().stream()
+            .filter(c -> c.name().equals("OrderService"))
+            .findFirst()
+            .orElseThrow();
+    assertEquals(1, serviceClass.methods().size());
+    assertEquals("filter_orders", serviceClass.methods().get(0).name());
+    assertEquals("list[T]", serviceClass.methods().get(0).returnType());
+
+    // Edge from OrderService to imported PEP 695 type alias OrderPredicate
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(
+                e ->
+                    e.from().equals("application.service.OrderService")
+                        && e.to().equals("domain.order.OrderPredicate")));
+  }
 }

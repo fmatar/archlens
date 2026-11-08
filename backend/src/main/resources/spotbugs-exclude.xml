@@ -61,5 +61,10 @@
         <Package name="io.slixes.archlens.usecase"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>
     </Match>
+    <!-- VerifyAndRollbackRefactorUseCase only invokes fixed constant test runner arrays (mvn/gradle/cargo/pytest/go/npm) -->
+    <Match>
+        <Class name="io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase"/>
+        <Bug pattern="COMMAND_INJECTION"/>
+    </Match>
 </FindBugsFilter>
 

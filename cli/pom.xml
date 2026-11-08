@@ -6,46 +6,12 @@
     <parent>
         <groupId>com.slixes</groupId>
         <artifactId>archlens</artifactId>
-        <version>0.1.1</version>
+        <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>archlens-cli</artifactId>
     <packaging>pom</packaging>
     <name>Archlens — Clean Architecture Dynamic Workbench :: CLI</name>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>com.github.eirslett</groupId>
-                <artifactId>frontend-maven-plugin</artifactId>
-                <configuration>
-                    <installDirectory>${frontend.install.dir}</installDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>install node and npm</id>
-                        <goals>
-                            <goal>install-node-and-npm</goal>
-                        </goals>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <nodeVersion>${node.version}</nodeVersion>
-                            <npmVersion>11.19.0</npmVersion>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>npm test</id>
-                        <goals>
-                            <goal>npm</goal>
-                        </goals>
-                        <phase>test</phase>
-                        <configuration>
-                            <arguments>test</arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+    <description>Zero-dependency Node.js CLI, analyzer, and MCP server (@fmatar/archlens-skill)</description>
 </project>

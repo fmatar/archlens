@@ -1,6 +1,7 @@
 <script lang="ts">
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import type { ArchitecturePolicy } from '../types/diagram';
   import {
     X,
@@ -227,6 +228,7 @@
   >
     <div
       bind:this={dialogEl}
+      use:focusTrap
       role="dialog"
       aria-modal="true"
       aria-label="Concentric Architecture Policy Designer"
@@ -423,27 +425,30 @@
                         {#if tierIdx > 0}
                           <button
                             onclick={() => movePackage(pkg, tierIdx, tierIdx - 1)}
-                            class="p-0.5 text-slate-400 hover:text-blue-300 rounded cursor-pointer"
+                            class="min-h-6 min-w-6 p-1 flex items-center justify-center text-slate-400 hover:text-blue-300 rounded cursor-pointer"
                             title="Move inward to Level {tierIdx - 1}"
+                            aria-label={`Move ${pkg} inward to Level ${tierIdx - 1}`}
                           >
-                            <ChevronUp size={11} />
+                            <ChevronUp size={12} />
                           </button>
                         {/if}
                         {#if tierIdx < localLevels.length - 1}
                           <button
                             onclick={() => movePackage(pkg, tierIdx, tierIdx + 1)}
-                            class="p-0.5 text-slate-400 hover:text-blue-300 rounded cursor-pointer"
+                            class="min-h-6 min-w-6 p-1 flex items-center justify-center text-slate-400 hover:text-blue-300 rounded cursor-pointer"
                             title="Move outward to Level {tierIdx + 1}"
+                            aria-label={`Move ${pkg} outward to Level ${tierIdx + 1}`}
                           >
-                            <ChevronDown size={11} />
+                            <ChevronDown size={12} />
                           </button>
                         {/if}
                         <button
                           onclick={() => removePackage(pkg, tierIdx)}
-                          class="p-0.5 text-slate-400 hover:text-rose-400 rounded cursor-pointer ml-0.5"
+                          class="min-h-6 min-w-6 p-1 flex items-center justify-center text-slate-400 hover:text-rose-400 rounded cursor-pointer ml-0.5"
                           title="Remove package"
+                          aria-label={`Remove ${pkg} from tier`}
                         >
-                          <X size={11} />
+                          <X size={12} />
                         </button>
                       </div>
                     </div>
@@ -496,7 +501,7 @@
             <div>
               <div class="flex items-center justify-between mb-1">
                 <h4 class="text-xs font-semibold text-slate-200">Discovered Unassigned Packages</h4>
-                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-300">
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
                   {unassignedPackages.length} unassigned
                 </span>
               </div>

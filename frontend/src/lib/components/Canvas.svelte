@@ -126,7 +126,9 @@
 
   let visibleEdges = $derived.by(() => {
     if (diagramStore.declutterMode === 'REMOVE_ARROWS' || diagramStore.hasDeclutterFilter('HIDE_ALL_EDGES')) return [];
-    const isXRayMode = diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES');
+    const isXRayMode =
+      diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES') ||
+      diagramStore.declutterMode === 'ELEMENTS';
 
     const list: EdgeType[] = [];
     for (const edge of edges) {
@@ -395,7 +397,7 @@
   }
 
   // --- Smooth Canvas Panning with Window Listeners & RAF ---
-  function handleMouseDown(e: MouseEvent) {
+  function handleMouseDown(e: PointerEvent | MouseEvent) {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement;
 
@@ -474,6 +476,20 @@
         worldY >= item.y &&
         worldY <= item.y + item.height
       ) {
+        const classes = item.comp.classes || [];
+        const maxPreview = Math.min(classes.length, 5);
+        for (let idx = 0; idx < maxPreview; idx++) {
+          const py = item.y + 52 + idx * 22;
+          if (
+            worldX >= item.x + 10 &&
+            worldX <= item.x + item.width - 10 &&
+            worldY >= py &&
+            worldY <= py + 18
+          ) {
+            diagramStore.selectedClass = classes[idx];
+            return;
+          }
+        }
         diagramStore.setFocusedNode(
           diagramStore.focusedNodeId === item.comp.id ? null : item.comp.id
         );
@@ -503,7 +519,7 @@
     ctx.scale(diagramStore.zoom, diagramStore.zoom);
 
     // 1. Draw Concentric Tier Backdrops
-    if (!diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')) {
+    if (!diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') && diagramStore.declutterMode !== 'NONE') {
       sortedLevels.forEach((level, rowIdx) => {
         const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35;
         const height = BOX_HEIGHT + 70;
@@ -571,6 +587,19 @@
         ctx.fillStyle = '#e2e8f0';
         ctx.font = '500 10px ui-monospace, SFMono-Regular, Menlo, monospace';
         ctx.fillText(cls.name, item.x + 16, py + 13);
+
+        // CRAP & Coverage indicator dot
+        const crapMu = cls.crap?.mu ?? 0;
+        const dotColor = crapMu <= 4 ? '#10b981' : crapMu <= 15 ? '#f59e0b' : '#ef4444';
+        ctx.fillStyle = dotColor;
+        ctx.beginPath();
+        ctx.arc(item.x + item.width - 20, py + 9, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (classes.length > 5) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '500 9px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillText(`+${classes.length - 5} more in Inspector ↗`, item.x + 14, item.y + 52 + 5 * 22 + 10);
       }
     }
 
@@ -594,10 +623,10 @@
 <!-- Canvas Container -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="relative flex-1 h-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none"
+  class="relative flex-1 h-full overflow-hidden bg-slate-950 cursor-grab active:cursor-grabbing select-none touch-none"
   bind:clientWidth={containerWidth}
   bind:clientHeight={containerHeight}
-  onmousedown={handleMouseDown}
+  onpointerdown={handleMouseDown}
   onwheel={handleWheel}
 >
   <!-- Floating Proposal Diff Banner -->
@@ -615,19 +644,10 @@
   {/if}
 
   <!-- View Controls -->
-  <div class="absolute bottom-12 left-6 z-20 flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-lg p-1 shadow-xl backdrop-blur">
-    <button
-      onclick={() => diagramStore.isCommandPaletteOpen = true}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors flex items-center gap-1.5 px-2"
-      title="Search (Cmd+K)"
-    >
-      <Search size={14} />
-      <span class="font-mono text-[10px] text-slate-400">Cmd+K</span>
-    </button>
-    <div class="h-3 w-px bg-slate-800"></div>
+  <div class="absolute {diagramStore.isTelemetryDrawerOpen ? 'bottom-60' : 'bottom-12'} left-6 right-6 sm:right-auto z-20 flex flex-wrap items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-lg p-1 shadow-xl backdrop-blur transition-all duration-300">
     <button
       onclick={() => diagramStore.zoom = Math.min(3.0, diagramStore.zoom * 1.1)}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      class="min-h-6 min-w-6 p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
       title="Zoom In (+)"
       aria-label="Zoom in"
     >
@@ -635,7 +655,7 @@
     </button>
     <button
       onclick={() => diagramStore.zoom = Math.max(0.2, diagramStore.zoom * 0.9)}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      class="min-h-6 min-w-6 p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
       title="Zoom Out (-)"
       aria-label="Zoom out"
     >
@@ -643,7 +663,7 @@
     </button>
     <button
       onclick={() => diagramStore.resetZoom()}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      class="min-h-6 min-w-6 p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
       title="Reset View (0)"
       aria-label="Reset zoom"
     >
@@ -651,7 +671,7 @@
     </button>
     <button
       onclick={() => diagramStore.resetLayout()}
-      class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+      class="min-h-6 min-w-6 p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors cursor-pointer"
       title="Reset Node Positions to Clean Architecture Rings"
       aria-label="Reset layout"
     >
@@ -669,7 +689,7 @@
     <!-- Multi-Select HUD Triage Chips -->
     <button
       onclick={() => diagramStore.toggleEdgeBundling()}
-      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+      class={`min-h-6 px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 cursor-pointer ${
         diagramStore.isEdgeBundlingEnabled
           ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30'
           : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
@@ -682,7 +702,7 @@
 
     <button
       onclick={() => diagramStore.toggleDeclutterFilter('HIDE_CONFORMING_EDGES')}
-      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+      class={`min-h-6 px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 cursor-pointer ${
         diagramStore.hasDeclutterFilter('HIDE_CONFORMING_EDGES')
           ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 hover:bg-rose-500/35 shadow-[0_0_12px_rgba(244,63,94,0.35)]'
           : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
@@ -695,7 +715,7 @@
 
     <button
       onclick={() => diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD')}
-      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+      class={`min-h-6 px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 cursor-pointer ${
         diagramStore.hasDeclutterFilter('ISOLATE_NEIGHBORHOOD')
           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
           : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
@@ -708,14 +728,14 @@
 
     <button
       onclick={() => diagramStore.toggleRenderEngineMode()}
-      class={`px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 ${
+      class={`min-h-6 px-2 py-1 rounded text-[10px] font-mono transition-all flex items-center gap-1 cursor-pointer ${
         diagramStore.isWebGlRendererActive
           ? 'bg-purple-500/25 text-purple-200 border border-purple-500/50 hover:bg-purple-500/35'
           : 'bg-slate-800/80 text-slate-400 hover:text-white border border-transparent'
       }`}
-      title="Cycle Canvas Renderer: Auto (WebGL >= 500 classes) / WebGL / SVG DOM (W)"
+      title="Cycle Canvas Renderer: Auto (Fast 2D Canvas >= 500 classes) / Fast 2D Canvas / SVG DOM (W)"
     >
-      <span>{diagramStore.isWebGlRendererActive ? 'WebGL 60fps' : `SVG (${diagramStore.renderEngineMode.toUpperCase()})`}</span>
+      <span>{diagramStore.isWebGlRendererActive ? 'Fast 2D Canvas' : `SVG (${diagramStore.renderEngineMode.toUpperCase()})`}</span>
       <span class="text-[9px] text-slate-400">W</span>
     </button>
   </div>
@@ -813,7 +833,7 @@
     <!-- Transformed Graph Group -->
     <g transform={`translate(${diagramStore.panX}, ${diagramStore.panY}) scale(${diagramStore.zoom})`}>
       <!-- Concentric Architecture Tier Lanes Backdrop (Culled to viewport & declutter filter) -->
-      {#if !diagramStore.hasDeclutterFilter('HIDE_TIER_LANES')}
+      {#if !diagramStore.hasDeclutterFilter('HIDE_TIER_LANES') && diagramStore.declutterMode !== 'NONE'}
         {#each sortedLevels as level, rowIdx}
           {@const y = 80 + rowIdx * (BOX_HEIGHT + GAP_Y) - 35}
           {@const height = BOX_HEIGHT + 70}

@@ -9,9 +9,9 @@ An engineering and product roadmap defining the chronological Semantic Versionin
 ```mermaid
 flowchart LR
     M1["<b>Milestone 1 — v0.1.1 (Shipped ✅)</b><br/>CI/CD Gates, MCP 2.0 & Governance<br/><i>Action, SARIF, Fitness, 10 MCP Tools</i>"]
-    M2["<b>Milestone 2 — v0.1.2 (Complete ✅)</b><br/>Closed-Loop Agent Autonomy<br/><i>Snapshots, Verify, Rollback & Intent</i>"]
+    M2["<b>Milestone 2 — v0.1.2 (Shipped ✅)</b><br/>Closed-Loop Agent Autonomy<br/><i>Snapshots, Verify, Rollback & Intent</i>"]
     M3["<b>Milestone 3 — v0.2.0 (Shipped ✅)</b><br/>Enterprise Monorepo & Cross-Lang AST<br/><i>Gradle/Cargo/Nx & UI-to-API Tracing</i>"]
-    M4["<b>Milestone 4 — v1.0.0 GA (Complete ✅)</b><br/>Production Scale & Ecosystem<br/><i>100k LoC WebGL, Native Binaries & Showcase</i>"]
+    M4["<b>Milestone 4 — v1.0.0 GA (Shipped ✅)</b><br/>Production Scale & Ecosystem<br/><i>100k LoC WebGL, Native Binaries & Showcase</i>"]
 
     M1 --> M2 --> M3 --> M4
 ```
@@ -23,9 +23,9 @@ flowchart LR
 | Release Target | Milestone Theme | Primary Persona & Outcome | Linked Epic & Specs | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **`v0.1.1`** *(Shipped)* | **Milestone 1: CI/CD Quality Gates, MCP 2.0 & Team Governance** | **DevOps & AI Pair Programmers**: Enforce Clean Architecture in GitHub Actions with inline SARIF annotations and 10-tool local/HTTP MCP parity. | [#165](https://github.com/fmatar/archlens/issues/165), [#200](https://github.com/fmatar/archlens/issues/200), `ADR-001`–`ADR-003` | **100% Complete** ✅ |
-| **`v0.1.2`** *(Complete)* | **Milestone 2: Closed-Loop Agent Autonomy & Guardrails** | **Software Architects**: Dispatch DIP/Sandbox refactorings with human intent notes, verify violation/cycle deltas + test suites in 1 click, and atomically revert bad agent edits. | [#164](https://github.com/fmatar/archlens/issues/164), `#1097`, `#1662`, `CAP-04` | **100% Complete** ✅ |
+| **`v0.1.2`** *(Shipped)* | **Milestone 2: Closed-Loop Agent Autonomy & Guardrails** | **Software Architects**: Dispatch DIP/Sandbox refactorings with human intent notes, verify violation/cycle deltas + test suites in 1 click, and atomically revert bad agent edits. | [#164](https://github.com/fmatar/archlens/issues/164), `#1097`, `#1662`, `CAP-04` | **100% Complete** ✅ |
 | **`v0.2.0`** *(Shipped)* | **Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability** | **Platform & Polyglot Teams**: Analyze multi-module Gradle, Cargo, and Nx/Turborepo workspaces and trace frontend `fetch()` calls directly to backend REST endpoints. | [#163](https://github.com/fmatar/archlens/issues/163), `#3001`, `CAP-01`, `CAP-02`, `CAP-03` | **100% Complete** ✅ |
-| **`v1.0.0 GA`** *(Complete)* | **Milestone 4: Production Hardening, 100k LoC Virtualization & Ecosystem** | **Enterprise & Open-Source Community**: Zero-install native binaries, 60fps canvas rendering on 100k+ LoC codebases, and an interactive `archlens.io` showcase. | [#166](https://github.com/fmatar/archlens/issues/166), `#4001` | **100% Complete** ✅ |
+| **`v1.0.0 GA`** *(Shipped)* | **Milestone 4: Production Hardening, 100k LoC Virtualization & Ecosystem** | **Enterprise & Open-Source Community**: Zero-install native binaries, 60fps canvas rendering on 100k+ LoC codebases, and an interactive `archlens.io` showcase. | [#166](https://github.com/fmatar/archlens/issues/166), `#4001` | **100% Complete** ✅ |
 
 ---
 
@@ -50,7 +50,7 @@ flowchart LR
 
 ---
 
-### 2. [Milestone 2: Closed-Loop Agent Autonomy & Guardrails (`v0.1.2` — Current ⚡)](https://github.com/fmatar/archlens/milestone/2)
+### 2. [Milestone 2: Closed-Loop Agent Autonomy & Guardrails (`v0.1.2` — Shipped ✅)](https://github.com/fmatar/archlens/milestone/2)
 *Focus: Elevating AI agent collaboration from one-off command dispatching into a verifiable, transactional pair-architect loop.*
 
 - **Linked Epic & Issues**: [#164 Epic: Transactional Worktree Rollbacks & Automated Mailbox Refactoring Verification](https://github.com/fmatar/archlens/issues/164), `#1097`
@@ -69,7 +69,7 @@ flowchart LR
 
 ---
 
-### 3. [Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability (`v0.2.0` — Complete ✅)](https://github.com/fmatar/archlens/milestone/1)
+### 3. [Milestone 3: Enterprise Monorepo & Cross-Language AST Scalability (`v0.2.0` — Shipped ✅)](https://github.com/fmatar/archlens/milestone/1)
 *Focus: Ensuring AST parsing scales seamlessly across polyglot enterprise monorepos, multi-build workspaces, and full-stack UI-to-API boundaries.*
 
 - **Linked Epic & Specs**: [#163 Epic: Enterprise Monorepos, Multi-Module Scanners & Cross-Lang AST Tracing](https://github.com/fmatar/archlens/issues/163), `#3001`, `CAP-01`, `CAP-02`, `CAP-03`
@@ -88,7 +88,7 @@ flowchart LR
 
 ---
 
-### 4. [Milestone 4: Production Hardening, Distribution & Ecosystem (`v1.0.0 GA` — Complete ✅)](https://github.com/fmatar/archlens/milestone/4)
+### 4. [Milestone 4: Production Hardening, Distribution & Ecosystem (`v1.0.0 GA` — Shipped ✅)](https://github.com/fmatar/archlens/milestone/4)
 *Focus: Community distribution, 100k+ LoC performance virtualization, native binaries, and an interactive public showcase.*
 
 - **Linked Epic**: [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166), `#4001`

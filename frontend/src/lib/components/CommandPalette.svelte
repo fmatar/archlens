@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import { Search, Box, Code2, Sparkles, FolderTree, RefreshCw, Eye, Maximize2, X, FolderOpen } from '@lucide/svelte';
   import type { ComponentNode, ClassNode } from '../types/diagram';
 
@@ -220,6 +221,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={dialogEl}
+      use:focusTrap
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -304,14 +306,14 @@
         {/each}
 
         {#if filteredItems.length === 0}
-          <div class="text-center py-8 text-slate-500 text-xs font-mono">
+          <div class="text-center py-8 text-slate-400 text-xs font-mono">
             No matches found for "{searchQuery}".
           </div>
         {/if}
       </div>
 
       <!-- Footer Quick Keys -->
-      <div class="px-3.5 py-2 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500 font-mono">
+      <div class="px-3.5 py-2 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400 font-mono">
         <div class="flex items-center gap-3">
           <span>&uarr;&darr; Navigate</span>
           <span>&crarr; Select</span>

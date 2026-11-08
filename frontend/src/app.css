@@ -6,6 +6,8 @@
   --color-border: #334155;
   --color-violation: #ef4444;
   --color-healthy: #22c55e;
+  --color-slate-750: #293548;
+  --color-slate-850: #162032;
 }
 
 :root {
@@ -16,7 +18,14 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  user-select: none;
+}
+
+/* Visible keyboard focus ring for interactive SVG groups, canvas, and controls */
+svg[tabindex="0"]:focus-visible,
+canvas:focus-visible,
+g[tabindex="0"]:focus-visible {
+  outline: 2px solid #38bdf8 !important;
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -24,7 +33,9 @@ body {
   .animate-pulse,
   .animate-spin,
   .animate-ping,
-  .animate-radar-scan {
+  .animate-radar-scan,
+  .animate-sonar-sweep,
+  .edge-badge-pulsing {
     animation: none !important;
   }
 

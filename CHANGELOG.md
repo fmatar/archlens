@@ -9,14 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-07
+## [1.0.0] - 2026-11-08
 
 ### Added
-- **Milestone 4 (`v1.0.0 GA`) — Cross-Platform GraalVM Native Binaries, Hybrid HTML5 Canvas/WebGL Renderer & Reference Showcase Presets** (`#4001`, [#166](https://github.com/fmatar/archlens/issues/166)):
+- **Milestone 4 (`v1.0.0 GA`) — Cross-Platform GraalVM Native Binaries, Hybrid HTML5 Canvas Renderer & Reference Showcase Presets** (`#4001`, [#166](https://github.com/fmatar/archlens/issues/166)):
   - Added `native-binaries` matrix job (`macos-arm64`, `linux-amd64`, `windows-amd64` via GraalVM 25 `-Pnative`) and optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry OCI publishing to `.github/workflows/release.yml`.
   - Extended `cli/src/docker-runner.js` with `findNativeBinary`, `startNativeBinary`, and `getPlatformBinarySuffix`, giving GraalVM native binaries first-priority startup in `ensureServerRunning` before JVM JAR or Docker fallbacks.
-  - Implemented Hybrid HTML5 `<canvas>` / WebGL high-density renderer in `Canvas.svelte` and `diagram.svelte.ts` (`WEBGL_CLASS_THRESHOLD = 500`, `isWebGlRendererActive`, `toggleRenderEngineMode` / shortcut `W`) for 60fps rendering on graphs with 500+ classes.
+  - Implemented Hybrid HTML5 `<canvas>` (`Fast 2D Canvas`) high-density renderer in `Canvas.svelte` and `diagram.svelte.ts` (`WEBGL_CLASS_THRESHOLD = 500`, `isWebGlRendererActive`, `toggleRenderEngineMode` / shortcut `W`) with class-pill hit-testing, CRAP dots, and overflow indicators for 60fps rendering on graphs with 500+ classes.
   - Added 3 interactive reference architecture showcase presets (`SHOWCASE_PRESETS` in `demoData.ts`: **Spring PetClinic Java 25**, **Quarkus Reactive Microservice**, and **RealWorld Conduit Full-Stack TS + FastAPI**) selectable from the top navbar project switcher (`App.svelte`).
+- **Impeccable UI/UX & WCAG 2.2 AA Accessibility Hardening**:
+  - Added reusable `use:focusTrap` Svelte action (`frontend/src/lib/utils/focusTrap.ts`) across all 8 modal dialogs (`MainSequenceModal`, `PolicyEditorModal`, `InvertDipModal`, `ClassCard`, `LlmPromptModal`, `SourceModal`, `OpenProjectModal`, `CommandPalette`) with stacked `Escape` dismissal isolation.
+  - Defined missing `--color-slate-750` (`#293548`) and `--color-slate-850` (`#162032`) Tailwind v4 `@theme` tokens in `frontend/src/app.css`, enabled text selection inside modals/inspector, and gated infinite GSAP/CSS animations behind `prefers-reduced-motion: reduce`.
+  - Added real Pitest/mutation health coloring (`getMutationColor(cls)`) and tooltips to `ComponentBox.svelte`, 2-step confirmation to `Revert Snapshot` in `AgentDrawer.svelte`, semantic HTML `<sub>` metric typography across `Inspector.svelte`, `SandboxToolbar.svelte`, and `MainSequenceModal.svelte`, and unified all 5 `DeclutterMode` states (`ALL`, `ELEMENTS`, `CLASSES`, `EDGES`, `NONE`) with `Inspector.svelte` toggles.
+  - Resolved bottom-left HUD and `SandboxToolbar` z-index/vertical overlap when `AgentDrawer` is expanded (`bottom-60` / `bottom-72`) and separated keyboard shortcuts `T` (`AgentDrawer`) and `R` (`Hide Tier Backdrops`).
 
 ## [0.2.0] - 2026-11-07
 

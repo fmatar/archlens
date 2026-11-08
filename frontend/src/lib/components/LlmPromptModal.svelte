@@ -1,6 +1,7 @@
 <script lang="ts">
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import { X, Copy, Check, Download, Bot, Sparkles } from '@lucide/svelte';
 
   let isOpen = $derived(diagramStore.isLlmPromptModalOpen);
@@ -103,6 +104,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={dialogEl}
+      use:focusTrap
       role="dialog"
       aria-modal="true"
       tabindex="-1"

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import { formatCrap, formatCoverage } from '../utils/colors';
   import { X, Code, ShieldAlert, Cpu, FlaskConical } from '@lucide/svelte';
 
@@ -70,7 +71,8 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && cls && !diagramStore.sourceFileModal) {
+      e.preventDefault();
       handleClose();
     }
   }
@@ -90,6 +92,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={dialogEl}
+      use:focusTrap
       role="dialog"
       aria-modal="true"
       tabindex="-1"

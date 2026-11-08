@@ -52,6 +52,7 @@
   });
 
   function handleGlobalKeydown(e: KeyboardEvent) {
+    if (e.defaultPrevented) return;
     const target = e.target as HTMLElement;
     const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
@@ -92,6 +93,9 @@
     } else if (e.key.toLowerCase() === 'f') {
       e.preventDefault();
       diagramStore.toggleDeclutterFilter('ISOLATE_NEIGHBORHOOD');
+    } else if (e.key.toLowerCase() === 'r') {
+      e.preventDefault();
+      diagramStore.toggleDeclutterFilter('HIDE_TIER_LANES');
     } else if (e.key.toLowerCase() === 'w') {
       e.preventDefault();
       diagramStore.toggleRenderEngineMode();
@@ -124,6 +128,16 @@
       e.preventDefault();
       diagramStore.zoom = Math.max(0.2, diagramStore.zoom * 0.85);
     } else if (e.key === 'Escape') {
+      if (
+        diagramStore.sourceFileModal ||
+        diagramStore.selectedClass ||
+        diagramStore.isCommandPaletteOpen ||
+        diagramStore.isOpenProjectModalOpen ||
+        diagramStore.isLlmPromptModalOpen ||
+        diagramStore.isDipModalOpen
+      ) {
+        return;
+      }
       if (diagramStore.isMainSequenceOpen) {
         diagramStore.closeMainSequence();
         return;
@@ -206,7 +220,7 @@
 
         <button
           onclick={() => diagramStore.isOpenProjectModalOpen = true}
-          class="p-1 rounded bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+          class="min-h-6 min-w-6 p-1.5 flex items-center justify-center rounded bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
           title="Open Project / Directory (⌘O)"
           aria-label="Open Project Folder"
         >

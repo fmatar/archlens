@@ -1,6 +1,7 @@
 <script lang="ts">
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
+  import { focusTrap } from '../utils/focusTrap';
   import { X, Copy, Check, Bot, Sparkles, AlertTriangle, ArrowRight, ShieldCheck, FileCode, CheckCircle2, Loader2 } from '@lucide/svelte';
 
   let isOpen = $derived(diagramStore.isDipModalOpen);
@@ -106,6 +107,7 @@
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       bind:this={dialogEl}
+      use:focusTrap
       onclick={(e) => e.stopPropagation()}
       role="dialog"
       tabindex="-1"

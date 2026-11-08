@@ -53,8 +53,8 @@ flowchart TD
     FileMailboxService_java["FileMailboxService.java (1 exports, I=1)"]
     AgentDrawer_svelte["AgentDrawer.svelte (1 exports, I=0.5)"]
     Canvas_svelte["Canvas.svelte (1 exports, I=0.88)"]
-    ClassCard_svelte["ClassCard.svelte (1 exports, I=0.67)"]
-    CommandPalette_svelte["CommandPalette.svelte (1 exports, I=0.67)"]
+    ClassCard_svelte["ClassCard.svelte (1 exports, I=0.75)"]
+    CommandPalette_svelte["CommandPalette.svelte (1 exports, I=0.75)"]
     ComponentBox_svelte["ComponentBox.svelte (1 exports, I=0.67)"]
     DependencyEdge_svelte["DependencyEdge.svelte (1 exports, I=0.67)"]
   end
@@ -201,6 +201,7 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/usecase/WorkspacePathResolver.java` | 247 | 3 / 0 | `0` | `WorkspacePathResolver` (L13), `isContainerEnvironment` (L21), `normalizeRoot` (L30), `isMacOs` (L99), `isProjectDirectory` (L107), `isIgnoredDirectory` (L123), `isSubProjectDirectory` (L141), `addDiscoveredProject` (L166) +2 more | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/state/diagram.svelte.ts` | 1401 | 18 / 3 | `0.14` | `DeclutterMode` (L30), `DiagramState` (L32), `diagramStore` (L1400) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `frontend/src/lib/utils/colors.ts` | 24 | 1 / 0 | `0` | `getHealthColor` (L5), `formatCrap` (L17), `formatCoverage` (L21) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/utils/focusTrap.ts` | 73 | 8 / 0 | `0` | `focusTrap` (L5) | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/utils/martinMetrics.ts` | 408 | 2 / 1 | `0.33` | `ComponentMetricsSummary` (L12), `calculateComponentMartinMetrics` (L23), `calculateAllMartinMetrics` (L105), `simulateSandboxGraph` (L122), `computeScatterCoordinates` (L343), `computeNodeRadius` (L360), `buildScatterPlotPoints` (L368) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Robert-C-Martin-Metrics.md` |
 
 ### 🏛️ Ring 2: Adapters & Enforcement
@@ -213,23 +214,23 @@ flowchart TD
 | `.agent/scripts/lib/quality-gate.mjs` | 1710 | 2 / 8 | `0.8` | `runDoctor` (L14), `generateRegressionProof` (L112), `monitorCanaryHealthAndWatchdog` (L273), `installCIWorkflow` (L386), `exportAgentRules` (L450), `scaffoldReproductionTest` (L467), `assessRisk` (L585), `generatePRSummary` (L659) +18 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/workbench-server.mjs` | 2667 | 2 / 7 | `0.78` | `parseKanbanMarkdown` (L63), `parseArchTraceMarkdown` (L144), `buildArchDiffPayload` (L178), `generateArchitectureWidget` (L255), `renderWorkbenchHTML` (L853), `ensureWorkbenchRunning` (L2428), `createWorkbenchServer` (L2466) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `backend/src/main/java/io/slixes/archlens/mailbox/fs/FileMailboxService.java` | 124 | 0 / 2 | `1` | `FileMailboxService` (L21) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
-| `frontend/src/lib/components/AgentDrawer.svelte` | 192 | 1 / 1 | `0.5` | `AgentDrawer` (L1) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
-| `frontend/src/lib/components/Canvas.svelte` | 965 | 1 / 7 | `0.88` | `RenderableEdge` (L95) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
-| `frontend/src/lib/components/ClassCard.svelte` | 222 | 1 / 2 | `0.67` | `ClassCard` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/CommandPalette.svelte` | 352 | 1 / 2 | `0.67` | `PaletteItem` (L16) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/ComponentBox.svelte` | 487 | 1 / 2 | `0.67` | `Props` (L5) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/DependencyEdge.svelte` | 310 | 1 / 2 | `0.67` | `Props` (L7) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/AgentDrawer.svelte` | 234 | 1 / 1 | `0.5` | `AgentDrawer` (L1) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
+| `frontend/src/lib/components/Canvas.svelte` | 985 | 1 / 7 | `0.88` | `RenderableEdge` (L95) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `frontend/src/lib/components/ClassCard.svelte` | 225 | 1 / 3 | `0.75` | `ClassCard` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/CommandPalette.svelte` | 354 | 1 / 3 | `0.75` | `PaletteItem` (L17) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/ComponentBox.svelte` | 504 | 1 / 2 | `0.67` | `Props` (L5) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/DependencyEdge.svelte` | 343 | 1 / 2 | `0.67` | `Props` (L7) | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/components/EdgeTooltip.svelte` | 128 | 1 / 1 | `0.5` | `EdgeTooltip` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/GitVersionComparator.svelte` | 235 | 1 / 1 | `0.5` | `GitVersionComparator` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/Inspector.svelte` | 659 | 1 / 3 | `0.75` | `Inspector` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/InvertDipModal.svelte` | 351 | 1 / 1 | `0.5` | `InvertDipModal` (L1) | `wiki/ADR-001-Surgical-DIP-Inverter.md`, `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
-| `frontend/src/lib/components/LlmPromptModal.svelte` | 201 | 1 / 1 | `0.5` | `LlmPromptModal` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/MainSequenceModal.svelte` | 803 | 1 / 2 | `0.67` | `MainSequenceModal` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/OpenProjectModal.svelte` | 636 | 1 / 1 | `0.5` | `Breadcrumb` (L22), `QuickNav` (L27), `DirectoryEntry` (L33), `FsDirectoryResponse` (L41) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/PolicyEditorModal.svelte` | 565 | 1 / 2 | `0.67` | `PolicyEditorModal` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/GitVersionComparator.svelte` | 236 | 1 / 1 | `0.5` | `GitVersionComparator` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/Inspector.svelte` | 662 | 1 / 3 | `0.75` | `Inspector` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/InvertDipModal.svelte` | 353 | 1 / 2 | `0.67` | `InvertDipModal` (L1) | `wiki/ADR-001-Surgical-DIP-Inverter.md`, `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
+| `frontend/src/lib/components/LlmPromptModal.svelte` | 203 | 1 / 2 | `0.67` | `LlmPromptModal` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/MainSequenceModal.svelte` | 805 | 1 / 3 | `0.75` | `MainSequenceModal` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/OpenProjectModal.svelte` | 638 | 1 / 2 | `0.67` | `Breadcrumb` (L23), `QuickNav` (L28), `DirectoryEntry` (L34), `FsDirectoryResponse` (L42) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/PolicyEditorModal.svelte` | 570 | 1 / 3 | `0.75` | `PolicyEditorModal` (L1) | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/components/ProposalDiffBanner.svelte` | 55 | 1 / 1 | `0.5` | `ProposalDiffBanner` (L1) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/components/SandboxToolbar.svelte` | 272 | 1 / 1 | `0.5` | `SandboxToolbar` (L1) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md`, `wiki/Traceability.md` |
-| `frontend/src/lib/components/SourceModal.svelte` | 232 | 1 / 1 | `0.5` | `SourceModal` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/lib/components/SandboxToolbar.svelte` | 273 | 1 / 1 | `0.5` | `SandboxToolbar` (L1) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md`, `wiki/Traceability.md` |
+| `frontend/src/lib/components/SourceModal.svelte` | 236 | 1 / 2 | `0.67` | `SourceModal` (L1) | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/data/demoData.ts` | 870 | 1 / 1 | `0.5` | `DEMO_POLICY` (L3), `DEMO_GRAPH_REAL` (L38), `DEMO_GRAPH_PROPOSAL` (L286), `ShowcasePreset` (L332), `SHOWCASE_PRESETS` (L341) | `wiki/Codebase-Map.md` |
 | `cli/src/analyzer.js` | 851 | 4 / 1 | `0.2` | `detectProjectLanguage` (L12), `discoverWorkspaceModules` (L124), `detectSourceRoot` (L241), `findCommonPackagePrefix` (L321), `discoverSubpackages` (L416), `classifyLayers` (L452), `parseImportLinterConfig` (L506), `generatePolicy` (L575) +2 more | `wiki/Codebase-Map.md` |
 | `cli/src/checker.js` | 1253 | 3 / 0 | `0` | `loadProjectPolicy` (L49), `TECHNICAL_MARKERS` (L70), `calculateScreamingMetric` (L105), `TECHNICAL_SUFFIXES` (L159), `TECHNICAL_PREFIXES` (L195), `extractFeatureToken` (L206), `suggestFeatureClusters` (L232), `extractTsJsStatements` (L461) +7 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
@@ -254,7 +255,7 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/VersionResource.java` | 60 | 0 / 0 | `0` | `VersionResource` (L22) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/WorkspacePathResolver.java` | 55 | 0 / 0 | `0` | `WorkspacePathResolver` (L15), `isContainerEnvironment` (L24), `normalizeRoot` (L28), `isMacOs` (L32), `isIgnoredDirectory` (L36), `isProjectDirectory` (L40), `scanDirectoryForProjects` (L44) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java` | 355 | 0 / 19 | `1` | `ArchlensMcpService` (L45), `inspectArchitecture` (L98), `exportLlmDossier` (L112), `getSnapshot` (L146), `synthesizeDipInversion` (L162), `evaluateFitness` (L186), `getFitnessHistory` (L206), `proposeScreamingMigration` (L218) +7 more | `wiki/Codebase-Map.md` |
-| `frontend/src/App.svelte` | 389 | 1 / 14 | `0.93` | `App` (L1) | `wiki/Codebase-Map.md` |
+| `frontend/src/App.svelte` | 403 | 1 / 14 | `0.93` | `App` (L1) | `wiki/Codebase-Map.md` |
 | `frontend/src/main.ts` | 10 | 0 / 2 | `1` |  | `wiki/Codebase-Map.md` |
 | `cli/bin/index.js` | 712 | 0 / 9 | `1` |  | `wiki/Codebase-Map.md` |
 

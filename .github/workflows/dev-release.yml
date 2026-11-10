@@ -60,6 +60,7 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           setup-java: 'false'
+          setup-maven: 'false'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Run CLI Tests

@@ -118,7 +118,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Set up GraalVM / Mandrel 25 & Node Toolchain
+      - name: Set up Node & Maven Toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          setup-java: 'false'
+          setup-maven: 'true'
+          cache-pnpm: 'true'
+
+      - name: Set up GraalVM / Mandrel 25
         uses: graalvm/setup-graalvm@v1
         with:
           java-version: '25'
@@ -126,20 +133,28 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
-      - name: Set up Node & Maven Toolchain
-        uses: ./.github/actions/setup-toolchain
-        with:
-          setup-java: 'false'
-          cache-pnpm: 'true'
+      - name: Ensure Native C Toolchain (gcc & zlib)
+        shell: bash
+        run: |
+          if ! command -v gcc >/dev/null 2>&1 || [ ! -f /usr/include/zlib.h ]; then
+            if command -v sudo >/dev/null 2>&1; then
+              sudo apt-get update -qq && sudo apt-get install -y -qq build-essential zlib1g-dev || true
+            elif [ "$(id -u)" = "0" ]; then
+              apt-get update -qq && apt-get install -y -qq build-essential zlib1g-dev || true
+            fi
+          fi
 
       - name: Build GraalVM Native Executable (linux-amd64)
         shell: bash
         run: |
           mvn -B -ntp package -Pnative -DskipTests
           RUNNER_BIN=$(find backend/target -maxdepth 2 -type f -name "*-runner" 2>/dev/null | head -n 1 || true)
-          if [ -n "$RUNNER_BIN" ]; then
-            cp "$RUNNER_BIN" "backend/target/archlens-linux-amd64"
+          if [ -z "$RUNNER_BIN" ]; then
+            echo "::error::Native runner binary was not produced in backend/target"
+            exit 1
           fi
+          cp "$RUNNER_BIN" "backend/target/archlens-linux-amd64"
+          chmod +x "backend/target/archlens-linux-amd64"
 
       - name: Attach Native Binary to GitHub Release
         uses: softprops/action-gh-release@v3
@@ -159,6 +174,7 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           setup-java: 'false'
+          setup-maven: 'false'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Run CLI Tests

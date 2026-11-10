@@ -64,6 +64,15 @@ runs:
         node-version: 'lts/*'
         registry-url: ${{ inputs.registry-url }}
 
+    - name: Ensure pnpm is Installed
+      if: inputs.setup-node == 'true'
+      shell: bash
+      run: |
+        if ! command -v pnpm >/dev/null 2>&1; then
+          npm install -g pnpm
+        fi
+        echo "Using pnpm $(pnpm --version)"
+
     - name: Cache Toolchain & PNPM Store
       if: inputs.cache-pnpm == 'true'
       uses: actions/cache@v4

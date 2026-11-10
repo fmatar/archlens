@@ -57,6 +57,11 @@
         <Package name="io.slixes.archlens.domain.dossier"/>
         <Bug pattern="IMPROPER_UNICODE"/>
     </Match>
+    <!-- MermaidDiagramGenerator emits plain-text Mermaid syntax (e.g. <<interface>> stereotypes), not XML -->
+    <Match>
+        <Class name="io.slixes.archlens.domain.dossier.MermaidDiagramGenerator"/>
+        <Bug pattern="POTENTIAL_XML_INJECTION"/>
+    </Match>
     <Match>
         <Package name="io.slixes.archlens.usecase"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>

@@ -14,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag name (e.g. v0.1.1)'
+        description: 'Release tag name (e.g. v1.1.0)'
         required: false
-        default: 'v0.1.1'
+        default: 'v1.1.0'
 
 permissions:
   contents: write
@@ -111,22 +111,9 @@ jobs:
             media/archlens-teaser.mp4
 
   native-binaries:
-    name: Build Cross-Platform GraalVM Native Binaries (${{ matrix.target }})
+    name: Build GraalVM Native Binary (linux-amd64)
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: macos-arm64
-            os: macos-15
-            artifact: archlens-macos-arm64
-          - target: linux-amd64
-            os: ubuntu-latest
-            artifact: archlens-linux-amd64
-          - target: windows-amd64
-            os: windows-latest
-            artifact: archlens-windows-amd64.exe
+    runs-on: local-archlens
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -145,13 +132,13 @@ jobs:
           setup-java: 'false'
           cache-pnpm: 'true'
 
-      - name: Build GraalVM Native Executable (${{ matrix.target }})
+      - name: Build GraalVM Native Executable (linux-amd64)
         shell: bash
         run: |
           mvn -B -ntp package -Pnative -DskipTests
-          RUNNER_BIN=$(ls backend/target/*-runner backend/target/*-runner.exe 2>/dev/null | head -n 1)
+          RUNNER_BIN=$(find backend/target -maxdepth 2 -type f -name "*-runner" 2>/dev/null | head -n 1 || true)
           if [ -n "$RUNNER_BIN" ]; then
-            cp "$RUNNER_BIN" "backend/target/${{ matrix.artifact }}"
+            cp "$RUNNER_BIN" "backend/target/archlens-linux-amd64"
           fi
 
       - name: Attach Native Binary to GitHub Release
@@ -159,7 +146,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: backend/target/${{ matrix.artifact }}
+          files: backend/target/archlens-linux-amd64
 
   npm-release:
     name: Test and Publish NPM CLI Package

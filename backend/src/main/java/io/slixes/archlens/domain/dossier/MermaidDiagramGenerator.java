@@ -332,7 +332,7 @@ public class MermaidDiagramGenerator {
       if (fromAlias == null || toAlias == null || fromAlias.equals(toAlias)) continue;
       String arrow = relationArrow(edge.kind());
       String label =
-          edge.isViolating() ? "VIOLATION" : (edge.label() != null ? edge.label() : "uses");
+          edge.isViolating() ? "VIOLATION" : edge.label() != null ? edge.label() : "uses";
       sb.append("  ")
           .append(fromAlias)
           .append(" ")

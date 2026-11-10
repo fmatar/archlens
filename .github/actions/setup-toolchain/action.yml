@@ -63,7 +63,7 @@ runs:
           fi
         fi
         echo "${MAVEN_DIR}/bin" >> "$GITHUB_PATH"
-        echo "MAVEN_OPTS=-XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Djdk.xml.maxGeneralEntitySizeLimit=0 -Djdk.xml.totalEntitySizeLimit=0" >> "$GITHUB_ENV"
+        echo "MAVEN_OPTS=-Xmx1536m -Djdk.xml.maxGeneralEntitySizeLimit=0 -Djdk.xml.totalEntitySizeLimit=0" >> "$GITHUB_ENV"
         echo "Using Apache Maven ${MAVEN_VER} at ${MAVEN_DIR}/bin/mvn"
 
     - name: Set up Java 25

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-10
+
+### Added
+- **Multi-Format Architecture Diagram Export — Mermaid (`.mmd`/`md`), Standalone Vector SVG (`.svg`) & High-DPI Retina PNG (`2x` `.png`)** (`#4772`):
+  - **Ring L0 (`domain.dossier`)**: Added `DiagramExportType` (`COMPONENT_RINGS`, `CLASS_UML`, `DIP_REFACTOR`) and pure `MermaidDiagramGenerator` producing deterministic concentric ring `flowchart TB` subgraphs with crimson `linkStyle` violations, native `classDiagram` UML with stereotypes/fields/methods (honoring Violation X-Ray and 1-Hop Focus), and side-by-side Before/After DIP port-inversion diagrams.
+  - **Ring L1 (`usecase`)**: Added `ExportDiagramUseCase` and enhanced `SyncAdrUseCase` to automatically embed Before vs. After DIP Mermaid diagrams into generated `docs/adr/000X-*.md` records.
+  - **Ring L3 (`delivery.rest`, `mcp`, `cli`)**: Added `GET /api/diagram/export` and `GET /api/graph/export` on `DiagramResource`, `exportArchitectureDiagram` on `ArchlensMcpService`, and headless `archlens check --format mermaid` (`mmd`) via `generateMermaidReport` in `cli/src/checker.js`.
+  - **Svelte 5 Workbench (`frontend`)**: Added `diagramExporter.ts` (client-side Mermaid synthesis, standalone `<svg>` serializer with Auto-Fit Full Graph vs. Current Viewport framing, Dark Slate `#020617` vs. Transparent background toggle, and Architecture Health Legend Footer, plus `2x` Retina `<canvas>` PNG rasterizer) and `ExportDiagramModal.svelte` triggered via top header button, shortcut `E`, `CommandPalette.svelte`, and `InvertDipModal.svelte`.
+
 ## [1.0.0] - 2026-11-08
 
 ### Added

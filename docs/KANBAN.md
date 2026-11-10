@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-08 05:18:34 UTC`
+> **Last Synced**: `2026-11-10 06:10:35 UTC`
 
 ---
 
@@ -13,7 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
-|  |  |  | #4772: [FEAT] feat: Add multi-format Architecture Diagram Export (Mermaid, SVG, PNG) |  |
+|  |  |  |  | #4772: [FEAT] feat: Add multi-format Architecture Diagram Export (Mermaid, SVG, PNG) |
 |  |  |  |  | #7896: [FEAT] feat: milestone-3-monorepo-cross-lang-and-ast-idioms |
 |  |  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |
 |  |  |  |  | #1097: [FEAT] feat(mailbox): closed-loop-refactor-verification-and-rollback `[Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v0.1.2)]` |

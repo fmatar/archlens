@@ -316,6 +316,19 @@ class DiagramState {
   llmPromptDossier = $state<string>('');
   isLoadingLlmPrompt = $state<boolean>(false);
 
+  // Architecture Diagram Export Modal (Mermaid / SVG / PNG)
+  isExportModalOpen = $state<boolean>(false);
+  exportInitialDiagramType = $state<'COMPONENT_RINGS' | 'CLASS_UML' | 'DIP_REFACTOR'>('COMPONENT_RINGS');
+
+  openExportModal(initialType: 'COMPONENT_RINGS' | 'CLASS_UML' | 'DIP_REFACTOR' = 'COMPONENT_RINGS') {
+    this.exportInitialDiagramType = initialType;
+    this.isExportModalOpen = true;
+  }
+
+  closeExportModal() {
+    this.isExportModalOpen = false;
+  }
+
   async openLlmPromptModal() {
     this.isLlmPromptModalOpen = true;
     await this.fetchLlmDossier();

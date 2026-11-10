@@ -20,7 +20,12 @@ import {
 import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
-import { checkArchitecture, generateSarifReport, generateJsonReport } from '../src/checker.js';
+import {
+  checkArchitecture,
+  generateSarifReport,
+  generateJsonReport,
+  generateMermaidReport
+} from '../src/checker.js';
 import { installMcpConfigs } from '../src/mcp-registry.js';
 import { startMcpStdioServer } from '../src/mcp-server.js';
 import { executeStart, DEFAULT_CONTAINER_NAME, DEFAULT_SERVER_URL } from '../src/docker-runner.js';
@@ -506,6 +511,8 @@ async function main() {
         formattedOutput = generateSarifReport(report, { version: getPackageVersion() });
       } else if (options.format === 'json') {
         formattedOutput = generateJsonReport(report);
+      } else if (options.format === 'mermaid' || options.format === 'mmd') {
+        formattedOutput = generateMermaidReport(report, options);
       }
 
       if (options.output) {
@@ -520,7 +527,12 @@ async function main() {
         }
       }
 
-      if (options.format === 'sarif' || options.format === 'json') {
+      if (
+        options.format === 'sarif' ||
+        options.format === 'json' ||
+        options.format === 'mermaid' ||
+        options.format === 'mmd'
+      ) {
         if (!options.output) {
           process.stdout.write(formattedOutput + '\n');
         }

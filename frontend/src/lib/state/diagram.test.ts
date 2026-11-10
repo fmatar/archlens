@@ -149,6 +149,12 @@ describe('diagramStore state management', () => {
       await diagramStore.openLlmPromptModal();
       expect(diagramStore.isLlmPromptModalOpen).toBe(true);
       expect(diagramStore.llmPromptDossier).toContain('# Clean Architecture Optimization Dossier');
+
+      diagramStore.openExportModal('DIP_REFACTOR');
+      expect(diagramStore.isExportModalOpen).toBe(true);
+      expect(diagramStore.exportInitialDiagramType).toBe('DIP_REFACTOR');
+      diagramStore.closeExportModal();
+      expect(diagramStore.isExportModalOpen).toBe(false);
     } finally {
       globalThis.fetch = originalFetch;
     }

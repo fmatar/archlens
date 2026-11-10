@@ -12,6 +12,7 @@ import io.quarkiverse.mcp.server.ToolArg;
 import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
 import io.slixes.archlens.domain.dossier.DipInversionSynthesizer;
+import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
 import io.slixes.archlens.domain.fitness.ArchitectureFitnessCalculator;
 import io.slixes.archlens.domain.fitness.FitnessEvaluation;
 import io.slixes.archlens.domain.fitness.FitnessHistoryTrend;
@@ -21,6 +22,7 @@ import io.slixes.archlens.domain.screaming.ScreamingMigrationAssistant;
 import io.slixes.archlens.domain.screaming.ScreamingMigrationProposal;
 import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.usecase.EvaluateFitnessUseCase;
+import io.slixes.archlens.usecase.ExportDiagramUseCase;
 import io.slixes.archlens.usecase.ExportDossierUseCase;
 import io.slixes.archlens.usecase.GetFitnessHistoryUseCase;
 import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
@@ -48,6 +50,8 @@ public class ArchlensMcpService {
 
   @Inject ExportDossierUseCase exportDossierUseCase;
 
+  @Inject ExportDiagramUseCase exportDiagramUseCase;
+
   @Inject ManageSnapshotsUseCase manageSnapshotsUseCase;
 
   @Inject SynthesizeDipInversionUseCase synthesizeDipUseCase;
@@ -69,6 +73,8 @@ public class ArchlensMcpService {
     this.objectMapper = new ObjectMapper();
     this.exportDossierUseCase =
         new ExportDossierUseCase(architectureCompiler, new ArchitecturalDossierGenerator());
+    this.exportDiagramUseCase =
+        new ExportDiagramUseCase(architectureCompiler, new MermaidDiagramGenerator());
     this.manageSnapshotsUseCase =
         new ManageSnapshotsUseCase(architectureCompiler, this.objectMapper);
     this.synthesizeDipUseCase =
@@ -124,6 +130,24 @@ public class ArchlensMcpService {
     String normalizedProposal = proposalId == null || proposalId.isBlank() ? null : proposalId;
     return exportDossierUseCase.execute(
         WorkspacePathResolver.normalizeRoot(projectRoot), normalizedProposal);
+  }
+
+  public String exportArchitectureDiagram(
+      String projectRoot, String diagramType, String proposalId, boolean violationsOnly)
+      throws IOException {
+    String normalizedProposal = proposalId == null || proposalId.isBlank() ? null : proposalId;
+    if (exportDiagramUseCase == null) {
+      exportDiagramUseCase =
+          new ExportDiagramUseCase(architectureCompiler, new MermaidDiagramGenerator());
+    }
+    return exportDiagramUseCase.execute(
+        WorkspacePathResolver.normalizeRoot(projectRoot),
+        normalizedProposal,
+        diagramType,
+        null,
+        violationsOnly,
+        null,
+        null);
   }
 
   @Tool(

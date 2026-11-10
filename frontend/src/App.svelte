@@ -14,7 +14,8 @@
   import MainSequenceModal from './lib/components/MainSequenceModal.svelte';
   import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
   import PolicyEditorModal from './lib/components/PolicyEditorModal.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio, Megaphone } from '@lucide/svelte';
+  import ExportDiagramModal from './lib/components/ExportDiagramModal.svelte';
+  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio, Megaphone, Share2 } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -105,6 +106,9 @@
     } else if (e.key.toLowerCase() === 'l') {
       e.preventDefault();
       diagramStore.openLlmPromptModal();
+    } else if (e.key.toLowerCase() === 'e') {
+      e.preventDefault();
+      diagramStore.openExportModal();
     } else if (e.key.toLowerCase() === 's') {
       e.preventDefault();
       diagramStore.toggleSandbox();
@@ -134,6 +138,7 @@
         diagramStore.isCommandPaletteOpen ||
         diagramStore.isOpenProjectModalOpen ||
         diagramStore.isLlmPromptModalOpen ||
+        diagramStore.isExportModalOpen ||
         diagramStore.isDipModalOpen
       ) {
         return;
@@ -316,6 +321,20 @@
           L
         </kbd>
       </button>
+
+      <!-- Export Architecture Diagram (Mermaid / SVG / PNG) -->
+      <button
+        onclick={() => diagramStore.openExportModal()}
+        class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-colors cursor-pointer border bg-emerald-950/50 hover:bg-emerald-900/80 border-emerald-700/60 text-emerald-200 hover:text-white"
+        title="Export Architecture Diagram as Mermaid, SVG, or 2x Retina PNG (E)"
+        aria-label="Export Architecture Diagram (E)"
+      >
+        <Share2 size={13} class="text-emerald-400" />
+        <span class="text-[11px] font-medium hidden xl:inline">Export</span>
+        <kbd class="px-1.5 py-0.5 rounded bg-slate-950 border border-slate-700 text-[9px] font-mono text-slate-400">
+          E
+        </kbd>
+      </button>
     </div>
 
     <!-- 3. Right: Live Health Badges & SSE Status -->
@@ -399,4 +418,5 @@
   <SandboxToolbar />
   <MainSequenceModal />
   <PolicyEditorModal />
+  <ExportDiagramModal />
 </div>

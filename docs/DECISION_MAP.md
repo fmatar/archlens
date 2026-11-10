@@ -35,6 +35,7 @@ flowchart TD
   _1662["Ticket #1662 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
   _3001["Ticket #3001 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
   _4001["Ticket #4001 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
+  _4772["Ticket #4772 (feature/issue-#4772-add-multi-format-architecture-diagram-ex)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
   CAP_03 -->|specified_by| SPEC_03

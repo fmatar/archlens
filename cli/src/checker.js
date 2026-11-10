@@ -920,8 +920,10 @@ export async function checkArchitecture(projectRoot, options = {}) {
                 const baseName = path.basename(file, path.extname(file));
                 violations.push({
                   fromFile: relPath,
+                  fromPkg: filePackage || `L${fileLevel}`,
                   fromTier: tierNames[fileLevel] || `Level ${fileLevel}`,
                   toImport: imported,
+                  toPkg: targetPkg,
                   toTier: tierNames[targetLvl] || `Level ${targetLvl}`,
                   portName: `${baseName}Port`,
                   line
@@ -977,9 +979,18 @@ export async function checkArchitecture(projectRoot, options = {}) {
     ? suggestFeatureClusters(allKnownPackages, sourceFiles)
     : null;
 
+  const serializedEdges = [];
+  for (const [fromPkg, targets] of packageEdges.entries()) {
+    for (const toPkg of targets) {
+      serializedEdges.push({ from: fromPkg, to: toPkg });
+    }
+  }
+
   return {
     passed,
     projectTitle: policy.title || path.basename(root),
+    levels: policy.levels || [],
+    edges: serializedEdges,
     sourceFilesCount: sourceFiles.length,
     packagesCount: (policy.order || []).length,
     violationsCount: violations.length,
@@ -1249,4 +1260,111 @@ export function generateSarifReport(report, options = {}) {
  */
 export function generateJsonReport(report) {
   return JSON.stringify(report, null, 2);
+}
+
+const MERMAID_RING_TITLES = [
+  'Ring L0: Domain Core',
+  'Ring L1: Application',
+  'Ring L2: Adapters',
+  'Ring L3: Infrastructure'
+];
+
+function sanitizeMermaidId(raw) {
+  return String(raw || 'node').replace(/[^a-zA-Z0-9_]/g, '_');
+}
+
+function escapeMermaidLabel(raw) {
+  return String(raw || '').replace(/"/g, "'").replace(/\n/g, ' ');
+}
+
+/**
+ * Generate Mermaid flowchart TB diagram representing Concentric Rings or DIP Refactoring topology.
+ */
+export function generateMermaidReport(report, options = {}) {
+  if (!report) {
+    return 'flowchart TB\n  Empty["No Architecture Report Available"]\n';
+  }
+  const diagramType = String(options.diagramType || 'COMPONENT_RINGS').toUpperCase();
+  const violations = report.violations || [];
+
+  if (diagramType.includes('DIP')) {
+    const v = violations[0] || {};
+    const srcName = v.fromFile ? path.basename(v.fromFile, path.extname(v.fromFile)) : 'InnerDomainService';
+    const tgtName = v.toImport ? v.toImport.split('.').pop() : 'OuterAdapter';
+    const portName = v.portName || `${tgtName}Port`;
+    return [
+      'flowchart TB',
+      '  subgraph Before["❌ Before: Outward Dependency Violation"]',
+      '    direction TB',
+      `    B_Src["${escapeMermaidLabel(srcName)}"] -->|"❌ Violates Dependency Rule"| B_Tgt["${escapeMermaidLabel(tgtName)}"]`,
+      '  end',
+      '  subgraph After["✅ After: DIP Port Inversion"]',
+      '    direction TB',
+      `    A_Src["${escapeMermaidLabel(srcName)}"] -->|"depends on"| A_Port["<<interface>> ${escapeMermaidLabel(portName)}"]`,
+      `    A_Tgt["${escapeMermaidLabel(tgtName)}"] -.->|"implements"| A_Port`,
+      '  end',
+      '  linkStyle 0 stroke:#ef4444,stroke-width:2.5px,color:#fca5a5',
+      '  linkStyle 1 stroke:#10b981,stroke-width:2px,color:#6ee7b7',
+      '  linkStyle 2 stroke:#10b981,stroke-width:2px,color:#6ee7b7',
+      ''
+    ].join('\n');
+  }
+
+  const levels = Array.isArray(report.levels) && report.levels.length > 0
+    ? report.levels
+    : [['domain'], ['application'], ['adapters'], ['infrastructure']];
+
+  const lines = ['flowchart TB'];
+  levels.forEach((pkgs, lvlIdx) => {
+    if (!Array.isArray(pkgs) || pkgs.length === 0) return;
+    const title = MERMAID_RING_TITLES[lvlIdx] || `Ring L${lvlIdx}`;
+    lines.push(`  subgraph Ring_L${lvlIdx}["${title}"]`);
+    for (const pkg of pkgs) {
+      lines.push(`    ${sanitizeMermaidId('comp_' + pkg)}["${escapeMermaidLabel(pkg)}"]`);
+    }
+    lines.push('  end');
+  });
+
+  const bundledViolations = new Map();
+  for (const v of violations) {
+    const fromPkg = v.fromPkg || v.fromTier || 'inner';
+    const toPkg = v.toPkg || v.toTier || 'outer';
+    const key = `${fromPkg}->${toPkg}`;
+    bundledViolations.set(key, (bundledViolations.get(key) || 0) + 1);
+  }
+
+  let edgeIdx = 0;
+  const violationEdgeIndices = [];
+  const conformingEdgeIndices = [];
+  const emittedPairs = new Set();
+
+  for (const [key, count] of bundledViolations.entries()) {
+    const [fromPkg, toPkg] = key.split('->');
+    const fromId = sanitizeMermaidId('comp_' + fromPkg);
+    const toId = sanitizeMermaidId('comp_' + toPkg);
+    lines.push(`  ${fromId} -->|"❌ VIOLATION (${count})"| ${toId}`);
+    emittedPairs.add(key);
+    violationEdgeIndices.push(edgeIdx++);
+  }
+
+  if (Array.isArray(report.edges)) {
+    for (const edge of report.edges) {
+      const key = `${edge.from}->${edge.to}`;
+      if (emittedPairs.has(key)) continue;
+      emittedPairs.add(key);
+      const fromId = sanitizeMermaidId('comp_' + edge.from);
+      const toId = sanitizeMermaidId('comp_' + edge.to);
+      lines.push(`  ${fromId} --> ${toId}`);
+      conformingEdgeIndices.push(edgeIdx++);
+    }
+  }
+
+  for (const idx of violationEdgeIndices) {
+    lines.push(`  linkStyle ${idx} stroke:#ef4444,stroke-width:2.5px,color:#fca5a5`);
+  }
+  for (const idx of conformingEdgeIndices) {
+    lines.push(`  linkStyle ${idx} stroke:#64748b,stroke-width:1.5px`);
+  }
+
+  return lines.join('\n') + '\n';
 }

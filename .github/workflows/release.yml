@@ -14,9 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag name (e.g. v0.1.1)'
+        description: 'Release tag name (e.g. v1.1.0)'
         required: false
-        default: 'v0.1.1'
+        default: 'v1.1.0'
 
 permissions:
   contents: write
@@ -25,7 +25,7 @@ permissions:
 
 concurrency:
   group: release-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   docker-release:
@@ -94,12 +94,31 @@ jobs:
             -Dquarkus.container-image.tag="${PRIMARY_TAG}" \
             -Dquarkus.container-image.additional-tags="${EXTRA_TAGS}"
 
+      - name: Extract Release Notes from CHANGELOG.md
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Deterministic notes from the matching "## [x.y.z]" CHANGELOG section, so
+          # workflow re-runs overwrite the body instead of appending duplicate notes.
+          awk -v ver="$VERSION" '
+            $0 ~ "^## \\[" ver "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::No CHANGELOG.md section for ${VERSION}; using a compare link only."
+          fi
+          printf '\n**Full Changelog**: [CHANGELOG.md](https://github.com/%s/blob/%s/CHANGELOG.md)\n' "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME" >> release-notes.md
+          cat release-notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: Archlens Release ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: release-notes.md
+          append_body: false
+          generate_release_notes: false
           draft: false
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'Alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'Beta') || contains(github.ref_name, 'rc') }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -111,27 +130,22 @@ jobs:
             media/archlens-teaser.mp4
 
   native-binaries:
-    name: Build Cross-Platform GraalVM Native Binaries (${{ matrix.target }})
+    name: Build GraalVM Native Binary (linux-amd64)
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: macos-arm64
-            os: macos-15
-            artifact: archlens-macos-arm64
-          - target: linux-amd64
-            os: ubuntu-latest
-            artifact: archlens-linux-amd64
-          - target: windows-amd64
-            os: windows-latest
-            artifact: archlens-windows-amd64.exe
+    runs-on: local-archlens
+    timeout-minutes: 15
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
 
-      - name: Set up GraalVM / Mandrel 25 & Node Toolchain
+      - name: Set up Node & Maven Toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          setup-java: 'false'
+          setup-maven: 'true'
+          cache-pnpm: 'true'
+
+      - name: Set up GraalVM / Mandrel 25
         uses: graalvm/setup-graalvm@v1
         with:
           java-version: '25'
@@ -139,27 +153,37 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
-      - name: Set up Node & Maven Toolchain
-        uses: ./.github/actions/setup-toolchain
-        with:
-          setup-java: 'false'
-          cache-pnpm: 'true'
-
-      - name: Build GraalVM Native Executable (${{ matrix.target }})
+      - name: Ensure Native C Toolchain (gcc & libz.so)
         shell: bash
         run: |
-          mvn -B -ntp package -Pnative -DskipTests
-          RUNNER_BIN=$(ls backend/target/*-runner backend/target/*-runner.exe 2>/dev/null | head -n 1)
-          if [ -n "$RUNNER_BIN" ]; then
-            cp "$RUNNER_BIN" "backend/target/${{ matrix.artifact }}"
+          mkdir -p "$HOME/.local/lib"
+          SYS_LIBZ=$(find /usr/lib /lib -name "libz.so.1*" 2>/dev/null | head -n 1 || true)
+          if [ -n "$SYS_LIBZ" ]; then
+            ln -sf "$SYS_LIBZ" "$HOME/.local/lib/libz.so"
+            echo "Linked $HOME/.local/lib/libz.so -> $SYS_LIBZ"
           fi
+          echo "LIBRARY_PATH=$HOME/.local/lib" >> "$GITHUB_ENV"
+
+      - name: Build GraalVM Native Executable (linux-amd64)
+        shell: bash
+        run: |
+          mvn -B -ntp package -Pnative -DskipTests \
+            -Dquarkus.native.native-image-xmx=3g \
+            -Dquarkus.native.additional-build-args="-Ob,-J-XX:ActiveProcessorCount=2,-H:CLibraryPath=${HOME}/.local/lib"
+          RUNNER_BIN=$(find backend/target -maxdepth 2 -type f -name "*-runner" 2>/dev/null | head -n 1 || true)
+          if [ -z "$RUNNER_BIN" ]; then
+            echo "::error::Native runner binary was not produced in backend/target"
+            exit 1
+          fi
+          cp "$RUNNER_BIN" "backend/target/archlens-linux-amd64"
+          chmod +x "backend/target/archlens-linux-amd64"
 
       - name: Attach Native Binary to GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: backend/target/${{ matrix.artifact }}
+          files: backend/target/archlens-linux-amd64
 
   npm-release:
     name: Test and Publish NPM CLI Package
@@ -172,6 +196,7 @@ jobs:
         uses: ./.github/actions/setup-toolchain
         with:
           setup-java: 'false'
+          setup-maven: 'false'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Run CLI Tests
@@ -185,23 +210,52 @@ jobs:
           TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
-      - name: Publish to GitHub Packages
+      - name: Resolve Package Version
+        id: meta
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-          echo "@fmatar:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          npm publish "${{ steps.pack.outputs.tarball }}" --tag latest || echo "GitHub Packages publication completed or version already published."
+          PKG_NAME=$(node -p "require('./cli/package.json').name")
+          PKG_VERSION=$(node -p "require('./cli/package.json').version")
+          echo "name=${PKG_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${PKG_VERSION}" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/* ]] && [ "${GITHUB_REF_NAME#v}" != "$PKG_VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match cli/package.json version ${PKG_VERSION}"
+            exit 1
+          fi
+
+      # NOTE: --provenance and npm Trusted Publishing (OIDC) are only accepted by npm from
+      # GitHub-hosted runners. This job runs on the self-hosted local-archlens ARC runners,
+      # so publishing authenticates with the NPM_TOKEN secret and omits --provenance
+      # (npm rejects self-hosted provenance with E422).
+      - name: Publish to GitHub Packages
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
+          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
+          SPEC="${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}"
+          if npm view "$SPEC" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "${SPEC} already on GitHub Packages; skipping."
+            exit 0
+          fi
+          npm publish "${{ steps.pack.outputs.tarball }}" --registry=https://npm.pkg.github.com --tag latest
 
       - name: Publish @fmatar/archlens-skill to Public NPM Registry
-        run: |
-          echo "@fmatar:registry=https://registry.npmjs.org/" > ~/.npmrc
-          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
-            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --provenance || echo "Notice: Package version already published to npm or registry rejected request."
-          else
-            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --provenance || echo "Notice: Set NPM_TOKEN or configure Trusted Publishing to publish to public npm."
-          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN secret is not set; cannot publish to registry.npmjs.org from self-hosted runners."
+            exit 1
+          fi
+          NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
+          printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
+          SPEC="${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}"
+          if npm view "$SPEC" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
+            echo "${SPEC} already on npmjs.org; ensuring the latest dist-tag points at it."
+            npm dist-tag add "$SPEC" latest --registry=https://registry.npmjs.org/
+            exit 0
+          fi
+          npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --registry=https://registry.npmjs.org/
+          npm view "${{ steps.meta.outputs.name }}" dist-tags --registry=https://registry.npmjs.org/

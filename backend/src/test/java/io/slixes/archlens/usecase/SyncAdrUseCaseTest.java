@@ -37,6 +37,9 @@ class SyncAdrUseCaseTest {
             "# 1. Invert outward dependency from OrderService using OrderRepositoryPort"));
     assertTrue(content1.contains("OrderRepositoryPort"));
     assertTrue(content1.contains("OrderService"));
+    assertTrue(content1.contains("```mermaid"));
+    assertTrue(content1.contains("subgraph Before"));
+    assertTrue(content1.contains("subgraph After"));
 
     // Record second ADR to check incrementing index
     SyncAdrUseCase.AdrDocument doc2 =

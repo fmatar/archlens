@@ -75,6 +75,16 @@ class ArchlensMcpServiceTest {
     assertNotNull(dossier);
     assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — McpGraph"));
     assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
+
+    String mermaidRings =
+        mcpService.exportArchitectureDiagram(tempDir.toString(), "COMPONENT_RINGS", "", false);
+    assertNotNull(mermaidRings);
+    assertTrue(mermaidRings.startsWith("flowchart TB"));
+
+    String mermaidUml =
+        mcpService.exportArchitectureDiagram(tempDir.toString(), "CLASS_UML", "", true);
+    assertNotNull(mermaidUml);
+    assertTrue(mermaidUml.startsWith("classDiagram"));
   }
 
   @Test

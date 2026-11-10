@@ -9,11 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Release pipeline (`.github/workflows/release.yml`)** (`#4772`):
+  - npm publishing silently no-op'd since `0.1.0-Beta-11`: `--provenance` is rejected by npm on self-hosted runners (`E422 Unsupported GitHub Actions runner environment: "self-hosted"`), and every `npm publish` was wrapped in `|| echo`, so the job reported success. Publishing now authenticates with `NPM_TOKEN` without `--provenance`, skips only when the exact version already exists (re-pointing `latest`), and fails the job on any other error.
+  - The "GitHub Packages" step actually published to registry.npmjs.org with `GITHUB_TOKEN` (E404) because `actions/setup-node` overrides `~/.npmrc` via `NPM_CONFIG_USERCONFIG`. Each publish step now uses its own explicit userconfig and `--registry`.
+  - Tag builds now fail fast if the tag does not match `cli/package.json`.
+  - Release notes are now taken from the matching `CHANGELOG.md` section instead of `generate_release_notes`, so workflow re-runs no longer append duplicate "Full Changelog" lines.
+
+## [1.1.0] - 2026-11-10
+
+### Added
+- **Multi-Format Architecture Diagram Export — Mermaid (`.mmd`/`md`), Standalone Vector SVG (`.svg`) & High-DPI Retina PNG (`2x` `.png`)** (`#4772`):
+  - **Ring L0 (`domain.dossier`)**: Added `DiagramExportType` (`COMPONENT_RINGS`, `CLASS_UML`, `DIP_REFACTOR`) and pure `MermaidDiagramGenerator` producing deterministic concentric ring `flowchart TB` subgraphs with crimson `linkStyle` violations, native `classDiagram` UML with stereotypes/fields/methods (honoring Violation X-Ray and 1-Hop Focus), and side-by-side Before/After DIP port-inversion diagrams.
+  - **Ring L1 (`usecase`)**: Added `ExportDiagramUseCase` and enhanced `SyncAdrUseCase` to automatically embed Before vs. After DIP Mermaid diagrams into generated `docs/adr/000X-*.md` records.
+  - **Ring L3 (`delivery.rest`, `mcp`, `cli`)**: Added `GET /api/diagram/export` and `GET /api/graph/export` on `DiagramResource`, `exportArchitectureDiagram` on `ArchlensMcpService`, and headless `archlens check --format mermaid` (`mmd`) via `generateMermaidReport` in `cli/src/checker.js`.
+  - **Svelte 5 Workbench (`frontend`)**: Added `diagramExporter.ts` (client-side Mermaid synthesis, standalone `<svg>` serializer with Auto-Fit Full Graph vs. Current Viewport framing, Dark Slate `#020617` vs. Transparent background toggle, and Architecture Health Legend Footer, plus `2x` Retina `<canvas>` PNG rasterizer) and `ExportDiagramModal.svelte` triggered via top header button, shortcut `E`, `CommandPalette.svelte`, and `InvertDipModal.svelte`.
+
+### Changed
+- **Native binaries are `linux-amd64` only**: all release jobs run on the self-hosted `local-archlens` Linux ARC runners, so the `macos-arm64` and `windows-amd64` GraalVM targets announced in 1.0.0 were dropped from the release matrix. macOS and Windows users should use the Docker image (`ghcr.io/fmatar/archlens`) or the JVM runner jar; the CLI falls back to these automatically.
+- **CI**: GraalVM native build on `local-archlens` uses Quick Build (`-Ob`), a bounded 3g heap, and links the system `libz.so.1` for rootless native linking.
+
 ## [1.0.0] - 2026-11-08
 
 ### Added
 - **Milestone 4 (`v1.0.0 GA`) — Cross-Platform GraalVM Native Binaries, Hybrid HTML5 Canvas Renderer & Reference Showcase Presets** (`#4001`, [#166](https://github.com/fmatar/archlens/issues/166)):
-  - Added `native-binaries` matrix job (`macos-arm64`, `linux-amd64`, `windows-amd64` via GraalVM 25 `-Pnative`) and optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry OCI publishing to `.github/workflows/release.yml`.
+  - Added `native-binaries` matrix job (`macos-arm64`, `linux-amd64`, `windows-amd64` via GraalVM 25 `-Pnative`; reduced to `linux-amd64` in 1.1.0) and optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry OCI publishing to `.github/workflows/release.yml`.
   - Extended `cli/src/docker-runner.js` with `findNativeBinary`, `startNativeBinary`, and `getPlatformBinarySuffix`, giving GraalVM native binaries first-priority startup in `ensureServerRunning` before JVM JAR or Docker fallbacks.
   - Implemented Hybrid HTML5 `<canvas>` (`Fast 2D Canvas`) high-density renderer in `Canvas.svelte` and `diagram.svelte.ts` (`WEBGL_CLASS_THRESHOLD = 500`, `isWebGlRendererActive`, `toggleRenderEngineMode` / shortcut `W`) with class-pill hit-testing, CRAP dots, and overflow indicators for 60fps rendering on graphs with 500+ classes.
   - Added 3 interactive reference architecture showcase presets (`SHOWCASE_PRESETS` in `demoData.ts`: **Spring PetClinic Java 25**, **Quarkus Reactive Microservice**, and **RealWorld Conduit Full-Stack TS + FastAPI**) selectable from the top navbar project switcher (`App.svelte`).

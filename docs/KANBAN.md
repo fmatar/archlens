@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-08 05:18:34 UTC`
+> **Last Synced**: `2026-11-10 14:03:01 UTC`
 
 ---
 
@@ -13,6 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  |  | #4772: [FEAT] feat: Add multi-format Architecture Diagram Export (Mermaid, SVG, PNG) |
 |  |  |  |  | #7896: [FEAT] feat: milestone-3-monorepo-cross-lang-and-ast-idioms |
 |  |  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |
 |  |  |  |  | #1097: [FEAT] feat(mailbox): closed-loop-refactor-verification-and-rollback `[Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v0.1.2)]` |
@@ -133,6 +134,18 @@
 
 
 ## 💬 Review Audit Comments & Feedback
+
+### [2026-11-10 06:21:41 UTC] Audit for #4772
+
+SDLC 9-Pillar Peer Review Verdict: APPROVED (PASS) — 0 Clean Architecture violations, 0 ADP cycles, AFI 91% (Grade A), 87.5% JaCoCo coverage, ADR-004 & v1.1.0 regression proof verified.
+
+---
+
+### [2026-11-10 05:54:32 UTC] Audit for #4772
+
+PR Peer Reviewer & Quality Gate Auditor Verdict: APPROVED (PASS). Coverage: 87.4%, 0 violations, 0 ADP cycles, AFI: 91% (Grade A).
+
+---
 
 ### [2026-11-07 20:01:27 UTC] Audit for #1097
 

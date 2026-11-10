@@ -9,6 +9,7 @@ import {
   loadProjectPolicy,
   generateSarifReport,
   generateJsonReport,
+  generateMermaidReport,
   detectPackageCycles,
   calculateScreamingMetric,
   extractFeatureToken,
@@ -599,6 +600,40 @@ test('checkArchitecture treats Java records as immutable value contracts for Mai
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('generateMermaidReport produces valid Mermaid flowchart TB with Concentric Ring subgraphs and violation linkStyle', () => {
+  const sampleReport = {
+    projectTitle: 'Mermaid Sample System',
+    levels: [['domain'], ['application'], ['adapters'], ['infrastructure']],
+    violations: [
+      {
+        fromPkg: 'application',
+        toPkg: 'infrastructure',
+        fromTier: 'Application (L1)',
+        toTier: 'Infrastructure (L3)',
+        fromFile: 'src/application/OrderService.java',
+        toImport: 'infrastructure.PostgresOrderRepo',
+        portName: 'OrderServicePort'
+      }
+    ],
+    cycles: [{ packages: ['application', 'infrastructure', 'application'], formatted: 'application -> infrastructure -> application' }]
+  };
+
+  const mmd = generateMermaidReport(sampleReport);
+  assert.ok(mmd.startsWith('flowchart TB'));
+  assert.ok(mmd.includes('subgraph Ring_L0["Ring L0: Domain Core"]'));
+  assert.ok(mmd.includes('subgraph Ring_L1["Ring L1: Application"]'));
+  assert.ok(mmd.includes('subgraph Ring_L3["Ring L3: Infrastructure"]'));
+  assert.ok(mmd.includes('VIOLATION'));
+  assert.ok(mmd.includes('linkStyle 0 stroke:#ef4444,stroke-width:2.5px,color:#fca5a5'));
+
+  const dipMmd = generateMermaidReport(sampleReport, { diagramType: 'DIP_REFACTOR' });
+  assert.ok(dipMmd.startsWith('flowchart TB'));
+  assert.ok(dipMmd.includes('subgraph Before'));
+  assert.ok(dipMmd.includes('subgraph After'));
+  assert.ok(dipMmd.includes('OrderServicePort'));
+});
+
 
 
 

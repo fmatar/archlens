@@ -243,6 +243,19 @@ Enforce architectural invariants directly in CI/CD and throughout developer work
 
 ---
 
+### 7. Multi-Format Architecture Diagram Export (Mermaid, SVG & Retina PNG)
+Export publication-ready and Git-native architecture diagrams directly from the Workbench UI (**`E`**), Command Palette (**`⌘K`**), Surgical DIP Inverter modal, Living ADRs (`docs/adr/`), REST API (`/api/diagram/export`), MCP server, or headless CLI (`archlens check --format mermaid`):
+* **3 Canonical Diagram Views**:
+  * **Concentric Ring Component Topology (`COMPONENT_RINGS`)**: Renders concentric tiers (`L0`–`L3`) as nested `flowchart TB` subgraphs with Robert C. Martin metrics ($I, A, D$) and crimson `linkStyle` violation arrows.
+  * **Class & Interface UML Diagram (`CLASS_UML`)**: Renders native Mermaid `classDiagram` syntax with `<<interface>>` and `<<abstract>>` stereotypes, visibility-prefixed fields/methods, and UML relation arrows honoring **Violation X-Ray (`V`)** and **1-Hop Focus (`F`)**.
+  * **Before vs. After DIP Port Inversion (`DIP_REFACTOR`)**: Side-by-side `Before` and `After` subgraphs illustrating how the synthesized `<Target>Port` interface inverts outward coupling—automatically embedded into generated `docs/adr/000X-*.md` files.
+* **3 Export Formats**:
+  * **Mermaid (`.mmd` / Markdown fence)**: Copy-ready or downloadable `.mmd` source for GitHub/GitLab PRs, ADRs, and wikis.
+  * **Standalone Vector SVG (`.svg`)**: Self-contained `<svg>` with Auto-Fit Full Graph (unculled) vs. Current Viewport framing, Dark Slate (`#020617`) vs. Transparent theme toggle, and optional Architecture Health Legend Footer.
+  * **High-DPI Retina PNG (`2x` `.png`)**: Crisp rasterized export for slides, executive reports, and design docs.
+
+---
+
 ## 🤖 Autonomous AI Companion Integration
 
 Archlens provides two complementary communication protocols for AI coding assistants:
@@ -491,6 +504,7 @@ Add Archlens to your workspace `.grok/mcp.json` or global `~/.grok/mcp.json`:
 | `C` | **Compact Cards** | Collapse fine-grained class lists into high-level macro cards |
 | `F` | **1-Hop Focus** | Isolate direct inbound and outbound dependencies for selected node |
 | `P` | **Policy Designer** | Open the interactive Concentric Ring & Policy Editor modal |
+| `E` | **Export Diagram** | Export Concentric Rings, Class UML, or DIP Refactoring views as Mermaid (`.mmd`/`md`), SVG, or `2x` Retina PNG |
 | `L` | **LLM Prompt Dossier** | Export copy-ready Clean Architecture refactoring prompt for LLMs |
 | `T` | **Telemetry Drawer** | Open real-time Agent Mailbox IPC telemetry and audit stream |
 | `G` | **Release Comparator** | Compare architecture against Git tags and release snapshots |
@@ -538,7 +552,7 @@ Archlens provides native AST scanners via a modular Service Provider Interface (
 | `--screaming-threshold <N>` | | Enforce minimum Screaming Architecture score (`0.0`–`1.0`) | `0.60` |
 | `--suggest-features` | | Suggest Screaming Architecture feature slice clusters during `check` | `false` |
 | `--fitness-threshold <N>` | | Enforce minimum Architectural Fitness Index (`0.0`–`1.0`) | `0.80` |
-| `--format <FMT>` | | Audit output format (`pretty`, `json`, `sarif`) | `pretty` |
+| `--format <FMT>` | | Audit output format (`pretty`, `json`, `sarif`, `mermaid` / `mmd`) | `pretty` |
 | `--output <PATH>` | `-O` | Write audit report to specified file path | `stdout` |
 | `--copy` | `-c` | Copy LLM prompt output directly to system clipboard | `false` |
 | `--global` | `-g` | Install skill into global agent directories (`~/.claude/skills`, `~/.gemini/config/skills`) | `false` |

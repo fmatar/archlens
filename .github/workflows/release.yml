@@ -134,23 +134,23 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache: 'maven'
 
-      - name: Ensure Native C Toolchain (gcc & zlib)
+      - name: Ensure Native C Toolchain (gcc & libz.so)
         shell: bash
         run: |
-          MISSING_PKGS=""
-          command -v gcc >/dev/null 2>&1 || MISSING_PKGS="$MISSING_PKGS gcc libc6-dev"
-          [ -f /usr/include/zlib.h ] || MISSING_PKGS="$MISSING_PKGS zlib1g-dev"
-          if [ -n "$MISSING_PKGS" ] && sudo -n true 2>/dev/null; then
-            sudo -n DEBIAN_FRONTEND=noninteractive apt-get update -qq
-            sudo -n DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends $MISSING_PKGS || true
+          mkdir -p "$HOME/.local/lib"
+          SYS_LIBZ=$(find /usr/lib /lib -name "libz.so.1*" 2>/dev/null | head -n 1 || true)
+          if [ -n "$SYS_LIBZ" ]; then
+            ln -sf "$SYS_LIBZ" "$HOME/.local/lib/libz.so"
+            echo "Linked $HOME/.local/lib/libz.so -> $SYS_LIBZ"
           fi
+          echo "LIBRARY_PATH=$HOME/.local/lib" >> "$GITHUB_ENV"
 
       - name: Build GraalVM Native Executable (linux-amd64)
         shell: bash
         run: |
           mvn -B -ntp package -Pnative -DskipTests \
             -Dquarkus.native.native-image-xmx=3g \
-            -Dquarkus.native.additional-build-args=-Ob,-J-XX:ActiveProcessorCount=2
+            -Dquarkus.native.additional-build-args="-Ob,-J-XX:ActiveProcessorCount=2,-H:CLibraryPath=${HOME}/.local/lib"
           RUNNER_BIN=$(find backend/target -maxdepth 2 -type f -name "*-runner" 2>/dev/null | head -n 1 || true)
           if [ -z "$RUNNER_BIN" ]; then
             echo "::error::Native runner binary was not produced in backend/target"

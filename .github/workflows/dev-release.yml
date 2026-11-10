@@ -79,8 +79,8 @@ jobs:
       - name: Pack Canary Package
         id: pack
         run: |
-          npm pack cli --pack-destination cli
-          TARBALL_PATH=$(ls cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          npm pack ./cli --pack-destination cli
+          TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
       # npm rejects --provenance (and Trusted Publishing/OIDC) from self-hosted runners,

@@ -5,6 +5,7 @@ import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
 import io.slixes.archlens.domain.dossier.DipInversionSynthesizer;
 import io.slixes.archlens.domain.dossier.DossierGenerator;
+import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.domain.graph.PackageCycle;
 import io.slixes.archlens.domain.graph.ScreamingMetric;
@@ -15,6 +16,7 @@ import io.slixes.archlens.domain.screaming.ScreamingMigrationAssistant;
 import io.slixes.archlens.domain.screaming.ScreamingMigrationProposal;
 import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.engine.ProjectFileWatcher;
+import io.slixes.archlens.usecase.ExportDiagramUseCase;
 import io.slixes.archlens.usecase.ExportDossierUseCase;
 import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SavePolicyUseCase;
@@ -59,6 +61,8 @@ public class DiagramResource {
   @Inject ScreamingMigrationAssistant screamingMigrationAssistant;
 
   @Inject ExportDossierUseCase exportDossierUseCase;
+
+  @Inject ExportDiagramUseCase exportDiagramUseCase;
 
   @Inject SynthesizeDipInversionUseCase synthesizeDipUseCase;
 
@@ -182,6 +186,13 @@ public class DiagramResource {
     return exportDossierUseCase;
   }
 
+  private ExportDiagramUseCase getExportDiagramUseCase() {
+    if (exportDiagramUseCase == null) {
+      exportDiagramUseCase = new ExportDiagramUseCase(graphCompiler, new MermaidDiagramGenerator());
+    }
+    return exportDiagramUseCase;
+  }
+
   private SynthesizeDipInversionUseCase getSynthesizeDipUseCase() {
     if (synthesizeDipUseCase == null) {
       synthesizeDipUseCase =
@@ -244,6 +255,47 @@ public class DiagramResource {
       @QueryParam("proposalId") String proposalId)
       throws IOException {
     return getLlmDossier(projectRoot, proposalId);
+  }
+
+  @GET
+  @Path("/diagram/export")
+  @Produces(MediaType.TEXT_PLAIN)
+  @RunOnVirtualThread
+  public String getDiagramExport(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId,
+      @QueryParam("type") @DefaultValue("COMPONENT_RINGS") String diagramType,
+      @QueryParam("componentId") String componentId,
+      @QueryParam("violationsOnly") @DefaultValue("false") boolean violationsOnly,
+      @QueryParam("from") String fromClass,
+      @QueryParam("to") String toClass)
+      throws IOException {
+    return getExportDiagramUseCase()
+        .execute(
+            normalizeRoot(projectRoot),
+            proposalId,
+            diagramType,
+            componentId,
+            violationsOnly,
+            fromClass,
+            toClass);
+  }
+
+  @GET
+  @Path("/graph/export")
+  @Produces(MediaType.TEXT_PLAIN)
+  @RunOnVirtualThread
+  public String getGraphExportAlias(
+      @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
+      @QueryParam("proposalId") String proposalId,
+      @QueryParam("type") @DefaultValue("COMPONENT_RINGS") String diagramType,
+      @QueryParam("componentId") String componentId,
+      @QueryParam("violationsOnly") @DefaultValue("false") boolean violationsOnly,
+      @QueryParam("from") String fromClass,
+      @QueryParam("to") String toClass)
+      throws IOException {
+    return getDiagramExport(
+        projectRoot, proposalId, diagramType, componentId, violationsOnly, fromClass, toClass);
   }
 
   @GET

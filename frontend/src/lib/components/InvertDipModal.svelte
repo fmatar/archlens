@@ -318,6 +318,14 @@
 
           <div class="flex items-center gap-3">
             <button
+              onclick={() => diagramStore.openExportModal('DIP_REFACTOR')}
+              disabled={!plan || isLoading}
+              class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-emerald-300 text-xs font-medium flex items-center gap-2 border border-emerald-700/60 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <span>Export DIP Diagram</span>
+            </button>
+
+            <button
               onclick={copyPrompt}
               disabled={!plan || isLoading}
               class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-medium flex items-center gap-2 border border-slate-700 transition-colors cursor-pointer disabled:opacity-50"

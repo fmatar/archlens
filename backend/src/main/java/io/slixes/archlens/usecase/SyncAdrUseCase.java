@@ -1,5 +1,6 @@
 package io.slixes.archlens.usecase;
 
+import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.util.Arrays;
 public class SyncAdrUseCase {
 
   private static final String ADR_DIR = "docs/adr";
+  private final MermaidDiagramGenerator mermaidGenerator = new MermaidDiagramGenerator();
 
   public record AdrDocument(
       int index,
@@ -54,10 +56,16 @@ public class SyncAdrUseCase {
             + (reason != null && !reason.isBlank()
                 ? reason
                 : "Direct outer layer imports violate Uncle Bob's Dependency Rule.");
+    String mermaidDiagram =
+        mermaidGenerator.generateDipRefactor(sourceClass, targetClass, interfacePortName, 1, 3);
     String decision =
         "Introduce the interface port `"
             + interfacePortName
-            + "` inside the inner domain/application layer and invert the dependency so that outer adapters implement this port.";
+            + "` inside the inner domain/application layer and invert the dependency so that outer adapters implement this port.\n\n"
+            + "### Architecture Topology (Before vs. After DIP)\n\n"
+            + "```mermaid\n"
+            + mermaidDiagram
+            + "```";
     String consequences =
         "Inner layers remain independent of outer framework/database details. Increases testability and decoupling, requires maintaining the interface contract.";
 

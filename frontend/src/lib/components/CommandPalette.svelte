@@ -123,6 +123,15 @@
       action: () => diagramStore.openLlmPromptModal()
     });
 
+    items.push({
+      id: 'act-export-diagram',
+      type: 'ACTION',
+      title: 'Export Architecture Diagram (Mermaid / SVG / PNG) (E)',
+      subtitle: 'Export Concentric Rings, Class UML, or DIP Refactoring topology',
+      badge: 'Export',
+      action: () => diagramStore.openExportModal()
+    });
+
     // 2. Components
     if (graph?.components) {
       graph.components.forEach((c: ComponentNode) => {

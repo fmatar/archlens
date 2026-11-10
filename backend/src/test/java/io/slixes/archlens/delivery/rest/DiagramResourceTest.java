@@ -66,6 +66,32 @@ class DiagramResourceTest {
     String dossierAlias = resource.getLlmDossierAlias(tempDir.toString(), "prop-1");
     assertEquals(dossier, dossierAlias);
 
+    // Test getDiagramExport and alias across diagram types
+    String ringsExport =
+        resource.getDiagramExport(
+            tempDir.toString(), "prop-1", "COMPONENT_RINGS", null, false, null, null);
+    assertNotNull(ringsExport);
+    assertTrue(ringsExport.startsWith("flowchart TB"));
+
+    String umlExport =
+        resource.getDiagramExport(
+            tempDir.toString(), "prop-1", "CLASS_UML", null, true, null, null);
+    assertNotNull(umlExport);
+    assertTrue(umlExport.startsWith("classDiagram"));
+
+    String dipExport =
+        resource.getGraphExportAlias(
+            tempDir.toString(),
+            "prop-1",
+            "DIP_REFACTOR",
+            null,
+            false,
+            "com.example.OrderService",
+            "com.example.PostgresRepo");
+    assertNotNull(dipExport);
+    assertTrue(dipExport.contains("subgraph Before"));
+    assertTrue(dipExport.contains("subgraph After"));
+
     // Test getInvertPlan
     DipInversionPlan plan =
         resource.getInvertPlan(

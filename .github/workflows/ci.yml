@@ -55,6 +55,7 @@ jobs:
         with:
           name: archlens-sarif-report
           path: archlens-results.sarif
+          if-no-files-found: ignore
           retention-days: 14
 
       - name: Upload JaCoCo Coverage Report
@@ -63,6 +64,7 @@ jobs:
         with:
           name: jacoco-coverage
           path: backend/target/site/jacoco/
+          if-no-files-found: ignore
           retention-days: 14
 
       - name: Upload CycloneDX SBOM
@@ -71,6 +73,7 @@ jobs:
         with:
           name: cyclonedx-sbom
           path: backend/target/bom.json
+          if-no-files-found: ignore
           retention-days: 14
 
       - name: Generate Consolidated Full-Stack Report
@@ -87,5 +90,6 @@ jobs:
         with:
           name: full-stack-health-report
           path: reports/
+          if-no-files-found: ignore
           retention-days: 14
 

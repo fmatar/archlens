@@ -1,0 +1,43 @@
+---
+description: Architecture Decision Record (ADR) lifecycle manager and Spec-Drift Sentinel. Mints, lists, and approves/rejects ADRs in docs/adr/, verifies PRODUCT.md drift, and syncs docs/DECISION_MAP.md.
+globs: *
+alwaysApply: false
+---
+
+# 📜 Architecture Decision Records & Spec-Drift Sentinel (`sdlc-adr`)
+
+## 1. When to Use `/sdlc-adr`
+
+Per **`INV-03`**, any PR that modifies `PRODUCT.md`, `docs/specs/*.md`, dependency manifests (`package.json`, `pom.xml`, `pyproject.toml`, `go.mod`, `Cargo.toml`), database migrations, C4 architecture diagrams, or OpenAPI/GraphQL contracts must be backed by an accepted ADR in `docs/adr/ADR-00X-*.md`.
+
+---
+
+## 2. ADR Lifecycle Commands
+
+```bash
+# 1. Check for undeclared spec, dependency, schema, or contract drift
+node .agent/scripts/sdlc-engine.mjs drift check
+
+# 2. Mint a new ADR (technical/architectural scope auto-accepts; product/contract scope pauses for human approval)
+node .agent/scripts/sdlc-engine.mjs adr create \
+  --title "<Decision Title>" \
+  --scope <technical|architectural|product|contract> \
+  --ticket <id> \
+  --supersedes "<CAP-XX>" \
+  --context "<Why this change is needed>" \
+  --decision "<Chosen architectural approach>" \
+  --consequences "<Downstream impact & trade-offs>"
+
+# 3. List all ADRs and their approval status
+node .agent/scripts/sdlc-engine.mjs adr list
+
+# 4. Approve or reject a pending product/contract ADR
+node .agent/scripts/sdlc-engine.mjs adr decide --id ADR-00X --status <accepted|rejected> --by "@lead"
+
+# 5. Compact accepted ADRs into docs/SRS.md and reset PRODUCT.md ADR index (baseline or release cut)
+node .agent/scripts/sdlc-engine.mjs adr compact --release <version> [--dry-run]
+
+# 6. Synchronize the Causal Decision Graph (docs/DECISION_MAP.md) & Architecture UI
+node .agent/scripts/sdlc-engine.mjs decision-graph sync
+node .agent/scripts/sdlc-engine.mjs ui-snapshot
+```

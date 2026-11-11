@@ -28,7 +28,7 @@ flowchart TD
   ADR_003["ADR-003: Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite"]
   _200["Ticket #200 (feature/issue-#200-docs-mcp-ci-hardening)"]
   ADR_004["ADR-004: Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release"]
-  _4772["Ticket #4772 (feature/issue-#4772-add-multi-format-architecture-diagram-ex)"]
+  _4772["Ticket #4772 (feature/issue-#4772-sync-sdlc-v2-and-release-finalization)"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]

@@ -1,0 +1,31 @@
+---
+description: Displays active SDLC session, 8-stage lifecycle progress, spec-drift check, living KANBAN.md board state, engineering ROI telemetry, and live Architecture Diff UI in one unified view.
+globs: *
+alwaysApply: false
+---
+
+# 📊 Live Session Status, Drift & Architecture Inspector (`sdlc-status`)
+
+## 1. Unified Status Inspection Sequence
+
+Execute the following commands to assemble a complete real-time snapshot of the repository's active SDLC state:
+
+```bash
+# 1. Active session & 8-stage ASCII dashboard
+node .agent/scripts/sdlc-engine.mjs session status
+node .agent/scripts/sdlc-engine.mjs session dashboard
+
+# 2. Check for undeclared spec/contract/architecture drift against PRODUCT.md & docs/adr/
+node .agent/scripts/sdlc-engine.mjs drift check
+node .agent/scripts/sdlc-engine.mjs arch diff
+
+# 3. Engineering velocity, ROI & hash-chained audit ledger status
+node .agent/scripts/sdlc-engine.mjs stats
+node .agent/scripts/sdlc-engine.mjs audit verify
+
+# 4. Refresh and launch the live Architecture Diff & Decision Lineage UI (http://localhost:4120)
+node .agent/scripts/sdlc-engine.mjs ui-snapshot
+```
+
+## 2. Architecture UI Snapshot Presentation
+After running `node .agent/scripts/sdlc-engine.mjs ui-snapshot`, publish or share `.agent/workbench/index.html` so the user can inspect the 8-stage dashboard, Kanban state, and Archlens concentric ring diff (in Cowork, publish `.agent/workbench/index.html` directly instead of starting `serve`).

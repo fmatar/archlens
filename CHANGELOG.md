@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-12
+
 ### Added
 - **Hexagonal Dependency Vault Brand Identity & 10–30–90 Documentation** (`#6538`):
   - Added theme-aware vector lockups (`docs/logo-dark.svg`, `docs/logo-light.svg`), standalone mark (`docs/logo-mark.svg`), multi-resolution favicons/manifest (`frontend/public/*`), reusable Svelte 5 `ArchlensLogo.svelte` across header/modals, concentric ring tokens in `frontend/src/app.css` and `DESIGN.md`, and upgraded `README.md` to the 10–30–90 Developer Landing Page blueprint.

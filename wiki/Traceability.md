@@ -49,6 +49,9 @@ flowchart LR
 - **`ADR-001`**: Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration (`docs/adr/ADR-001-quarkus-3-40-mcp-2-0-hexagonal-decoupling-virtua.md`)
 - **`ADR-002`**: Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator (`docs/adr/ADR-002-quarkus-3-40-1-1-bom-upgrade-ring-1-workspacepat.md`)
 - **`ADR-003`**: Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite (`docs/adr/ADR-003-multi-agent-local-mcp-registry-ci-hardening-end-.md`)
+- **`ADR-004`**: Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release (`docs/adr/ADR-004-multi-format-architecture-diagram-export-mermaid.md`)
+- **`ADR-005`**: Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment (`docs/adr/ADR-005-quarkus-3-40-1-2-mcp-2-0-4-latest-ga-dependency-.md`)
+- **`ADR-006`**: Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment (`docs/adr/ADR-006-release-v1-1-1-manifest-synchronization-brand-id.md`)
 
 ### Foundational Feature ADRs (`wiki/`)
 - **[ADR-001: Surgical DIP Inverter](ADR-001-Surgical-DIP-Inverter)** (PR #112)

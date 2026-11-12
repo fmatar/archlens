@@ -13,6 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  | #222: [FEAT] feat: release-v1-1-1 |  |
 |  |  |  | #6157: [FEAT] feat: upgrade-backend-and-frontend-latest-ga-dependencies |  |
 |  |  |  | #6538: [FEAT] feat: hexagonal-vault-brand-identity-ui-and-readme-10-30-90 |  |
 |  |  |  | #4772: [FEAT] feat: Add multi-format Architecture Diagram Export (Mermaid, SVG, PNG) |  |

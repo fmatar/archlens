@@ -30,8 +30,11 @@ flowchart TD
   ADR_004["ADR-004: Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release"]
   _4772["Ticket #4772 (feature/issue-#4772-sync-sdlc-v2-and-release-finalization)"]
   ADR_005["ADR-005: Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment"]
-  _6157["Ticket #6157"]
+  _6157["Ticket #6157 (feature/issue-#6157-upgrade-backend-and-frontend-latest-ga-d)"]
+  ADR_006["ADR-006: Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment"]
+  _222["Ticket #222"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
+  ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
   _8253["Ticket #8253 (feature/issue-#8253-wiki-roadmap-docs-drift-sync)"]
@@ -73,10 +76,19 @@ flowchart TD
   CAP_02 -.->|ADR Drift| ADR_005
   CAP_03 -.->|ADR Drift| ADR_005
   CAP_04 -.->|ADR Drift| ADR_005
+  _222 -->|triggered_drift_adr| ADR_006
+  CAP_01 -.->|ADR Drift| ADR_006
+  CAP_02 -.->|ADR Drift| ADR_006
+  CAP_03 -.->|ADR Drift| ADR_006
+  CAP_04 -.->|ADR Drift| ADR_006
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_04 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
+  CAP_01 -->|realized_by| ADR_COMPACT_v1_1_1
+  CAP_02 -->|realized_by| ADR_COMPACT_v1_1_1
+  CAP_03 -->|realized_by| ADR_COMPACT_v1_1_1
+  CAP_04 -->|realized_by| ADR_COMPACT_v1_1_1
 ```
 
 ---
@@ -90,6 +102,7 @@ flowchart TD
 | **ADR-003** | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | #200 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-004** | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | #4772 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-005** | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | #6157 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | #222 | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 
@@ -97,7 +110,7 @@ flowchart TD
 
 | Capability ID | Description | Current Status |
 | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-005)` |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-005)` |
-| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-005)` |
-| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-005)` |
+| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-006)` |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-006)` |
+| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-006)` |
+| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-006)` |

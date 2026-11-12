@@ -1,7 +1,7 @@
 ---
 name: archlens-install-policy
 description: Inspects any target codebase, detects programming languages and packages, and scaffolds an Archlens Clean Architecture policy (.archlens/policy.json) and agent workbench companion integration.
-version: 1.1.0
+version: 1.1.1
 license: Apache-2.0
 ---
 

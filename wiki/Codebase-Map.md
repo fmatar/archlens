@@ -367,10 +367,10 @@ flowchart TD
 
 | Capability ID | Title | Functional Spec | Status | Depends On |
 | :--- | :--- | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | `AMENDED (ADR-005)` | None |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | `AMENDED (ADR-005)` | None |
-| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | `AMENDED (ADR-005)` | CAP-01, CAP-02 |
-| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | `AMENDED (ADR-005)` | CAP-01, CAP-02 |
+| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | `AMENDED (ADR-006)` | None |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | `AMENDED (ADR-006)` | None |
+| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | `AMENDED (ADR-006)` | CAP-01, CAP-02 |
+| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | `AMENDED (ADR-006)` | CAP-01, CAP-02 |
 
 ---
 
@@ -383,6 +383,7 @@ flowchart TD
 | **ADR-003** | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-004** | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-005** | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 

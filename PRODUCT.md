@@ -81,10 +81,10 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 
 | Capability ID | Capability Title | Functional Spec | Depends On | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| CAP-01 | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `AMENDED (ADR-004)` |
-| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `AMENDED (ADR-004)` |
-| CAP-03 | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | CAP-01, CAP-02 | `AMENDED (ADR-004)` |
-| CAP-04 | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | CAP-01, CAP-02 | `AMENDED (ADR-004)` |
+| CAP-01 | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `AMENDED (ADR-005)` |
+| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `AMENDED (ADR-005)` |
+| CAP-03 | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | CAP-01, CAP-02 | `AMENDED (ADR-005)` |
+| CAP-04 | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | CAP-01, CAP-02 | `AMENDED (ADR-005)` |
 
 ---
 
@@ -96,5 +96,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-002 | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | #196 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | ADR-003 | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | #200 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | ADR-004 | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | #4772 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-005 | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | #6157 | CAP-01, CAP-02, CAP-03, CAP-04 |
 <!-- ADR_INDEX_END -->
 

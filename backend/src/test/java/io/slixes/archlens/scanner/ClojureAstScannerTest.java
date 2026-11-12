@@ -99,18 +99,16 @@ class ClojureAstScannerTest {
 
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.IMPLEMENTS
-                        && e.from().equals("core.user")
-                        && e.to().equals("gateway.repo")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.IMPLEMENTS
+                    && e.from().equals("core.user")
+                    && e.to().equals("gateway.repo")));
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.ASSOCIATION
-                        && e.from().equals("core.user")
-                        && e.to().equals("foreign.lib")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.ASSOCIATION
+                    && e.from().equals("core.user")
+                    && e.to().equals("foreign.lib")));
   }
 
   @Test

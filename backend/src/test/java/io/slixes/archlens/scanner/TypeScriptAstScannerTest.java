@@ -83,27 +83,24 @@ class TypeScriptAstScannerTest {
     // Implementation edge
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.IMPLEMENTS
-                        && e.from().endsWith("OrderService")
-                        && e.to().equals("OrderRepository")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.IMPLEMENTS
+                    && e.from().endsWith("OrderService")
+                    && e.to().equals("OrderRepository")));
 
     // Dependency edge (both class-level and module-level fallback)
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.DEPENDENCY
-                        && e.from().equals("services.orderService.OrderService")
-                        && e.to().equals("domain.order.Order")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.DEPENDENCY
+                    && e.from().equals("services.orderService.OrderService")
+                    && e.to().equals("domain.order.Order")));
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.DEPENDENCY
-                        && e.from().equals("services.orderService")
-                        && e.to().equals("domain.order")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.DEPENDENCY
+                    && e.from().equals("services.orderService")
+                    && e.to().equals("domain.order")));
   }
 
   @Test
@@ -237,31 +234,27 @@ class TypeScriptAstScannerTest {
     // Multi-line combined import resolved via @infra/* tsconfig alias to specific classes
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("services.checkoutService.CheckoutService")
-                        && e.to().equals("infra.postgresClient.PostgresClient")));
+            .anyMatch(e ->
+                e.from().equals("services.checkoutService.CheckoutService")
+                    && e.to().equals("infra.postgresClient.PostgresClient")));
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("services.checkoutService.CheckoutService")
-                        && e.to().equals("infra.postgresClient.SqlHelper")));
+            .anyMatch(e ->
+                e.from().equals("services.checkoutService.CheckoutService")
+                    && e.to().equals("infra.postgresClient.SqlHelper")));
 
     // Multi-line import through barrel @domain/index resolved to domain.order.Order &
     // OrderRepository
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("services.checkoutService.CheckoutService")
-                        && e.to().equals("domain.order.Order")));
+            .anyMatch(e ->
+                e.from().equals("services.checkoutService.CheckoutService")
+                    && e.to().equals("domain.order.Order")));
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("services.checkoutService.CheckoutService")
-                        && e.to().equals("domain.order.OrderRepository")));
+            .anyMatch(e ->
+                e.from().equals("services.checkoutService.CheckoutService")
+                    && e.to().equals("domain.order.OrderRepository")));
 
     // Commented fake import must not appear
     assertFalse(result.edges().stream().anyMatch(e -> e.to().contains("fake")));
@@ -360,16 +353,14 @@ class TypeScriptAstScannerTest {
 
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("lib.components.OrderCard")
-                        && e.to().equals("lib.services.OrderService")));
+            .anyMatch(e ->
+                e.from().equals("lib.components.OrderCard")
+                    && e.to().equals("lib.services.OrderService")));
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("lib.components.OrderCard")
-                        && e.to().equals("lib.stores.orderStore.svelte")));
+            .anyMatch(e ->
+                e.from().equals("lib.components.OrderCard")
+                    && e.to().equals("lib.stores.orderStore.svelte")));
   }
 
   @Test

@@ -45,6 +45,11 @@
         <Class name="io.slixes.archlens.scanner.GoAstScanner"/>
         <Bug pattern="REC_CATCH_EXCEPTION"/>
     </Match>
+    <!-- FindSecBugs 1.14+ informational Jakarta REST endpoint inventory marker (not a defect) -->
+    <Match>
+        <Package name="io.slixes.archlens.delivery.rest"/>
+        <Bug pattern="JAXRS_ENDPOINT"/>
+    </Match>
     <Match>
         <Package name="io.slixes.archlens.delivery.rest"/>
         <Bug pattern="DMI_HARDCODED_ABSOLUTE_FILENAME"/>

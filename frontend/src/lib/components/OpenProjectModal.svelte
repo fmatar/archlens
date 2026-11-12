@@ -2,6 +2,7 @@
   import { untrack } from 'svelte';
   import { diagramStore } from '../state/diagram.svelte';
   import { focusTrap } from '../utils/focusTrap';
+  import ArchlensLogo from './ArchlensLogo.svelte';
   import {
     Folder,
     FolderOpen,
@@ -261,10 +262,8 @@
     >
       <!-- Header -->
       <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between shrink-0">
-        <div class="flex items-center gap-2.5">
-          <div class="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
-            <FolderOpen size={18} />
-          </div>
+        <div class="flex items-center gap-3">
+          <ArchlensLogo size={34} title="Archlens Workspace Browser" />
           <div>
             <h2 id="modal-title" class="text-sm font-semibold text-slate-100">
               Open Repository or Directory

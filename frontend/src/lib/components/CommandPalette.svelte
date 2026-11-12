@@ -3,6 +3,7 @@
   import gsap from 'gsap';
   import { diagramStore } from '../state/diagram.svelte';
   import { focusTrap } from '../utils/focusTrap';
+  import ArchlensLogo from './ArchlensLogo.svelte';
   import { Search, Box, Code2, Sparkles, FolderTree, RefreshCw, Eye, Maximize2, X, FolderOpen } from '@lucide/svelte';
   import type { ComponentNode, ClassNode } from '../types/diagram';
 
@@ -328,8 +329,9 @@
           <span>&crarr; Select</span>
           <span>ESC Close</span>
         </div>
-        <div>
-          {filteredItems.length} results
+        <div class="flex items-center gap-2">
+          <span>{filteredItems.length} results</span>
+          <ArchlensLogo size={15} showSquircle={false} title="Archlens" />
         </div>
       </div>
     </div>

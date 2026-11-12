@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" fill="none">
+  <title>Archlens</title>
+  <defs>
+    <linearGradient id="fav-gold" x1="94" y1="162" x2="162" y2="94" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#FBBF24" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="256" height="256" rx="56" fill="#0B0F19" />
+  <path d="M 36.201 183.0 L 36.201 77.0 L 128.0 24.0 L 219.799 77.0 L 219.799 183.0 L 188.622 165.0 L 188.622 95.0 L 128.0 60.0 L 67.378 95.0 L 67.378 165.0 Z" fill="#38BDF8" />
+  <path d="M 60.449 203 L 128 164 L 195.551 203 L 181.551 227.249 L 128 196 L 74.449 227.249 Z" fill="#A855F7" />
+  <path d="M 128.0 94.0 L 157.445 111.0 L 157.445 145.0 L 128.0 162.0 L 98.555 145.0 L 98.555 111.0 Z" fill="url(#fav-gold)" />
+</svg>

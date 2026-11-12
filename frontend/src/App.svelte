@@ -15,7 +15,8 @@
   import GitVersionComparator from './lib/components/GitVersionComparator.svelte';
   import PolicyEditorModal from './lib/components/PolicyEditorModal.svelte';
   import ExportDiagramModal from './lib/components/ExportDiagramModal.svelte';
-  import { ShieldCheck, Network, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio, Megaphone, Share2 } from '@lucide/svelte';
+  import ArchlensLogo from './lib/components/ArchlensLogo.svelte';
+  import { ShieldCheck, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio, Megaphone, Share2 } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
   let badgeEl: HTMLDivElement | null = $state(null);
@@ -167,9 +168,14 @@
   <header class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-30 select-none">
     <!-- 1. Left: Source & Project Context -->
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2 font-semibold text-sm tracking-tight text-slate-100">
-        <Network size={18} class="text-blue-400" />
-        <span class="hidden sm:inline">Clean Architecture</span> Workbench
+      <div class="flex items-center gap-2.5 text-sm tracking-tight text-slate-100">
+        <ArchlensLogo size={26} pulse={diagramStore.isRegenerating} title="Archlens — Dynamic Clean Architecture Workbench" />
+        <div class="flex items-center gap-1.5">
+          <span class="font-bold tracking-tight text-slate-100">Archlens</span>
+          <span class="hidden xl:inline-block text-[10px] font-mono font-medium text-slate-400 px-1.5 py-0.5 rounded bg-slate-950/90 border border-slate-800">
+            Workbench
+          </span>
+        </div>
       </div>
 
       <!-- Project Switcher -->

@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-11-12
+
+### Added
+- **Hexagonal Dependency Vault Brand Identity & 10–30–90 Documentation** (`#6538`):
+  - Added theme-aware vector lockups (`docs/logo-dark.svg`, `docs/logo-light.svg`), standalone mark (`docs/logo-mark.svg`), multi-resolution favicons/manifest (`frontend/public/*`), reusable Svelte 5 `ArchlensLogo.svelte` across header/modals, concentric ring tokens in `frontend/src/app.css` and `DESIGN.md`, and upgraded `README.md` to the 10–30–90 Developer Landing Page blueprint.
+
+### Changed
+- **Latest GA Backend & Frontend Dependency Upgrades** (`#6157`, `ADR-005`):
+  - **Backend (`pom.xml`, `application.properties`)**: Upgraded strictly to latest General Availability releases — `quarkus-bom` `3.40.1.2` (excluding `4.0.0.CR1`), `quarkus-mcp-server-bom` `2.0.4` (excluding `2.1.0.Beta1`), `maven-surefire-plugin` `3.6.1`, `jacoco-maven-plugin` `0.8.16`, `maven-enforcer-plugin` `3.7.0`, `spotless-maven-plugin` `3.11.0` with `google-java-format` `2.0.0`, `findsecbugs-plugin` `1.14.0`, `maven-resources-plugin` `3.5.0`, `versions-maven-plugin` `2.25.1`, and Quinoa managed Node.js `26.13.1` / `pnpm` `12.18.0`.
+  - **Frontend (`frontend/package.json`)**: Upgraded `@lucide/svelte` `1.72.0`, `@tsconfig/svelte` `5.0.9`, `jsdom` `31.0.0`, and `vite` `8.3.8`.
+  - **Dependency Governance (`scripts/update-dependencies.js`)**: Added numeric 4-segment micro SemVer comparison (`major.minor.patch.micro`) and synchronized `MAVEN_REGISTRY` across all 18 `pom.xml` version properties.
+
 ### Fixed
 - **Release pipeline (`.github/workflows/release.yml`)** (`#4772`):
   - npm publishing silently no-op'd since `0.1.0-Beta-11`: `--provenance` is rejected by npm on self-hosted runners (`E422 Unsupported GitHub Actions runner environment: "self-hosted"`), and every `npm publish` was wrapped in `|| echo`, so the job reported success. Publishing now authenticates with `NPM_TOKEN` without `--provenance`, skips only when the exact version already exists (re-pointing `latest`), and fails the job on any other error.

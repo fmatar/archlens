@@ -79,26 +79,31 @@ jobs:
       - name: Pack Canary Package
         id: pack
         run: |
-          npm pack cli --pack-destination cli
-          TARBALL_PATH=$(ls cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          npm pack ./cli --pack-destination cli
+          TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
+      # npm rejects --provenance (and Trusted Publishing/OIDC) from self-hosted runners,
+      # and actions/setup-node overrides ~/.npmrc via NPM_CONFIG_USERCONFIG, so each
+      # registry gets an explicit userconfig and failures are no longer swallowed.
       - name: Publish Canary to GitHub Packages
-        run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-          echo "@fmatar:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          npm publish "${{ steps.pack.outputs.tarball }}" --tag dev || echo "GitHub Packages canary already published."
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
+          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
+          npm publish "${{ steps.pack.outputs.tarball }}" --registry=https://npm.pkg.github.com --tag dev
 
       - name: Publish Canary to Public NPM Registry
-        run: |
-          echo "@fmatar:registry=https://registry.npmjs.org/" > ~/.npmrc
-          if [ -n "${{ secrets.NPM_TOKEN }}" ]; then
-            echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" >> ~/.npmrc
-            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag dev --provenance || echo "Notice: Canary already published or NPM error."
-          else
-            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag dev --provenance || echo "Notice: Set NPM_TOKEN or configure Trusted Publishing to publish canary to public npm."
-          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN secret is not set; cannot publish canary to registry.npmjs.org."
+            exit 1
+          fi
+          NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
+          printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
+          npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag dev --registry=https://registry.npmjs.org/

@@ -2,11 +2,13 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert';
 import {
   isPreRelease,
+  compareSemver,
   filterSafeVersions,
   parseMavenMetadataVersions,
   parseNpmVersions,
   updatePomProperty,
-  updatePackageJsonDependency
+  updatePackageJsonDependency,
+  MAVEN_REGISTRY
 } from '../update-dependencies.js';
 
 describe('Dependency Governance Engine', () => {
@@ -58,6 +60,26 @@ describe('Dependency Governance Engine', () => {
     it('should return null when currently on latest available version', () => {
       const selected = filterSafeVersions(versions, '3.39.5', { allowMajor: false });
       assert.strictEqual(selected, null);
+    });
+
+    it('should compare 4-segment Quarkus micro GA versions numerically and ignore CR pre-releases', () => {
+      assert.ok(compareSemver('3.40.1.10', '3.40.1.2') > 0);
+      const quarkusVersions = ['3.40.1', '3.40.1.1', '3.40.1.2', '3.40.1.10', '4.0.0.CR1'];
+      const selected = filterSafeVersions(quarkusVersions, '3.40.1.1', { allowMajor: true });
+      assert.strictEqual(selected, '3.40.1.10');
+    });
+  });
+
+  describe('MAVEN_REGISTRY', () => {
+    it('should track quarkus.mcp.version BOM and all pom.xml version properties', () => {
+      const props = MAVEN_REGISTRY.map((item) => item.prop).filter(Boolean);
+      assert.ok(props.includes('quarkus.platform.version'));
+      assert.ok(props.includes('quarkus.mcp.version'));
+      assert.ok(props.includes('quarkus.quinoa.version'));
+      assert.ok(props.includes('google-java-format.version'));
+      assert.ok(props.includes('resources-plugin.version'));
+      assert.ok(props.includes('versions-plugin.version'));
+      assert.ok(props.includes('findsecbugs-plugin.version'));
     });
   });
 

@@ -1,0 +1,53 @@
+---
+description: Synchronizes project documentation (README.md, docs/specs/, CHANGELOG.md, wiki/) and automates Semantic Versioning (SemVer) releases, Git tagging, regression proofs, and canary health watchdog verification.
+globs: *
+alwaysApply: false
+---
+
+# 📦 Documentation Sync & Release Manager (`sdlc-release`)
+
+## 1. Documentation & Knowledge Synchronization
+
+Before cutting a release or completing a feature ticket, synchronize documentation with the actual repository state:
+1. **`README.md` (10–30–90 Developer Landing Page) & `llms.txt`**: Keep `README.md` aligned with `docs/templates/README_TEMPLATE.md` (`<= 4` badges with current version, `<picture>` dark/light logo, archetype Hero Proof, problem-first `Why`, one-line install `Quickstart` without `git clone`, neutral-themed Mermaid `%%{init: {'theme': 'neutral'}}%%`, `<details>` progressive disclosure, and `llms.txt` link), then verify zero anti-patterns:
+   ```bash
+   node .agent/scripts/sdlc-engine.mjs readme audit --strict
+   ```
+2. **`docs/specs/` & `docs/DECISION_MAP.md`**: Refresh the Causal Decision Lineage Graph:
+   ```bash
+   node .agent/scripts/sdlc-engine.mjs decision-graph sync
+   ```
+3. **`CHANGELOG.md` (Keep a Changelog & SemVer)**: Categorize changes under `## [Unreleased]` (`Added`, `Changed`, `Fixed`, `Security`, `Removed`).
+4. **`wiki/` Synchronization (`sdlc-wiki`)**: When `wiki/` exists in the workspace, run `node .agent/scripts/sdlc-engine.mjs wiki sync` and `node .agent/scripts/sdlc-engine.mjs wiki audit --strict` to keep `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md`, `wiki/Architecture.md`, `wiki/Traceability.md`, and `wiki/Home.md` 100% aligned with the codebase and `README.md`.
+5. **ADR Lifecycle Compaction (`adr compact`)**: Before or during release cut, consolidate in-flight accepted `docs/adr/ADR-*.md` files into `docs/SRS.md` (`## Compacted Architectural Decisions`) and reset the `PRODUCT.md` ADR index table:
+   ```bash
+   node .agent/scripts/sdlc-engine.mjs adr compact --release vX.Y.Z
+   ```
+   *(Note: `release <patch|minor|major>` automatically runs `adr compact` unless `--no-compact` is passed.)*
+
+---
+
+## 2. Automated Release & Canary Verification
+
+### Step 1: Pre-Release Quality Gate & Regression Proof
+Generate a cryptographic delivery regression proof (`docs/proofs/proof-*.md`) hashing verified API endpoints and UI route components on disk:
+```bash
+node .agent/scripts/sdlc-engine.mjs proof generate --name <component-or-release>
+```
+
+### Step 2: Execute SemVer Release (`patch` | `minor` | `major`)
+Preview the version bump first with `--dry-run`, then execute the release across `package.json`, `pom.xml`, `pyproject.toml`, or `Cargo.toml`:
+```bash
+# Dry-run preview:
+node .agent/scripts/sdlc-engine.mjs release patch --dry-run
+
+# Execute release (updates manifest, rolls CHANGELOG.md, commits, and creates annotated git tag):
+node .agent/scripts/sdlc-engine.mjs release <patch|minor|major>
+```
+
+### Step 3: Post-Deployment Canary Watchdog
+Monitor live canary health endpoints (or run synthetic error-rate verification) with automatic rollback on threshold breach:
+```bash
+# Live HTTP probing against a deployed health endpoint:
+node .agent/scripts/sdlc-engine.mjs watchdog monitor --url https://service.example.com/health --threshold 0.05 --samples 5 --live --rollback "git revert HEAD --no-edit"
+```

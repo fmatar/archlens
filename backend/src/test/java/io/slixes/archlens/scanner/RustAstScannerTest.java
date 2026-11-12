@@ -75,19 +75,17 @@ class RustAstScannerTest {
     // Implementation edge
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.IMPLEMENTS
-                        && e.from().endsWith("PostgresRepo")
-                        && e.to().equals("OrderRepository")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.IMPLEMENTS
+                    && e.from().endsWith("PostgresRepo")
+                    && e.to().equals("OrderRepository")));
 
     // Use edge
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.DEPENDENCY
-                        && e.from().equals("adapters.postgres")
-                        && e.to().equals("domain.OrderRepository")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.DEPENDENCY
+                    && e.from().equals("adapters.postgres")
+                    && e.to().equals("domain.OrderRepository")));
   }
 }

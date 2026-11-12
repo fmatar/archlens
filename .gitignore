@@ -8,6 +8,7 @@ frontend/node/
 cli/node/
 frontend/dist/
 .idea/
+.vscode/
 *.iml
 .DS_Store
 .uml-viewer/
@@ -31,3 +32,12 @@ reports/
 .quarkus/
 .env
 .envrc
+
+# Agentic SDLC Ephemeral Cache, Binaries & Snapshots
+.agent/.cache/
+.agent/.sdlc-session.json
+.agent/.receipt-key
+.agent/skills/*/scripts/bin/
+.agent/workbench/index.html
+.agent/arch-trace.jsonl
+docs/ARCH_TRACE.md

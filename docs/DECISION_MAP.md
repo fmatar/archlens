@@ -28,8 +28,13 @@ flowchart TD
   ADR_003["ADR-003: Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite"]
   _200["Ticket #200 (feature/issue-#200-docs-mcp-ci-hardening)"]
   ADR_004["ADR-004: Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release"]
-  _4772["Ticket #4772 (feature/issue-#4772-add-multi-format-architecture-diagram-ex)"]
+  _4772["Ticket #4772 (feature/issue-#4772-sync-sdlc-v2-and-release-finalization)"]
+  ADR_005["ADR-005: Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment"]
+  _6157["Ticket #6157 (feature/issue-#6157-upgrade-backend-and-frontend-latest-ga-d)"]
+  ADR_006["ADR-006: Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment"]
+  _222["Ticket #222"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
+  ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
   _192["Ticket #192 (feature/issue-#192-quarkus-mcp-audit-remediation)"]
   _8253["Ticket #8253 (feature/issue-#8253-wiki-roadmap-docs-drift-sync)"]
@@ -37,6 +42,7 @@ flowchart TD
   _1662["Ticket #1662 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
   _3001["Ticket #3001 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
   _4001["Ticket #4001 (feature/issue-#1097-closed-loop-refactor-verification-and-ro)"]
+  _6538["Ticket #6538 (feature/issue-#6538-hexagonal-vault-brand-identity-ui-and-re)"]
   CAP_01 -->|specified_by| SPEC_01
   CAP_02 -->|specified_by| SPEC_02
   CAP_03 -->|specified_by| SPEC_03
@@ -65,10 +71,24 @@ flowchart TD
   CAP_02 -.->|ADR Drift| ADR_004
   CAP_03 -.->|ADR Drift| ADR_004
   CAP_04 -.->|ADR Drift| ADR_004
+  _6157 -->|triggered_drift_adr| ADR_005
+  CAP_01 -.->|ADR Drift| ADR_005
+  CAP_02 -.->|ADR Drift| ADR_005
+  CAP_03 -.->|ADR Drift| ADR_005
+  CAP_04 -.->|ADR Drift| ADR_005
+  _222 -->|triggered_drift_adr| ADR_006
+  CAP_01 -.->|ADR Drift| ADR_006
+  CAP_02 -.->|ADR Drift| ADR_006
+  CAP_03 -.->|ADR Drift| ADR_006
+  CAP_04 -.->|ADR Drift| ADR_006
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_04 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
+  CAP_01 -->|realized_by| ADR_COMPACT_v1_1_1
+  CAP_02 -->|realized_by| ADR_COMPACT_v1_1_1
+  CAP_03 -->|realized_by| ADR_COMPACT_v1_1_1
+  CAP_04 -->|realized_by| ADR_COMPACT_v1_1_1
 ```
 
 ---
@@ -81,6 +101,8 @@ flowchart TD
 | **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | #196 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-003** | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | #200 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-004** | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | #4772 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-005** | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | #6157 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | #222 | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 
@@ -88,7 +110,7 @@ flowchart TD
 
 | Capability ID | Description | Current Status |
 | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-004)` |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-004)` |
-| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-004)` |
-| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-004)` |
+| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-006)` |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-006)` |
+| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-006)` |
+| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-006)` |

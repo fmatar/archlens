@@ -7,6 +7,10 @@ colors:
   accent-emerald: "#10b981"
   accent-amber: "#f59e0b"
   accent-rose: "#ef4444"
+  ring-adapters: "#38bdf8"
+  ring-application: "#6366f1"
+  ring-ports: "#a855f7"
+  ring-core: "#fbbf24"
   neutral-bg: "#020617"
   surface-dark: "#0f172a"
   surface-card: "#1e293b"
@@ -61,6 +65,12 @@ components:
 ## Overview
 
 Archlens is an architectural engineering workstation designed for developers, architects, and autonomous coding agents. The design tone is technical, dark-mode first, high-density, and precise. It draws inspiration from IDE diagnostic tools, radar telemetry, and Robert C. Martin's concentric Clean Architecture visualization.
+
+## Brand Identity — The Hexagonal Dependency Vault
+
+- **Symbol (`ArchlensLogo.svelte`, `docs/logo-mark.svg`)**: Two nested hexagonal vault arches (`#38BDF8` Outer Adapters Vault + `#6366F1` Middle Application Vault) and an upward `60°` Dependency Rule chevron (`#A855F7`) locking the central amber-gold hexagonal **Domain Core** (`#F59E0B` → `#FBBF24`) inside a `#0B0F19` squircle.
+- **Wordmark Lockups (`docs/logo-dark.svg`, `docs/logo-light.svg`)**: Custom-constructed geometric path letterforms (`ARCHLENS`) where the **A** carries a non-overlapping `60°` architectural chevron crossbar echoing the symbol.
+- **Favicon & Web Icons (`frontend/public/favicon.svg`, `favicon.ico`, `icon-192.png`, `icon-512.png`)**: Simplified small-size cut optimized for `16×16 px` browser tabs.
 
 ## Colors
 

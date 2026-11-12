@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <title>Archlens — Hexagonal Dependency Vault Mark</title>
+  <defs>
+    <linearGradient id="archlens-core-gold" x1="204" y1="312" x2="308" y2="208" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#FBBF24" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#0B0F19" />
+  <g transform="scale(2)">
+    <path d="M 34.469 184.0 L 34.469 76.0 L 128.0 22.0 L 221.531 76.0 L 221.531 184.0 L 199.014 171.0 L 199.014 89.0 L 128.0 48.0 L 56.986 89.0 L 56.986 171.0 Z" fill="#38BDF8" />
+    <path d="M 69.11 164.0 L 69.11 96.0 L 128.0 62.0 L 186.89 96.0 L 186.89 164.0 L 167.837 153.0 L 167.837 107.0 L 128.0 84.0 L 88.163 107.0 L 88.163 153.0 Z" fill="#6366F1" />
+    <path d="M 67.378 205 L 128 170 L 188.622 205 L 177.622 224.053 L 128 195.404 L 78.378 224.053 Z" fill="#A855F7" />
+    <path d="M 128.0 104.0 L 150.517 117.0 L 150.517 143.0 L 128.0 156.0 L 105.483 143.0 L 105.483 117.0 Z" fill="url(#archlens-core-gold)" />
+  </g>
+</svg>

@@ -8,10 +8,48 @@
   --color-healthy: #22c55e;
   --color-slate-750: #293548;
   --color-slate-850: #162032;
+  --color-ring-adapters: #38bdf8;
+  --color-ring-application: #6366f1;
+  --color-ring-ports: #a855f7;
+  --color-ring-core: #f59e0b;
 }
 
 :root {
   color-scheme: dark;
+  scrollbar-color: #334155 #0f172a;
+  scrollbar-width: thin;
+}
+
+::selection {
+  background-color: rgba(56, 189, 248, 0.28);
+  color: #f8fafc;
+}
+
+input,
+textarea {
+  caret-color: #38bdf8;
+}
+
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
 body {

@@ -84,20 +84,18 @@ class PythonAstScannerTest {
     // Inheritance edge: Order inherits BaseEntity
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.INHERITANCE
-                        && e.from().endsWith("Order")
-                        && e.to().equals("BaseEntity")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.INHERITANCE
+                    && e.from().endsWith("Order")
+                    && e.to().equals("BaseEntity")));
 
     // Dependency edge: agent.service.OrderService -> core.entity.Order
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.DEPENDENCY
-                        && e.from().equals("agent.service.OrderService")
-                        && e.to().equals("core.entity.Order")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.DEPENDENCY
+                    && e.from().equals("agent.service.OrderService")
+                    && e.to().equals("core.entity.Order")));
   }
 
   @Test
@@ -299,36 +297,30 @@ class PythonAstScannerTest {
     // 2. Nested function import with inline # noqa comment & dynamic import_module:
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("myapp.domain.order.Order")
-                        && e.to()
-                            .equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")));
+            .anyMatch(e ->
+                e.from().equals("myapp.domain.order.Order")
+                    && e.to().equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")));
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("myapp.domain.order.Order")
-                        && e.to().equals("myapp.adapters.http_client.HttpClient")));
+            .anyMatch(e ->
+                e.from().equals("myapp.domain.order.Order")
+                    && e.to().equals("myapp.adapters.http_client.HttpClient")));
 
     // 3. Backslash continuation + 3-dot relative import: SqlOrderRepository -> Order
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")
-                        && e.to().equals("myapp.domain.order.Order")));
+            .anyMatch(e ->
+                e.from().equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")
+                    && e.to().equals("myapp.domain.order.Order")));
 
     // 4. Barrel re-export through adapters/__init__.py under TYPE_CHECKING:
     // PlaceOrderUseCase imports SqlOrderRepository from myapp.adapters -> resolves to
     // SqlOrderRepository!
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("myapp.application.place_order.PlaceOrderUseCase")
-                        && e.to()
-                            .equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")));
+            .anyMatch(e ->
+                e.from().equals("myapp.application.place_order.PlaceOrderUseCase")
+                    && e.to().equals("myapp.adapters.persistence.sql_repo.SqlOrderRepository")));
 
     // 5. Verify end-to-end GraphCompiler, Cycle Detection, and Dossier generation on Python graph
     io.slixes.archlens.domain.policy.ArchitecturePolicy policy =
@@ -493,10 +485,9 @@ class PythonAstScannerTest {
     // Type alias references Order in the same module
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("domain.order.OrderPredicate")
-                        && e.to().equals("domain.order.Order")));
+            .anyMatch(e ->
+                e.from().equals("domain.order.OrderPredicate")
+                    && e.to().equals("domain.order.Order")));
 
     // Generic PEP 695 class & method in application layer
     var serviceClass =
@@ -511,9 +502,8 @@ class PythonAstScannerTest {
     // Edge from OrderService to imported PEP 695 type alias OrderPredicate
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("application.service.OrderService")
-                        && e.to().equals("domain.order.OrderPredicate")));
+            .anyMatch(e ->
+                e.from().equals("application.service.OrderService")
+                    && e.to().equals("domain.order.OrderPredicate")));
   }
 }

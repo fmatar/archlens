@@ -138,14 +138,13 @@ public class SyncAdrUseCase {
     return Arrays.stream(existing)
             .map(File::getName)
             .map(name -> name.substring(0, 4))
-            .mapToInt(
-                s -> {
-                  try {
-                    return Integer.parseInt(s);
-                  } catch (NumberFormatException e) {
-                    return 0;
-                  }
-                })
+            .mapToInt(s -> {
+              try {
+                return Integer.parseInt(s);
+              } catch (NumberFormatException e) {
+                return 0;
+              }
+            })
             .max()
             .orElse(0)
         + 1;

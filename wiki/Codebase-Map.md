@@ -263,7 +263,7 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/usecase/ProposeScreamingMigrationUseCase.java` | 39 | 0 / 0 | `0` | `ProposeScreamingMigrationUseCase` (L16), `execute` (L31) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/ResolveFilesystemUseCase.java` | 361 | 0 / 0 | `0` | `ResolveFilesystemUseCase` (L24) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/SavePolicyUseCase.java` | 64 | 0 / 0 | `0` | `SavePolicyUseCase` (L19), `execute` (L34) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/usecase/SyncAdrUseCase.java` | 160 | 0 / 0 | `0` | `SyncAdrUseCase` (L17), `AdrDocument` (L22), `recordDipInversion` (L38), `recordPackageReorganization` (L78) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/usecase/SyncAdrUseCase.java` | 159 | 0 / 0 | `0` | `SyncAdrUseCase` (L17), `AdrDocument` (L22), `recordDipInversion` (L38), `recordPackageReorganization` (L78) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/SynthesizeDipInversionUseCase.java` | 38 | 0 / 0 | `0` | `SynthesizeDipInversionUseCase` (L17), `execute` (L31) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/VerifyAndRollbackRefactorUseCase.java` | 472 | 0 / 0 | `0` | `VerifyAndRollbackRefactorUseCase` (L31), `TestExecutionOutcome` (L74), `TestSuiteExecutor` (L79), `createPreRefactorSnapshot` (L106), `verifyRefactoring` (L142), `detectTestCommand` (L258), `rollbackToSnapshot` (L359), `preVisitDirectory` (L432) +2 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/WorkspacePathResolver.java` | 247 | 0 / 0 | `0` | `WorkspacePathResolver` (L13), `DEFAULT_PROJECT_ROOT` (L15), `isContainerEnvironment` (L21), `normalizeRoot` (L30), `isMacOs` (L99), `isProjectDirectory` (L107), `isIgnoredDirectory` (L123), `isSubProjectDirectory` (L141) +3 more | `wiki/Codebase-Map.md` |
@@ -283,7 +283,7 @@ flowchart TD
 | Source Module | Lines | $Ca$ / $Ce$ | Instability ($I$) | Exported AST Symbols (Line #) | Wiki Coverage |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `.agent/scripts/sdlc-engine.mjs` | 2214 | 0 / 16 | `1` | `executeRelease` (L369), `runCLI` (L537), `formatCLIResult` (L1991), `cliExitCode` (L2195) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md`, `wiki/Traceability.md` |
-| `backend/src/main/java/io/slixes/archlens/delivery/rest/DiagramResource.java` | 462 | 0 / 0 | `0` | `DiagramResource` (L48), `getGraph` (L221), `getDiagram` (L231), `getLlmDossier` (L242), `getLlmDossierAlias` (L253), `getDiagramExport` (L264), `getGraphExportAlias` (L288), `getInvertPlan` (L304) +9 more | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/delivery/rest/DiagramResource.java` | 461 | 0 / 0 | `0` | `DiagramResource` (L48), `getGraph` (L221), `getDiagram` (L231), `getLlmDossier` (L242), `getLlmDossierAlias` (L253), `getDiagramExport` (L264), `getGraphExportAlias` (L288), `getInvertPlan` (L304) +9 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/FitnessResource.java` | 54 | 0 / 0 | `0` | `FitnessResource` (L23), `getFitness` (L40), `getFitnessHistory` (L49) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/MailboxResource.java` | 166 | 0 / 0 | `0` | `MailboxResource` (L23), `getToAgentMailbox` (L59) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/ProjectFilesystemResource.java` | 65 | 0 / 0 | `0` | `ProjectFilesystemResource` (L21) | `wiki/Codebase-Map.md` |
@@ -291,13 +291,13 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/VersionResource.java` | 60 | 0 / 0 | `0` | `VersionResource` (L22) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/WorkspacePathResolver.java` | 55 | 0 / 0 | `0` | `WorkspacePathResolver` (L15), `DEFAULT_PROJECT_ROOT` (L17), `isContainerEnvironment` (L24), `normalizeRoot` (L28), `isMacOs` (L32), `isIgnoredDirectory` (L36), `isProjectDirectory` (L40), `scanDirectoryForProjects` (L44) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/engine/ArchitectureCompiler.java` | 34 | 0 / 0 | `0` | `ArchitectureCompiler` (L12) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/engine/GraphCompiler.java` | 513 | 0 / 0 | `0` | `GraphCompiler` (L34), `loadPolicy` (L77), `computeCommonPrefix` (L155), `compileGraph` (L193) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
-| `backend/src/main/java/io/slixes/archlens/engine/ProjectFileWatcher.java` | 244 | 0 / 0 | `0` | `ProjectFileWatcher` (L20), `isRunning` (L57), `void` (L61), `shutdown` (L88), `preVisitDirectory` (L121), `isWatchedFile` (L224) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/engine/GraphCompiler.java` | 509 | 0 / 0 | `0` | `GraphCompiler` (L34), `loadPolicy` (L77), `computeCommonPrefix` (L155), `compileGraph` (L193) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `backend/src/main/java/io/slixes/archlens/engine/ProjectFileWatcher.java` | 243 | 0 / 0 | `0` | `ProjectFileWatcher` (L20), `isRunning` (L57), `void` (L61), `shutdown` (L87), `preVisitDirectory` (L120), `isWatchedFile` (L223) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/metrics/CrapCalculator.java` | 15 | 0 / 0 | `0` | `CrapCalculator` (L7) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/ClojureAstScanner.java` | 256 | 0 / 0 | `0` | `ClojureAstScanner` (L20), `languageId` (L29), `supports` (L34), `scanProject` (L51) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/FileScannerUtil.java` | 468 | 0 / 0 | `0` | `FileScannerUtil` (L30), `isIgnoredDirectory` (L62), `findFiles` (L85), `preVisitDirectory` (L97), `visitFile` (L105), `visitFileFailed` (L113), `findDirectories` (L143), `discoverWorkspaceModules` (L208) +3 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/GoAstScanner.java` | 282 | 0 / 0 | `0` | `GoAstScanner` (L25), `languageId` (L44), `supports` (L49), `scanProject` (L61) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/scanner/JavaAstScanner.java` | 489 | 0 / 0 | `0` | `JavaAstScanner` (L34), `JavaParserFunction` (L39), `languageId` (L90), `supports` (L95), `resolveSourceDirs` (L111), `scanProject` (L177) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/scanner/JavaAstScanner.java` | 464 | 0 / 0 | `0` | `JavaAstScanner` (L34), `JavaParserFunction` (L39), `languageId` (L88), `supports` (L93), `resolveSourceDirs` (L109), `scanProject` (L175) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/LanguageScanner.java` | 156 | 0 / 0 | `0` | `LanguageScanner` (L16) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/LanguageScannerRegistry.java` | 72 | 0 / 0 | `0` | `LanguageScannerRegistry` (L12), `register` (L26), `getAllScanners` (L32), `findScanner` (L45), `resolveScanner` (L54) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/PythonAstScanner.java` | 965 | 0 / 0 | `0` | `PythonAstScanner` (L25), `languageId` (L47), `supports` (L52), `scanProject` (L182) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
@@ -367,10 +367,10 @@ flowchart TD
 
 | Capability ID | Title | Functional Spec | Status | Depends On |
 | :--- | :--- | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | `AMENDED (ADR-004)` | None |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | `AMENDED (ADR-004)` | None |
-| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | `AMENDED (ADR-004)` | CAP-01, CAP-02 |
-| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | `AMENDED (ADR-004)` | CAP-01, CAP-02 |
+| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | `AMENDED (ADR-005)` | None |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | `AMENDED (ADR-005)` | None |
+| **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | `AMENDED (ADR-005)` | CAP-01, CAP-02 |
+| **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | `AMENDED (ADR-005)` | CAP-01, CAP-02 |
 
 ---
 
@@ -382,6 +382,7 @@ flowchart TD
 | **ADR-002** | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-003** | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-004** | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-005** | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 
 ---
 

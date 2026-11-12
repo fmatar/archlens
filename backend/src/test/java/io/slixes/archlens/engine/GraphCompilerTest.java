@@ -43,24 +43,24 @@ class GraphCompilerTest {
     Files.createDirectories(umlDir);
     String policyJson =
         """
-                {
-                  "title": "My Custom Architecture",
-                  "src": "src",
-                  "prefix": "com.myapp",
-                  "hierarchical": true,
-                  "levels": [["domain"], ["service"]],
-                  "proposals": [
-                    {
-                      "id": "prop1",
-                      "name": "Proposal 1",
-                      "layers": [
-                        {"id": "core", "label": "Core Layer", "packages": ["domain"]}
-                      ],
-                      "omit": []
-                    }
-                  ]
-                }
-                """;
+        {
+          "title": "My Custom Architecture",
+          "src": "src",
+          "prefix": "com.myapp",
+          "hierarchical": true,
+          "levels": [["domain"], ["service"]],
+          "proposals": [
+            {
+              "id": "prop1",
+              "name": "Proposal 1",
+              "layers": [
+                {"id": "core", "label": "Core Layer", "packages": ["domain"]}
+              ],
+              "omit": []
+            }
+          ]
+        }
+        """;
     Files.writeString(umlDir.resolve("policy.json"), policyJson);
 
     ArchitecturePolicy loadedPolicy = compiler.loadPolicy(tempDir.toString());

@@ -40,35 +40,35 @@ class JavaAstScannerTest {
     // Interface
     String serviceInterface =
         """
-                package com.test;
-                public interface OrderService {
-                    void processOrder(String id);
-                }
-                """;
+        package com.test;
+        public interface OrderService {
+            void processOrder(String id);
+        }
+        """;
     Files.writeString(src.resolve("OrderService.java"), serviceInterface);
 
     // Class implementing interface with fields and methods
     String serviceImpl =
         """
-                package com.test;
-                import com.test.OrderService;
-                public class OrderServiceImpl implements OrderService {
-                    private String serviceName;
-                    public void processOrder(String id) {
-                        if (id != null) {
-                            for (int i = 0; i < 1; i++) {}
-                        }
-                    }
+        package com.test;
+        import com.test.OrderService;
+        public class OrderServiceImpl implements OrderService {
+            private String serviceName;
+            public void processOrder(String id) {
+                if (id != null) {
+                    for (int i = 0; i < 1; i++) {}
                 }
-                """;
+            }
+        }
+        """;
     Files.writeString(src.resolve("OrderServiceImpl.java"), serviceImpl);
 
     // Record
     String dataRecord =
         """
-                package com.test;
-                public record OrderData(String id, double amount) {}
-                """;
+        package com.test;
+        public record OrderData(String id, double amount) {}
+        """;
     Files.writeString(src.resolve("OrderData.java"), dataRecord);
 
     // 3. Scan project
@@ -163,19 +163,17 @@ class JavaAstScannerTest {
     Files.writeString(src.resolve("Whitespace.java"), "   \n\t  ");
     Files.writeString(src.resolve("Broken.java"), "public class Broken { incomplete syntax !!@#$ ");
 
-    assertDoesNotThrow(
-        () -> {
-          scanner.scanProject(tempDir.toString(), "src/main/java", "com.test");
-        });
+    assertDoesNotThrow(() -> {
+      scanner.scanProject(tempDir.toString(), "src/main/java", "com.test");
+    });
   }
 
   @Test
   void testScanCurrentProject() {
     JavaAstScanner scanner = new JavaAstScanner();
-    assertDoesNotThrow(
-        () -> {
-          scanner.scanProject(".", null, "io.slixes.archlens");
-        });
+    assertDoesNotThrow(() -> {
+      scanner.scanProject(".", null, "io.slixes.archlens");
+    });
   }
 
   @Test
@@ -234,20 +232,19 @@ class JavaAstScannerTest {
     java.util.List<Throwable> errors = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     for (int t = 0; t < threadCount; t++) {
-      executor.submit(
-          () -> {
-            try {
-              LanguageScanner.ScanResult res =
-                  scanner.scanProject(tempDir.toString(), "src/main/java", "com.concurrent");
-              if (res.classes().size() == 10) {
-                successCount.incrementAndGet();
-              }
-            } catch (Throwable ex) {
-              errors.add(ex);
-            } finally {
-              latch.countDown();
-            }
-          });
+      executor.submit(() -> {
+        try {
+          LanguageScanner.ScanResult res =
+              scanner.scanProject(tempDir.toString(), "src/main/java", "com.concurrent");
+          if (res.classes().size() == 10) {
+            successCount.incrementAndGet();
+          }
+        } catch (Throwable ex) {
+          errors.add(ex);
+        } finally {
+          latch.countDown();
+        }
+      });
     }
 
     assertTrue(latch.await(10, java.util.concurrent.TimeUnit.SECONDS));
@@ -295,9 +292,8 @@ class JavaAstScannerTest {
     // Verify inter-module dependency edge resolution
     assertTrue(
         res.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().equals("com.enterprise.backend.OrderController")
-                        && e.to().equals("com.enterprise.domain.Order")));
+            .anyMatch(e ->
+                e.from().equals("com.enterprise.backend.OrderController")
+                    && e.to().equals("com.enterprise.domain.Order")));
   }
 }

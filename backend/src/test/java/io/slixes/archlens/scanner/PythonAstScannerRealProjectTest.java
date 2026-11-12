@@ -100,11 +100,10 @@ class PythonAstScannerRealProjectTest {
     List<String> compIds = graph.components().stream().map(ComponentNode::id).toList();
     assertTrue(
         compIds.stream()
-            .anyMatch(
-                id ->
-                    id.startsWith("core")
-                        || id.startsWith("agent")
-                        || id.startsWith("fastapi_server")));
+            .anyMatch(id ->
+                id.startsWith("core")
+                    || id.startsWith("agent")
+                    || id.startsWith("fastapi_server")));
 
     // Verify test directories and omitted paths are excluded
     assertTrue(compIds.stream().noneMatch(id -> id.contains("tests") || id.contains(".tests.")));

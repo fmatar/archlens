@@ -18,7 +18,8 @@ export function parseSemver(v) {
     raw: v,
     major: parts[0] ?? 0,
     minor: parts[1] ?? 0,
-    patch: parts[2] ?? 0
+    patch: parts[2] ?? 0,
+    micro: parts[3] ?? 0
   };
 }
 
@@ -28,6 +29,7 @@ export function compareSemver(a, b) {
   if (pa.major !== pb.major) return pa.major - pb.major;
   if (pa.minor !== pb.minor) return pa.minor - pb.minor;
   if (pa.patch !== pb.patch) return pa.patch - pb.patch;
+  if (pa.micro !== pb.micro) return pa.micro - pb.micro;
   return a.localeCompare(b);
 }
 
@@ -116,12 +118,24 @@ export function fetchNpmVersions(pkgName) {
   }
 }
 
-const MAVEN_REGISTRY = [
+export const MAVEN_REGISTRY = [
   {
     file: 'pom.xml',
     prop: 'quarkus.platform.version',
     name: 'io.quarkus.platform:quarkus-bom',
     url: 'https://repo1.maven.org/maven2/io/quarkus/platform/quarkus-bom/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'quarkus.mcp.version',
+    name: 'io.quarkiverse.mcp:quarkus-mcp-server-bom',
+    url: 'https://repo1.maven.org/maven2/io/quarkiverse/mcp/quarkus-mcp-server-bom/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'quarkus.quinoa.version',
+    name: 'io.quarkiverse.quinoa:quarkus-quinoa',
+    url: 'https://repo1.maven.org/maven2/io/quarkiverse/quinoa/quarkus-quinoa/maven-metadata.xml'
   },
   {
     file: 'pom.xml',
@@ -161,29 +175,57 @@ const MAVEN_REGISTRY = [
   },
   {
     file: 'pom.xml',
+    prop: 'google-java-format.version',
+    name: 'com.google.googlejavaformat:google-java-format',
+    url: 'https://repo1.maven.org/maven2/com/google/googlejavaformat/google-java-format/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'pmd-plugin.version',
+    name: 'org.apache.maven.plugins:maven-pmd-plugin',
+    url: 'https://repo1.maven.org/maven2/org/apache/maven/plugins/maven-pmd-plugin/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'spotbugs-plugin.version',
+    name: 'com.github.spotbugs:spotbugs-maven-plugin',
+    url: 'https://repo1.maven.org/maven2/com/github/spotbugs/spotbugs-maven-plugin/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'findsecbugs-plugin.version',
+    name: 'com.h3xstream.findsecbugs:findsecbugs-plugin',
+    url: 'https://repo1.maven.org/maven2/com/h3xstream/findsecbugs/findsecbugs-plugin/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'asm.version',
+    name: 'org.ow2.asm:asm',
+    url: 'https://repo1.maven.org/maven2/org/ow2/asm/asm/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'resources-plugin.version',
+    name: 'org.apache.maven.plugins:maven-resources-plugin',
+    url: 'https://repo1.maven.org/maven2/org/apache/maven/plugins/maven-resources-plugin/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
+    prop: 'versions-plugin.version',
+    name: 'org.codehaus.mojo:versions-maven-plugin',
+    url: 'https://repo1.maven.org/maven2/org/codehaus/mojo/versions-maven-plugin/maven-metadata.xml'
+  },
+  {
+    file: 'pom.xml',
     prop: 'cyclonedx-plugin.version',
     name: 'org.cyclonedx:cyclonedx-maven-plugin',
     url: 'https://repo1.maven.org/maven2/org/cyclonedx/cyclonedx-maven-plugin/maven-metadata.xml'
   },
   {
     file: 'pom.xml',
-    prop: 'quarkus.quinoa.version',
-    name: 'io.quarkiverse.quinoa:quarkus-quinoa',
-    url: 'https://repo1.maven.org/maven2/io/quarkiverse/quinoa/quarkus-quinoa/maven-metadata.xml'
-  },
-  {
-    file: 'backend/pom.xml',
-    customUpdate: (content, newVer) =>
-      content.replace(
-        /(<artifactId>quarkus-mcp-server-http<\/artifactId>\s*<version>)[^<]+(<\/version>)/,
-        `$1${newVer}$2`
-      ),
-    currentExtractor: (content) => {
-      const m = content.match(/<artifactId>quarkus-mcp-server-http<\/artifactId>\s*<version>([^<]+)<\/version>/);
-      return m ? m[1] : null;
-    },
-    name: 'io.quarkiverse.mcp:quarkus-mcp-server-http',
-    url: 'https://repo1.maven.org/maven2/io/quarkiverse/mcp/quarkus-mcp-server-http/maven-metadata.xml'
+    prop: 'git-commit-id-plugin.version',
+    name: 'io.github.git-commit-id:git-commit-id-maven-plugin',
+    url: 'https://repo1.maven.org/maven2/io/github/git-commit-id/git-commit-id-maven-plugin/maven-metadata.xml'
   }
 ];
 

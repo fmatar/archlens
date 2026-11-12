@@ -217,17 +217,15 @@ class FileScannerUtilTest {
 
     assertTrue(
         scanResult.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().endsWith("CheckoutClient")
-                        && e.to().equals("com.acme.delivery.OrderResource")
-                        && "HTTP /api/orders".equals(e.label())));
+            .anyMatch(e ->
+                e.from().endsWith("CheckoutClient")
+                    && e.to().equals("com.acme.delivery.OrderResource")
+                    && "HTTP /api/orders".equals(e.label())));
     assertTrue(
         scanResult.edges().stream()
-            .anyMatch(
-                e ->
-                    e.from().endsWith("CheckoutClient")
-                        && e.to().equals("services.payments.routes")
-                        && "HTTP /api/payments/charge".equals(e.label())));
+            .anyMatch(e ->
+                e.from().endsWith("CheckoutClient")
+                    && e.to().equals("services.payments.routes")
+                    && "HTTP /api/payments/charge".equals(e.label())));
   }
 }

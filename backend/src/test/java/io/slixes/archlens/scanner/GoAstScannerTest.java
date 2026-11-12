@@ -82,28 +82,25 @@ class GoAstScannerTest {
 
     assertTrue(
         result.classes().stream()
-            .anyMatch(
-                c ->
-                    c.name().equals("Order")
-                        && c.stereotype()
-                            == io.slixes.archlens.domain.graph.ClassNode.Stereotype.CLASS));
+            .anyMatch(c ->
+                c.name().equals("Order")
+                    && c.stereotype()
+                        == io.slixes.archlens.domain.graph.ClassNode.Stereotype.CLASS));
     assertTrue(
         result.classes().stream()
-            .anyMatch(
-                c ->
-                    c.name().equals("OrderRepository")
-                        && c.stereotype()
-                            == io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE));
+            .anyMatch(c ->
+                c.name().equals("OrderRepository")
+                    && c.stereotype()
+                        == io.slixes.archlens.domain.graph.ClassNode.Stereotype.INTERFACE));
     assertTrue(result.classes().stream().anyMatch(c -> c.name().equals("OrderHandler")));
 
     // Dependency edge
     assertTrue(
         result.edges().stream()
-            .anyMatch(
-                e ->
-                    e.kind() == DependencyEdge.Kind.DEPENDENCY
-                        && e.from().equals("internal.adapters")
-                        && e.to().equals("internal.domain")));
+            .anyMatch(e ->
+                e.kind() == DependencyEdge.Kind.DEPENDENCY
+                    && e.from().equals("internal.adapters")
+                    && e.to().equals("internal.domain")));
   }
 
   @Test

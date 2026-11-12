@@ -66,12 +66,11 @@ public class ProjectFileWatcher {
     try {
       this.watchService = FileSystems.getDefault().newWatchService();
       this.debounceScheduler =
-          Executors.newSingleThreadScheduledExecutor(
-              r -> {
-                Thread t = new Thread(r, "archlens-watcher-debounce");
-                t.setDaemon(true);
-                return t;
-              });
+          Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "archlens-watcher-debounce");
+            t.setDaemon(true);
+            return t;
+          });
 
       registerRecursive(rootPath);
       running.set(true);

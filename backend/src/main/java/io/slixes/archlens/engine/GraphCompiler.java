@@ -286,21 +286,20 @@ public class GraphCompiler implements ArchitectureCompiler {
         List<ClassNode> layerClasses = new ArrayList<>();
         if (layer.packages() != null) {
           for (String pkg : layer.packages()) {
-            pkgMap.forEach(
-                (k, v) -> {
-                  if (k.equals(pkg)
-                      || k.startsWith(pkg + ".")
-                      || k.endsWith("." + pkg)
-                      || k.contains("." + pkg + ".")) {
-                    for (ClassNode c : v) {
-                      String assignedLayer = explicitLayerByClassId.get(c.id());
-                      if ((assignedLayer == null || assignedLayer.equals(layer.id()))
-                          && !layerClasses.contains(c)) {
-                        layerClasses.add(c);
-                      }
-                    }
+            pkgMap.forEach((k, v) -> {
+              if (k.equals(pkg)
+                  || k.startsWith(pkg + ".")
+                  || k.endsWith("." + pkg)
+                  || k.contains("." + pkg + ".")) {
+                for (ClassNode c : v) {
+                  String assignedLayer = explicitLayerByClassId.get(c.id());
+                  if ((assignedLayer == null || assignedLayer.equals(layer.id()))
+                      && !layerClasses.contains(c)) {
+                    layerClasses.add(c);
                   }
-                });
+                }
+              }
+            });
           }
         }
         if (layer.classes() != null) {
@@ -308,12 +307,11 @@ public class GraphCompiler implements ArchitectureCompiler {
             validClasses.stream()
                 .filter(
                     c -> c.name().equals(cls) || c.id().endsWith("." + cls) || c.id().equals(cls))
-                .forEach(
-                    c -> {
-                      if (!layerClasses.contains(c)) {
-                        layerClasses.add(c);
-                      }
-                    });
+                .forEach(c -> {
+                  if (!layerClasses.contains(c)) {
+                    layerClasses.add(c);
+                  }
+                });
           }
         }
         Integer level = validator.resolveRank(layer.id());
@@ -369,18 +367,17 @@ public class GraphCompiler implements ArchitectureCompiler {
         components.sort(
             Comparator.comparingInt(
                     (ComponentNode c) -> c.level() != null ? c.level() : Integer.MAX_VALUE)
-                .thenComparingInt(
-                    c -> {
-                      for (int i = 0; i < policy.order().size(); i++) {
-                        String ord = policy.order().get(i);
-                        if (c.id().equals(ord)
-                            || c.id().startsWith(ord + ".")
-                            || c.id().contains("." + ord)) {
-                          return i;
-                        }
-                      }
-                      return Integer.MAX_VALUE;
-                    })
+                .thenComparingInt(c -> {
+                  for (int i = 0; i < policy.order().size(); i++) {
+                    String ord = policy.order().get(i);
+                    if (c.id().equals(ord)
+                        || c.id().startsWith(ord + ".")
+                        || c.id().contains("." + ord)) {
+                      return i;
+                    }
+                  }
+                  return Integer.MAX_VALUE;
+                })
                 .thenComparing(ComponentNode::id));
       } else {
         components.sort(
@@ -409,10 +406,9 @@ public class GraphCompiler implements ArchitectureCompiler {
     List<DependencyEdge> evaluatedEdges =
         scan.edges().stream()
             .filter(e -> !matchesOmit(e.from(), omitPatterns) && !matchesOmit(e.to(), omitPatterns))
-            .filter(
-                e ->
-                    isKnownNode(e.from(), validIdentifiers, policy.foreign())
-                        && isKnownNode(e.to(), validIdentifiers, policy.foreign()))
+            .filter(e ->
+                isKnownNode(e.from(), validIdentifiers, policy.foreign())
+                    && isKnownNode(e.to(), validIdentifiers, policy.foreign()))
             .map(validator::evaluate)
             .distinct()
             .toList();

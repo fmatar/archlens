@@ -198,7 +198,8 @@ metadata:
     assert.throws(() => setVersion({}), /Usage: set-version\.js/);
 
     // Dry run on live repository mutates nothing
-    const dryRes = setVersion({ newVersion: '1.1.1', dryRun: true, rootDir: REPO_ROOT });
+    const liveVersion = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'cli', 'package.json'), 'utf8')).version;
+    const dryRes = setVersion({ newVersion: liveVersion, dryRun: true, rootDir: REPO_ROOT });
     assert.equal(dryRes.dryRun, true);
     assert.equal(dryRes.updatedCount, 0);
 

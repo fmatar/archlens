@@ -1,6 +1,6 @@
 {
   "name": "archlens",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Archlens — Dynamic Clean Architecture Workbench, AST governance engine, DIP synthesizer, and MCP companion skills",
   "skills": "./skills",
   "mcpServers": "./.mcp.json"

@@ -28,7 +28,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '1.1.1';
+  return '1.1.2';
 }
 
 export function getMcpToolsList() {

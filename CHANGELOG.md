@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-11-13
+
 ### Added
 - **`npx skills` First-Class Skill Management & Automated Release Governance** (`#8238`):
   - Converted `cli/src/installer.js`, `cli/src/updater.js`, and `cli/bin/index.js` (`skills` subcommand, `--skills`, `--agent`) to delegate local and global skill installation/updates directly to `npx skills add <cliPackageRoot> --all [--agent ...] [-g] --copy -y` with offline `.agents/skills` fallback.

@@ -6,10 +6,10 @@ description: >-
   evaluates Clean Architecture violations, runs builds and tests, and signals live diagram reloads.
 license: Apache-2.0
 compatibility: "Node.js >= 18"
-version: 1.1.1
+version: 1.1.2
 metadata:
   author: fmatar
-  version: "1.1.1"
+  version: "1.1.2"
 ---
 
 # UML Workbench Companion Skill (`uml-workbench-companion`)

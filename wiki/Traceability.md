@@ -11,7 +11,7 @@ Archlens enforces deterministic, cryptographically auditable traceability linkin
 ```mermaid
 flowchart LR
     Product["PRODUCT.md\n(INV-01..05, CAP-01..04)"] --> Specs["docs/specs/cap-01..04.md\n(Requirement Contracts)"]
-    Product --> ADRs["docs/adr/ADR-001..003\n(Architectural Decisions)"]
+    Product --> ADRs["docs/adr/ADR-001..008\n(Architectural Decisions)"]
     ADRs --> DecisionMap["docs/DECISION_MAP.md\n(Decision Knowledge Graph)"]
     Specs --> Kanban["docs/KANBAN.md\n(Issue & Epic Traceability)"]
     Kanban --> Code["Java 25 + Svelte 5 + CLI\n(.archlens/policy.json Rings 0..3)"]
@@ -52,6 +52,8 @@ flowchart LR
 - **`ADR-004`**: Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release (`docs/adr/ADR-004-multi-format-architecture-diagram-export-mermaid.md`)
 - **`ADR-005`**: Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment (`docs/adr/ADR-005-quarkus-3-40-1-2-mcp-2-0-4-latest-ga-dependency-.md`)
 - **`ADR-006`**: Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment (`docs/adr/ADR-006-release-v1-1-1-manifest-synchronization-brand-id.md`)
+- **`ADR-007`**: Enforce Agent Skills Release Parity and Convert Skill Installer to `npx skills` (`docs/adr/ADR-007-enforce-agent-skills-release-parity-and-convert-.md`)
+- **`ADR-008`**: Release v1.1.2 — Agent Skills Release Parity & `npx skills` Ecosystem Publication (`docs/adr/ADR-008-release-v1-1-2-agent-skills-release-parity-npx-s.md`)
 
 ### Foundational Feature ADRs (`wiki/`)
 - **[ADR-001: Surgical DIP Inverter](ADR-001-Surgical-DIP-Inverter)** (PR #112)

@@ -3,9 +3,14 @@ name: archlens
 description: >-
   Polyglot Clean Architecture governance, dynamic visual workbench companion,
   policy scaffolding, mailbox refactoring protocols, LLM prompt dossiers,
-  and Model Context Protocol (MCP) diagnostics for Archlens.
-version: 1.2.0
+  and Model Context Protocol (MCP) diagnostics for Archlens. Use when auditing
+  layer boundaries, inverting outward dependencies (DIP), or running Archlens.
 license: Apache-2.0
+compatibility: "Node.js >= 18"
+version: 1.1.2
+metadata:
+  author: fmatar
+  version: "1.1.2"
 ---
 
 # Archlens — Clean Architecture Governance & Workbench Companion
@@ -53,7 +58,7 @@ Archlens models codebases as concentric circular rings. Source code dependencies
 Install Archlens across 15+ coding agents (Antigravity, Claude Code, Cursor, Gemini CLI) via `skills.sh`:
 ```bash
 # Add Archlens to your active agent skills library:
-npx skills add fmatar/archlens
+npx skills add fmatar/archlens --all -y
 ```
 
 Or execute directly on demand via NPX:

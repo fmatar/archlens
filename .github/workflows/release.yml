@@ -8,15 +8,16 @@ on:
       - 'v*'
       - '[0-9]+.[0-9]+.[0-9]+*'
     paths-ignore:
-      - '**.md'
+      - '*.md'
+      - 'wiki/**'
       - 'media/**'
       - 'docs/**'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag name (e.g. v1.1.1)'
+        description: 'Release tag name (e.g. v1.1.2)'
         required: false
-        default: 'v1.1.1'
+        default: 'v1.1.2'
 
 permissions:
   contents: write
@@ -30,6 +31,7 @@ concurrency:
 jobs:
   docker-release:
     name: Build Multi-Arch Docker Image & Publish to GHCR
+    needs: [npm-release]
     runs-on: local-archlens
 
     steps:
@@ -131,6 +133,7 @@ jobs:
 
   native-binaries:
     name: Build GraalVM Native Binary (linux-amd64)
+    needs: [docker-release]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: local-archlens
     timeout-minutes: 15
@@ -199,15 +202,28 @@ jobs:
           setup-maven: 'false'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Verify Agent Skills Sync & Manifest Parity
+        run: node scripts/sync-skills.js --check
+
       - name: Run CLI Tests
         run: |
           npm --prefix cli test
 
-      - name: Pack CLI Package
+      - name: Pack CLI Package & Verify Bundled Skills
         id: pack
         run: |
           npm pack ./cli --pack-destination cli
           TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          TARBALL_FILES=$(tar -tzf "$TARBALL_PATH")
+          for SKILL_MD in \
+            package/skills/archlens/SKILL.md \
+            package/skills/archlens-install-policy/SKILL.md \
+            package/skills/uml-workbench-companion/SKILL.md; do
+            if ! echo "$TARBALL_FILES" | grep -qx "$SKILL_MD"; then
+              echo "::error::Missing bundled skill $SKILL_MD in $TARBALL_PATH"
+              exit 1
+            fi
+          done
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Package Version
@@ -226,20 +242,6 @@ jobs:
       # GitHub-hosted runners. This job runs on the self-hosted local-archlens ARC runners,
       # so publishing authenticates with the NPM_TOKEN secret and omits --provenance
       # (npm rejects self-hosted provenance with E422).
-      - name: Publish to GitHub Packages
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
-          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
-          export NPM_CONFIG_USERCONFIG="$NPMRC"
-          SPEC="${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}"
-          if npm view "$SPEC" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
-            echo "${SPEC} already on GitHub Packages; skipping."
-            exit 0
-          fi
-          npm publish "${{ steps.pack.outputs.tarball }}" --registry=https://npm.pkg.github.com --tag latest
-
       - name: Publish @fmatar/archlens-skill to Public NPM Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -255,7 +257,27 @@ jobs:
           if npm view "$SPEC" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
             echo "${SPEC} already on npmjs.org; ensuring the latest dist-tag points at it."
             npm dist-tag add "$SPEC" latest --registry=https://registry.npmjs.org/
+          else
+            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --registry=https://registry.npmjs.org/
+          fi
+          PUBLISHED_VER=$(npm view "$SPEC" version --registry=https://registry.npmjs.org/)
+          if [ "$PUBLISHED_VER" != "${{ steps.meta.outputs.version }}" ]; then
+            echo "::error::Post-publish verification failed for ${SPEC} on registry.npmjs.org"
+            exit 1
+          fi
+          npm view "${{ steps.meta.outputs.name }}" dist-tags --registry=https://registry.npmjs.org/
+
+      - name: Publish to GitHub Packages (Mirror)
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
+          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
+          export NPM_CONFIG_USERCONFIG="$NPMRC"
+          SPEC="${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}"
+          if npm view "$SPEC" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "${SPEC} already on GitHub Packages; skipping."
             exit 0
           fi
-          npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --registry=https://registry.npmjs.org/
-          npm view "${{ steps.meta.outputs.name }}" dist-tags --registry=https://registry.npmjs.org/
+          npm publish "${{ steps.pack.outputs.tarball }}" --registry=https://npm.pkg.github.com --tag latest

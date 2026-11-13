@@ -1,8 +1,15 @@
 ---
 name: archlens-install-policy
-description: Inspects any target codebase, detects programming languages and packages, and scaffolds an Archlens Clean Architecture policy (.archlens/policy.json) and agent workbench companion integration.
-version: 1.1.1
+description: >-
+  Inspects any target codebase, detects programming languages and packages, and
+  scaffolds an Archlens Clean Architecture policy (.archlens/policy.json) and
+  agent workbench companion integration. Use when setting up or upgrading Archlens.
 license: Apache-2.0
+compatibility: "Node.js >= 18"
+version: 1.1.2
+metadata:
+  author: fmatar
+  version: "1.1.2"
 ---
 
 # Archlens Policy & Companion Installer (`archlens-install-policy`)

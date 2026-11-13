@@ -1,7 +1,7 @@
 {
-  "name": "agentic-sdlc",
-  "version": "0.1.0",
-  "description": "Agentic SDLC Framework — Universal /sdlc router and 9 lifecycle skills for Claude Code & Cowork",
-  "skills": "./.claude/skills",
-  "commands": "./.claude/commands"
+  "name": "archlens",
+  "version": "1.1.2",
+  "description": "Archlens — Dynamic Clean Architecture Workbench, AST governance engine, DIP synthesizer, and MCP companion skills",
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
 }

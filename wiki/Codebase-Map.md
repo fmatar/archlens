@@ -137,11 +137,11 @@ flowchart TD
     martinMetrics_ts["martinMetrics.ts (7 exports, I=1)"]
     main_ts["main.ts (0 exports, I=1)"]
     vite_env_d_ts["vite-env.d.ts (0 exports, I=0)"]
-    index_js["index.js (0 exports, I=1)"]
+    index_js["index.js (2 exports, I=1)"]
     analyzer_js["analyzer.js (10 exports, I=0.2)"]
     checker_js["checker.js (16 exports, I=0)"]
     docker_runner_js["docker-runner.js (18 exports, I=0)"]
-    installer_js["installer.js (5 exports, I=0.4)"]
+    installer_js["installer.js (7 exports, I=0.4)"]
     mcp_registry_js["mcp-registry.js (5 exports, I=0)"]
     mcp_server_js["mcp-server.js (7 exports, I=0.8)"]
     ui_js["ui.js (14 exports, I=0)"]
@@ -247,7 +247,7 @@ flowchart TD
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `.agent/scripts/lib/adr-drift.mjs` | 621 | 7 / 3 | `0.3` | `listADRs` (L40), `createADR` (L80), `decideADR` (L183), `compactADRs` (L256), `checkSpecDrift` (L422), `auditContractDrift` (L510) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/arch-trace.mjs` | 435 | 6 / 2 | `0.25` | `checkArchDiff` (L7), `parseMermaidDiagram` (L157), `diffMermaidGraphs` (L229), `recordArchTrace` (L253), `scaffoldArchlensPolicy` (L374) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
-| `.agent/scripts/lib/decision-graph.mjs` | 332 | 5 / 1 | `0.17` | `DECISION_GRAPH_FILE` (L5), `DECISION_MAP_MD` (L6), `appendDecisionEvent` (L8), `buildDecisionGraph` (L39), `syncDecisionMapMarkdown` (L257) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
+| `.agent/scripts/lib/decision-graph.mjs` | 335 | 5 / 1 | `0.17` | `DECISION_GRAPH_FILE` (L5), `DECISION_MAP_MD` (L6), `appendDecisionEvent` (L8), `buildDecisionGraph` (L39), `syncDecisionMapMarkdown` (L260) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/dossier.mjs` | 117 | 2 / 3 | `0.6` | `extractExportSignatures` (L7), `generateTicketDossier` (L23) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/product-dag.mjs` | 837 | 5 / 4 | `0.44` | `renderCapabilitySpecMarkdown` (L10), `renderProductPrdMarkdown` (L61), `renderProductSrsMarkdown` (L110), `initProductConstitution` (L185), `scaffoldCapabilitySpec` (L387), `parseProductMarkdown` (L563), `planProductDAG` (L637), `controlProductDAG` (L705) +1 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/readme-sync.mjs` | 898 | 1 / 2 | `0.67` | `escapeXml` (L105), `slugifyHeadingAnchor` (L114), `detectReadmeArchetype` (L137), `stripArchetypeBlocks` (L182), `renderThemeWordmarkSvg` (L199), `renderVhsDemoTape` (L223), `renderLlmsTxt` (L249), `scaffoldReadme` (L432) +1 more | `wiki/Codebase-Map.md` |
@@ -273,16 +273,16 @@ flowchart TD
 | Source Module | Lines | $Ca$ / $Ce$ | Instability ($I$) | Exported AST Symbols (Line #) | Wiki Coverage |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `.agent/scripts/lib/git-guard.mjs` | 304 | 3 / 3 | `0.5` | `verifyCommitGuard` (L41), `verifyMergeGuard` (L99), `verifyPushGuard` (L144), `installHooks` (L178), `applyBranchProtection` (L260) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
-| `.agent/scripts/lib/installer.mjs` | 1414 | 3 / 4 | `0.57` | `DEPRECATED_SDLC_SKILLS` (L10), `CANONICAL_SDLC_SKILLS` (L27), `ARCHLENS_SKILL_PACKAGE` (L40), `DEFAULT_GITIGNORE_ENTRIES` (L42), `upsertGitignore` (L52), `pinArchlensMcpConfigs` (L66), `SUPPORTED_AGENTS` (L82), `CONSTITUTIONAL_RULES_SUMMARY` (L144) +17 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
+| `.agent/scripts/lib/installer.mjs` | 1422 | 3 / 4 | `0.57` | `DEPRECATED_SDLC_SKILLS` (L10), `CANONICAL_SDLC_SKILLS` (L27), `ARCHLENS_SKILL_PACKAGE` (L40), `DEFAULT_GITIGNORE_ENTRIES` (L42), `upsertGitignore` (L52), `pinArchlensMcpConfigs` (L66), `SUPPORTED_AGENTS` (L82), `CONSTITUTIONAL_RULES_SUMMARY` (L144) +17 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/pm-provider.mjs` | 1381 | 5 / 1 | `0.17` | `CANONICAL_ISSUE_TEMPLATES` (L6), `scaffoldIssueTemplates` (L108), `loadIssueTemplate` (L130), `formatTemplatedIssue` (L184), `updateLocalKanbanState` (L249), `transitionPMState` (L332), `createTicket` (L652), `resolveOpenPRNumber` (L923) +8 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
-| `.agent/scripts/lib/quality-gate.mjs` | 1710 | 2 / 8 | `0.8` | `runDoctor` (L14), `generateRegressionProof` (L112), `monitorCanaryHealthAndWatchdog` (L273), `installCIWorkflow` (L386), `exportAgentRules` (L450), `scaffoldReproductionTest` (L467), `assessRisk` (L585), `generatePRSummary` (L659) +18 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
+| `.agent/scripts/lib/quality-gate.mjs` | 1720 | 2 / 8 | `0.8` | `runDoctor` (L14), `generateRegressionProof` (L112), `monitorCanaryHealthAndWatchdog` (L273), `installCIWorkflow` (L386), `exportAgentRules` (L450), `scaffoldReproductionTest` (L467), `assessRisk` (L585), `generatePRSummary` (L659) +18 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/workbench-server.mjs` | 2667 | 2 / 7 | `0.78` | `parseKanbanMarkdown` (L63), `parseArchTraceMarkdown` (L144), `buildArchDiffPayload` (L178), `generateArchitectureWidget` (L255), `renderWorkbenchHTML` (L853), `ensureWorkbenchRunning` (L2428), `createWorkbenchServer` (L2466) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 
 ### 🏛️ Ring 3: CLI Router & Entrypoint
 
 | Source Module | Lines | $Ca$ / $Ce$ | Instability ($I$) | Exported AST Symbols (Line #) | Wiki Coverage |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `.agent/scripts/sdlc-engine.mjs` | 2214 | 0 / 16 | `1` | `executeRelease` (L369), `runCLI` (L537), `formatCLIResult` (L1991), `cliExitCode` (L2195) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md`, `wiki/Traceability.md` |
+| `.agent/scripts/sdlc-engine.mjs` | 2218 | 0 / 16 | `1` | `executeRelease` (L369), `runCLI` (L541), `formatCLIResult` (L1995), `cliExitCode` (L2199) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md`, `wiki/Traceability.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/DiagramResource.java` | 461 | 0 / 0 | `0` | `DiagramResource` (L48), `getGraph` (L221), `getDiagram` (L231), `getLlmDossier` (L242), `getLlmDossierAlias` (L253), `getDiagramExport` (L264), `getGraphExportAlias` (L288), `getInvertPlan` (L304) +9 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/FitnessResource.java` | 54 | 0 / 0 | `0` | `FitnessResource` (L23), `getFitness` (L40), `getFitnessHistory` (L49) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/MailboxResource.java` | 166 | 0 / 0 | `0` | `MailboxResource` (L23), `getToAgentMailbox` (L59) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
@@ -332,15 +332,15 @@ flowchart TD
 | `frontend/src/lib/utils/martinMetrics.ts` | 408 | 0 / 1 | `1` | `ComponentMetricsSummary` (L12), `calculateComponentMartinMetrics` (L23), `calculateAllMartinMetrics` (L105), `simulateSandboxGraph` (L122), `computeScatterCoordinates` (L343), `computeNodeRadius` (L360), `buildScatterPlotPoints` (L368) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Robert-C-Martin-Metrics.md` |
 | `frontend/src/main.ts` | 10 | 0 / 2 | `1` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/vite-env.d.ts` | 3 | 0 / 0 | `0` |  | `wiki/Codebase-Map.md` |
-| `cli/bin/index.js` | 724 | 0 / 9 | `1` |  | `wiki/Codebase-Map.md` |
+| `cli/bin/index.js` | 768 | 0 / 9 | `1` | `parseArgs` (L130), `main` (L489) | `wiki/Codebase-Map.md` |
 | `cli/src/analyzer.js` | 851 | 4 / 1 | `0.2` | `detectProjectLanguage` (L12), `discoverWorkspaceModules` (L124), `detectSourceRoot` (L241), `findCommonPackagePrefix` (L321), `discoverSubpackages` (L416), `classifyLayers` (L452), `parseImportLinterConfig` (L506), `generatePolicy` (L575) +2 more | `wiki/Codebase-Map.md` |
 | `cli/src/checker.js` | 1371 | 3 / 0 | `0` | `loadProjectPolicy` (L49), `TECHNICAL_MARKERS` (L70), `calculateScreamingMetric` (L105), `TECHNICAL_SUFFIXES` (L159), `TECHNICAL_PREFIXES` (L195), `extractFeatureToken` (L206), `suggestFeatureClusters` (L232), `extractTsJsStatements` (L461) +8 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `cli/src/docker-runner.js` | 430 | 2 / 0 | `0` | `DEFAULT_SERVER_URL` (L12), `DEFAULT_DOCKER_IMAGE` (L13), `DEFAULT_DOCKERHUB_IMAGE` (L14), `DEFAULT_CONTAINER_NAME` (L15), `checkServerHealth` (L17), `isJavaAvailable` (L33), `getPlatformBinarySuffix` (L42), `findNativeBinary` (L52) +10 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
-| `cli/src/installer.js` | 256 | 3 / 2 | `0.4` | `COMPANION_PROTOCOL_HEADER` (L20), `getCompanionProtocolBlock` (L22), `installLocalPolicy` (L40), `getGlobalSkillDirectories` (L137), `installGlobalSkills` (L179) | `wiki/Codebase-Map.md` |
+| `cli/src/installer.js` | 388 | 3 / 2 | `0.4` | `COMPANION_PROTOCOL_HEADER` (L20), `getCompanionProtocolBlock` (L22), `installLocalPolicy` (L40), `buildSkillsCliArgs` (L155), `getGlobalSkillDirectories` (L220), `installLocalSkills` (L253), `installGlobalSkills` (L310) | `wiki/Codebase-Map.md` |
 | `cli/src/mcp-registry.js` | 458 | 3 / 0 | `0` | `ARCHLENS_TOOL_SCHEMAS` (L12), `getAntigravityInstructions` (L220), `getClientConfigLocations` (L268), `getMcpManifestEntry` (L363), `installMcpConfigs` (L373) | `wiki/Codebase-Map.md` |
 | `cli/src/mcp-server.js` | 693 | 1 / 4 | `0.8` | `getMcpToolsList` (L34), `getMcpResourcesList` (L42), `getMcpPromptsList` (L67), `readMcpResource` (L98), `executeToolCall` (L163), `handleMcpMessage` (L497), `startMcpStdioServer` (L664) | `wiki/Codebase-Map.md` |
 | `cli/src/ui.js` | 150 | 1 / 0 | `0` | `colors` (L9), `banner` (L45), `info` (L58), `success` (L62), `warn` (L66), `error` (L70), `step` (L74), `divider` (L78) +6 more | `wiki/Codebase-Map.md` |
-| `cli/src/updater.js` | 173 | 1 / 2 | `0.67` | `updateLocalPolicy` (L24), `updateGlobalSkills` (L154) | `wiki/Codebase-Map.md` |
+| `cli/src/updater.js` | 165 | 1 / 2 | `0.67` | `updateLocalPolicy` (L23), `updateGlobalSkills` (L153) | `wiki/Codebase-Map.md` |
 | `cli/src/upgrader.js` | 123 | 1 / 1 | `0.5` | `upgradeProject` (L11) | `wiki/Codebase-Map.md` |
 
 
@@ -384,6 +384,8 @@ flowchart TD
 | **ADR-004** | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-005** | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
+| **ADR-007** | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | None |
+| **ADR-008** | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | ADR-007 |
 
 ---
 

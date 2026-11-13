@@ -1,6 +1,6 @@
 {
   "name": "@fmatar/archlens-skill",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Cross-platform CLI and installer for Archlens Clean Architecture governance policies and AI assistant skills",
   "main": "src/installer.js",
   "type": "module",
@@ -20,6 +20,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "prepack": "node ../scripts/sync-skills.js --if-repo",
     "test": "node --test test/*.test.js",
     "start": "node bin/index.js"
   },

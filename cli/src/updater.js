@@ -17,13 +17,16 @@ import {
 import {
   COMPANION_PROTOCOL_HEADER,
   getCompanionProtocolBlock,
-  installGlobalSkills,
-  getGlobalSkillDirectories
+  installGlobalSkills
 } from './installer.js';
 
 export function updateLocalPolicy(projectRoot, options = {}) {
   const root = path.resolve(projectRoot);
   const dryRun = Boolean(options.dryRun);
+
+  if (!fs.existsSync(root)) {
+    throw new Error(`Target directory does not exist: ${root}`);
+  }
 
   const primaryDir = path.join(root, '.archlens');
   const legacyDir = path.join(root, '.uml-viewer');
@@ -44,10 +47,6 @@ export function updateLocalPolicy(projectRoot, options = {}) {
   }
 
   const configFile = path.join(targetDir, 'workbench.config.json');
-
-  if (!fs.existsSync(root)) {
-    throw new Error(`Target directory does not exist: ${root}`);
-  }
 
   const existingPolicy = JSON.parse(fs.readFileSync(policyFile, 'utf8'));
 
@@ -152,20 +151,13 @@ export function updateLocalPolicy(projectRoot, options = {}) {
 }
 
 export function updateGlobalSkills(options = {}) {
-  const destinations = getGlobalSkillDirectories();
-  const existingDestinations = destinations.filter((dest) => fs.existsSync(dest.targetDir));
-
-  if (existingDestinations.length === 0) {
-    // If none installed yet, install to all detected agent environments
-    return installGlobalSkills(options);
-  }
-
   const installResult = installGlobalSkills({
     ...options,
     force: true
   });
 
   return {
+    method: installResult.method,
     updatedLocations: installResult.installed,
     dryRun: installResult.dryRun
   };

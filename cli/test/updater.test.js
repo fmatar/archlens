@@ -4,7 +4,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
-import { updateLocalPolicy } from '../src/updater.js';
+import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 
 test('updateLocalPolicy detects and integrates new packages', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-update-test-'));
@@ -102,5 +102,63 @@ test('updateLocalPolicy respects dryRun mode', () => {
     assert.deepEqual(onDisk.order, ['domain']);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('updateGlobalSkills refreshes global skills via npx skills CLI', () => {
+  const calls = [];
+  const res = updateGlobalSkills({
+    spawnSync: (cmd, args, opts) => {
+      calls.push({ cmd, args, opts });
+      return { status: 0, stdout: 'Updated 3 skills', stderr: '' };
+    }
+  });
+
+  assert.equal(res.method, 'skills-cli');
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0].args.includes('--all'));
+  assert.ok(calls[0].args.includes('-g'));
+});
+
+test('updateLocalPolicy handles .archlens/policy.json, sparse levels, companion refresh, missing root, and offline global skill update', () => {
+  assert.throws(
+    () => updateLocalPolicy('/nonexistent/archlens-updater-missing-xyz'),
+    /Target directory does not exist/
+  );
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-update-primary-'));
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-update-home-'));
+  try {
+    const archDir = path.join(tmpDir, '.archlens');
+    fs.mkdirSync(archDir, { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'src', 'domain'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'src', 'adapters'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{}');
+    fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '# Project Rules\n');
+
+    // Sparse policy: missing lang, src, prefix, order, and < 3 levels
+    fs.writeFileSync(
+      path.join(archDir, 'policy.json'),
+      JSON.stringify({ title: 'Primary Policy', levels: [['domain']] })
+    );
+
+    const res = updateLocalPolicy(tmpDir, { title: 'Renamed Policy', serverUrl: 'http://localhost:8099' });
+    assert.ok(res.policyFile.endsWith(path.join('.archlens', 'policy.json')));
+    assert.ok(res.refreshedCompanions.includes('CLAUDE.md'));
+
+    const updated = JSON.parse(fs.readFileSync(res.policyFile, 'utf8'));
+    assert.equal(updated.title, 'Renamed Policy');
+    assert.ok(updated.levels.length >= 3);
+
+    const offlineGlobal = updateGlobalSkills({
+      homedir: tmpHome,
+      preferVercelSkills: true,
+      spawnSync: () => ({ status: 1, stdout: '', stderr: 'offline' })
+    });
+    assert.equal(offlineGlobal.method, 'direct-copy');
+    assert.ok(offlineGlobal.updatedLocations.length >= 3);
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(tmpHome, { recursive: true, force: true });
   }
 });

@@ -120,6 +120,11 @@ export function installLocalPolicy(projectRoot, options = {}) {
     mcpResult = installMcpConfigs({ path: root, ...options });
   }
 
+  let skillsResult = null;
+  if (options.skills) {
+    skillsResult = installLocalSkills(root, options);
+  }
+
   return {
     targetDir: root,
     archlensDir: targetDir,
@@ -130,22 +135,91 @@ export function installLocalPolicy(projectRoot, options = {}) {
     policyData,
     companionFiles: updatedCompanions,
     mcpResult,
+    skillsResult,
     dryRun
   };
 }
 
+function parseListOption(val) {
+  if (!val) return [];
+  if (Array.isArray(val)) return val.map((v) => String(v).trim()).filter(Boolean);
+  if (typeof val === 'string') {
+    return val
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+export function buildSkillsCliArgs(options = {}) {
+  const packageRoot = options.sourceDir || path.resolve(__dirname, '..');
+  const args = ['--yes', 'skills', 'add', packageRoot];
+
+  const selectedSkills = parseListOption(options.skill || options.skillsList);
+  if (selectedSkills.length > 0) {
+    for (const s of selectedSkills) {
+      args.push('--skill', s);
+    }
+  } else {
+    args.push('--all');
+  }
+
+  if (options.global) {
+    args.push('-g');
+  }
+
+  const agents = parseListOption(options.agent || options.agents);
+  for (const a of agents) {
+    args.push('--agent', a);
+  }
+
+  if (!options.symlink) {
+    args.push('--copy');
+  }
+  args.push('-y');
+  return args;
+}
+
+function runSkillsCliInstall(options = {}) {
+  const packageRoot = options.skillsSource || path.resolve(__dirname, '..');
+  const spawnFn = options.spawnSync || spawnSync;
+  const isWin = process.platform === 'win32';
+  const npxCmd = isWin ? 'npx.cmd' : 'npx';
+  const args = buildSkillsCliArgs({ ...options, sourceDir: packageRoot });
+
+  const proc = spawnFn(npxCmd, args, {
+    cwd: options.cwd || process.cwd(),
+    encoding: 'utf8',
+    timeout: options.timeoutMs || 60000,
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  if (proc && proc.status === 0) {
+    return {
+      ok: true,
+      sourceDir: packageRoot,
+      output: proc.stdout || ''
+    };
+  }
+  return { ok: false, error: proc?.stderr || '' };
+}
+
+function listBundledSkillNames(bundledSkillsDir) {
+  if (!fs.existsSync(bundledSkillsDir)) return ['archlens', 'archlens-install-policy', 'uml-workbench-companion'];
+  try {
+    return fs
+      .readdirSync(bundledSkillsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+  } catch {
+    return ['archlens-install-policy'];
+  }
+}
+
 export function getGlobalSkillDirectories(home = os.homedir()) {
   const bundledSkillsDir = path.resolve(__dirname, '..', 'skills');
-  let skillNames = ['archlens-install-policy'];
-  if (fs.existsSync(bundledSkillsDir)) {
-    try {
-      skillNames = fs.readdirSync(bundledSkillsDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name);
-    } catch {
-      // fallback
-    }
-  }
+  const skillNames = listBundledSkillNames(bundledSkillsDir);
 
   const agents = [
     {
@@ -176,33 +250,92 @@ export function getGlobalSkillDirectories(home = os.homedir()) {
   return results;
 }
 
+export function installLocalSkills(projectRoot, options = {}) {
+  const root = path.resolve(projectRoot);
+  const dryRun = Boolean(options.dryRun);
+  const bundledSkillsRoot = path.resolve(__dirname, '..', 'skills');
+
+  if (options.preferVercelSkills !== false && !dryRun) {
+    try {
+      const cliRes = runSkillsCliInstall({
+        ...options,
+        global: false,
+        cwd: root
+      });
+      if (cliRes.ok) {
+        return {
+          sourceDir: cliRes.sourceDir,
+          method: 'skills-cli',
+          output: cliRes.output,
+          installed: [
+            {
+              agent: options.agent || 'Detected Project Agents (via npx skills)',
+              skill: 'archlens-suite',
+              path: root
+            }
+          ],
+          dryRun: false
+        };
+      }
+    } catch {
+      // Offline fallback to standard .agents/skills directory
+    }
+  }
+
+  const installed = [];
+  for (const skillName of listBundledSkillNames(bundledSkillsRoot)) {
+    const sourceSkillDir = path.join(bundledSkillsRoot, skillName);
+    const targetSkillDir = path.join(root, '.agents', 'skills', skillName);
+    if (fs.existsSync(sourceSkillDir)) {
+      if (!dryRun) {
+        fs.mkdirSync(targetSkillDir, { recursive: true });
+        copyDirectorySync(sourceSkillDir, targetSkillDir);
+      }
+      installed.push({
+        agent: 'Project Agents (.agents/skills)',
+        skill: skillName,
+        path: targetSkillDir
+      });
+    }
+  }
+
+  return {
+    sourceDir: bundledSkillsRoot,
+    method: 'direct-copy',
+    installed,
+    dryRun
+  };
+}
+
 export function installGlobalSkills(options = {}) {
   const dryRun = Boolean(options.dryRun);
   const force = Boolean(options.force);
   const bundledSkillsRoot = path.resolve(__dirname, '..', 'skills');
 
-  // Attempt using vercel-labs/skills CLI if available and not explicitly disabled
-  if (!options.homedir && options.preferVercelSkills !== false && !dryRun) {
+  // Primary path: delegate to `npx skills add <cliPackageRoot> --all -g --copy -y`
+  if ((options.preferVercelSkills ?? !options.homedir) && !dryRun) {
     try {
-      const isWin = process.platform === 'win32';
-      const npxCmd = isWin ? 'npx.cmd' : 'npx';
-      // Install skills package from GitHub or local bundled skills via `npx skills add`
-      const skillsProc = spawnSync(npxCmd, ['--yes', 'skills', 'add', bundledSkillsRoot, '-g', '--copy', '-y'], {
-        encoding: 'utf8',
-        timeout: 15000,
-        stdio: ['ignore', 'pipe', 'pipe']
+      const cliRes = runSkillsCliInstall({
+        ...options,
+        global: true
       });
-      if (skillsProc.status === 0) {
+      if (cliRes.ok) {
         return {
-          sourceDir: bundledSkillsRoot,
+          sourceDir: cliRes.sourceDir,
           method: 'skills-cli',
-          output: skillsProc.stdout,
-          installed: [{ agent: 'All Supported Agents (via vercel-labs/skills)', skill: 'archlens-suite', path: 'global' }],
+          output: cliRes.output,
+          installed: [
+            {
+              agent: options.agent || 'All Supported Agents (via npx skills)',
+              skill: 'archlens-suite',
+              path: 'global'
+            }
+          ],
           dryRun: false
         };
       }
     } catch {
-      // Fallback seamlessly to native direct directory installation
+      // Fallback seamlessly when offline / air-gapped
     }
   }
 
@@ -210,7 +343,6 @@ export function installGlobalSkills(options = {}) {
   const installed = [];
 
   for (const dest of destinations) {
-    // Install if parent agent directory exists or if force flag is enabled
     const agentHomeDir = path.dirname(dest.baseDir);
     const shouldInstall = force || fs.existsSync(agentHomeDir);
     const sourceSkillDir = path.join(bundledSkillsRoot, dest.skill);

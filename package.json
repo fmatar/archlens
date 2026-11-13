@@ -14,6 +14,8 @@
     "smoke": "node scripts/smoke-test.js",
     "smoke:build": "node scripts/smoke-test.js --build",
     "test": "npm --prefix cli test && node --test scripts/test/*.test.js",
+    "skills:sync": "node scripts/sync-skills.js",
+    "skills:check": "node scripts/sync-skills.js --check",
     "cli": "node ./cli/bin/index.js",
     "deps:check": "bash scripts/update-dependencies.sh --check",
     "deps:update": "bash scripts/update-dependencies.sh --safe",

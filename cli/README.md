@@ -15,21 +15,21 @@ Analyzes any project repository, detects programming languages and package hiera
 ### Option A: Zero-Touch Autonomous AI Setup (`--mcp` — Recommended for Antigravity & Claude)
 Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Once configured, your AI assistant **automatically starts or resurrects Archlens on demand** whenever an architectural MCP tool is invoked—no manual container management required:
 ```bash
-# Scaffold .archlens/policy.json, AGENTS.md/CLAUDE.md, and auto-configure all installed AI clients:
-npx @fmatar/archlens-skill --yes --mcp
+# Scaffold .archlens/policy.json, AGENTS.md/CLAUDE.md, install project skills via npx skills, and auto-configure MCP clients:
+npx @fmatar/archlens-skill --yes --skills --mcp
 
-# Or also install global skills into ~/.claude/skills and ~/.gemini/config/skills:
-npx @fmatar/archlens-skill --global --mcp
+# Or install skills globally across all detected coding agents via npx skills:
+npx @fmatar/archlens-skill skills -g
 ```
 
-### Option B: Install AI Assistant Skills via Open Skills Standard
+### Option B: Install AI Assistant Skills Directly via `npx skills`
 Using the open [Vercel Labs Skills](https://github.com/vercel-labs/skills) standard, you can add Archlens capabilities across 15+ AI coding assistants (Claude Code, Cursor, Antigravity, Copilot, Codex, Windsurf, Zed):
 ```bash
-# Add to all detected AI assistants in project or globally:
-npx skills add fmatar/archlens
+# Add all 3 Archlens skills to detected AI assistants in project or globally:
+npx skills add fmatar/archlens --all -y
 
 # Or add to a specific assistant:
-npx skills add fmatar/archlens --agent claude-code
+npx skills add fmatar/archlens --all --agent claude-code -y
 ```
 
 ### Option C: Run Interactive Policy Scaffolder via NPX

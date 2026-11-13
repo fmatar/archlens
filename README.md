@@ -47,10 +47,10 @@ Get full Clean Architecture governance, visual ring inspection, and autonomous A
 ### 1. Equip Your Repository & AI Coding Agents (One Command)
 
 ```bash
-npx @fmatar/archlens-skill --yes --mcp
+npx @fmatar/archlens-skill --yes --skills --mcp
 ```
 
-This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, and registers the `archlens` MCP 2.0 stdio bridge across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code**.
+This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the 3 Archlens skills via `npx skills`, and registers the `archlens` MCP 2.0 stdio bridge across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code**.
 
 ### 2. Run in Autonomous AI Mode, Visual Browser Studio, or CI
 
@@ -70,9 +70,9 @@ npx @fmatar/archlens-skill check --format mermaid --output docs/architecture.mmd
 
 #### Open Skills Ecosystem (`npx skills`)
 ```bash
-npx skills add fmatar/archlens
-# Or target a specific agent:
-npx skills add fmatar/archlens --agent claude-code
+npx skills add fmatar/archlens --all -y
+# Or target a specific agent globally:
+npx skills add fmatar/archlens --all -g --agent claude-code -y
 ```
 
 #### Always-On Docker Daemon (`http://localhost:8088`)

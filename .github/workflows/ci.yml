@@ -40,6 +40,9 @@ jobs:
           npm --prefix frontend run check
           npm --prefix frontend run test:coverage
 
+      - name: Verify Agent Skills Sync & npx skills Manifest Parity
+        run: npm run skills:check
+
       - name: Run CLI & Script Unit Tests
         run: npm test
 

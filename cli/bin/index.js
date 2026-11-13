@@ -8,7 +8,7 @@
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import * as ui from '../src/ui.js';
 import {
@@ -17,7 +17,7 @@ import {
   findCommonPackagePrefix,
   generateLlmPrompt
 } from '../src/analyzer.js';
-import { installLocalPolicy, installGlobalSkills } from '../src/installer.js';
+import { installLocalPolicy, installLocalSkills, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
 import { upgradeProject } from '../src/upgrader.js';
 import {
@@ -60,6 +60,7 @@ ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   check                    Audit repository against Clean Architecture policy rules
   update                   Update existing policy with newly discovered packages and refresh skills
   upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
+  skills                   Install Archlens skills via npx skills (local project or -g global)
   global                   Install Archlens skills globally for AI coding assistants
   prompt                   Export Clean Architecture LLM Refactoring Prompt Dossier
   mcp                      Launch Model Context Protocol (MCP) stdio server for AI assistants
@@ -80,6 +81,8 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --jar <PATH>             Custom path to Archlens Quarkus runner JAR
   -o, --open               Open visual workbench in default browser upon startup
   -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)
+  --skills                 Install Archlens skills into target project via npx skills
+  --agent <AGENT>          Target specific coding agent(s) when installing skills (e.g. claude-code,cursor)
   -c, --copy               Copy LLM prompt output directly to system clipboard
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
@@ -124,7 +127,7 @@ ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
 `);
 }
 
-function parseArgs(args) {
+export function parseArgs(args) {
   const parsed = {
     command: null,
     path: '.',
@@ -137,6 +140,8 @@ function parseArgs(args) {
     copy: false,
     prompt: false,
     global: false,
+    skills: false,
+    agent: null,
     update: false,
     upgrade: false,
     mcp: false,
@@ -170,6 +175,10 @@ function parseArgs(args) {
       parsed.port = args[++i] || '8088';
     } else if (arg === '--mcp' || arg === '-m') {
       parsed.mcp = true;
+    } else if (arg === '--skills') {
+      parsed.skills = true;
+    } else if (arg === '--agent') {
+      parsed.agent = args[++i] || null;
     } else if (arg === '--global' || arg === '-g') {
       parsed.global = true;
     } else if (arg === '--update' || arg === '-u') {
@@ -223,7 +232,7 @@ function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'start', 'update', 'upgrade', 'global', 'prompt', 'mcp', 'check', 'help', 'version'].includes(cmd)) {
+    if (['init', 'start', 'update', 'upgrade', 'skills', 'global', 'prompt', 'mcp', 'check', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -235,6 +244,7 @@ function parseArgs(args) {
   if (parsed.command === 'start') parsed.start = true;
   if (parsed.command === 'update') parsed.update = true;
   if (parsed.command === 'upgrade') parsed.upgrade = true;
+  if (parsed.command === 'skills') parsed.skills = true;
   if (parsed.command === 'global') parsed.global = true;
   if (parsed.command === 'prompt') parsed.prompt = true;
   if (parsed.command === 'check') parsed.check = true;
@@ -243,7 +253,9 @@ function parseArgs(args) {
   return parsed;
 }
 
-async function runInteractive(options) {
+async function runInteractive(options, deps = {}) {
+  const askChoice = deps.askChoice || ui.askChoice;
+  const askQuestion = deps.askQuestion || ui.askQuestion;
   ui.banner();
 
   const targetRoot = path.resolve(options.path || '.');
@@ -292,12 +304,11 @@ async function runInteractive(options) {
     }
   ];
 
-  const selectedAction = await ui.askChoice('Select installation action:', choices);
+  const selectedAction = await askChoice('Select installation action:', choices);
 
   let customTitle = options.title;
   if (['init_local', 'both'].includes(selectedAction) && !customTitle) {
-    const defaultTitle = ui.colors.dim + path.basename(targetRoot) + ui.colors.reset;
-    customTitle = await ui.askQuestion('Project display title', path.basename(targetRoot));
+    customTitle = await askQuestion('Project display title', path.basename(targetRoot));
   }
 
   const execOptions = {
@@ -347,7 +358,8 @@ function executeMcpInstall(options) {
 
 function executeLocalInit(targetRoot, options) {
   ui.step(1, 2, 'Scaffolding Clean Architecture Policy');
-  const result = installLocalPolicy(targetRoot, options);
+  // Orchestration of --mcp and --skills is handled explicitly in main() with UI progress logging
+  const result = installLocalPolicy(targetRoot, { ...options, mcp: false, skills: false });
 
   if (result.policyCreated) {
     ui.success(`Created policy file: ${path.relative(targetRoot, result.policyFile)}`);
@@ -377,7 +389,7 @@ function executeGlobalInstall(options) {
   const result = installGlobalSkills(options);
 
   if (result.method === 'skills-cli') {
-    ui.success(`Installed Archlens skills across AI agents via vercel-labs/skills CLI${modeSuffix}`);
+    ui.success(`Installed Archlens skills across AI agents via npx skills${modeSuffix}`);
   } else if (result.installed.length === 0) {
     ui.warn('No active AI agent directories found (~/.claude, ~/.gemini). Use --force to deploy anyway.');
   } else {
@@ -386,8 +398,21 @@ function executeGlobalInstall(options) {
     }
   }
 
-  console.log(`\n  ${ui.colors.dim}💡 Tip: You can also manage Archlens skills with the open Skills CLI:${ui.colors.reset}`);
-  console.log(`  ${ui.colors.cyan}npx skills add fmatar/archlens${ui.colors.reset}\n`);
+  console.log(`\n  ${ui.colors.dim}💡 Tip: You can also manage Archlens skills directly with npx skills:${ui.colors.reset}`);
+  console.log(`  ${ui.colors.cyan}npx skills add fmatar/archlens --all -y${ui.colors.reset}\n`);
+}
+
+function executeLocalSkillsInstall(targetRoot, options) {
+  const modeSuffix = options.dryRun ? ' (dry run)' : '';
+  ui.step(2, 2, `Deploying AI Assistant Skills in Project via npx skills${modeSuffix}`);
+  const result = installLocalSkills(targetRoot, options);
+  if (result.method === 'skills-cli') {
+    ui.success(`Installed Archlens skills in ${targetRoot} via npx skills${modeSuffix}`);
+  } else {
+    for (const inst of result.installed) {
+      ui.success(`Installed skill for ${inst.agent}: ${inst.path}${modeSuffix}`);
+    }
+  }
 }
 
 function executeUpgrade(targetRoot, options) {
@@ -461,25 +486,29 @@ function copyToSystemClipboard(text) {
   }
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
+export async function main(rawArgs = process.argv.slice(2), deps = {}) {
+  const exit = deps.exit || ((code) => process.exit(code));
+  const mcpStarter = deps.startMcpStdioServer || startMcpStdioServer;
+  const startExecutor = deps.executeStart || executeStart;
+  const copyClipboard = deps.copyToSystemClipboard || copyToSystemClipboard;
+  const options = { ...parseArgs(rawArgs), ...(deps.options || {}) };
   const targetRoot = path.resolve(options.path || '.');
 
   if (options.help) {
     printHelp();
-    process.exit(0);
+    return exit(0);
   }
 
   if (options.version) {
     console.log(getPackageVersion());
-    process.exit(0);
+    return exit(0);
   }
 
   if (options.command === 'prompt' || options.prompt) {
     try {
       const dossier = await generateLlmPrompt(targetRoot, options);
       if (options.copy) {
-        const ok = copyToSystemClipboard(dossier);
+        const ok = copyClipboard(dossier);
         if (ok) {
           ui.success('Clean Architecture Refactoring Dossier copied to system clipboard!');
         } else {
@@ -488,10 +517,10 @@ async function main() {
       } else {
         process.stdout.write(dossier);
       }
-      process.exit(0);
+      return exit(0);
     } catch (err) {
       ui.error(err.message || String(err));
-      process.exit(1);
+      return exit(1);
     }
   }
 
@@ -503,7 +532,7 @@ async function main() {
       const report = await checkArchitecture(targetRoot, options);
       if (report.error) {
         ui.error(report.error);
-        process.exit(1);
+        return exit(1);
       }
 
       let formattedOutput = null;
@@ -536,7 +565,7 @@ async function main() {
         if (!options.output) {
           process.stdout.write(formattedOutput + '\n');
         }
-        process.exit(report.passed ? 0 : 1);
+        return exit(report.passed ? 0 : 1);
       }
 
       console.log(`\n  ${ui.colors.bold}Architecture Governance Results (${report.projectTitle}):${ui.colors.reset}`);
@@ -592,7 +621,7 @@ async function main() {
             options.detectCycles ? ', 0 package cycles' : ''
           }${report.screamingThreshold !== null ? `, screaming score ${report.screaming.score.toFixed(2)} >= ${report.screamingThreshold.toFixed(2)}` : ''}${report.fitnessThreshold !== null && !isNaN(report.fitnessThreshold) ? `, fitness ${(report.fitness.fitnessScore * 100).toFixed(0)}% >= ${(report.fitnessThreshold * 100).toFixed(0)}%` : ''}).`
         );
-        process.exit(0);
+        return exit(0);
       } else {
         ui.error(
           `Clean Architecture Gate FAILED (${report.violationsCount} violation(s), ${
@@ -620,18 +649,18 @@ async function main() {
           console.log(`\n    Architectural Fitness Invariant Violation:`);
           console.log(`    Fitness Score ${(report.fitness.fitnessScore * 100).toFixed(0)}% [Grade ${report.fitness.grade}] is below required threshold ${(report.fitnessThreshold * 100).toFixed(0)}%.`);
         }
-        process.exit(1);
+        return exit(1);
       }
     } catch (err) {
       ui.error(err.message || String(err));
-      process.exit(1);
+      return exit(1);
     }
   }
 
   if (options.command === 'mcp') {
-    startMcpStdioServer({
-      version: getPackageVersion(),
-      ...options
+    mcpStarter({
+      ...options,
+      version: getPackageVersion()
     });
     return;
   }
@@ -641,7 +670,7 @@ async function main() {
       const port = options.port || '8088';
       const targetUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://localhost:${port}`);
       ui.info(`Checking Archlens Workbench server on ${targetUrl}...`);
-      const status = await executeStart(options);
+      const status = await startExecutor(options);
       if (status.status === 'running') {
         if (status.spawned) {
           if (status.mode === 'jar') {
@@ -659,22 +688,23 @@ async function main() {
         console.log(`  npx @fmatar/archlens-skill prompt\n`);
       } else {
         ui.error(status.message || 'Failed to start Archlens server.');
-        process.exit(1);
+        return exit(1);
       }
-      process.exit(0);
+      return exit(0);
     } catch (err) {
       ui.error(err.message || String(err));
-      process.exit(1);
+      return exit(1);
     }
   }
 
+  const ttyAvailable = deps.isTTY !== undefined ? Boolean(deps.isTTY) : Boolean(process.stdin.isTTY && process.stdout.isTTY);
   const isInteractive = Boolean(
-    process.stdin.isTTY &&
-    process.stdout.isTTY &&
+    ttyAvailable &&
     !options.yes &&
     !options.dryRun &&
     !options.command &&
     !options.start &&
+    !options.skills &&
     !options.global &&
     !options.update &&
     !options.upgrade &&
@@ -684,10 +714,10 @@ async function main() {
 
   if (isInteractive) {
     try {
-      await runInteractive(options);
+      await (deps.runInteractive || ((opts) => runInteractive(opts, deps)))(options);
     } catch (err) {
       ui.error(err.message || String(err));
-      process.exit(1);
+      return exit(1);
     }
     return;
   }
@@ -698,13 +728,25 @@ async function main() {
       executeUpgrade(targetRoot, options);
     } else if (options.update) {
       executeUpdate(targetRoot, options);
+    } else if (options.command === 'skills' || (options.skills && options.global && !options.yes)) {
+      if (options.global) {
+        executeGlobalInstall(options);
+      } else {
+        executeLocalSkillsInstall(targetRoot, options);
+      }
     } else if (options.global && !options.command) {
       executeGlobalInstall(options);
       executeLocalInit(targetRoot, options);
+      if (options.skills) {
+        executeLocalSkillsInstall(targetRoot, options);
+      }
     } else if (options.global || options.command === 'global') {
       executeGlobalInstall(options);
     } else {
       executeLocalInit(targetRoot, options);
+      if (options.skills) {
+        executeLocalSkillsInstall(targetRoot, options);
+      }
     }
 
     if (options.mcp) {
@@ -716,8 +758,10 @@ async function main() {
     }
   } catch (err) {
     ui.error(err.message || String(err));
-    process.exit(1);
+    return exit(1);
   }
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main();
+}

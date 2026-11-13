@@ -4,8 +4,12 @@ description: >-
   Companion agent for the Clean Architecture Dynamic UML Workbench.
   Monitors .archlens/ and .uml-viewer/ mailbox queues, processes architectural refactoring requests,
   evaluates Clean Architecture violations, runs builds and tests, and signals live diagram reloads.
-version: 1.2.0
 license: Apache-2.0
+compatibility: "Node.js >= 18"
+version: 1.1.1
+metadata:
+  author: fmatar
+  version: "1.1.1"
 ---
 
 # UML Workbench Companion Skill (`uml-workbench-companion`)

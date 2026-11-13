@@ -20,6 +20,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
+    "prepack": "node ../scripts/sync-skills.js --if-repo",
     "test": "node --test test/*.test.js",
     "start": "node bin/index.js"
   },

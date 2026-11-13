@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`npx skills` First-Class Skill Management & Automated Release Governance** (`#8238`):
+  - Converted `cli/src/installer.js`, `cli/src/updater.js`, and `cli/bin/index.js` (`skills` subcommand, `--skills`, `--agent`) to delegate local and global skill installation/updates directly to `npx skills add <cliPackageRoot> --all [--agent ...] [-g] --copy -y` with offline `.agents/skills` fallback.
+  - Added `scripts/sync-skills.js` (`npm run skills:sync` / `npm run skills:check`), wired into `cli/package.json` `prepack`, `scripts/set-version.js` (invoked by `.agent/scripts/sdlc-engine.mjs` `executeRelease`), and `.github/workflows/ci.yml`.
+
+### Fixed
+- **Skills Release & `skills.sh` Discovery Enforcement** (`#8238`):
+  - Fixed `.claude-plugin/plugin.json` pointing to `agentic-sdlc` (`./.claude/skills`) instead of `archlens` (`./skills`), restoring `npx skills add fmatar/archlens` discovery across all 3 Archlens skills (`archlens`, `archlens-install-policy`, `uml-workbench-companion`) and aligning `SKILL.md` frontmatter versions (`1.1.1`).
+  - Fixed `.github/workflows/release.yml` and `.github/workflows/dev-release.yml` ignoring `'**.md'` (which masked `skills/**/SKILL.md` updates), gated `docker-release` / GitHub Release creation on `npm-release`, verified bundled `package/skills/*/SKILL.md` inside packed `.tgz` tarballs, and prioritized public npm publishing with post-publish registry verification ahead of the GitHub Packages mirror.
+
 ## [1.1.1] - 2026-11-12
 
 ### Added

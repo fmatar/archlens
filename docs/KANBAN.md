@@ -13,6 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |  |
 |  |  |  | #222: [FEAT] feat: release-v1-1-1 |  |
 |  |  |  | #6157: [FEAT] feat: upgrade-backend-and-frontend-latest-ga-dependencies |  |
 |  |  |  | #6538: [FEAT] feat: hexagonal-vault-brand-identity-ui-and-readme-10-30-90 |  |

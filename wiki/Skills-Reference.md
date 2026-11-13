@@ -36,8 +36,12 @@ Archlens ships a dual skill ecosystem: **end-user architectural governance skill
 ## 💻 3. CLI Reference (`npx @fmatar/archlens-skill`)
 
 ```bash
-# Install Archlens skills & agent rules (Claude, Gemini, Antigravity, Cursor, Copilot, Grok, Windsurf)
-npx @fmatar/archlens-skill [--claude|--gemini|--cursor|--copilot|--windsurf|--grok|--all] [--mcp]
+# Install all 3 Archlens skills directly via open Skills CLI (skills.sh)
+npx skills add fmatar/archlens --all -y
+
+# Or scaffold policy + install skills + register MCP in one command
+npx @fmatar/archlens-skill --yes --skills --mcp
+npx @fmatar/archlens-skill skills [-g] [--agent claude-code,cursor]
 
 # Headless Clean Architecture CI Quality Gate
 npx @fmatar/archlens-skill check [dir] \

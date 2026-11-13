@@ -13,6 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  |  | #9283: [FEAT] feat: release-v1-1-2 |
 |  |  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |
 |  |  |  | #222: [FEAT] feat: release-v1-1-1 |  |
 |  |  |  | #6157: [FEAT] feat: upgrade-backend-and-frontend-latest-ga-dependencies |  |

@@ -34,7 +34,9 @@ flowchart TD
   ADR_006["ADR-006: Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment"]
   _222["Ticket #222 (feature/issue-#222-release-v1-1-1)"]
   ADR_007["ADR-007: Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills"]
-  _8238["Ticket #8238"]
+  _8238["Ticket #8238 (feature/issue-#8238-enforce-skills-release-and-npx-skills)"]
+  ADR_008["ADR-008: Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication"]
+  _9283["Ticket #9283"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -84,6 +86,8 @@ flowchart TD
   CAP_03 -.->|ADR Drift| ADR_006
   CAP_04 -.->|ADR Drift| ADR_006
   _8238 -->|triggered_drift_adr| ADR_007
+  _9283 -->|triggered_drift_adr| ADR_008
+  ADR_007 -.->|ADR Drift| ADR_008
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -107,6 +111,7 @@ flowchart TD
 | **ADR-005** | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | #6157 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | #222 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-007** | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | #8238 | None |
+| **ADR-008** | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | #9283 | ADR-007 |
 
 ---
 

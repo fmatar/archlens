@@ -71,7 +71,7 @@ export async function waitForServerReady(
   return false;
 }
 
-export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.1', deps = {}) {
+export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.2', deps = {}) {
   const fetchFn = deps.fetch || fetch;
   const checks = [];
 

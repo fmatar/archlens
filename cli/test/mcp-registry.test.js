@@ -234,3 +234,46 @@ test('resolveDockerHostWorkspace mounts projectRoot in global scope when project
   });
   assert.equal(resolved, externalProject);
 });
+
+test('installMcpConfigs honors scopeOnly filter to restrict updates to global or local manifests', () => {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-scope-home-'));
+  const tmpProject = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-scope-proj-'));
+
+  try {
+    const antigravityDir = path.join(tmpHome, '.gemini', 'antigravity');
+    fs.mkdirSync(antigravityDir, { recursive: true });
+    fs.mkdirSync(path.join(tmpProject, '.vscode'), { recursive: true });
+
+    const globalOnly = installMcpConfigs({
+      path: tmpProject,
+      homedir: tmpHome,
+      scopeOnly: 'global'
+    });
+
+    assert.ok(globalOnly.configuredClients.some((c) => c.id === 'antigravity-config'));
+    assert.ok(!globalOnly.configuredClients.some((c) => c.id === 'claude-code'));
+    assert.ok(!globalOnly.configuredClients.some((c) => c.id === 'vscode'));
+    assert.equal(fs.existsSync(path.join(tmpProject, '.mcp.json')), false);
+    assert.equal(fs.existsSync(path.join(tmpProject, '.vscode', 'mcp.json')), false);
+    assert.equal(fs.existsSync(path.join(antigravityDir, 'mcp_config.json')), true);
+
+    const localOnlyHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-local-home-'));
+    try {
+      fs.mkdirSync(path.join(localOnlyHome, '.gemini', 'antigravity'), { recursive: true });
+      const localOnly = installMcpConfigs({
+        path: tmpProject,
+        homedir: localOnlyHome,
+        scopeOnly: 'local'
+      });
+      assert.ok(localOnly.configuredClients.some((c) => c.id === 'claude-code'));
+      assert.ok(localOnly.configuredClients.some((c) => c.id === 'vscode'));
+      assert.ok(!localOnly.configuredClients.some((c) => c.id === 'antigravity-config'));
+      assert.equal(fs.existsSync(path.join(localOnlyHome, '.gemini', 'antigravity', 'mcp_config.json')), false);
+    } finally {
+      fs.rmSync(localOnlyHome, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(tmpHome, { recursive: true, force: true });
+    fs.rmSync(tmpProject, { recursive: true, force: true });
+  }
+});

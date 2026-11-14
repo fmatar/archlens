@@ -6,10 +6,10 @@ description: >-
   agent workbench companion integration. Use when setting up or upgrading Archlens.
 license: Apache-2.0
 compatibility: "Node.js >= 18"
-version: 1.1.2
+version: 1.1.3
 metadata:
   author: fmatar
-  version: "1.1.2"
+  version: "1.1.3"
 ---
 
 # Archlens Policy & Companion Installer (`archlens-install-policy`)
@@ -55,11 +55,17 @@ When executed, this skill generates the following artifacts in the target projec
 ## 🛠️ Execution Instructions for Agents
 
 ### Step 1: Run the Archlens Installer or Upgrader
-Execute the cross-platform CLI via NPX against the target repository:
+Execute the cross-platform CLI via NPX against the target repository (passing `--mcp` so the `archlens` MCP server is also registered if not yet configured):
 
 ```bash
-# Initialize a new project with defaults
-npx @fmatar/archlens-skill --path . --yes
+# Initialize a new project and register portable MCP manifests:
+npx @fmatar/archlens-skill --path . --yes --mcp
+
+# Or register MCP as an ephemeral Docker STDIO container (when Docker is running on personal workstations):
+npx @fmatar/archlens-skill --path . --yes --mcp --docker
+
+# Initialize policy only (skip MCP client configuration):
+npx @fmatar/archlens-skill --path . --yes --no-mcp
 
 # Or upgrade an existing project from .uml-viewer to .archlens
 npx @fmatar/archlens-skill upgrade --path .
@@ -76,6 +82,8 @@ npx @fmatar/archlens-skill prompt --path . --copy
 - `--title <NAME>`: Custom project display title.
 - `--prefix <PKG>`: Explicit package prefix (e.g. `com.mycompany.service`).
 - `--server-url <URL>`: Archlens workbench endpoint (defaults to `http://localhost:8088`).
+- `--mcp` / `--no-mcp`: Register (or skip) Archlens MCP manifests across Antigravity, Claude, Cursor, Gemini CLI, and VS Code.
+- `--docker`: Configure MCP as an ephemeral `docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio` container instead of `npx`.
 - `--update`: Re-scans code for new packages and updates existing policy.
 - `--upgrade`: Migrates legacy `.uml-viewer/` configuration and mailboxes to `.archlens/`.
 - `--force`: Overwrite existing `.archlens/policy.json` if present.

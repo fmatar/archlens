@@ -11,7 +11,7 @@ Archlens enforces deterministic, cryptographically auditable traceability linkin
 ```mermaid
 flowchart LR
     Product["PRODUCT.md\n(INV-01..05, CAP-01..04)"] --> Specs["docs/specs/cap-01..04.md\n(Requirement Contracts)"]
-    Product --> ADRs["docs/adr/ADR-001..008\n(Architectural Decisions)"]
+    Product --> ADRs["docs/adr/ADR-001..010\n(Architectural Decisions)"]
     ADRs --> DecisionMap["docs/DECISION_MAP.md\n(Decision Knowledge Graph)"]
     Specs --> Kanban["docs/KANBAN.md\n(Issue & Epic Traceability)"]
     Kanban --> Code["Java 25 + Svelte 5 + CLI\n(.archlens/policy.json Rings 0..3)"]
@@ -54,6 +54,8 @@ flowchart LR
 - **`ADR-006`**: Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment (`docs/adr/ADR-006-release-v1-1-1-manifest-synchronization-brand-id.md`)
 - **`ADR-007`**: Enforce Agent Skills Release Parity and Convert Skill Installer to `npx skills` (`docs/adr/ADR-007-enforce-agent-skills-release-parity-and-convert-.md`)
 - **`ADR-008`**: Release v1.1.2 — Agent Skills Release Parity & `npx skills` Ecosystem Publication (`docs/adr/ADR-008-release-v1-1-2-agent-skills-release-parity-npx-s.md`)
+- **`ADR-009`**: Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support (`docs/adr/ADR-009-dual-transport-quarkus-mcp-stdio-profile-and-eph.md`)
+- **`ADR-010`**: Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity (`docs/adr/ADR-010-release-v1-1-3-auto-mcp-global-onboarding-intera.md`)
 
 ### Foundational Feature ADRs (`wiki/`)
 - **[ADR-001: Surgical DIP Inverter](ADR-001-Surgical-DIP-Inverter)** (PR #112)

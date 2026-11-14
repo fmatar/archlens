@@ -28,7 +28,12 @@ import {
 } from '../src/checker.js';
 import { installMcpConfigs } from '../src/mcp-registry.js';
 import { startMcpStdioServer } from '../src/mcp-server.js';
-import { executeStart, DEFAULT_CONTAINER_NAME, DEFAULT_SERVER_URL } from '../src/docker-runner.js';
+import {
+  executeStart,
+  isDockerAvailable,
+  DEFAULT_CONTAINER_NAME,
+  DEFAULT_SERVER_URL
+} from '../src/docker-runner.js';
 import { spawnSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -61,7 +66,7 @@ ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   update                   Update existing policy with newly discovered packages and refresh skills
   upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   skills                   Install Archlens skills via npx skills (local project or -g global)
-  global                   Install Archlens skills globally for AI coding assistants
+  global                   Install Archlens skills and global MCP manifests for AI coding assistants
   prompt                   Export Clean Architecture LLM Refactoring Prompt Dossier
   mcp                      Launch Model Context Protocol (MCP) stdio server for AI assistants
 
@@ -81,6 +86,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --jar <PATH>             Custom path to Archlens Quarkus runner JAR
   -o, --open               Open visual workbench in default browser upon startup
   -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)
+  --no-mcp                 Skip automatic MCP client configuration (e.g. during global install)
   --skills                 Install Archlens skills into target project via npx skills
   --agent <AGENT>          Target specific coding agent(s) when installing skills (e.g. claude-code,cursor)
   -c, --copy               Copy LLM prompt output directly to system clipboard
@@ -148,6 +154,7 @@ export function parseArgs(args) {
     update: false,
     upgrade: false,
     mcp: false,
+    noMcp: false,
     check: false,
     maxViolations: 0,
     detectCycles: false,
@@ -178,6 +185,10 @@ export function parseArgs(args) {
       parsed.port = args[++i] || '8088';
     } else if (arg === '--mcp' || arg === '-m') {
       parsed.mcp = true;
+      parsed.noMcp = false;
+    } else if (arg === '--no-mcp') {
+      parsed.noMcp = true;
+      parsed.mcp = false;
     } else if (arg === '--skills') {
       parsed.skills = true;
     } else if (arg === '--agent') {
@@ -259,6 +270,7 @@ export function parseArgs(args) {
 async function runInteractive(options, deps = {}) {
   const askChoice = deps.askChoice || ui.askChoice;
   const askQuestion = deps.askQuestion || ui.askQuestion;
+  const checkDocker = deps.isDockerAvailable || isDockerAvailable;
   ui.banner();
 
   const targetRoot = path.resolve(options.path || '.');
@@ -282,8 +294,8 @@ async function runInteractive(options, deps = {}) {
     },
     {
       value: 'install_global',
-      label: `${ui.colors.bold}Deploy AI Agent Skills globally${ui.colors.reset}`,
-      description: 'Equips Claude Code, Gemini CLI, and Antigravity with Archlens skills'
+      label: `${ui.colors.bold}Deploy AI Agent Skills & Global MCP${ui.colors.reset}`,
+      description: 'Equips Claude Code, Gemini CLI, and Antigravity with Archlens skills and MCP'
     },
     {
       value: 'both',
@@ -316,9 +328,29 @@ async function runInteractive(options, deps = {}) {
 
   const execOptions = {
     ...options,
+    path: targetRoot,
     title: customTitle,
     prefix
   };
+
+  const wantsMcp = ['install_global', 'mcp', 'both'].includes(selectedAction) && !execOptions.noMcp;
+  if (wantsMcp && !execOptions.preferDocker && !execOptions.preferNative && checkDocker()) {
+    const transportChoice = await askChoice('Select MCP transport mode:', [
+      {
+        value: 'npx',
+        label: `${ui.colors.bold}NPX Stdio Bridge (Recommended for shared repos)${ui.colors.reset}`,
+        description: 'Path-agnostic npx -y @fmatar/archlens-skill mcp with 4-tier offline AST fallback'
+      },
+      {
+        value: 'docker',
+        label: `${ui.colors.bold}Ephemeral Docker Container (mcp-stdio)${ui.colors.reset}`,
+        description: 'Pure docker run -i --rm ghcr.io/fmatar/archlens:latest (zero host Node/Java needed)'
+      }
+    ]);
+    if (transportChoice === 'docker') {
+      execOptions.preferDocker = true;
+    }
+  }
 
   ui.divider();
 
@@ -330,7 +362,9 @@ async function runInteractive(options, deps = {}) {
     executeGlobalInstall(execOptions);
   }
 
-  if (selectedAction === 'mcp' || selectedAction === 'both') {
+  if (selectedAction === 'install_global' && !execOptions.noMcp) {
+    executeMcpInstall({ ...execOptions, scopeOnly: 'global' });
+  } else if ((selectedAction === 'mcp' || selectedAction === 'both') && !execOptions.noMcp) {
     executeMcpInstall(execOptions);
   }
 
@@ -752,8 +786,15 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
       }
     }
 
-    if (options.mcp) {
-      executeMcpInstall(options);
+    if (!options.noMcp) {
+      if (options.mcp) {
+        executeMcpInstall({ ...options, path: targetRoot });
+      } else if (
+        options.command === 'global' ||
+        (options.global && options.command !== 'skills' && !options.skills && !options.update && !options.upgrade)
+      ) {
+        executeMcpInstall({ ...options, path: targetRoot, scopeOnly: 'global' });
+      }
     }
 
     if (!options.dryRun) {

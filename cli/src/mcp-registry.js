@@ -418,12 +418,16 @@ export function installMcpConfigs(options = {}) {
   const homedir = options.homedir || os.homedir();
   const dryRun = Boolean(options.dryRun);
   const force = Boolean(options.force);
+  const scopeOnly = options.scopeOnly || null;
   const serverUrl = options.serverUrl || 'http://localhost:8088';
 
   const targets = getClientConfigLocations(projectRoot, homedir);
   const results = [];
 
   for (const target of targets) {
+    if (scopeOnly && target.scope !== scopeOnly) {
+      continue;
+    }
     const parentExists = fs.existsSync(target.parentDir);
     const targetExists = fs.existsSync(target.filePath);
 

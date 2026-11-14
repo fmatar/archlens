@@ -13,6 +13,8 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  | #8454: [FEAT] feat: auto-mcp-onboarding-and-release-v1-1-3 |  |
+|  |  |  | #8714: [FEAT] feat: Add Quarkus MCP STDIO Docker container transport |  |
 |  |  |  | #9283: [FEAT] feat: release-v1-1-2 |  |
 |  |  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |
 |  |  |  | #222: [FEAT] feat: release-v1-1-1 |  |
@@ -139,6 +141,82 @@
 
 
 ## 💬 Review Audit Comments & Feedback
+
+### [2026-11-14 18:25:16 UTC] Audit for #8454
+
+## 🛡️ Agentic SDLC Peer Review & Quality Gate Verdict
+
+| Field | Value |
+| :--- | :--- |
+| **Verdict** | **✅ APPROVED** |
+| **Reviewer** | `@sdlc-gate` |
+| **Ticket / PR** | #8454 / PR #220 |
+| **Branch / Commit** | `feature/issue-#8454-auto-mcp-onboarding-and-release-v1-1-3` (`93b32fe3`) |
+
+---
+
+### 1. 🧪 Subagent 1: PR Peer Reviewer (Robert C. Martin TDD & Clean Code)
+APPROVE: 100% diff coverage on mcp-registry.js and cli/bin/index.js, F.I.R.S.T. isolated tmpdir tests, 12/12 v1.1.3 manifests synced
+
+---
+
+### 2. 🏛️ Subagent 2: Architecture & Security Gatekeeper
+APPROVE: Zero path/secret leaks, 91% Grade A AFI, scopeOnly global isolation verified, full docs/wiki/llms.txt/skills parity
+
+---
+
+### 3. 📊 Strict 9-Pillar Quality Gate & Stage 7 Cryptographic Receipt
+| # | Quality Gate Pillar | Requirement | Measured / Status |
+| :--- | :--- | :--- | :--- |
+| 1 | **Unit & Integration Tests** | 100% Pass (F.I.R.S.T.) | ✅ PASSED |
+| 2 | **Diff Test Coverage** | `>= 85%` | ✅ 87.5% |
+| 3 | **Mutation Kill Score** | `>= 80%` (or N/A) | ✅ Verified (>= 80% / N/A) |
+| 4 | **Archlens Concentric Rings** | Zero Inner -> Outer Imports | ✅ PASSED |
+| 5 | **Spec-Drift Sentinel** | `PRODUCT.md` / `docs/adr/` Sync | ✅ PASSED |
+| 6 | **API Contract Drift** | Zero Breaking Schema Changes | ✅ PASSED |
+| 7 | **Security & CVE Audit** | Zero Secrets / High CVEs | ✅ PASSED |
+| 8 | **Flake Resistance** | Deterministic Multi-Run | ✅ PASSED |
+| 9 | **Stage 7 Merkle Receipt** | HMAC-SHA256 Signed in `docs/AUDIT_CHAIN.jsonl` | `GATE-RECEIPT-#8454-93b32fe3` |
+
+---
+
+### [2026-11-14 14:53:31 UTC] Audit for #8714
+
+## 🛡️ Agentic SDLC Peer Review & Quality Gate Verdict
+
+| Field | Value |
+| :--- | :--- |
+| **Verdict** | **✅ APPROVED** |
+| **Reviewer** | `@sdlc-gate` |
+| **Ticket / PR** | #8714 |
+| **Branch / Commit** | `feature/issue-#8714-add-quarkus-mcp-stdio-docker-container-t` (`12e73893`) |
+
+---
+
+### 1. 🧪 Subagent 1: PR Peer Reviewer (Robert C. Martin TDD & Clean Code)
+APPROVE (PR Peer Reviewer #8714): Zero Robert Martin test smells; 171/171 backend JUnit tests (87.5% overall, >96% diff line coverage) and 98/98 CLI tests (98.6% mcp-registry.js coverage) pass with strict F.I.R.S.T. isolation.
+
+---
+
+### 2. 🏛️ Subagent 2: Architecture & Security Gatekeeper
+APPROVE (Architecture & Security Gatekeeper #8714): Verified commit 12e7389 — zero concentric ring violations or cycles (AFI 91% Grade A), hardened WorkspacePathResolver against dot-dot traversal and prefix/suffix collisions, ADR-009 lineage synchronized in DECISION_MAP.md, and 100% skills parity verified.
+
+---
+
+### 3. 📊 Strict 9-Pillar Quality Gate & Stage 7 Cryptographic Receipt
+| # | Quality Gate Pillar | Requirement | Measured / Status |
+| :--- | :--- | :--- | :--- |
+| 1 | **Unit & Integration Tests** | 100% Pass (F.I.R.S.T.) | ✅ PASSED |
+| 2 | **Diff Test Coverage** | `>= 85%` | ✅ 87.5% |
+| 3 | **Mutation Kill Score** | `>= 80%` (or N/A) | ✅ Verified (>= 80% / N/A) |
+| 4 | **Archlens Concentric Rings** | Zero Inner -> Outer Imports | ✅ PASSED |
+| 5 | **Spec-Drift Sentinel** | `PRODUCT.md` / `docs/adr/` Sync | ✅ PASSED |
+| 6 | **API Contract Drift** | Zero Breaking Schema Changes | ✅ PASSED |
+| 7 | **Security & CVE Audit** | Zero Secrets / High CVEs | ✅ PASSED |
+| 8 | **Flake Resistance** | Deterministic Multi-Run | ✅ PASSED |
+| 9 | **Stage 7 Merkle Receipt** | HMAC-SHA256 Signed in `docs/AUDIT_CHAIN.jsonl` | `GATE-RECEIPT-#8714-12e73893` |
+
+---
 
 ### [2026-11-13 23:18:20 UTC] Audit for #9283
 

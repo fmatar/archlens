@@ -79,8 +79,10 @@ npx @fmatar/archlens-skill init --yes
 npx @fmatar/archlens-skill update
 
 # 5. Model Context Protocol (MCP) Integration:
-npx @fmatar/archlens-skill --mcp      # Auto-configure Claude, Antigravity, Cursor manifests
-npx @fmatar/archlens-skill mcp        # Launch MCP stdio bridge server
+npx @fmatar/archlens-skill --mcp               # Auto-configure portable NPX bridge manifests
+npx @fmatar/archlens-skill --mcp --docker      # Auto-configure ephemeral Docker mcp-stdio manifests
+npx @fmatar/archlens-skill global [--docker]   # Install global skills + global MCP manifests
+npx @fmatar/archlens-skill mcp                 # Launch MCP stdio bridge server
 ```
 
 ---

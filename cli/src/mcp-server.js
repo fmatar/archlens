@@ -28,7 +28,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '1.1.2';
+  return '1.1.3';
 }
 
 export function getMcpToolsList() {
@@ -166,7 +166,17 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
   const runner = deps.ensureServerRunning || ensureServerRunning;
 
   // Attempt server readiness inspection
-  const serverStatus = await runner({ serverUrl, workspace: projectRoot }, deps);
+  const serverStatus = await runner(
+    {
+      serverUrl,
+      workspace: projectRoot,
+      preferDocker: options.preferDocker,
+      preferNative: options.preferNative,
+      jarPath: options.jarPath,
+      binaryPath: options.binaryPath
+    },
+    deps
+  );
   const isOnline = serverStatus.status === 'running';
 
   if (toolName === 'exportLlmDossier') {

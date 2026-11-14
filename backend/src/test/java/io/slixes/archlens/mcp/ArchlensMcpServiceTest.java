@@ -15,11 +15,13 @@ import io.slixes.archlens.usecase.SyncAdrUseCase;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -204,5 +206,29 @@ class ArchlensMcpServiceTest {
     assertTrue(
         dipPrompt.getParameters()[1].isAnnotationPresent(NotBlank.class),
         "dipRefactoringPrompt.toClass must be annotated with @NotBlank");
+  }
+
+  @Test
+  void testDualTransportMcpStdioExtensionAndProfileConfiguration() throws Exception {
+    Class<?> stdioHandler =
+        Class.forName("io.quarkiverse.mcp.server.stdio.runtime.StdioMcpMessageHandler");
+    assertNotNull(stdioHandler, "quarkus-mcp-server-stdio must be present on runtime classpath");
+
+    Properties props = new Properties();
+    try (InputStream in =
+        ArchlensMcpService.class.getClassLoader().getResourceAsStream("application.properties")) {
+      assertNotNull(in, "application.properties must exist on classpath");
+      props.load(in);
+    }
+
+    assertEquals("false", props.getProperty("quarkus.mcp.server.stdio.enabled"));
+    assertEquals("false", props.getProperty("quarkus.mcp.server.stdio.null-system-out"));
+    assertEquals("false", props.getProperty("quarkus.log.console.stderr"));
+
+    assertEquals("true", props.getProperty("%mcp-stdio.quarkus.mcp.server.stdio.enabled"));
+    assertEquals("true", props.getProperty("%mcp-stdio.quarkus.mcp.server.stdio.null-system-out"));
+    assertEquals("true", props.getProperty("%mcp-stdio.quarkus.log.console.stderr"));
+    assertEquals("false", props.getProperty("%mcp-stdio.quarkus.banner.enabled"));
+    assertEquals("0", props.getProperty("%mcp-stdio.quarkus.http.port"));
   }
 }

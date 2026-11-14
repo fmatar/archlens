@@ -6,8 +6,9 @@ Archlens natively implements an embedded **Model Context Protocol (MCP)** server
 
 ## 🔌 Connection Endpoints
 
-The Archlens container and native server expose three MCP transports:
-- **Zero-Dependency CLI Stdio Bridge (Recommended)**: `npx -y @fmatar/archlens-skill mcp`
+The Archlens container and native server expose four MCP transports:
+- **Zero-Dependency CLI Stdio Bridge (Recommended for shared repos)**: `npx -y @fmatar/archlens-skill mcp`
+- **Pure Ephemeral Docker STDIO Container (`mcp-stdio`, Zero Host Node/Java)**: `docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio -e ARCHLENS_HOST_WORKSPACE=/path/to/workspace -v /path/to/workspace:/workspace ghcr.io/fmatar/archlens:latest`
 - **Streamable HTTP (`MCP 2.0`)**: `http://localhost:8088/mcp`
 - **Server-Sent Events (`SSE`)**: `http://localhost:8088/mcp/sse`
 
@@ -110,11 +111,44 @@ Computes the Composite Architecture Fitness Index (AFI, `0`–`100`, Grade `A`�
 
 ### ⚡ Automated 1-Command Setup (All Detected Clients)
 ```bash
+# Portable NPX bridge (repo + global clients):
 npx @fmatar/archlens-skill --mcp
+
+# Ephemeral Docker mcp-stdio container (zero host Node/Java):
+npx @fmatar/archlens-skill --mcp --docker
+
+# Global skills + global MCP manifests only:
+npx @fmatar/archlens-skill global [--docker]
 ```
 
 ### 1. Google Antigravity (`~/.gemini/antigravity/mcp_config.json`)
-`npx @fmatar/archlens-skill --mcp` automatically populates `~/.gemini/antigravity/mcp/archlens/*.json` and `instructions.md` as well as `~/.gemini/antigravity/mcp_config.json`:
+`npx @fmatar/archlens-skill --mcp` automatically populates `~/.gemini/antigravity/mcp/archlens/*.json` and `instructions.md` as well as `~/.gemini/antigravity/mcp_config.json` (pass `--docker` to generate the ephemeral Docker `mcp-stdio` entry):
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "QUARKUS_PROFILE",
+        "-e",
+        "ARCHLENS_HOST_WORKSPACE",
+        "-v",
+        "/path/to/workspace:/workspace",
+        "ghcr.io/fmatar/archlens:latest"
+      ],
+      "env": {
+        "QUARKUS_PROFILE": "mcp-stdio",
+        "ARCHLENS_HOST_WORKSPACE": "/path/to/workspace"
+      }
+    }
+  }
+}
+```
+Or portable NPX stdio bridge:
 ```json
 {
   "mcpServers": {

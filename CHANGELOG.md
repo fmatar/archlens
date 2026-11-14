@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-11-14
+
+### Added
+- **Dual-Transport Quarkus MCP STDIO Runtime Profile & Ephemeral Docker Container Support** (`#8714`, `ADR-009`):
+  - Added `io.quarkiverse.mcp:quarkus-mcp-server-stdio` alongside `quarkus-mcp-server-http` in `backend/pom.xml`, keeping STDIO disabled by default (`quarkus.mcp.server.stdio.enabled=false`) for HTTP/SSE `:8088` and Surefire tests while activating pure JSON-RPC STDIO via `-e QUARKUS_PROFILE=mcp-stdio` (`null-system-out=true`, `stderr` logging, banner disabled, `http.port=0`).
+  - Hardened `WorkspacePathResolver` to normalize host-mounted paths (`ARCHLENS_HOST_WORKSPACE`, `/Users/<user>/workspace`, `/home/<user>/workspace`) cleanly into `/workspace/...` with lexical `..` traversal guards.
+  - Added `--mcp --docker` manifest generation in `cli/src/mcp-registry.js` producing ephemeral `docker run -i --rm` configurations for Antigravity, Claude Desktop, Claude Code, Cursor, Windsurf, Gemini CLI, and VS Code.
+- **Automatic Global MCP Onboarding, Interactive Transport Selector & Skill First-Run Bootstrap** (`#8454`, `ADR-010`):
+  - Updated `npx @fmatar/archlens-skill global` (and `-g`) to automatically register global-scoped MCP manifests (`scopeOnly: 'global'`) alongside global skills unless `--no-mcp` is passed, keeping repo-shared `.mcp.json` untouched and portable.
+  - Added interactive TTY transport selection (`NPX Stdio Bridge` vs. `Ephemeral Docker Container mcp-stdio`) when Docker is available, First-Run MCP Bootstrap guidance in `skills/archlens/SKILL.md` and `skills/archlens-install-policy/SKILL.md`, and synchronized documentation across `README.md`, `cli/README.md`, `wiki/MCP-Integration.md`, and `llms.txt`.
+
 ## [1.1.2] - 2026-11-13
 
 ### Added

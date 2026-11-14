@@ -7,10 +7,10 @@ description: >-
   layer boundaries, inverting outward dependencies (DIP), or running Archlens.
 license: Apache-2.0
 compatibility: "Node.js >= 18"
-version: 1.1.2
+version: 1.1.3
 metadata:
   author: fmatar
-  version: "1.1.2"
+  version: "1.1.3"
 ---
 
 # Archlens — Clean Architecture Governance & Workbench Companion
@@ -57,9 +57,15 @@ Archlens models codebases as concentric circular rings. Source code dependencies
 
 Install Archlens across 15+ coding agents (Antigravity, Claude Code, Cursor, Gemini CLI) via `skills.sh`:
 ```bash
-# Add Archlens to your active agent skills library:
+# Add Archlens skills to your active agent skills library:
 npx skills add fmatar/archlens --all -y
+
+# Equip global skills AND global MCP manifests in one command (add --docker for ephemeral container mode):
+npx @fmatar/archlens-skill global
 ```
+
+> [!TIP]
+> **First-Run MCP Auto-Bootstrap (for `npx skills` installs)**: Because `npx skills add` only copies `SKILL.md` files without executing scripts, check whether the `archlens` MCP tools (`inspectArchitecture`, `exportLlmDossier`, `evaluateFitness`) are registered in your active session. If missing, run `npx @fmatar/archlens-skill --path . --yes --mcp` (portable NPX bridge) or `npx @fmatar/archlens-skill global --docker` (ephemeral `mcp-stdio` Docker container when Docker is running).
 
 Or execute directly on demand via NPX:
 
@@ -87,6 +93,9 @@ npx @fmatar/archlens-skill upgrade --path .
 
 # Auto-configure MCP manifests for AI assistants (Antigravity, Claude, Cursor):
 npx @fmatar/archlens-skill --mcp
+
+# Auto-configure pure ephemeral Docker MCP container (docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio):
+npx @fmatar/archlens-skill --mcp --docker
 
 # Launch Model Context Protocol (MCP) stdio server:
 npx @fmatar/archlens-skill mcp

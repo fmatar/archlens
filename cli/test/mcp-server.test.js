@@ -193,6 +193,30 @@ test('executeToolCall inspectArchitecture uses online backend when available', a
   assert.equal(parsed.title, 'OnlineGraph');
 });
 
+test('executeToolCall forwards preferDocker and runtime runner options to ensureServerRunning', async () => {
+  let capturedRunnerOptions = null;
+  const deps = {
+    ensureServerRunning: async (opts) => {
+      capturedRunnerOptions = opts;
+      return { status: 'running' };
+    },
+    fetch: async () => ({
+      ok: true,
+      json: async () => ({ title: 'DockerGraph', nodes: [], links: [] })
+    })
+  };
+
+  await executeToolCall(
+    'inspectArchitecture',
+    { projectRoot: '.' },
+    { serverUrl: 'http://localhost:8088', preferDocker: true },
+    deps
+  );
+
+  assert.ok(capturedRunnerOptions);
+  assert.equal(capturedRunnerOptions.preferDocker, true);
+});
+
 test('executeToolCall getSnapshot sanitizes snapshotId against directory traversal', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-snap-'));
   try {

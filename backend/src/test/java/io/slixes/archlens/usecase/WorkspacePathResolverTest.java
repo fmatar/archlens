@@ -56,6 +56,21 @@ class WorkspacePathResolverTest {
 
       String exactRootResult = WorkspacePathResolver.normalizeRoot("/Users/someone/workspace");
       assertEquals(fakeWorkspace.toString(), exactRootResult);
+
+      // Nested 'workspace' folder must NOT be truncated by endsWith("/workspace")
+      assertEquals(
+          fakeWorkspace.toString() + "/monorepo/packages/workspace",
+          WorkspacePathResolver.normalizeRoot(
+              "/Users/someone/workspace/monorepo/packages/workspace"));
+
+      // Arbitrary-depth '/workspace/' outside /Users/<user>/workspace must NOT be rewritten
+      assertEquals(
+          "/Users/someone/Dropbox/client/workspace/api",
+          WorkspacePathResolver.normalizeRoot("/Users/someone/Dropbox/client/workspace/api"));
+
+      // Dot-dot traversal escaping /Users/<user>/workspace must NOT map into container mount
+      assertEquals(
+          "/Users/etc", WorkspacePathResolver.normalizeRoot("/Users/someone/workspace/../../etc"));
     } finally {
       System.clearProperty("archlens.container.workspace");
     }
@@ -66,7 +81,7 @@ class WorkspacePathResolverTest {
     Path fakeWorkspace = tempDir.resolve("workspace");
     fakeWorkspace.toFile().mkdirs();
     System.setProperty("archlens.container.workspace", fakeWorkspace.toString());
-    System.setProperty("archlens.host.workspace", "/opt/repos");
+    System.setProperty("archlens.host.workspace", "/opt/repos///");
     try {
       assertEquals(
           fakeWorkspace.toString() + "/billing/api",
@@ -77,6 +92,28 @@ class WorkspacePathResolverTest {
       assertEquals(
           "/opt/repos-other/billing",
           WorkspacePathResolver.normalizeRoot("/opt/repos-other/billing"));
+      // Dot-dot traversal escaping /opt/repos must NOT map into container mount
+      assertEquals("/opt/other", WorkspacePathResolver.normalizeRoot("/opt/repos/../other"));
+    } finally {
+      System.clearProperty("archlens.host.workspace");
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
+
+  @Test
+  void testNormalizeRootExplicitHostSubprojectDoesNotFallThroughToHomeWorkspace(
+      @TempDir Path tempDir) {
+    Path fakeWorkspace = tempDir.resolve("workspace");
+    fakeWorkspace.toFile().mkdirs();
+    System.setProperty("archlens.container.workspace", fakeWorkspace.toString());
+    System.setProperty("archlens.host.workspace", "/Users/alice/workspace/labs/demo-app");
+    try {
+      assertEquals(
+          fakeWorkspace.toString() + "/src",
+          WorkspacePathResolver.normalizeRoot("/Users/alice/workspace/labs/demo-app/src"));
+      assertEquals(
+          "/Users/alice/workspace/labs/other-app",
+          WorkspacePathResolver.normalizeRoot("/Users/alice/workspace/labs/other-app"));
     } finally {
       System.clearProperty("archlens.host.workspace");
       System.clearProperty("archlens.container.workspace");

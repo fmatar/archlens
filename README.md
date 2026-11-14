@@ -244,12 +244,12 @@ flowchart TD
         "-e",
         "ARCHLENS_HOST_WORKSPACE",
         "-v",
-        "/Users/fady/workspace:/workspace",
+        "/path/to/workspace:/workspace",
         "ghcr.io/fmatar/archlens:latest"
       ],
       "env": {
         "QUARKUS_PROFILE": "mcp-stdio",
-        "ARCHLENS_HOST_WORKSPACE": "/Users/fady/workspace"
+        "ARCHLENS_HOST_WORKSPACE": "/path/to/workspace"
       }
     }
   }
@@ -318,7 +318,7 @@ flowchart TD
 | `--mcp` | `-m` | Auto-configure MCP client manifests (Antigravity, Claude, Cursor, Windsurf, VS Code) | `false` |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
-| `--docker` | | Force running workbench via Docker container (`ghcr.io/fmatar/archlens:latest`) | `false` |
+| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |

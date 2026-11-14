@@ -77,7 +77,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
   --native                 Prefer running workbench via native Java Quarkus runner (default)
-  --docker                 Force running workbench via Docker container
+  --docker                 Force Docker container mode on start or ephemeral MCP STDIO with --mcp
   --jar <PATH>             Custom path to Archlens Quarkus runner JAR
   -o, --open               Open visual workbench in default browser upon startup
   -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)

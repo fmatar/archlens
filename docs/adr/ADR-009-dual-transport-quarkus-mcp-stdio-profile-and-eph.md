@@ -3,8 +3,8 @@ id: ADR-009
 title: Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support
 status: accepted
 scope: technical
-ticket: ##8714
-supersedes: 
+ticket: #8714
+supersedes: None
 createdAt: 2026-11-14T04:40:52.621Z
 ---
 
@@ -12,7 +12,7 @@ createdAt: 2026-11-14T04:40:52.621Z
 
 - **Status**: `accepted`
 - **Blast Radius / Scope**: `technical`
-- **Triggered By Ticket**: ##8714
+- **Triggered By Ticket**: #8714
 - **Supersedes / Amends**: None
 
 ## 1. Context & Spec Drift Trigger

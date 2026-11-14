@@ -2,9 +2,12 @@ package io.slixes.archlens.usecase;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Level 1 Application utility resolving filesystem paths, container environments, and project
@@ -13,6 +16,9 @@ import java.util.Set;
 public final class WorkspacePathResolver {
 
   public static final String DEFAULT_PROJECT_ROOT = ".";
+
+  private static final Pattern HOST_USER_WORKSPACE_PATTERN =
+      Pattern.compile("^/(?:Users|home)/[^/]+/workspace(?:/(.*))?$");
 
   private WorkspacePathResolver() {
     // Utility class
@@ -93,46 +99,66 @@ public final class WorkspacePathResolver {
 
   private static String mapHostWorkspaceToContainer(
       String normalized, String userHome, String containerPath) {
+    String lexNormalized = lexicalNormalize(normalized);
+    String cleanContainer = stripTrailingSlash(lexicalNormalize(containerPath));
+
     String explicitHost =
         System.getProperty("archlens.host.workspace", System.getenv("ARCHLENS_HOST_WORKSPACE"));
     if (explicitHost != null && !explicitHost.isBlank()) {
-      String cleanHost = stripTrailingSlash(explicitHost.trim());
-      String mapped = rewritePrefix(normalized, cleanHost, containerPath);
-      if (mapped != null) {
-        return mapped;
-      }
+      String cleanHost = stripTrailingSlash(lexicalNormalize(explicitHost.trim()));
+      String mapped = rewritePrefixWithinContainer(lexNormalized, cleanHost, cleanContainer);
+      return mapped != null ? mapped : lexNormalized;
     }
+
     if (!userHome.isBlank()) {
-      String mapped = rewritePrefix(normalized, userHome + "/workspace", containerPath);
+      String cleanHomeWs = stripTrailingSlash(lexicalNormalize(userHome.trim() + "/workspace"));
+      String mapped = rewritePrefixWithinContainer(lexNormalized, cleanHomeWs, cleanContainer);
       if (mapped != null) {
         return mapped;
       }
     }
-    if (normalized.startsWith("/Users/") || normalized.startsWith("/home/")) {
-      if (normalized.endsWith("/workspace")) {
-        return containerPath;
-      }
-      int wsIdx = normalized.indexOf("/workspace/");
-      if (wsIdx > 0) {
-        return containerPath + normalized.substring(wsIdx + "/workspace".length());
+
+    Matcher matcher = HOST_USER_WORKSPACE_PATTERN.matcher(lexNormalized);
+    if (matcher.matches()) {
+      String suffix = matcher.group(1);
+      String candidate =
+          (suffix == null || suffix.isEmpty()) ? cleanContainer : cleanContainer + "/" + suffix;
+      String normCandidate = Path.of(candidate).normalize().toString();
+      if (normCandidate.equals(cleanContainer) || normCandidate.startsWith(cleanContainer + "/")) {
+        return normCandidate;
       }
     }
-    return normalized;
+    return lexNormalized;
   }
 
-  private static String stripTrailingSlash(String path) {
-    if (path.length() > 1 && path.endsWith("/")) {
-      return path.substring(0, path.length() - 1);
+  private static String lexicalNormalize(String path) {
+    if (path != null && path.startsWith("/")) {
+      return Path.of(path).normalize().toString();
     }
     return path;
   }
 
-  private static String rewritePrefix(String path, String hostPrefix, String containerPath) {
-    if (path.equals(hostPrefix) || path.equals(hostPrefix + "/")) {
-      return containerPath;
+  private static String stripTrailingSlash(String path) {
+    int end = path.length();
+    while (end > 1 && path.charAt(end - 1) == '/') {
+      end--;
     }
-    if (path.startsWith(hostPrefix + "/")) {
-      return containerPath + path.substring(hostPrefix.length());
+    return end == path.length() ? path : path.substring(0, end);
+  }
+
+  private static String rewritePrefixWithinContainer(
+      String path, String hostPrefix, String cleanContainer) {
+    String candidate;
+    if (path.equals(hostPrefix)) {
+      candidate = cleanContainer;
+    } else if (path.startsWith(hostPrefix + "/")) {
+      candidate = cleanContainer + path.substring(hostPrefix.length());
+    } else {
+      return null;
+    }
+    String normCandidate = Path.of(candidate).normalize().toString();
+    if (normCandidate.equals(cleanContainer) || normCandidate.startsWith(cleanContainer + "/")) {
+      return normCandidate;
     }
     return null;
   }

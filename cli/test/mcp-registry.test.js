@@ -9,7 +9,8 @@ import {
   getAntigravityInstructions,
   getClientConfigLocations,
   getMcpManifestEntry,
-  installMcpConfigs
+  installMcpConfigs,
+  resolveDockerHostWorkspace
 } from '../src/mcp-registry.js';
 
 test('ARCHLENS_TOOL_SCHEMAS defines 10 Clean Architecture tools', () => {
@@ -221,4 +222,15 @@ test('installMcpConfigs writes docker run -i --rm manifests for global and local
   } finally {
     fs.rmSync(tmpHome, { recursive: true, force: true });
   }
+});
+
+test('resolveDockerHostWorkspace mounts projectRoot in global scope when project is outside ~/workspace', () => {
+  const externalProject = path.resolve('/opt/external/service');
+  const resolved = resolveDockerHostWorkspace({
+    scope: 'global',
+    homedir: '/Users/alice',
+    path: externalProject,
+    existsSync: () => true
+  });
+  assert.equal(resolved, externalProject);
 });

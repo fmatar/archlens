@@ -368,8 +368,11 @@ export function resolveDockerHostWorkspace(options = {}) {
   const exists = options.existsSync || fs.existsSync;
   const projectRoot = path.resolve(options.path || '.');
   if (options.scope === 'global' && options.homedir) {
-    const sharedWorkspace = path.join(options.homedir, 'workspace');
-    if (exists(sharedWorkspace)) {
+    const sharedWorkspace = path.resolve(options.homedir, 'workspace');
+    if (
+      exists(sharedWorkspace) &&
+      (projectRoot === sharedWorkspace || projectRoot.startsWith(sharedWorkspace + path.sep))
+    ) {
       return sharedWorkspace;
     }
   }

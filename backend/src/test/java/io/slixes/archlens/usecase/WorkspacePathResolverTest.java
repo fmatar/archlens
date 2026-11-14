@@ -49,7 +49,36 @@ class WorkspacePathResolverTest {
 
       String result2 = WorkspacePathResolver.normalizeRoot("/Users/someone/workspace/other/proj");
       assertEquals(fakeWorkspace.toString() + "/other/proj", result2);
+
+      String linuxResult =
+          WorkspacePathResolver.normalizeRoot("/home/alice/workspace/team/service");
+      assertEquals(fakeWorkspace.toString() + "/team/service", linuxResult);
+
+      String exactRootResult = WorkspacePathResolver.normalizeRoot("/Users/someone/workspace");
+      assertEquals(fakeWorkspace.toString(), exactRootResult);
     } finally {
+      System.clearProperty("archlens.container.workspace");
+    }
+  }
+
+  @Test
+  void testNormalizeRootExplicitHostWorkspace(@TempDir Path tempDir) {
+    Path fakeWorkspace = tempDir.resolve("workspace");
+    fakeWorkspace.toFile().mkdirs();
+    System.setProperty("archlens.container.workspace", fakeWorkspace.toString());
+    System.setProperty("archlens.host.workspace", "/opt/repos");
+    try {
+      assertEquals(
+          fakeWorkspace.toString() + "/billing/api",
+          WorkspacePathResolver.normalizeRoot("/opt/repos/billing/api"));
+      assertEquals(fakeWorkspace.toString(), WorkspacePathResolver.normalizeRoot("/opt/repos"));
+      assertEquals(fakeWorkspace.toString(), WorkspacePathResolver.normalizeRoot("/opt/repos/"));
+      // Sibling prefix must NOT be falsely rewritten
+      assertEquals(
+          "/opt/repos-other/billing",
+          WorkspacePathResolver.normalizeRoot("/opt/repos-other/billing"));
+    } finally {
+      System.clearProperty("archlens.host.workspace");
       System.clearProperty("archlens.container.workspace");
     }
   }

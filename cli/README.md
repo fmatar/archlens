@@ -137,6 +137,9 @@ Configures detected AI client manifests or launches an interactive stdio bridge:
 # Auto-configure Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code
 npx @fmatar/archlens-skill --mcp
 
+# Auto-configure pure ephemeral Docker MCP container (docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio)
+npx @fmatar/archlens-skill --mcp --docker
+
 # Launch MCP stdio transport bridge (spins up Docker container automatically when needed)
 npx @fmatar/archlens-skill mcp
 ```

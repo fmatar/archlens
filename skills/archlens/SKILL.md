@@ -88,6 +88,9 @@ npx @fmatar/archlens-skill upgrade --path .
 # Auto-configure MCP manifests for AI assistants (Antigravity, Claude, Cursor):
 npx @fmatar/archlens-skill --mcp
 
+# Auto-configure pure ephemeral Docker MCP container (docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio):
+npx @fmatar/archlens-skill --mcp --docker
+
 # Launch Model Context Protocol (MCP) stdio server:
 npx @fmatar/archlens-skill mcp
 ```

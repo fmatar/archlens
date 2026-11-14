@@ -72,12 +72,7 @@ public final class WorkspacePathResolver {
     if (isContainerEnvironment()
         && containerWorkspace.exists()
         && containerWorkspace.isDirectory()) {
-      if (!userHome.isBlank() && normalized.startsWith(userHome + "/workspace/")) {
-        normalized = containerPath + normalized.substring((userHome + "/workspace").length());
-      } else if (normalized.startsWith("/Users/") && normalized.contains("/workspace/")) {
-        int wsIdx = normalized.indexOf("/workspace/");
-        normalized = containerPath + normalized.substring(wsIdx + "/workspace".length());
-      }
+      normalized = mapHostWorkspaceToContainer(normalized, userHome, containerPath);
     }
     // Map /workspace/labs/ to host userHome/workspace/labs/ if present on host
     if (!isContainerEnvironment() && normalized.startsWith("/workspace/labs/")) {
@@ -94,6 +89,52 @@ public final class WorkspacePathResolver {
       normalized = normalized.replace("unclebob-design", "archlens");
     }
     return normalized;
+  }
+
+  private static String mapHostWorkspaceToContainer(
+      String normalized, String userHome, String containerPath) {
+    String explicitHost =
+        System.getProperty("archlens.host.workspace", System.getenv("ARCHLENS_HOST_WORKSPACE"));
+    if (explicitHost != null && !explicitHost.isBlank()) {
+      String cleanHost = stripTrailingSlash(explicitHost.trim());
+      String mapped = rewritePrefix(normalized, cleanHost, containerPath);
+      if (mapped != null) {
+        return mapped;
+      }
+    }
+    if (!userHome.isBlank()) {
+      String mapped = rewritePrefix(normalized, userHome + "/workspace", containerPath);
+      if (mapped != null) {
+        return mapped;
+      }
+    }
+    if (normalized.startsWith("/Users/") || normalized.startsWith("/home/")) {
+      if (normalized.endsWith("/workspace")) {
+        return containerPath;
+      }
+      int wsIdx = normalized.indexOf("/workspace/");
+      if (wsIdx > 0) {
+        return containerPath + normalized.substring(wsIdx + "/workspace".length());
+      }
+    }
+    return normalized;
+  }
+
+  private static String stripTrailingSlash(String path) {
+    if (path.length() > 1 && path.endsWith("/")) {
+      return path.substring(0, path.length() - 1);
+    }
+    return path;
+  }
+
+  private static String rewritePrefix(String path, String hostPrefix, String containerPath) {
+    if (path.equals(hostPrefix) || path.equals(hostPrefix + "/")) {
+      return containerPath;
+    }
+    if (path.startsWith(hostPrefix + "/")) {
+      return containerPath + path.substring(hostPrefix.length());
+    }
+    return null;
   }
 
   public static boolean isMacOs() {

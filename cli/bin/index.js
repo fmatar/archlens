@@ -101,6 +101,9 @@ ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
   ${ui.colors.dim}# Configure MCP manifests across Claude, Antigravity, and Cursor:${ui.colors.reset}
   npx @fmatar/archlens-skill --mcp
 
+  ${ui.colors.dim}# Configure ephemeral Docker MCP container (docker run -i --rm):${ui.colors.reset}
+  npx @fmatar/archlens-skill --mcp --docker
+
   ${ui.colors.dim}# Launch MCP stdio bridge server for AI coding assistants:${ui.colors.reset}
   npx @fmatar/archlens-skill mcp
 

@@ -213,6 +213,8 @@ flowchart TD
 | **`@Prompt`** | `dip-refactoring-guide` | Guided prompt template (`@NotBlank fromClass`, `@NotBlank toClass`) for executing a surgical DIP inversion. |
 
 #### Manual MCP Configuration (`.mcp.json` / Antigravity / Claude / Cursor / Gemini CLI)
+
+**Option A — Zero-Dependency NPX Bridge (Auto-Resurrects Native JAR / Docker + Offline Fallback):**
 ```json
 {
   "mcpServers": {
@@ -221,6 +223,33 @@ flowchart TD
       "args": ["-y", "@fmatar/archlens-skill@1.1.2", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}
+```
+
+**Option B — Pure Ephemeral Docker Container (`npx @fmatar/archlens-skill --mcp --docker`, Zero Host Node/Java Needed):**
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "QUARKUS_PROFILE",
+        "-e",
+        "ARCHLENS_HOST_WORKSPACE",
+        "-v",
+        "/Users/fady/workspace:/workspace",
+        "ghcr.io/fmatar/archlens:latest"
+      ],
+      "env": {
+        "QUARKUS_PROFILE": "mcp-stdio",
+        "ARCHLENS_HOST_WORKSPACE": "/Users/fady/workspace"
       }
     }
   }

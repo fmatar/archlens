@@ -36,7 +36,8 @@ flowchart TD
   ADR_007["ADR-007: Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills"]
   _8238["Ticket #8238 (feature/issue-#8238-enforce-skills-release-and-npx-skills)"]
   ADR_008["ADR-008: Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication"]
-  _9283["Ticket #9283"]
+  _9283["Ticket #9283 (feature/issue-#9283-release-v1-1-2)"]
+  ADR_009["ADR-009: Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -112,6 +113,7 @@ flowchart TD
 | **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | #222 | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-007** | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | #8238 | None |
 | **ADR-008** | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | #9283 | ADR-007 |
+| **ADR-009** | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | N/A | None |
 
 ---
 

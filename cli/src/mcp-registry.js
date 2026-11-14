@@ -8,6 +8,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { DEFAULT_DOCKER_IMAGE } from './docker-runner.js';
 
 export const ARCHLENS_TOOL_SCHEMAS = {
   inspectArchitecture: {
@@ -360,7 +361,46 @@ export function getClientConfigLocations(projectRoot = '.', homedir = os.homedir
   ];
 }
 
-export function getMcpManifestEntry(serverUrl = 'http://localhost:8088') {
+export function resolveDockerHostWorkspace(options = {}) {
+  if (options.hostWorkspace) {
+    return path.resolve(options.hostWorkspace);
+  }
+  const exists = options.existsSync || fs.existsSync;
+  const projectRoot = path.resolve(options.path || '.');
+  if (options.scope === 'global' && options.homedir) {
+    const sharedWorkspace = path.join(options.homedir, 'workspace');
+    if (exists(sharedWorkspace)) {
+      return sharedWorkspace;
+    }
+  }
+  return projectRoot;
+}
+
+export function getMcpManifestEntry(serverUrl = 'http://localhost:8088', options = {}) {
+  if (options.preferDocker || options.docker) {
+    const hostWorkspace = resolveDockerHostWorkspace(options);
+    const image = options.image || DEFAULT_DOCKER_IMAGE;
+    return {
+      command: 'docker',
+      args: [
+        'run',
+        '-i',
+        '--rm',
+        '-e',
+        'QUARKUS_PROFILE',
+        '-e',
+        'ARCHLENS_HOST_WORKSPACE',
+        '-v',
+        `${hostWorkspace}:/workspace`,
+        image
+      ],
+      env: {
+        QUARKUS_PROFILE: 'mcp-stdio',
+        ARCHLENS_HOST_WORKSPACE: hostWorkspace
+      }
+    };
+  }
+
   return {
     command: 'npx',
     args: ['-y', '@fmatar/archlens-skill', 'mcp'],
@@ -419,19 +459,26 @@ export function installMcpConfigs(options = {}) {
         }
       }
 
+      const entryOptions = {
+        ...options,
+        path: projectRoot,
+        homedir,
+        scope: target.scope
+      };
+
       if (target.id === 'vscode') {
         if (!manifest.servers || typeof manifest.servers !== 'object') {
           manifest.servers = {};
         }
         manifest.servers.archlens = {
           type: 'stdio',
-          ...getMcpManifestEntry(serverUrl)
+          ...getMcpManifestEntry(serverUrl, entryOptions)
         };
       } else {
         if (!manifest.mcpServers || typeof manifest.mcpServers !== 'object') {
           manifest.mcpServers = {};
         }
-        manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl);
+        manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl, entryOptions);
       }
 
       if (!dryRun) {

@@ -101,5 +101,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-007 | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | #8238 | None |
 | ADR-008 | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | #9283 | ADR-007 |
 | ADR-009 | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | #8714 | None |
+| ADR-010 | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | #8454 | ADR-009 |
 <!-- ADR_INDEX_END -->
 

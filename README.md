@@ -11,7 +11,7 @@
 **Real-time polyglot Clean Architecture workbench, AST governance engine, and autonomous AI refactoring studio for modern software teams.**
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
-[![Release v1.1.2](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
+[![Release v1.1.3](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
 [![NPM Package](https://img.shields.io/badge/npm-@fmatar%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fmatar/archlens-skill)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -47,10 +47,14 @@ Get full Clean Architecture governance, visual ring inspection, and autonomous A
 ### 1. Equip Your Repository & AI Coding Agents (One Command)
 
 ```bash
+# Portable / shared-repo setup (NPX stdio bridge + 4-tier offline AST fallback):
 npx @fmatar/archlens-skill --yes --skills --mcp
+
+# Personal workstation setup (ephemeral Docker mcp-stdio container — zero host Node/Java needed):
+npx @fmatar/archlens-skill --yes --skills --mcp --docker
 ```
 
-This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the 3 Archlens skills via `npx skills`, and registers the `archlens` MCP 2.0 stdio bridge across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code**.
+This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the 3 Archlens skills via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fmatar/archlens-skill global [--docker]` equips global skills + global MCP manifests across your machine).
 
 ### 2. Run in Autonomous AI Mode, Visual Browser Studio, or CI
 
@@ -220,7 +224,7 @@ flowchart TD
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill@1.1.2", "mcp"],
+      "args": ["-y", "@fmatar/archlens-skill@1.1.3", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://localhost:8088"
       }
@@ -316,9 +320,10 @@ flowchart TD
 | `prompt` | | Export Clean Architecture LLM Refactoring Prompt Dossier | |
 | `mcp` | | Launch Model Context Protocol (MCP 2.0) stdio server with 4-tier auto-resurrection | |
 | `--mcp` | `-m` | Auto-configure MCP client manifests (Antigravity, Claude, Cursor, Windsurf, VS Code) | `false` |
+| `--no-mcp` | | Skip automatic MCP client configuration (e.g. during `global` install) | `false` |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
-| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` | `false` |
+| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` / `global` | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |
@@ -327,7 +332,7 @@ flowchart TD
 | `--fitness-threshold <N>` | | Enforce minimum Architectural Fitness Index (`0.0`–`1.0`) | `0.80` |
 | `--format <FMT>` | | Audit output format (`pretty`, `json`, `sarif`, `mermaid` / `mmd`) | `pretty` |
 | `--output <PATH>` | `-O` | Write audit report to specified file path | `stdout` |
-| `--global` | `-g` | Install skill into global agent directories (`~/.claude/skills`, `~/.gemini/config/skills`) | `false` |
+| `--global` | `-g` | Install skills and global MCP manifests into global agent directories (`~/.claude`, `~/.gemini`) | `false` |
 | `--update` | `-u` | Re-scan code and update existing policy while preserving custom rules | `false` |
 | `--yes` | `-y` | Accept defaults automatically (non-interactive mode) | `false` |
 

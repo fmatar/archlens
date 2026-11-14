@@ -13,13 +13,17 @@ Analyzes any project repository, detects programming languages and package hiera
 ## ⚡ Quickstart
 
 ### Option A: Zero-Touch Autonomous AI Setup (`--mcp` — Recommended for Antigravity & Claude)
-Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Once configured, your AI assistant **automatically starts or resurrects Archlens on demand** whenever an architectural MCP tool is invoked—no manual container management required:
+Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Choose the portable NPX stdio bridge (with 4-tier offline AST fallback) or an ephemeral Docker `mcp-stdio` container:
 ```bash
-# Scaffold .archlens/policy.json, AGENTS.md/CLAUDE.md, install project skills via npx skills, and auto-configure MCP clients:
+# Portable / shared-repo setup (.archlens/policy.json + AGENTS.md + skills + NPX MCP bridge):
 npx @fmatar/archlens-skill --yes --skills --mcp
 
-# Or install skills globally across all detected coding agents via npx skills:
-npx @fmatar/archlens-skill skills -g
+# Personal workstation setup (ephemeral docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio container):
+npx @fmatar/archlens-skill --yes --skills --mcp --docker
+
+# Equip global skills AND global MCP manifests across all detected coding agents:
+npx @fmatar/archlens-skill global
+npx @fmatar/archlens-skill global --docker
 ```
 
 ### Option B: Install AI Assistant Skills Directly via `npx skills`
@@ -103,10 +107,11 @@ Target a specific repository directory:
 npx @fmatar/archlens-skill --path /path/to/project --yes
 ```
 
-#### 3. Global AI Agent Skill Installation
-Deploys the skill globally so Claude Code, Gemini CLI, and Antigravity can scaffold policies on demand:
+#### 3. Global AI Agent Skill & MCP Installation
+Deploys skills and global MCP manifests so Claude Code, Gemini CLI, and Antigravity are equipped across all workspaces (pass `--docker` for ephemeral container mode or `--no-mcp` to skip MCP setup):
 ```bash
 npx @fmatar/archlens-skill global
+npx @fmatar/archlens-skill global --docker
 ```
 
 #### 4. Synchronize Existing Policy

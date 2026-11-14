@@ -102,6 +102,8 @@ test('parseArgs parses all CLI commands and flags accurately', () => {
   assert.equal(parseArgs(['--format']).format, 'pretty');
   assert.equal(parseArgs(['--server-url']).serverUrl, 'http://localhost:8088');
   assert.equal(parseArgs(['--path']).path, '.');
+  assert.equal(parseArgs(['global', '--no-mcp']).noMcp, true);
+  assert.equal(parseArgs(['--mcp', '--no-mcp']).mcp, false);
 });
 
 test('main handles --help and --version cleanly', async () => {
@@ -390,5 +392,58 @@ test('main executes prompt, check (pretty/json/sarif/mermaid/fail), mcp, start, 
     assert.equal(code, 1);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('global auto-configures global MCP manifests (unless --no-mcp) and interactive mode prompts Docker vs NPX when Docker is available', async () => {
+  const tmpDir = createSampleProject('archlens-bin-global-mcp-');
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-bin-global-mcp-home-'));
+  const antigravityDir = path.join(tmpHome, '.gemini', 'antigravity');
+  fs.mkdirSync(antigravityDir, { recursive: true });
+
+  try {
+    // 1. `global --no-mcp` skips MCP registration completely
+    await main(['global', '--no-mcp', '-p', tmpDir], {
+      options: { homedir: tmpHome, preferVercelSkills: false }
+    });
+    assert.equal(fs.existsSync(path.join(antigravityDir, 'mcp_config.json')), false);
+    assert.equal(fs.existsSync(path.join(tmpDir, '.mcp.json')), false);
+
+    // 2. `global` auto-registers global MCP manifests without writing repo-local .mcp.json
+    await main(['global', '-p', tmpDir], {
+      options: { homedir: tmpHome, preferVercelSkills: false }
+    });
+    assert.equal(fs.existsSync(path.join(antigravityDir, 'mcp_config.json')), true);
+    assert.equal(fs.existsSync(path.join(tmpDir, '.mcp.json')), false);
+    const globalCfg = JSON.parse(fs.readFileSync(path.join(antigravityDir, 'mcp_config.json'), 'utf8'));
+    assert.equal(globalCfg.mcpServers.archlens.command, 'npx');
+
+    // 3. Interactive mode with Docker available prompts transport choice ('docker' -> ephemeral mcp-stdio)
+    const answers = ['mcp', 'docker'];
+    await main(['-p', tmpDir], {
+      isTTY: true,
+      isDockerAvailable: () => true,
+      askChoice: async () => answers.shift(),
+      askQuestion: async () => 'Docker Demo',
+      options: { homedir: tmpHome, preferVercelSkills: false }
+    });
+    const dockerCfg = JSON.parse(fs.readFileSync(path.join(antigravityDir, 'mcp_config.json'), 'utf8'));
+    assert.equal(dockerCfg.mcpServers.archlens.command, 'docker');
+    assert.equal(dockerCfg.mcpServers.archlens.env.QUARKUS_PROFILE, 'mcp-stdio');
+
+    // 4. Interactive 'install_global' with Docker available and 'npx' transport choice
+    const globalAnswers = ['install_global', 'npx'];
+    await main(['-p', tmpDir], {
+      isTTY: true,
+      isDockerAvailable: () => true,
+      askChoice: async () => globalAnswers.shift(),
+      askQuestion: async () => 'NPX Demo',
+      options: { homedir: tmpHome, preferVercelSkills: false }
+    });
+    const npxCfg = JSON.parse(fs.readFileSync(path.join(antigravityDir, 'mcp_config.json'), 'utf8'));
+    assert.equal(npxCfg.mcpServers.archlens.command, 'npx');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    fs.rmSync(tmpHome, { recursive: true, force: true });
   }
 });

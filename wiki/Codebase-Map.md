@@ -142,7 +142,7 @@ flowchart TD
     checker_js["checker.js (16 exports, I=0)"]
     docker_runner_js["docker-runner.js (18 exports, I=0)"]
     installer_js["installer.js (7 exports, I=0.4)"]
-    mcp_registry_js["mcp-registry.js (5 exports, I=0)"]
+    mcp_registry_js["mcp-registry.js (6 exports, I=0.25)"]
     mcp_server_js["mcp-server.js (7 exports, I=0.8)"]
     ui_js["ui.js (14 exports, I=0)"]
     updater_js["updater.js (2 exports, I=0.67)"]
@@ -266,7 +266,7 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/usecase/SyncAdrUseCase.java` | 159 | 0 / 0 | `0` | `SyncAdrUseCase` (L17), `AdrDocument` (L22), `recordDipInversion` (L38), `recordPackageReorganization` (L78) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/SynthesizeDipInversionUseCase.java` | 38 | 0 / 0 | `0` | `SynthesizeDipInversionUseCase` (L17), `execute` (L31) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/VerifyAndRollbackRefactorUseCase.java` | 472 | 0 / 0 | `0` | `VerifyAndRollbackRefactorUseCase` (L31), `TestExecutionOutcome` (L74), `TestSuiteExecutor` (L79), `createPreRefactorSnapshot` (L106), `verifyRefactoring` (L142), `detectTestCommand` (L258), `rollbackToSnapshot` (L359), `preVisitDirectory` (L432) +2 more | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/usecase/WorkspacePathResolver.java` | 247 | 0 / 0 | `0` | `WorkspacePathResolver` (L13), `DEFAULT_PROJECT_ROOT` (L15), `isContainerEnvironment` (L21), `normalizeRoot` (L30), `isMacOs` (L99), `isProjectDirectory` (L107), `isIgnoredDirectory` (L123), `isSubProjectDirectory` (L141) +3 more | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/usecase/WorkspacePathResolver.java` | 314 | 0 / 0 | `0` | `WorkspacePathResolver` (L16), `DEFAULT_PROJECT_ROOT` (L18), `isContainerEnvironment` (L27), `normalizeRoot` (L36), `isMacOs` (L166), `isProjectDirectory` (L174), `isIgnoredDirectory` (L190), `isSubProjectDirectory` (L208) +3 more | `wiki/Codebase-Map.md` |
 
 ### 🏛️ Ring 2: Adapters & Enforcement
 
@@ -332,13 +332,13 @@ flowchart TD
 | `frontend/src/lib/utils/martinMetrics.ts` | 408 | 0 / 1 | `1` | `ComponentMetricsSummary` (L12), `calculateComponentMartinMetrics` (L23), `calculateAllMartinMetrics` (L105), `simulateSandboxGraph` (L122), `computeScatterCoordinates` (L343), `computeNodeRadius` (L360), `buildScatterPlotPoints` (L368) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Robert-C-Martin-Metrics.md` |
 | `frontend/src/main.ts` | 10 | 0 / 2 | `1` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/vite-env.d.ts` | 3 | 0 / 0 | `0` |  | `wiki/Codebase-Map.md` |
-| `cli/bin/index.js` | 768 | 0 / 9 | `1` | `parseArgs` (L130), `main` (L489) | `wiki/Codebase-Map.md` |
+| `cli/bin/index.js` | 812 | 0 / 9 | `1` | `parseArgs` (L139), `main` (L526) | `wiki/Codebase-Map.md` |
 | `cli/src/analyzer.js` | 851 | 4 / 1 | `0.2` | `detectProjectLanguage` (L12), `discoverWorkspaceModules` (L124), `detectSourceRoot` (L241), `findCommonPackagePrefix` (L321), `discoverSubpackages` (L416), `classifyLayers` (L452), `parseImportLinterConfig` (L506), `generatePolicy` (L575) +2 more | `wiki/Codebase-Map.md` |
 | `cli/src/checker.js` | 1371 | 3 / 0 | `0` | `loadProjectPolicy` (L49), `TECHNICAL_MARKERS` (L70), `calculateScreamingMetric` (L105), `TECHNICAL_SUFFIXES` (L159), `TECHNICAL_PREFIXES` (L195), `extractFeatureToken` (L206), `suggestFeatureClusters` (L232), `extractTsJsStatements` (L461) +8 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
-| `cli/src/docker-runner.js` | 430 | 2 / 0 | `0` | `DEFAULT_SERVER_URL` (L12), `DEFAULT_DOCKER_IMAGE` (L13), `DEFAULT_DOCKERHUB_IMAGE` (L14), `DEFAULT_CONTAINER_NAME` (L15), `checkServerHealth` (L17), `isJavaAvailable` (L33), `getPlatformBinarySuffix` (L42), `findNativeBinary` (L52) +10 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
+| `cli/src/docker-runner.js` | 430 | 3 / 0 | `0` | `DEFAULT_SERVER_URL` (L12), `DEFAULT_DOCKER_IMAGE` (L13), `DEFAULT_DOCKERHUB_IMAGE` (L14), `DEFAULT_CONTAINER_NAME` (L15), `checkServerHealth` (L17), `isJavaAvailable` (L33), `getPlatformBinarySuffix` (L42), `findNativeBinary` (L52) +10 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
 | `cli/src/installer.js` | 388 | 3 / 2 | `0.4` | `COMPANION_PROTOCOL_HEADER` (L20), `getCompanionProtocolBlock` (L22), `installLocalPolicy` (L40), `buildSkillsCliArgs` (L155), `getGlobalSkillDirectories` (L220), `installLocalSkills` (L253), `installGlobalSkills` (L310) | `wiki/Codebase-Map.md` |
-| `cli/src/mcp-registry.js` | 458 | 3 / 0 | `0` | `ARCHLENS_TOOL_SCHEMAS` (L12), `getAntigravityInstructions` (L220), `getClientConfigLocations` (L268), `getMcpManifestEntry` (L363), `installMcpConfigs` (L373) | `wiki/Codebase-Map.md` |
-| `cli/src/mcp-server.js` | 693 | 1 / 4 | `0.8` | `getMcpToolsList` (L34), `getMcpResourcesList` (L42), `getMcpPromptsList` (L67), `readMcpResource` (L98), `executeToolCall` (L163), `handleMcpMessage` (L497), `startMcpStdioServer` (L664) | `wiki/Codebase-Map.md` |
+| `cli/src/mcp-registry.js` | 512 | 3 / 1 | `0.25` | `ARCHLENS_TOOL_SCHEMAS` (L13), `getAntigravityInstructions` (L221), `getClientConfigLocations` (L269), `resolveDockerHostWorkspace` (L364), `getMcpManifestEntry` (L382), `installMcpConfigs` (L416) | `wiki/Codebase-Map.md` |
+| `cli/src/mcp-server.js` | 703 | 1 / 4 | `0.8` | `getMcpToolsList` (L34), `getMcpResourcesList` (L42), `getMcpPromptsList` (L67), `readMcpResource` (L98), `executeToolCall` (L163), `handleMcpMessage` (L507), `startMcpStdioServer` (L674) | `wiki/Codebase-Map.md` |
 | `cli/src/ui.js` | 150 | 1 / 0 | `0` | `colors` (L9), `banner` (L45), `info` (L58), `success` (L62), `warn` (L66), `error` (L70), `step` (L74), `divider` (L78) +6 more | `wiki/Codebase-Map.md` |
 | `cli/src/updater.js` | 165 | 1 / 2 | `0.67` | `updateLocalPolicy` (L23), `updateGlobalSkills` (L153) | `wiki/Codebase-Map.md` |
 | `cli/src/upgrader.js` | 123 | 1 / 1 | `0.5` | `upgradeProject` (L11) | `wiki/Codebase-Map.md` |
@@ -386,6 +386,8 @@ flowchart TD
 | **ADR-006** | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | CAP-01, CAP-02, CAP-03, CAP-04 |
 | **ADR-007** | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | None |
 | **ADR-008** | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | ADR-007 |
+| **ADR-009** | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | None |
+| **ADR-010** | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | ADR-009 |
 
 ---
 

@@ -213,6 +213,8 @@ flowchart TD
 | **`@Prompt`** | `dip-refactoring-guide` | Guided prompt template (`@NotBlank fromClass`, `@NotBlank toClass`) for executing a surgical DIP inversion. |
 
 #### Manual MCP Configuration (`.mcp.json` / Antigravity / Claude / Cursor / Gemini CLI)
+
+**Option A — Zero-Dependency NPX Bridge (Auto-Resurrects Native JAR / Docker + Offline Fallback):**
 ```json
 {
   "mcpServers": {
@@ -221,6 +223,33 @@ flowchart TD
       "args": ["-y", "@fmatar/archlens-skill@1.1.2", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://localhost:8088"
+      }
+    }
+  }
+}
+```
+
+**Option B — Pure Ephemeral Docker Container (`npx @fmatar/archlens-skill --mcp --docker`, Zero Host Node/Java Needed):**
+```json
+{
+  "mcpServers": {
+    "archlens": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "QUARKUS_PROFILE",
+        "-e",
+        "ARCHLENS_HOST_WORKSPACE",
+        "-v",
+        "/path/to/workspace:/workspace",
+        "ghcr.io/fmatar/archlens:latest"
+      ],
+      "env": {
+        "QUARKUS_PROFILE": "mcp-stdio",
+        "ARCHLENS_HOST_WORKSPACE": "/path/to/workspace"
       }
     }
   }
@@ -289,7 +318,7 @@ flowchart TD
 | `--mcp` | `-m` | Auto-configure MCP client manifests (Antigravity, Claude, Cursor, Windsurf, VS Code) | `false` |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
-| `--docker` | | Force running workbench via Docker container (`ghcr.io/fmatar/archlens:latest`) | `false` |
+| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |

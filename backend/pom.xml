@@ -33,10 +33,14 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-container-image-jib</artifactId>
         </dependency>
-        <!-- Quarkus Model Context Protocol (MCP) Server HTTP/SSE & Bean Validation -->
+        <!-- Quarkus Model Context Protocol (MCP) Server HTTP/SSE, STDIO & Bean Validation -->
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>
             <artifactId>quarkus-mcp-server-http</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkiverse.mcp</groupId>
+            <artifactId>quarkus-mcp-server-stdio</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkiverse.mcp</groupId>

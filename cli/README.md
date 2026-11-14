@@ -137,6 +137,9 @@ Configures detected AI client manifests or launches an interactive stdio bridge:
 # Auto-configure Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code
 npx @fmatar/archlens-skill --mcp
 
+# Auto-configure pure ephemeral Docker MCP container (docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio)
+npx @fmatar/archlens-skill --mcp --docker
+
 # Launch MCP stdio transport bridge (spins up Docker container automatically when needed)
 npx @fmatar/archlens-skill mcp
 ```
@@ -175,7 +178,7 @@ npx @fmatar/archlens-skill start --path /path/to/project --port 8088 --open
 | `--format <FMT>` | | Output format for `check` (`text`, `json`, `sarif`) | `text` |
 | `--output <FILE>` | `-O` | Write `check` output report (e.g. SARIF) to file | |
 | `--native` | | Force native JVM runner mode on `start` | `false` |
-| `--docker` | | Force Docker container mode on `start` | `false` |
+| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` | `false` |
 | `--jar <PATH>` | | Custom path to `quarkus-run.jar` for native mode | Auto-detected |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |

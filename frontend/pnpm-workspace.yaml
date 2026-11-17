@@ -6,3 +6,7 @@ minimumReleaseAgeExclude:
   - '@vitest/spy@5.0.2'
   - vitest@5.0.2
   - '@tsconfig/svelte@5.0.9'
+# shortcut: picomatch <=4.0.7 has no upstream patched version yet (build/test-only via vite/vitest), remove when picomatch >=4.0.8 ships
+auditConfig:
+  ignoreGhsas:
+    - GHSA-fc5q-39xc-vjpf

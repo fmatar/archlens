@@ -7,10 +7,10 @@ description: >-
   layer boundaries, inverting outward dependencies (DIP), or running Archlens.
 license: Apache-2.0
 compatibility: "Node.js >= 18"
-version: 1.1.3
+version: 1.1.4
 metadata:
   author: fmatar
-  version: "1.1.3"
+  version: "1.1.4"
 ---
 
 # Archlens — Clean Architecture Governance & Workbench Companion

@@ -388,6 +388,7 @@ flowchart TD
 | **ADR-008** | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | ADR-007 |
 | **ADR-009** | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | None |
 | **ADR-010** | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | ADR-009 |
+| **ADR-011** | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | ADR-010 |
 
 ---
 

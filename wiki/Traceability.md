@@ -56,6 +56,7 @@ flowchart LR
 - **`ADR-008`**: Release v1.1.2 — Agent Skills Release Parity & `npx skills` Ecosystem Publication (`docs/adr/ADR-008-release-v1-1-2-agent-skills-release-parity-npx-s.md`)
 - **`ADR-009`**: Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support (`docs/adr/ADR-009-dual-transport-quarkus-mcp-stdio-profile-and-eph.md`)
 - **`ADR-010`**: Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity (`docs/adr/ADR-010-release-v1-1-3-auto-mcp-global-onboarding-intera.md`)
+- **`ADR-011`**: Release v1.1.4 — Fix `npx` Symlink Entrypoint Resolution in `@fmatar/archlens-skill` (`docs/adr/ADR-011-release-v1-1-4-fix-npx-symlink-entrypoint-resolu.md`)
 
 ### Foundational Feature ADRs (`wiki/`)
 - **[ADR-001: Surgical DIP Inverter](ADR-001-Surgical-DIP-Inverter)** (PR #112)

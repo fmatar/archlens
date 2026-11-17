@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import { parseArgs, main } from '../bin/index.js';
 
@@ -445,5 +447,38 @@ test('global auto-configures global MCP manifests (unless --no-mcp) and interact
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.rmSync(tmpHome, { recursive: true, force: true });
+  }
+});
+
+test('bin/index.js executes main() when invoked via an npx / node_modules/.bin symlink', () => {
+  const binPath = fileURLToPath(new URL('../bin/index.js', import.meta.url));
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  const tmpBinDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-npx-symlink-'));
+  const symlinkPath = path.join(tmpBinDir, 'archlens-skill');
+
+  try {
+    fs.symlinkSync(binPath, symlinkPath);
+
+    const verRes = spawnSync(process.execPath, [symlinkPath, '--version'], { encoding: 'utf8' });
+    assert.equal(verRes.status, 0);
+    assert.equal(verRes.stdout.trim(), pkg.version);
+
+    const initReq = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }) + '\n';
+    const mcpRes = spawnSync(process.execPath, [symlinkPath, 'mcp'], { input: initReq, encoding: 'utf8' });
+    assert.equal(mcpRes.status, 0);
+    const parsed = JSON.parse(mcpRes.stdout.trim());
+    assert.equal(parsed.id, 1);
+    assert.equal(parsed.result.serverInfo.version, pkg.version);
+
+    // Importing as a module when argv[1] is a non-existent path must not throw ENOENT
+    const importRes = spawnSync(
+      process.execPath,
+      ['--input-type=module', '-e', `await import(${JSON.stringify(binPath)});`, 'nonexistent-arg'],
+      { encoding: 'utf8' }
+    );
+    assert.equal(importRes.status, 0);
+    assert.equal(importRes.stdout, '');
+  } finally {
+    fs.rmSync(tmpBinDir, { recursive: true, force: true });
   }
 });

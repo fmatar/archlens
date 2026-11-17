@@ -13,6 +13,7 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  | #4934: [FIX] fix: fix-npx-symlink-entrypoint-and-release-v1-1-4 |  |  |
 |  |  |  | #8454: [FEAT] feat: auto-mcp-onboarding-and-release-v1-1-3 |  |
 |  |  |  | #8714: [FEAT] feat: Add Quarkus MCP STDIO Docker container transport |  |
 |  |  |  | #9283: [FEAT] feat: release-v1-1-2 |  |

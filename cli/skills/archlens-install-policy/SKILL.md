@@ -6,10 +6,10 @@ description: >-
   agent workbench companion integration. Use when setting up or upgrading Archlens.
 license: Apache-2.0
 compatibility: "Node.js >= 18"
-version: 1.1.3
+version: 1.1.4
 metadata:
   author: fmatar
-  version: "1.1.3"
+  version: "1.1.4"
 ---
 
 # Archlens Policy & Companion Installer (`archlens-install-policy`)

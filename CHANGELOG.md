@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] - 2026-11-17
+
+### Fixed
+- **CLI & MCP `npx` Symlink Entrypoint Resolution (`@fmatar/archlens-skill`)** (`#4934`, `ADR-011`):
+  - Fixed silent exit (`code 0`, no output) when launching `@fmatar/archlens-skill` via `npx` or global `node_modules/.bin/*` symlinks (`mcp`, `--version`, `start`, `init`, etc.) by resolving `fs.realpathSync(process.argv[1])` (guarded by `fs.existsSync(process.argv[1])`) before comparing against `import.meta.url` in `cli/bin/index.js`.
+  - Added end-to-end symlink execution regression tests (`--version`, `mcp` JSON-RPC `initialize`, and non-existent `argv[1]` ES module import safety) in `cli/test/cli-bin.test.js`.
+
 ## [1.1.3] - 2026-11-14
 
 ### Added

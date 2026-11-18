@@ -39,7 +39,13 @@ class FilesystemResourceTest {
     Files.createDirectories(ignoredFolder);
 
     // Call listDirectories
-    Map<String, Object> result = resource.listDirectories(tempDir.toString());
+    System.setProperty("archlens.allowed.roots", tempDir.toString());
+    Map<String, Object> result;
+    try {
+      result = resource.listDirectories(tempDir.toString());
+    } finally {
+      System.clearProperty("archlens.allowed.roots");
+    }
     assertNotNull(result);
     assertEquals(tempDir.toRealPath().toString(), result.get("currentPath"));
     assertNotNull(result.get("breadcrumbs"));
@@ -103,11 +109,19 @@ class FilesystemResourceTest {
     assertNotNull(blankResult);
     assertNotNull(blankResult.get("currentPath"));
 
-    // Non-existent path
-    Map<String, Object> nonExistent =
-        resource.listDirectories("/path/does/not/exist/at/all/hopefully/12345");
+    // Non-existent path inside home falls back safely within allowed roots
+    String missingInHome =
+        Path.of(System.getProperty("user.home"), "archlens-non-existent-test-dir-12345").toString();
+    Map<String, Object> nonExistent = resource.listDirectories(missingInHome);
     assertNotNull(nonExistent);
     assertNotNull(nonExistent.get("currentPath"));
+
+    // Path outside allowed browse roots is denied with HTTP 403
+    jakarta.ws.rs.WebApplicationException denied =
+        assertThrows(
+            jakarta.ws.rs.WebApplicationException.class,
+            () -> resource.listDirectories("/path/does/not/exist/at/all/hopefully/12345"));
+    assertEquals(403, denied.getResponse().getStatus());
   }
 
   @Test

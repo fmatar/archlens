@@ -19,9 +19,14 @@ COPY backend/target/quarkus-app/*.jar /work/
 COPY backend/target/quarkus-app/app/ /work/app/
 COPY backend/target/quarkus-app/quarkus/ /work/quarkus/
 
-# Create workspace directory for examined projects
-RUN mkdir -p /workspace
+# Create workspace directory and non-root runtime user (1001:1001)
+RUN mkdir -p /workspace /home/archlens/.archlens \
+    && addgroup -S -g 1001 archlens \
+    && adduser -S -u 1001 -G archlens -h /home/archlens archlens \
+    && chown -R 1001:1001 /work /workspace /home/archlens
 
 EXPOSE 8088
+
+USER 1001:1001
 
 ENTRYPOINT ["java", "-Djava.util.logging.manager=org.jboss.logmanager.LogManager", "-jar", "/work/quarkus-run.jar"]

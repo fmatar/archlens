@@ -97,3 +97,96 @@ describe('code scanning and Dependabot config (#236)', () => {
     assert.equal(cfg.match(/target-branch: develop/g).length, ecosystems);
   });
 });
+
+function extractAllRunBlocks(content) {
+  const lines = content.split('\n');
+  const blocks = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const single = line.match(/^\s*(?:-\s*)?run:\s*(?!\|)(.+)$/);
+    if (single) {
+      blocks.push({ line: i + 1, body: single[1] });
+      continue;
+    }
+    const multi = line.match(/^(\s*)(?:-\s*)?run:\s*\|\s*$/);
+    if (multi) {
+      const baseIndent = lines[i + 1]?.match(/^\s*/)?.[0]?.length ?? multi[1].length + 2;
+      const body = [];
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const l = lines[j];
+        if (l.trim() !== '' && l.match(/^\s*/)[0].length < baseIndent) break;
+        body.push(l);
+      }
+      blocks.push({ line: i + 1, body: body.join('\n') });
+      i = j - 1;
+    }
+  }
+  return blocks;
+}
+
+describe('CI, release, and toolchain security hardening', () => {
+  it('no workflow or composite action run: block interpolates GitHub expressions directly (H-1)', () => {
+    const wfFiles = fs
+      .readdirSync(path.join(REPO_ROOT, '.github', 'workflows'))
+      .map((f) => `.github/workflows/${f}`)
+      .concat(['.github/actions/setup-toolchain/action.yml']);
+
+    for (const rel of wfFiles) {
+      const blocks = extractAllRunBlocks(read(rel));
+      for (const blk of blocks) {
+        assert.doesNotMatch(
+          blk.body,
+          /\$\{\{/,
+          `${rel}:${blk.line} must pass GitHub expressions through env: instead of inline \${{ }}`
+        );
+      }
+    }
+  });
+
+  it('CI and branch-flow guard self-hosted runners and fork PRs (H-1)', () => {
+    const ci = read('.github/workflows/ci.yml');
+    assert.match(ci, /^permissions:\s*\n\s+contents:\s*read\b/m);
+    assert.match(
+      ci,
+      /verify:[\s\S]*?if:\s*github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.head\.repo\.full_name == github\.repository/
+    );
+    assert.match(
+      ci,
+      /action-self-test:[\s\S]*?if:\s*github\.event_name != 'pull_request' \|\| github\.event\.pull_request\.head\.repo\.full_name == github\.repository/
+    );
+
+    const ebf = read('.github/workflows/enforce-branch-flow.yml');
+    assert.match(ebf, /^permissions:\s*\n\s+contents:\s*read\b/m);
+    assert.match(ebf, /runs-on:\s*ubuntu-latest\b/);
+    assert.match(ebf, /head\.repo\.full_name/);
+  });
+
+  it('release and dev-release wait for passing CI check-runs and lock dispatch refs (H-2, M-1)', () => {
+    for (const rel of ['.github/workflows/release.yml', '.github/workflows/dev-release.yml']) {
+      const wf = read(rel);
+      assert.match(wf, /^permissions:\s*\n\s+contents:\s*read\b/m, `${rel} top-level permissions`);
+      assert.match(wf, /verify-ci-gate:[\s\S]*?runs-on:\s*ubuntu-latest[\s\S]*?checks:\s*read/);
+      assert.match(wf, /node scripts\/wait-for-ci-checks\.js/);
+      assert.match(wf, /Verify & Quality Gates/);
+      assert.match(wf, /GitHub Action Self-Test/);
+      assert.match(wf, /Enforce Safe Dispatch Ref/);
+    }
+
+    const release = read('.github/workflows/release.yml');
+    assert.doesNotMatch(release, /inputs:\s*\n\s+tag:/, 'unused inputs.tag must be removed');
+    assert.match(release, /npm-release:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
+    assert.match(release, /npm-release:[\s\S]*?run:\s*npm test\b/);
+
+    const devRelease = read('.github/workflows/dev-release.yml');
+    assert.match(devRelease, /dev-docker:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
+    assert.match(devRelease, /dev-npm:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
+  });
+
+  it('setup-toolchain verifies Apache Maven SHA-512 checksum before extracting (M-4)', () => {
+    const action = read('.github/actions/setup-toolchain/action.yml');
+    assert.match(action, /\.sha512/);
+    assert.match(action, /sha512sum/);
+    assert.match(action, /ACTUAL_SHA.*EXPECTED_SHA/);
+  });
+});

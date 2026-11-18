@@ -13,26 +13,50 @@ on:
       - 'media/**'
       - 'docs/**'
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Release tag name (e.g. v1.1.5)'
-        required: false
-        default: 'v1.1.5'
 
 permissions:
-  contents: write
-  packages: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  verify-ci-gate:
+    name: Wait for CI & Quality Gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Enforce Safe Dispatch Ref
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ] && [[ "$GITHUB_REF" != refs/tags/v* ]]; then
+            echo "::error::Manual release dispatch is restricted to main or v* tags (got ${GITHUB_REF})."
+            exit 1
+          fi
+
+      - name: Wait for CI & Quality Gates on Commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/wait-for-ci-checks.js \
+            --repo "$GITHUB_REPOSITORY" \
+            --sha "$GITHUB_SHA" \
+            --check "Verify & Quality Gates" \
+            --check "GitHub Action Self-Test (uses ./)"
+
   docker-release:
     name: Build Multi-Arch Docker Image & Publish to GHCR
     needs: [npm-release]
     runs-on: local-archlens
+    permissions:
+      contents: write
+      packages: write
 
     steps:
       - name: Checkout Code
@@ -46,9 +70,12 @@ jobs:
       - name: Build and Push Multi-Arch Container Image (Quarkus Jib)
         env:
           GHCR_PASSWORD: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          ACTOR: ${{ github.actor }}
         run: |
           SHA_TAG="sha-${GITHUB_SHA::7}"
-          REF_TAG="${{ github.ref_name }}"
+          REF_TAG="${REF_NAME}"
           if [ "$REF_TAG" = "main" ]; then
             PRIMARY_TAG="latest"
             EXTRA_TAGS="${SHA_TAG}"
@@ -61,22 +88,23 @@ jobs:
             -Dquarkus.container-image.build=true \
             -Dquarkus.container-image.push=true \
             -Dquarkus.container-image.registry=ghcr.io \
-            -Dquarkus.container-image.group=${{ github.repository_owner }} \
+            -Dquarkus.container-image.group="${REPO_OWNER}" \
             -Dquarkus.container-image.name=archlens \
-            -Dquarkus.container-image.username=${{ github.actor }} \
+            -Dquarkus.container-image.username="${ACTOR}" \
             -Dquarkus.container-image.password="${GHCR_PASSWORD}" \
             -Dquarkus.container-image.tag="${PRIMARY_TAG}" \
             -Dquarkus.container-image.additional-tags="${EXTRA_TAGS}"
-          tar -czf "backend/target/archlens-${{ github.ref_name }}-runner.tar.gz" -C backend/target quarkus-app
+          tar -czf "backend/target/archlens-${REF_NAME}-runner.tar.gz" -C backend/target quarkus-app
 
       - name: Publish Multi-Arch Container Image to Docker Hub (Optional)
         if: env.DOCKERHUB_TOKEN != ''
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME || github.repository_owner }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           SHA_TAG="sha-${GITHUB_SHA::7}"
-          REF_TAG="${{ github.ref_name }}"
+          REF_TAG="${REF_NAME}"
           if [ "$REF_TAG" = "main" ]; then
             PRIMARY_TAG="latest"
             EXTRA_TAGS="${SHA_TAG}"
@@ -136,6 +164,8 @@ jobs:
     needs: [docker-release]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: local-archlens
+    permissions:
+      contents: write
     timeout-minutes: 15
     steps:
       - name: Checkout Code
@@ -194,6 +224,8 @@ jobs:
     # Stable vX.Y.Z tags only; pre-releases (anything with a suffix) never move the major tag.
     if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
     runs-on: local-archlens
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -218,7 +250,11 @@ jobs:
 
   npm-release:
     name: Test and Publish NPM CLI Package
+    needs: [verify-ci-gate]
     runs-on: local-archlens
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -233,9 +269,8 @@ jobs:
       - name: Verify Agent Skills Sync & Manifest Parity
         run: node scripts/sync-skills.js --check
 
-      - name: Run CLI Tests
-        run: |
-          npm --prefix cli test
+      - name: Run CLI & Script Unit Tests
+        run: npm test
 
       - name: Pack CLI Package & Verify Bundled Skills
         id: pack
@@ -281,6 +316,9 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PKG_NAME: ${{ steps.meta.outputs.name }}
+          PKG_VERSION: ${{ steps.meta.outputs.version }}
+          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
         run: |
           if [ -z "${NODE_AUTH_TOKEN}" ]; then
             echo "::error::NPM_TOKEN secret is not set; cannot publish to registry.npmjs.org from self-hosted runners."
@@ -289,14 +327,14 @@ jobs:
           NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
           printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
           export NPM_CONFIG_USERCONFIG="$NPMRC"
-          NAME="${{ steps.meta.outputs.name }}"
-          VERSION="${{ steps.meta.outputs.version }}"
+          NAME="${PKG_NAME}"
+          VERSION="${PKG_VERSION}"
           SPEC="${NAME}@${VERSION}"
           if npm view "$SPEC" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
             echo "${SPEC} already on npmjs.org; ensuring the latest dist-tag points at it."
             npm dist-tag add "$SPEC" latest --registry=https://registry.npmjs.org/
           else
-            npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --registry=https://registry.npmjs.org/
+            npm publish "${TARBALL_PATH}" --access public --tag latest --registry=https://registry.npmjs.org/
           fi
           # The registry takes a while to serve a fresh version; poll with backoff instead of
           # failing on the first E404 (#233).
@@ -309,13 +347,16 @@ jobs:
         continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PKG_NAME: ${{ steps.meta.outputs.name }}
+          PKG_VERSION: ${{ steps.meta.outputs.version }}
+          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
         run: |
           NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
           printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
           export NPM_CONFIG_USERCONFIG="$NPMRC"
-          SPEC="${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}"
+          SPEC="${PKG_NAME}@${PKG_VERSION}"
           if npm view "$SPEC" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
             echo "${SPEC} already on GitHub Packages; skipping."
             exit 0
           fi
-          npm publish "${{ steps.pack.outputs.tarball }}" --registry=https://npm.pkg.github.com --tag latest
+          npm publish "${TARBALL_PATH}" --registry=https://npm.pkg.github.com --tag latest

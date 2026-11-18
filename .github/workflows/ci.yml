@@ -10,9 +10,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Verify & Quality Gates
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: local-archlens
     permissions:
       contents: read
@@ -24,9 +28,13 @@ jobs:
 
       - name: Enforce Branch Flow Policy
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
         run: |
-          if [ "${{ github.head_ref }}" != "develop" ]; then
-            echo "::error::Branch policy violation: Pull requests targeting 'main' must originate exclusively from 'develop'. Direct merges from feature branches into 'main' are forbidden."
+          if [ "$HEAD_REF" != "develop" ] || [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "::error::Branch policy violation: Pull requests targeting 'main' must originate exclusively from 'develop' in ${BASE_REPO}. Direct or fork merges from '${HEAD_REPO}:${HEAD_REF}' into 'main' are forbidden."
             exit 1
           fi
 
@@ -110,7 +118,10 @@ jobs:
 
   action-self-test:
     name: GitHub Action Self-Test (uses ./)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: local-archlens
+    permissions:
+      contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7

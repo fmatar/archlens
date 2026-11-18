@@ -825,7 +825,7 @@ class DiagramState {
           baselineViolations: this.lastRefactorBaselineViolations,
           baselineCycles: this.lastRefactorBaselineCycles,
           snapshotId: this.lastRefactorSnapshotId,
-          ...(runTests ? { runTests: true } : {})
+          ...(runTests ? { runTests: true, confirmRunTests: true } : {})
         })
       });
 
@@ -1091,6 +1091,17 @@ class DiagramState {
     } catch (_) {}
   }
 
+  async openProject(root?: string) {
+    const target = root ?? this.projectRoot ?? '.';
+    try {
+      await fetch('/api/projects/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectRoot: target })
+      });
+    } catch (_) {}
+  }
+
   async setProjectRoot(root: string, updateUrl = true) {
     if (root && root.startsWith('preset:')) {
       this.loadShowcasePreset(root);
@@ -1112,6 +1123,7 @@ class DiagramState {
       window.history.replaceState({}, '', url.toString());
     }
     this.initLiveEvents();
+    await this.openProject(root);
     await this.loadPolicy();
     await this.loadGraph();
     await this.loadSnapshots();

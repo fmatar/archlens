@@ -19,6 +19,7 @@ class MailboxResourceTest {
   void testMailboxEndpoints(@TempDir Path tempDir) throws IOException {
     MailboxGateway gateway = new FileMailboxService();
     MailboxResource resource = new MailboxResource(gateway);
+    resource.getOpenedProjects().markOpened(tempDir.toString());
 
     MailboxEnvelope envelope = resource.getToAgentMailbox(tempDir.toString());
     assertNotNull(envelope);
@@ -28,7 +29,13 @@ class MailboxResourceTest {
         resource.sendToAgent(
             tempDir.toString(),
             Map.of(
-                "op", "REGEN", "target", Map.of("path", "src"), "payload", Map.of("key", "val")));
+                "op",
+                "REGEN",
+                "target",
+                Map.of("path", "src"),
+                "payload",
+                Map.of("key", "val", "origin", "spoofed")));
+    assertEquals("workbench-session", cmd.payload().get("origin"));
 
     assertNotNull(cmd);
     assertEquals("REGEN", cmd.op());
@@ -152,6 +159,7 @@ class MailboxResourceTest {
         new io.slixes.archlens.usecase.SyncAdrUseCase();
 
     MailboxResource resource = new MailboxResource(gateway, verifyUseCase, syncAdrUseCase);
+    resource.getOpenedProjects().markOpened(tempDir.toString());
 
     Map<String, Object> adrRes =
         resource.syncAdr(
@@ -170,5 +178,40 @@ class MailboxResourceTest {
     assertEquals(true, adrRes.get("success"));
     assertEquals(1, adrRes.get("index"));
     assertNotNull(adrRes.get("filename"));
+  }
+
+  @Test
+  void rejectsUnopenedCommandAndUnconfirmedRunTests(@TempDir Path tempDir) throws IOException {
+    MailboxResource resource = verifyResource();
+
+    WebApplicationException unopenedSend =
+        assertThrows(
+            WebApplicationException.class,
+            () -> resource.sendToAgent(tempDir.toString(), Map.of("op", "REGEN")));
+    assertEquals(403, statusOf(unopenedSend));
+
+    WebApplicationException unopenedSync =
+        assertThrows(
+            WebApplicationException.class,
+            () -> resource.syncAdr(tempDir.toString(), Map.of("type", "DIP_INVERSION")));
+    assertEquals(403, statusOf(unopenedSync));
+
+    resource.getOpenedProjects().markOpened(tempDir.toString());
+    WebApplicationException unconfirmedTests =
+        assertThrows(
+            WebApplicationException.class,
+            () ->
+                resource.verifyRefactoring(
+                    tempDir.toString(), Map.of("baselineViolations", 0, "runTests", true)));
+    assertEquals(400, statusOf(unconfirmedTests));
+
+    WebApplicationException stringConfirmed =
+        assertThrows(
+            WebApplicationException.class,
+            () ->
+                resource.verifyRefactoring(
+                    tempDir.toString(),
+                    Map.of("baselineViolations", 0, "runTests", true, "confirmRunTests", "true")));
+    assertEquals(400, statusOf(stringConfirmed));
   }
 }

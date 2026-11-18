@@ -64,7 +64,7 @@ flowchart TD
 
 ## 3. Concentric Ring Hierarchy & Component Contracts (C4 Level 3)
 
-Archlens strictly enforces its own Clean Architecture policy ([`.archlens/policy.json`](file:///Users/fady/workspace/labs/archlens/.archlens/policy.json)), achieving a **`92% (Grade A)`** Architecture Fitness Index, **`1.00 (100%)`** Screaming Architecture Score, **`0`** layer violations, and **`0`** package cycles:
+Archlens strictly enforces its own Clean Architecture policy ([`.archlens/policy.json`](../../.archlens/policy.json)), achieving a **`91% (Grade A)`** Architecture Fitness Index, **`1.00 (100%)`** Screaming Architecture Score, **`0`** layer violations, and **`0`** package cycles:
 
 | Concentric Ring | Packages (`io.slixes.archlens.*`) | Key Components & Responsibilities |
 | :--- | :--- | :--- |

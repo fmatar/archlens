@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -24,7 +25,15 @@ import java.util.concurrent.TimeUnit;
 @ApplicationScoped
 public class ResolveFilesystemUseCase {
 
-  public ResolveFilesystemUseCase() {}
+  private final List<Path> configuredAllowedRoots;
+
+  public ResolveFilesystemUseCase() {
+    this.configuredAllowedRoots = null;
+  }
+
+  ResolveFilesystemUseCase(List<Path> allowedRoots) {
+    this.configuredAllowedRoots = allowedRoots;
+  }
 
   public Map<String, Object> listProjects() {
     File cwd;
@@ -83,11 +92,74 @@ public class ResolveFilesystemUseCase {
         "discovered", discovered);
   }
 
+  List<Path> resolveAllowedBrowseRoots() {
+    Set<Path> roots = new LinkedHashSet<>();
+    if (configuredAllowedRoots != null) {
+      for (Path p : configuredAllowedRoots) {
+        addCanonicalDir(roots, p);
+      }
+      return List.copyOf(roots);
+    }
+    String userHome = System.getProperty("user.home");
+    if (userHome != null && !userHome.isBlank()) {
+      addCanonicalDir(roots, Path.of(userHome));
+    }
+    addCanonicalDir(roots, Path.of("."));
+    String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
+    if (containerPath != null && !containerPath.isBlank()) {
+      addCanonicalDir(roots, Path.of(containerPath));
+    }
+    addRootsFromSpec(roots, System.getProperty("archlens.allowed.roots"));
+    addRootsFromSpec(roots, System.getenv("ARCHLENS_ALLOWED_ROOTS"));
+    return List.copyOf(roots);
+  }
+
+  private static void addRootsFromSpec(Set<Path> roots, String spec) {
+    if (spec == null || spec.isBlank()) {
+      return;
+    }
+    for (String entry : spec.split(java.util.regex.Pattern.quote(File.pathSeparator))) {
+      String trimmed = entry.trim();
+      if (!trimmed.isEmpty()) {
+        addCanonicalDir(roots, Path.of(trimmed));
+      }
+    }
+  }
+
+  private static void addCanonicalDir(Set<Path> roots, Path candidate) {
+    if (candidate == null) {
+      return;
+    }
+    try {
+      Path real = candidate.toAbsolutePath().normalize().toRealPath();
+      if (Files.isDirectory(real)) {
+        roots.add(real);
+      }
+    } catch (IOException ignored) {
+      // Root doesn't exist on disk; skip
+    }
+  }
+
+  static boolean isWithinAllowedRoots(Path candidate, List<Path> allowedRoots) {
+    if (candidate == null || allowedRoots == null || allowedRoots.isEmpty()) {
+      return false;
+    }
+    Path normalized = candidate.toAbsolutePath().normalize();
+    for (Path allowed : allowedRoots) {
+      if (normalized.startsWith(allowed)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public Map<String, Object> listDirectories(String rawPath) {
     String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
     File containerWorkspace = new File(containerPath);
+    List<Path> allowedRoots = resolveAllowedBrowseRoots();
+    boolean explicitPath = rawPath != null && !rawPath.isBlank() && !rawPath.trim().equals(".");
     File targetDir;
-    if (rawPath == null || rawPath.isBlank() || rawPath.trim().equals(".")) {
+    if (!explicitPath) {
       if (WorkspacePathResolver.isContainerEnvironment()
           && containerWorkspace.exists()
           && containerWorkspace.isDirectory()) {
@@ -105,7 +177,7 @@ public class ResolveFilesystemUseCase {
       }
     } else {
       String expanded = rawPath.trim();
-      if (expanded.startsWith("~")) {
+      if (expanded.equals("~") || expanded.startsWith("~/") || expanded.startsWith("~\\")) {
         expanded = System.getProperty("user.home") + expanded.substring(1);
       }
       targetDir = new File(expanded);
@@ -114,20 +186,37 @@ public class ResolveFilesystemUseCase {
       } catch (IOException e) {
         targetDir = targetDir.getAbsoluteFile();
       }
+      if (!isWithinAllowedRoots(targetDir.toPath(), allowedRoots)) {
+        return Map.of(
+            "error",
+            "Access denied: directory is outside allowed browse roots",
+            "denied",
+            true,
+            "path",
+            rawPath);
+      }
     }
 
     if (!targetDir.exists() || !targetDir.isDirectory()) {
-      File userHome = new File(System.getProperty("user.home"));
-      if (targetDir.getParentFile() != null && targetDir.getParentFile().exists()) {
-        targetDir = targetDir.getParentFile();
-      } else if (userHome.exists()) {
-        targetDir = userHome;
+      File userHomeDir = new File(System.getProperty("user.home"));
+      File parent = targetDir.getParentFile();
+      if (parent != null
+          && parent.exists()
+          && isWithinAllowedRoots(parent.toPath(), allowedRoots)) {
+        targetDir = parent;
+      } else if (userHomeDir.exists() && isWithinAllowedRoots(userHomeDir.toPath(), allowedRoots)) {
+        targetDir = userHomeDir;
+      } else if (!allowedRoots.isEmpty()) {
+        targetDir = allowedRoots.get(0).toFile();
       }
     }
 
     String canonicalCurrent = targetDir.getAbsolutePath();
     File parentFile = targetDir.getParentFile();
-    String parentPath = parentFile != null ? parentFile.getAbsolutePath() : null;
+    String parentPath =
+        parentFile != null && isWithinAllowedRoots(parentFile.toPath(), allowedRoots)
+            ? parentFile.getAbsolutePath()
+            : null;
 
     List<Map<String, String>> breadcrumbs = new ArrayList<>();
     List<File> hierarchy = new ArrayList<>();
@@ -137,6 +226,9 @@ public class ResolveFilesystemUseCase {
       cur = cur.getParentFile();
     }
     for (File f : hierarchy) {
+      if (!isWithinAllowedRoots(f.toPath(), allowedRoots)) {
+        continue;
+      }
       String name = f.getName();
       if (name.isEmpty()) {
         name = f.getPath();
@@ -170,16 +262,10 @@ public class ResolveFilesystemUseCase {
           Map.of("name", "Mounted Workspace", "path", resolvedWorkspacePath, "icon", "folder-git"));
     }
 
-    File workspaceLabs = new File(userHome, "workspace/labs");
-    if (workspaceLabs.exists() && workspaceLabs.isDirectory()) {
+    File workspace = new File(userHome, "workspace");
+    if (workspace.exists() && workspace.isDirectory()) {
       quickNav.add(
-          Map.of("name", "Labs", "path", workspaceLabs.getAbsolutePath(), "icon", "folder-git"));
-    } else {
-      File workspace = new File(userHome, "workspace");
-      if (workspace.exists() && workspace.isDirectory()) {
-        quickNav.add(
-            Map.of("name", "Workspace", "path", workspace.getAbsolutePath(), "icon", "folder-git"));
-      }
+          Map.of("name", "Workspace", "path", workspace.getAbsolutePath(), "icon", "folder-git"));
     }
 
     List<Map<String, Object>> directories = new ArrayList<>();

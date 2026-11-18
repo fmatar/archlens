@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - CLI default server URL is now `http://127.0.0.1:8088` (was `http://localhost:8088`).
 
+### Removed
+- The weekly Dependency Pulse workflow and its `scripts/ensure-gh.sh` helper. Dependabot (`.github/dependabot.yml`, plus Dependabot alerts and security updates) is now the only automated dependency updater. `npm run deps:check` / `deps:update` stay for manual use. (`#234`)
+
 ## [1.1.4] - 2026-11-17
 
 ### Fixed

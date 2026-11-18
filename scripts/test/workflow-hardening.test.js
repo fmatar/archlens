@@ -3,14 +3,13 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync, execFileSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const read = (rel) => fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8');
 const skip = process.platform === 'win32';
-const systemGh = ['/usr/bin/gh', '/bin/gh'].some((p) => fs.existsSync(p));
 
 /** Returns the dedented `run: |` block of the workflow step whose name contains `stepName`. */
 function extractRunBlock(workflow, stepName) {
@@ -33,67 +32,6 @@ function stubBin(dir, name, script) {
   fs.writeFileSync(p, `#!/bin/sh\n${script}\n`, { mode: 0o755 });
   return p;
 }
-
-describe('ensure-gh.sh (#234)', { skip }, () => {
-  const script = path.join(REPO_ROOT, 'scripts', 'ensure-gh.sh');
-
-  it('is a no-op when gh is already on PATH', () => {
-    const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-present-'));
-    stubBin(bin, 'gh', 'echo "gh version 9.9.9"');
-    const res = spawnSync('bash', [script], { env: { PATH: `${bin}:/usr/bin:/bin`, HOME: bin }, encoding: 'utf8' });
-    assert.equal(res.status, 0, res.stderr);
-    assert.match(res.stdout, /gh already available: gh version 9\.9\.9/);
-  });
-
-  function fakeRelease(version, { corrupt = false } = {}) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-release-'));
-    const arch = ['arm64', 'aarch64'].includes(os.arch()) ? 'arm64' : 'amd64';
-    const name = `gh_${version}_linux_${arch}`;
-    fs.mkdirSync(path.join(dir, name, 'bin'), { recursive: true });
-    stubBin(path.join(dir, name, 'bin'), 'gh', `echo "gh version ${version} (fake)"`);
-    const asset = `${name}.tar.gz`;
-    execFileSync('tar', ['-czf', path.join(dir, asset), '-C', dir, name]);
-    const sum = execFileSync('sha256sum', [path.join(dir, asset)], { encoding: 'utf8' }).split(' ')[0];
-    const recorded = corrupt ? '0'.repeat(64) : sum;
-    fs.writeFileSync(path.join(dir, `gh_${version}_checksums.txt`), `${recorded}  ${asset}\n`);
-    return dir;
-  }
-
-  it('installs a verified release when gh is missing and exports it to GITHUB_PATH', { skip: os.platform() !== 'linux' || systemGh }, () => {
-    const release = fakeRelease('1.2.3');
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-home-'));
-    const ghPath = path.join(home, 'github_path');
-    const res = spawnSync('bash', [script], {
-      env: { PATH: '/usr/bin:/bin', HOME: home, GH_VERSION: '1.2.3', GH_DOWNLOAD_BASE: `file://${release}`, GITHUB_PATH: ghPath },
-      encoding: 'utf8'
-    });
-    assert.equal(res.status, 0, res.stdout + res.stderr);
-    assert.match(res.stdout, /Installed gh version 1\.2\.3 \(fake\)/);
-    assert.equal(fs.readFileSync(ghPath, 'utf8').trim(), path.join(home, '.local', 'gh-1.2.3', 'bin'));
-  });
-
-  it('refuses a download whose checksum does not match', { skip: os.platform() !== 'linux' || systemGh }, () => {
-    const release = fakeRelease('1.2.4', { corrupt: true });
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gh-home-'));
-    const res = spawnSync('bash', [script], {
-      env: { PATH: '/usr/bin:/bin', HOME: home, GH_VERSION: '1.2.4', GH_DOWNLOAD_BASE: `file://${release}` },
-      encoding: 'utf8'
-    });
-    assert.notEqual(res.status, 0);
-    assert.match(res.stdout, /Checksum mismatch/);
-    assert.equal(fs.existsSync(path.join(home, '.local', 'gh-1.2.4')), false);
-  });
-
-  it('dependency pulse installs gh before using it and reuses one branch', () => {
-    const wf = read('.github/workflows/dependency-pulse.yml');
-    const ensure = wf.indexOf('bash scripts/ensure-gh.sh');
-    assert.ok(ensure > 0, 'workflow must call ensure-gh.sh');
-    assert.ok(ensure < wf.indexOf('gh pr create'), 'gh must be ensured before gh pr create');
-    assert.match(wf, /BRANCH_NAME="chore\/dependency-pulse"$/m);
-    assert.doesNotMatch(wf, /dependency-pulse-\$\(date/);
-    assert.match(wf, /gh pr list --head "\$BRANCH_NAME"/);
-  });
-});
 
 describe('release: floating major tag for the Action (#231)', { skip }, () => {
   function runMoveTag(releaseTag) {
@@ -136,6 +74,14 @@ describe('code scanning and Dependabot config (#236)', () => {
     const ci = read('.github/workflows/ci.yml');
     assert.match(ci, /security-events: write/);
     assert.match(ci, /uses: github\/codeql-action\/upload-sarif@v4[\s\S]*?sarif_file: archlens-results\.sarif/);
+  });
+
+  it('Dependabot is the single dependency updater (the custom Dependency Pulse is gone, #234)', () => {
+    assert.equal(fs.existsSync(path.join(REPO_ROOT, '.github', 'workflows', 'dependency-pulse.yml')), false);
+    const workflows = fs.readdirSync(path.join(REPO_ROOT, '.github', 'workflows'));
+    for (const wf of workflows) {
+      assert.doesNotMatch(read(`.github/workflows/${wf}`), /update-dependencies\.js|ensure-gh\.sh/, wf);
+    }
   });
 
   it('dependabot.yml covers every manifest and targets develop', () => {

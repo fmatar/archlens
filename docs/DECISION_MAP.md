@@ -42,7 +42,9 @@ flowchart TD
   ADR_010["ADR-010: Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity"]
   _8454["Ticket #8454 (feature/issue-#8454-auto-mcp-onboarding-and-release-v1-1-3)"]
   ADR_011["ADR-011: Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill"]
-  _4934["Ticket #4934"]
+  _4934["Ticket #4934 (feature/issue-#4934-fix-npx-symlink-entrypoint-and-release-v)"]
+  ADR_012["ADR-012: Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard"]
+  _224["Ticket #224"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -99,6 +101,8 @@ flowchart TD
   ADR_009 -.->|ADR Drift| ADR_010
   _4934 -->|triggered_drift_adr| ADR_011
   ADR_010 -.->|ADR Drift| ADR_011
+  _224 -->|triggered_drift_adr| ADR_012
+  ADR_011 -.->|ADR Drift| ADR_012
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -126,6 +130,7 @@ flowchart TD
 | **ADR-009** | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | #8714 | None |
 | **ADR-010** | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | #8454 | ADR-009 |
 | **ADR-011** | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | #4934 | ADR-010 |
+| **ADR-012** | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | #224 | ADR-011 |
 
 ---
 

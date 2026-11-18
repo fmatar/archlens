@@ -242,7 +242,15 @@ jobs:
       # GitHub-hosted runners. This job runs on the self-hosted local-archlens ARC runners,
       # so publishing authenticates with the NPM_TOKEN secret and omits --provenance
       # (npm rejects self-hosted provenance with E422).
+      # Only tag pushes (and manual dispatches) publish, so exactly one run publishes each
+      # version (#233). Branch pushes to main run the same checks as a dry run.
+      - name: Skip npm publish (branch push)
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_dispatch' }}
+        run: |
+          echo "Branch push: package packed and tested; the v${{ steps.meta.outputs.version }} tag push publishes it."
+
       - name: Publish @fmatar/archlens-skill to Public NPM Registry
+        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -253,21 +261,23 @@ jobs:
           NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
           printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
           export NPM_CONFIG_USERCONFIG="$NPMRC"
-          SPEC="${{ steps.meta.outputs.name }}@${{ steps.meta.outputs.version }}"
+          NAME="${{ steps.meta.outputs.name }}"
+          VERSION="${{ steps.meta.outputs.version }}"
+          SPEC="${NAME}@${VERSION}"
           if npm view "$SPEC" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
             echo "${SPEC} already on npmjs.org; ensuring the latest dist-tag points at it."
             npm dist-tag add "$SPEC" latest --registry=https://registry.npmjs.org/
           else
             npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag latest --registry=https://registry.npmjs.org/
           fi
-          PUBLISHED_VER=$(npm view "$SPEC" version --registry=https://registry.npmjs.org/)
-          if [ "$PUBLISHED_VER" != "${{ steps.meta.outputs.version }}" ]; then
-            echo "::error::Post-publish verification failed for ${SPEC} on registry.npmjs.org"
-            exit 1
-          fi
-          npm view "${{ steps.meta.outputs.name }}" dist-tags --registry=https://registry.npmjs.org/
+          # The registry takes a while to serve a fresh version; poll with backoff instead of
+          # failing on the first E404 (#233).
+          node scripts/wait-for-npm-version.js "$NAME" "$VERSION" \
+            --registry https://registry.npmjs.org/ --timeout-seconds 300
+          npm view "$NAME" dist-tags --registry=https://registry.npmjs.org/ || true
 
       - name: Publish to GitHub Packages (Mirror)
+        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
         continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

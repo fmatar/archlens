@@ -188,6 +188,34 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: backend/target/archlens-linux-amd64
 
+  move-major-tag:
+    name: Move Floating Major Tag (e.g. v1) for the GitHub Action
+    needs: [docker-release]
+    # Stable vX.Y.Z tags only; pre-releases (anything with a suffix) never move the major tag.
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
+    runs-on: local-archlens
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Point the major tag at this release (#231)
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          if ! [[ "$RELEASE_TAG" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Not a stable vX.Y.Z tag (${RELEASE_TAG}); leaving major tags alone."
+            exit 0
+          fi
+          MAJOR_TAG="v${BASH_REMATCH[1]}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Pushed with GITHUB_TOKEN, so this does not trigger another release run.
+          git tag -f "$MAJOR_TAG" "${RELEASE_TAG}^{commit}"
+          git push -f origin "refs/tags/${MAJOR_TAG}"
+          echo "${MAJOR_TAG} now points at ${RELEASE_TAG} ($(git rev-parse --short "${RELEASE_TAG}^{commit}"))."
+
   npm-release:
     name: Test and Publish NPM CLI Package
     runs-on: local-archlens

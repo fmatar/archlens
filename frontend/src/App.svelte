@@ -22,6 +22,7 @@
   let badgeEl: HTMLDivElement | null = $state(null);
 
   onMount(async () => {
+    await diagramStore.openProject(diagramStore.projectRoot);
     await diagramStore.loadPolicy();
     await diagramStore.loadGraph();
     await diagramStore.loadSnapshots();

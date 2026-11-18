@@ -105,5 +105,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-011 | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | #4934 | ADR-010 |
 | ADR-012 | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | #224 | ADR-011 |
 | ADR-013 | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | #247 | ADR-012 |
+| ADR-014 | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | #247 | ADR-013 |
 <!-- ADR_INDEX_END -->
 

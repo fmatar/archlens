@@ -9,7 +9,9 @@ import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -41,6 +43,41 @@ public class SessionTokenFilter {
     filters.register(this::handle, FILTER_PRIORITY);
   }
 
+  /**
+   * Percent-decodes {@code rawPath} once, strips RFC 3986 matrix parameters ({@code ;[^/]*}) from
+   * every path segment, collapses duplicate slashes, and lowercases using {@link Locale#ROOT}.
+   */
+  static String canonicalizePath(String rawPath) {
+    if (rawPath == null) {
+      return null;
+    }
+    String decoded = percentDecodeOnce(rawPath);
+    String withoutMatrix = decoded.replaceAll(";[^/]*", "");
+    String collapsed = withoutMatrix.replaceAll("/{2,}", "/");
+    return collapsed.toLowerCase(Locale.ROOT);
+  }
+
+  private static String percentDecodeOnce(String s) {
+    if (s.indexOf('%') < 0) {
+      return s;
+    }
+    byte[] bytes = s.getBytes(StandardCharsets.UTF_8);
+    ByteArrayOutputStream out = new ByteArrayOutputStream(bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      if (bytes[i] == '%' && i + 2 < bytes.length) {
+        int hi = Character.digit((char) bytes[i + 1], 16);
+        int lo = Character.digit((char) bytes[i + 2], 16);
+        if (hi >= 0 && lo >= 0) {
+          out.write((hi << 4) | lo);
+          i += 2;
+          continue;
+        }
+      }
+      out.write(bytes[i]);
+    }
+    return out.toString(StandardCharsets.UTF_8);
+  }
+
   /** Paths that require the session token. */
   static boolean isProtectedPath(String path) {
     if (path == null) {
@@ -49,21 +86,42 @@ public class SessionTokenFilter {
     if ("/api/version".equals(path)) {
       return false;
     }
-    return "/api".equals(path)
-        || path.startsWith("/api/")
-        || "/mcp".equals(path)
-        || path.startsWith("/mcp/");
+    String canonical = canonicalizePath(path);
+    return "/api".equals(canonical)
+        || canonical.startsWith("/api/")
+        || "/mcp".equals(canonical)
+        || canonical.startsWith("/mcp/");
+  }
+
+  static String extractHeaderToken(String authHeader, String tokenHeader) {
+    if (authHeader != null && authHeader.regionMatches(true, 0, "Bearer ", 0, 7)) {
+      return authHeader.substring(7).trim();
+    }
+    if (tokenHeader != null && !tokenHeader.isBlank()) {
+      return tokenHeader.trim();
+    }
+    return null;
+  }
+
+  static String unauthorizedJson() {
+    return new JsonObject(
+            Map.of(
+                "error",
+                "unauthorized",
+                "message",
+                "Archlens session token required. Open the workbench with the URL"
+                    + " printed at startup (it contains ?token=...), or send the"
+                    + " token in the X-Archlens-Token header."))
+        .encode();
   }
 
   /** Extracts the presented token from the Authorization header, custom header, or cookie. */
   String presentedToken(RoutingContext rc) {
-    String auth = rc.request().getHeader("Authorization");
-    if (auth != null && auth.regionMatches(true, 0, "Bearer ", 0, 7)) {
-      return auth.substring(7).trim();
-    }
-    String header = rc.request().getHeader(TOKEN_HEADER);
-    if (header != null && !header.isBlank()) {
-      return header.trim();
+    String headerToken =
+        extractHeaderToken(
+            rc.request().getHeader("Authorization"), rc.request().getHeader(TOKEN_HEADER));
+    if (headerToken != null) {
+      return headerToken;
     }
     Cookie cookie = rc.request().getCookie(sessionTokens.cookieName());
     return cookie != null ? cookie.getValue() : null;
@@ -75,7 +133,8 @@ public class SessionTokenFilter {
       return;
     }
     String path = rc.normalizedPath();
-    if (isProtectedPath(path)) {
+    String rawRequestPath = rc.request().path();
+    if (isProtectedPath(path) || isProtectedPath(rawRequestPath)) {
       if (sessionTokens.matches(presentedToken(rc))) {
         rc.next();
       } else {
@@ -83,16 +142,7 @@ public class SessionTokenFilter {
             .setStatusCode(401)
             .putHeader("Content-Type", "application/json")
             .putHeader("WWW-Authenticate", "Bearer realm=\"archlens\"")
-            .end(
-                new JsonObject(
-                        Map.of(
-                            "error",
-                            "unauthorized",
-                            "message",
-                            "Archlens session token required. Open the workbench with the URL"
-                                + " printed at startup (it contains ?token=...), or send the"
-                                + " token in the X-Archlens-Token header."))
-                    .encode());
+            .end(unauthorizedJson());
       }
       return;
     }

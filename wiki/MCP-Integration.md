@@ -9,8 +9,10 @@ Archlens natively implements an embedded **Model Context Protocol (MCP)** server
 The Archlens container and native server expose four MCP transports:
 - **Zero-Dependency CLI Stdio Bridge (Recommended for shared repos)**: `npx -y @fmatar/archlens-skill mcp`
 - **Pure Ephemeral Docker STDIO Container (`mcp-stdio`, Zero Host Node/Java)**: `docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio -e ARCHLENS_HOST_WORKSPACE=/path/to/workspace -v /path/to/workspace:/workspace ghcr.io/fmatar/archlens:latest`
-- **Streamable HTTP (`MCP 2.0`)**: `http://localhost:8088/mcp`
-- **Server-Sent Events (`SSE`)**: `http://localhost:8088/mcp/sse`
+- **Streamable HTTP (`MCP 2.0`)**: `http://127.0.0.1:8088/mcp` *(requires `X-Archlens-Token: <token>` or `Authorization: Bearer <token>`)*
+- **Server-Sent Events (`SSE`)**: `http://127.0.0.1:8088/mcp/sse` *(requires `X-Archlens-Token: <token>` or `Authorization: Bearer <token>`)*
+
+> **Session Token Note:** All `/api/*` and `/mcp*` HTTP endpoints require the per-launch session token from `~/.archlens/session-8088.json` (or `ARCHLENS_TOKEN` if pinned). The `@fmatar/archlens-skill mcp` stdio bridge injects this header automatically; direct HTTP MCP clients must include `-H "X-Archlens-Token: <token>"`.
 
 ---
 
@@ -20,7 +22,7 @@ When configured via the CLI stdio bridge (`npx -y @fmatar/archlens-skill mcp`), 
 
 ```mermaid
 flowchart TD
-    Call["AI Agent Invokes MCP Tool\n(e.g. inspectArchitecture, exportLlmDossier)"] --> T1{"Tier 1: Live Server Health\nGET http://localhost:8088/api/version"}
+    Call["AI Agent Invokes MCP Tool\n(e.g. inspectArchitecture, exportLlmDossier)"] --> T1{"Tier 1: Live Server Health\nGET http://127.0.0.1:8088/api/version"}
     T1 -->|"200 OK (< 10ms)"| Proxy["Route Request to Active Quarkus Server"]
     T1 -->|"Unreachable"| T2{"Tier 2: Native Runner JAR\nJava 21+ & quarkus-run.jar?"}
     T2 -->|"Available"| SpawnJar["Spawn Detached JVM Process\njava -Dquarkus.http.port=8088 -jar ..."]
@@ -33,7 +35,7 @@ flowchart TD
     Proxy --> Result
 ```
 
-1. **Tier 1 — Live Server Reuse**: Pings `http://localhost:8088/api/version`. If the Quarkus server is already running, routes the request immediately.
+1. **Tier 1 — Live Server Reuse**: Pings `http://127.0.0.1:8088/api/version`. If the Quarkus server is already running, routes the request immediately.
 2. **Tier 2 — Native Runner JAR**: If `java -version` succeeds and a native runner JAR exists (`ARCHLENS_JAR`, `~/.archlens/runner/quarkus-app/quarkus-run.jar`, or `target/quarkus-app/quarkus-run.jar`), launches a detached background JVM process on port `8088`.
 3. **Tier 3 — Docker Container Auto-Resurrection**: If Docker is running (`docker info`), restarts an existing `archlens-server` container or launches `ghcr.io/fmatar/archlens:latest` detached on port `8088`.
 4. **Tier 4 — Offline Static AST Fallback**: If neither Java nor Docker is available, executes the built-in Node.js static AST analyzer directly on disk—ensuring zero downtime in restricted sandboxes or offline environments.
@@ -156,7 +158,7 @@ Or portable NPX stdio bridge:
       "command": "npx",
       "args": ["-y", "@fmatar/archlens-skill", "mcp"],
       "env": {
-        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
     }
   }
@@ -175,7 +177,7 @@ Or in `~/.gemini/settings.json` / `.gemini/settings.json`:
       "command": "npx",
       "args": ["-y", "@fmatar/archlens-skill", "mcp"],
       "env": {
-        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
     }
   }
@@ -184,11 +186,12 @@ Or in `~/.gemini/settings.json` / `.gemini/settings.json`:
 
 ### 3. Claude Code (CLI) & Claude Desktop
 ```bash
-# Stdio bridge (online + offline static fallback):
+# Stdio bridge (online + offline static fallback; reads ~/.archlens/session-8088.json automatically):
 claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp
 
-# Direct Streamable HTTP / SSE (when Workbench is running on :8088):
-claude mcp add --transport http archlens http://localhost:8088/mcp
+# Direct Streamable HTTP / SSE (pin ARCHLENS_TOKEN or read token from ~/.archlens/session-8088.json):
+TOKEN=$(node -p "JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.archlens/session-8088.json','utf8')).token")
+claude mcp add --transport http archlens http://127.0.0.1:8088/mcp -H "X-Archlens-Token: $TOKEN"
 ```
 Or in `.mcp.json` / `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
@@ -198,7 +201,7 @@ Or in `.mcp.json` / `~/Library/Application Support/Claude/claude_desktop_config.
       "command": "npx",
       "args": ["-y", "@fmatar/archlens-skill", "mcp"],
       "env": {
-        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
     }
   }
@@ -214,7 +217,7 @@ Configure in `.grok/mcp.json` or `~/.grok/mcp.json`:
       "command": "npx",
       "args": ["-y", "@fmatar/archlens-skill", "mcp"],
       "env": {
-        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
     }
   }

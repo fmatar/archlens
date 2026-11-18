@@ -16,6 +16,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Optional;
@@ -53,15 +54,22 @@ public class SessionTokenService {
 
   private volatile String token;
   private Path sessionFile;
+  private Path sessionDirOverride;
 
   public SessionTokenService() {}
 
   /** Test/utility constructor with explicit settings. */
   public SessionTokenService(boolean enabled, String token, String httpHost, int httpPort) {
+    this(enabled, token, httpHost, httpPort, null);
+  }
+
+  SessionTokenService(
+      boolean enabled, String token, String httpHost, int httpPort, Path sessionDirOverride) {
     this.enabled = enabled;
     this.configuredToken = Optional.ofNullable(token);
     this.httpHost = httpHost;
     this.httpPort = httpPort;
+    this.sessionDirOverride = sessionDirOverride;
   }
 
   public boolean isEnabled() {
@@ -93,6 +101,21 @@ public class SessionTokenService {
     }
     return MessageDigest.isEqual(
         presented.getBytes(StandardCharsets.UTF_8), getToken().getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** Non-secret 12-character SHA-256 hex fingerprint of the active session token. */
+  public String tokenFingerprint() {
+    try {
+      byte[] digest =
+          MessageDigest.getInstance("SHA-256").digest(getToken().getBytes(StandardCharsets.UTF_8));
+      StringBuilder sb = new StringBuilder(12);
+      for (int i = 0; i < 6; i++) {
+        sb.append(String.format("%02x", digest[i]));
+      }
+      return sb.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 unavailable", e);
+    }
   }
 
   /** Cookie name is port-scoped because browsers share cookies across ports of one host. */
@@ -129,6 +152,12 @@ public class SessionTokenService {
     if (LaunchMode.current() == LaunchMode.TEST) {
       return;
     }
+    boolean interactiveTty = System.console() != null;
+    boolean logTokenExplicit = "true".equalsIgnoreCase(System.getenv("ARCHLENS_LOG_TOKEN"));
+    startLifecycle(interactiveTty, logTokenExplicit);
+  }
+
+  void startLifecycle(boolean interactiveTty, boolean logTokenExplicit) {
     warnIfExposed();
     if (!enabled) {
       LOG.warn(
@@ -144,10 +173,28 @@ public class SessionTokenService {
     if (displayHost.contains(":") && !displayHost.startsWith("[")) {
       displayHost = "[" + displayHost + "]";
     }
-    LOG.infof(
-        "Archlens workbench ready. Open: http://%s:%d/?token=%s",
-        displayHost, httpPort, getToken());
     writeSessionFile();
+    boolean hasConfiguredToken =
+        configuredToken != null
+            && configuredToken.map(String::trim).filter(t -> !t.isEmpty()).isPresent();
+    if (hasConfiguredToken) {
+      LOG.infof(
+          "Archlens workbench ready on http://%s:%d/ (authenticated via ARCHLENS_TOKEN).",
+          displayHost, httpPort);
+    } else if (interactiveTty || logTokenExplicit) {
+      LOG.infof(
+          "Archlens workbench ready. Open: http://%s:%d/?token=%s",
+          displayHost, httpPort, getToken());
+    } else {
+      Path sf =
+          sessionFile != null
+              ? sessionFile
+              : resolveSessionDir().resolve("session-" + httpPort + ".json");
+      LOG.infof(
+          "Archlens workbench ready on http://%s:%d/. Read session token from %s (or set"
+              + " ARCHLENS_LOG_TOKEN=true).",
+          displayHost, httpPort, sf);
+    }
   }
 
   void onStop(@Observes ShutdownEvent event) {
@@ -181,13 +228,19 @@ public class SessionTokenService {
     }
   }
 
+  private Path resolveSessionDir() {
+    return sessionDirOverride != null
+        ? sessionDirOverride
+        : Paths.get(System.getProperty("user.home"), ".archlens");
+  }
+
   private void writeSessionFile() {
     try {
-      Path dir = Paths.get(System.getProperty("user.home"), ".archlens");
+      Path dir = resolveSessionDir();
       if (!Files.isDirectory(dir)) {
         Files.createDirectories(dir);
-        setOwnerOnly(dir, "rwx------");
       }
+      setOwnerOnly(dir, "rwx------");
       Path target = dir.resolve("session-" + httpPort + ".json");
       Path tmp = Files.createTempFile(dir, "session-", ".tmp");
       setOwnerOnly(tmp, "rw-------");

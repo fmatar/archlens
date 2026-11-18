@@ -392,7 +392,7 @@ export async function run() {
 function rollback() {
   try {
     execSync(
-      'git checkout -- pom.xml backend/pom.xml frontend/package.json frontend/pnpm-lock.yaml frontend/package-lock.json',
+      'git checkout -- pom.xml backend/pom.xml frontend/package.json frontend/pnpm-lock.yaml',
       { cwd: rootDir, stdio: 'inherit' }
     );
     console.log('✔ Rollback successful. Working tree restored to clean state.');

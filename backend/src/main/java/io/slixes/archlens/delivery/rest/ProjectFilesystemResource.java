@@ -1,6 +1,8 @@
 package io.slixes.archlens.delivery.rest;
 
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
 import io.slixes.archlens.usecase.ResolveFilesystemUseCase;
+import io.slixes.archlens.usecase.WorkspacePathResolver;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -10,9 +12,9 @@ import jakarta.ws.rs.core.Response;
 import java.util.Map;
 
 /**
- * REST endpoint handling project discovery, filesystem directory browsing, native directory picker
- * dialogs, and source code streaming. Delegates application orchestration to {@link
- * ResolveFilesystemUseCase}.
+ * REST endpoint handling project discovery, explicit session project opening, filesystem directory
+ * browsing, native directory picker dialogs, and source code streaming. Delegates application
+ * orchestration to {@link ResolveFilesystemUseCase}.
  */
 @Path("/api")
 @ApplicationScoped
@@ -22,14 +24,28 @@ import java.util.Map;
 public class ProjectFilesystemResource {
 
   @Inject ResolveFilesystemUseCase filesystemUseCase;
+  @Inject OpenedProjectRegistry openedProjects;
 
   public ProjectFilesystemResource() {
     this.filesystemUseCase = new ResolveFilesystemUseCase();
   }
 
   public ProjectFilesystemResource(ResolveFilesystemUseCase filesystemUseCase) {
+    this(filesystemUseCase, new OpenedProjectRegistry());
+  }
+
+  public ProjectFilesystemResource(
+      ResolveFilesystemUseCase filesystemUseCase, OpenedProjectRegistry openedProjects) {
     this.filesystemUseCase =
         filesystemUseCase != null ? filesystemUseCase : new ResolveFilesystemUseCase();
+    this.openedProjects = openedProjects != null ? openedProjects : new OpenedProjectRegistry();
+  }
+
+  OpenedProjectRegistry getOpenedProjects() {
+    if (openedProjects == null) {
+      openedProjects = new OpenedProjectRegistry();
+    }
+    return openedProjects;
   }
 
   @GET
@@ -38,10 +54,39 @@ public class ProjectFilesystemResource {
     return filesystemUseCase.listProjects();
   }
 
+  @POST
+  @Path("/projects/open")
+  public Map<String, Object> openProject(
+      @QueryParam("projectRoot") String queryProjectRoot, Map<String, Object> body) {
+    String rawRoot = queryProjectRoot;
+    if ((rawRoot == null || rawRoot.isBlank())
+        && body != null
+        && body.get("projectRoot") instanceof String s) {
+      rawRoot = s;
+    }
+    String normalized =
+        WorkspacePathResolver.normalizeRoot(rawRoot == null || rawRoot.isBlank() ? "." : rawRoot);
+    return getOpenedProjects()
+        .markOpened(normalized)
+        .<Map<String, Object>>map(
+            canonical -> Map.of("opened", true, "projectRoot", canonical.toString()))
+        .orElseThrow(() ->
+            new WebApplicationException(
+                Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(
+                        Map.of(
+                            "opened",
+                            false,
+                            "error",
+                            "Project root does not exist or is not a directory"))
+                    .build()));
+  }
+
   @GET
   @Path("/fs/directories")
   public Map<String, Object> listDirectories(@QueryParam("path") String rawPath) {
-    return filesystemUseCase.listDirectories(rawPath);
+    return throwIfDenied(filesystemUseCase.listDirectories(rawPath));
   }
 
   @POST
@@ -60,7 +105,10 @@ public class ProjectFilesystemResource {
       @QueryParam("filePath") String filePath,
       @QueryParam("line") @DefaultValue("1") int line,
       @QueryParam("projectRoot") String projectRoot) {
-    Map<String, Object> result = filesystemUseCase.getSourceCode(filePath, line, projectRoot);
+    return throwIfDenied(filesystemUseCase.getSourceCode(filePath, line, projectRoot));
+  }
+
+  private static Map<String, Object> throwIfDenied(Map<String, Object> result) {
     if (Boolean.TRUE.equals(result.get("denied"))) {
       throw new WebApplicationException(
           Response.status(Response.Status.FORBIDDEN)

@@ -57,7 +57,26 @@ runs:
             mkdir -p "$HOME/.local"
             TMP_DIR=$(mktemp -d "$HOME/.local/maven-tmp.XXXXXX")
             TAR_URL="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VER}/apache-maven-${MAVEN_VER}-bin.tar.gz"
-            curl -fsSL --retry 5 --retry-all-errors "$TAR_URL" | tar -xz -C "$TMP_DIR"
+            SHA_URL="${TAR_URL}.sha512"
+            TAR_FILE="${TMP_DIR}/apache-maven-${MAVEN_VER}-bin.tar.gz"
+            curl -fsSL --retry 5 --retry-all-errors "$TAR_URL" -o "$TAR_FILE"
+            EXPECTED_SHA=$(curl -fsSL --retry 5 --retry-all-errors "$SHA_URL" | awk '{print $1}')
+            if [ -z "$EXPECTED_SHA" ]; then
+              echo "::error::Empty SHA-512 checksum returned for Apache Maven ${MAVEN_VER}"
+              rm -rf "$TMP_DIR"
+              exit 1
+            fi
+            if command -v sha512sum >/dev/null 2>&1; then
+              ACTUAL_SHA=$(sha512sum "$TAR_FILE" | awk '{print $1}')
+            else
+              ACTUAL_SHA=$(shasum -a 512 "$TAR_FILE" | awk '{print $1}')
+            fi
+            if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "::error::Apache Maven ${MAVEN_VER} SHA-512 verification failed (expected ${EXPECTED_SHA}, got ${ACTUAL_SHA})"
+              rm -rf "$TMP_DIR"
+              exit 1
+            fi
+            tar -xzf "$TAR_FILE" -C "$TMP_DIR"
             mv -n "$TMP_DIR/apache-maven-${MAVEN_VER}" "$MAVEN_DIR" || true
             rm -rf "$TMP_DIR"
           fi

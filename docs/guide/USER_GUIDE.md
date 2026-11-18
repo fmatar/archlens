@@ -42,28 +42,31 @@ npx @fmatar/archlens-skill --yes --mcp
 With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fmatar/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static AST analysis.
 
 ### Option B: 1-Command Visual Studio Launcher
-To open the interactive browser canvas immediately on `http://localhost:8088`:
+To open the interactive browser canvas immediately on `http://127.0.0.1:8088`:
 ```bash
 cd /path/to/your-project
 npx @fmatar/archlens-skill start --open
 ```
 
 ### Option C: Always-On Background Daemon (Auto-Restart on Boot)
-To keep the visual workbench running across system reboots:
+To keep the visual workbench running across system reboots (bound to host loopback `127.0.0.1` only):
 ```bash
 docker run -d \
   --name archlens-server \
   --restart unless-stopped \
-  -p 8088:8088 \
-  -v "$HOME/workspace:/workspace" \
+  -p 127.0.0.1:8088:8088 \
+  -e ARCHLENS_TOKEN="$(openssl rand -hex 24)" \
+  -v "$HOME/workspace:/workspace:ro" \
   ghcr.io/fmatar/archlens:latest
 ```
+> Pass `-e ARCHLENS_LOG_TOKEN=true` (or read `~/.archlens/session-8088.json` inside the container) if you let Archlens generate a random session token and want the startup URL printed to `docker logs`. Direct `/api/*` and `/mcp` HTTP clients must send `X-Archlens-Token: <token>` or `Authorization: Bearer <token>`.
 
 ### Option D: Bare-Metal Development Mode
 ```bash
 # Terminal 1: Start the Quarkus Backend (Java 25, Port 8088)
 cd backend
-./mvnw clean quarkus:dev
+export ARCHLENS_TOKEN=dev-token
+mvn clean quarkus:dev
 
 # Terminal 2: Start the Svelte 5 Frontend (Port 5173)
 cd frontend

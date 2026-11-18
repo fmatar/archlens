@@ -29,7 +29,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '1.1.5';
+  return '1.1.6';
 }
 
 export function getMcpToolsList() {
@@ -467,6 +467,11 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     }
     if (isOnline) {
       try {
+        await apiFetch(`${serverUrl}/api/projects/open`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectRoot })
+        });
         const query = new URLSearchParams({ projectRoot });
         const res = await apiFetch(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
           method: 'POST',

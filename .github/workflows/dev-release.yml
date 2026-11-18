@@ -12,18 +12,48 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  packages: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: dev-release-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  verify-ci-gate:
+    name: Wait for CI & Quality Gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Enforce Safe Dispatch Ref
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/develop" ]; then
+            echo "::error::Canary dispatch is restricted to develop (got ${GITHUB_REF})."
+            exit 1
+          fi
+
+      - name: Wait for CI & Quality Gates on Commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/wait-for-ci-checks.js \
+            --repo "$GITHUB_REPOSITORY" \
+            --sha "$GITHUB_SHA" \
+            --check "Verify & Quality Gates" \
+            --check "GitHub Action Self-Test (uses ./)"
+
   dev-docker:
     name: Build & Publish Canary Docker Image (:dev)
+    needs: [verify-ci-gate]
     runs-on: local-archlens
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Code
@@ -37,21 +67,27 @@ jobs:
       - name: Build and Push Canary Multi-Arch Container Image (Quarkus Jib)
         env:
           GHCR_PASSWORD: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          ACTOR: ${{ github.actor }}
         run: |
           mvn -B -ntp package -DskipTests \
             -Dquarkus.container-image.build=true \
             -Dquarkus.container-image.push=true \
             -Dquarkus.container-image.registry=ghcr.io \
-            -Dquarkus.container-image.group=${{ github.repository_owner }} \
+            -Dquarkus.container-image.group="${REPO_OWNER}" \
             -Dquarkus.container-image.name=archlens \
-            -Dquarkus.container-image.username=${{ github.actor }} \
+            -Dquarkus.container-image.username="${ACTOR}" \
             -Dquarkus.container-image.password="${GHCR_PASSWORD}" \
             -Dquarkus.container-image.tag="dev" \
             -Dquarkus.container-image.additional-tags="dev-${GITHUB_SHA::7}"
 
   dev-npm:
     name: Build & Publish Canary NPM Package (@dev)
+    needs: [verify-ci-gate]
     runs-on: local-archlens
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Code
@@ -67,15 +103,16 @@ jobs:
       - name: Verify Agent Skills Sync & Manifest Parity
         run: node scripts/sync-skills.js --check
 
-      - name: Run CLI Tests
-        run: |
-          npm --prefix cli test
+      - name: Run CLI & Script Unit Tests
+        run: npm test
 
       - name: Prepare Canary Prerelease Version
         id: versioning
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           BASE_VERSION=$(node -p "require('./cli/package.json').version.split('-')[0]")
-          DEV_VERSION="${BASE_VERSION}-dev.${{ github.run_number }}"
+          DEV_VERSION="${BASE_VERSION}-dev.${RUN_NUMBER}"
           echo "Setting package version to ${DEV_VERSION}"
           npm --prefix cli version "${DEV_VERSION}" --no-git-tag-version
           echo "canary_version=${DEV_VERSION}" >> "$GITHUB_OUTPUT"
@@ -103,6 +140,7 @@ jobs:
       - name: Publish Canary to Public NPM Registry
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
         run: |
           if [ -z "${NODE_AUTH_TOKEN}" ]; then
             echo "::error::NPM_TOKEN secret is not set; cannot publish canary to registry.npmjs.org."
@@ -111,14 +149,15 @@ jobs:
           NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
           printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
           export NPM_CONFIG_USERCONFIG="$NPMRC"
-          npm publish "${{ steps.pack.outputs.tarball }}" --access public --tag dev --registry=https://registry.npmjs.org/
+          npm publish "${TARBALL_PATH}" --access public --tag dev --registry=https://registry.npmjs.org/
 
       - name: Publish Canary to GitHub Packages (Mirror)
         continue-on-error: true
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
         run: |
           NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
           printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
           export NPM_CONFIG_USERCONFIG="$NPMRC"
-          npm publish "${{ steps.pack.outputs.tarball }}" --registry=https://npm.pkg.github.com --tag dev
+          npm publish "${TARBALL_PATH}" --registry=https://npm.pkg.github.com --tag dev

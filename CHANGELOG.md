@@ -9,16 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] - 2026-11-18
+
 ### Security
-- **Workbench server hardening** (`#224`–`#228`):
+- **Workbench server hardening** (`#224`–`#228`, `ADR-012`):
   - The server now binds to `127.0.0.1` by default (`ARCHLENS_HOST` / `archlens start --host` to opt in to wider binding, with a warning). The container image keeps `0.0.0.0` internally; the CLI and `docker-compose.yml` publish on `127.0.0.1` only. (`#224`)
   - `/api/*` and `/mcp` require a per-launch session token (header, bearer, or HttpOnly cookie bootstrapped via `/?token=`). The CLI, MCP stdio bridge, smoke test, and Vite dev proxy pass it automatically. `/api/version` and `/q/health` stay open. (`#225`)
-  - `/api/source` is confined to the project root (canonical paths; symlink and `..` escapes return 403). Removed hard-coded developer fallback directories. (`#226`)
+  - `/api/source` is confined to the project root (canonical paths; symlink and `..` escapes return 403, and symlinked OS ancestor prefixes such as macOS `/var/folders` -> `/private/var/folders` rebase cleanly onto the canonical root). Removed hard-coded developer fallback directories. (`#226`, `#258`)
   - `/api/mailbox/verify` and `/rollback` only operate on a project opened in the current session; build wrappers (`mvnw`, `gradlew`) must be regular files inside the project. (`#227`)
   - Rollback validates `snapshotId` (`snap-<millis>-<8hex>`), checks the snapshot directory stays under `.archlens/snapshots`, and validates every manifest entry before any file is restored or deleted. (`#228`)
 
+### Added
+- **Dependabot & GitHub Code Scanning SARIF Integration** (`#236`):
+  - Added `.github/dependabot.yml` covering Maven, npm (`/`, `/cli`, `/frontend`), GitHub Actions (including `setup-toolchain`), and Docker targeting `develop`.
+  - Updated `.github/workflows/ci.yml` (`verify` job with `security-events: write`) and `action.yml` to upload `archlens-results.sarif` via `github/codeql-action/upload-sarif@v4`.
+- **GitHub Action Self-Test & Floating Major Tag (`v1`)** (`#230`, `#231`):
+  - Added `action-self-test` job in `.github/workflows/ci.yml` verifying `uses: ./` against conforming and violating fixtures with spaces in paths.
+  - Added `move-major-tag` job in `.github/workflows/release.yml` to automatically force-update the floating major tag (`v1`) on stable `vX.Y.Z` tag releases.
+
 ### Changed
 - CLI default server URL is now `http://127.0.0.1:8088` (was `http://localhost:8088`).
+- `archlens check` now scans all source files in a repository by default (previously capped silently at 500 files); opt-in `--max-files <N>` marks the scan partial in JSON/SARIF and fails the gate unless `--allow-partial` is passed. (`#232`)
+
+### Fixed
+- **GitHub Action argument quoting & bundled CLI execution** (`#230`, `#231`):
+  - Replaced unquoted `$ARGS` string expansion in `action.yml` with `action/run-gate.sh` bash array construction and rejected non-numeric threshold options (`--max-violations`, `--screaming-threshold`, `--fitness-threshold`, `--max-files`) with exit code `2` instead of `NaN`.
+  - Updated the Action to run the bundled `cli/bin/index.js` from `${{ github.action_path }}` (falling back to the exact version in `cli/package.json`) instead of `@latest`.
+- **Non-destructive MCP config installer** (`#229`):
+  - `installMcpConfigs` now parses JSONC (comments and trailing commas), leaves unparseable or non-object configs untouched (`skipped`), and writes a timestamped `.archlens-<UTC>.bak` backup before modifying existing configs.
+- **Verify test-runner timeout enforcement** (`#235`):
+  - `VerifyAndRollbackRefactorUseCase.runTestCommand` now redirects child process output to a temporary file before calling `proc.waitFor(120s)` and destroys the full process tree (`proc.descendants()`) on timeout.
+- **Single-publisher npm release & registry propagation polling** (`#233`):
+  - Gated npm and GitHub Packages publishing in `.github/workflows/release.yml` to tag pushes and `workflow_dispatch`, and replaced the single-shot `npm view` check with exponential-backoff polling (`scripts/wait-for-npm-version.js`).
 
 ### Removed
 - The weekly Dependency Pulse workflow and its `scripts/ensure-gh.sh` helper. Dependabot (`.github/dependabot.yml`, plus Dependabot alerts and security updates) is now the only automated dependency updater. `npm run deps:check` / `deps:update` stay for manual use. (`#234`)

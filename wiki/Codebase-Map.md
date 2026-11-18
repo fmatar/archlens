@@ -64,6 +64,7 @@ flowchart TD
     readme_sync_mjs["readme-sync.mjs (9 exports, I=0.67)"]
     session_mjs["session.mjs (15 exports, I=0.69)"]
     wiki_sync_mjs["wiki-sync.mjs (6 exports, I=0.75)"]
+    SessionTokenService_java["SessionTokenService.java (5 exports, I=0)"]
     FileMailboxService_java["FileMailboxService.java (2 exports, I=0)"]
     ArchlensMcpService_java["ArchlensMcpService.java (15 exports, I=0)"]
     EvaluateFitnessUseCase_java["EvaluateFitnessUseCase.java (3 exports, I=0)"]
@@ -71,6 +72,8 @@ flowchart TD
     ExportDossierUseCase_java["ExportDossierUseCase.java (2 exports, I=0)"]
     GetFitnessHistoryUseCase_java["GetFitnessHistoryUseCase.java (2 exports, I=0)"]
     ManageSnapshotsUseCase_java["ManageSnapshotsUseCase.java (2 exports, I=0)"]
+    OpenedProjectRegistry_java["OpenedProjectRegistry.java (3 exports, I=0)"]
+    ProjectPathGuard_java["ProjectPathGuard.java (9 exports, I=0)"]
     ProposeScreamingMigrationUseCase_java["ProposeScreamingMigrationUseCase.java (2 exports, I=0)"]
     ResolveFilesystemUseCase_java["ResolveFilesystemUseCase.java (1 exports, I=0)"]
     SavePolicyUseCase_java["SavePolicyUseCase.java (2 exports, I=0)"]
@@ -90,8 +93,9 @@ flowchart TD
     sdlc_engine_mjs["sdlc-engine.mjs (4 exports, I=1)"]
     DiagramResource_java["DiagramResource.java (17 exports, I=0)"]
     FitnessResource_java["FitnessResource.java (3 exports, I=0)"]
-    MailboxResource_java["MailboxResource.java (2 exports, I=0)"]
+    MailboxResource_java["MailboxResource.java (3 exports, I=0)"]
     ProjectFilesystemResource_java["ProjectFilesystemResource.java (1 exports, I=0)"]
+    SessionTokenFilter_java["SessionTokenFilter.java (1 exports, I=0)"]
     SnapshotResource_java["SnapshotResource.java (2 exports, I=0)"]
     VersionResource_java["VersionResource.java (1 exports, I=0)"]
     WorkspacePathResolver_java["WorkspacePathResolver.java (8 exports, I=0)"]
@@ -138,12 +142,13 @@ flowchart TD
     main_ts["main.ts (0 exports, I=1)"]
     vite_env_d_ts["vite-env.d.ts (0 exports, I=0)"]
     index_js["index.js (2 exports, I=1)"]
-    analyzer_js["analyzer.js (10 exports, I=0.2)"]
-    checker_js["checker.js (16 exports, I=0)"]
-    docker_runner_js["docker-runner.js (18 exports, I=0)"]
+    analyzer_js["analyzer.js (10 exports, I=0.33)"]
+    checker_js["checker.js (18 exports, I=0)"]
+    docker_runner_js["docker-runner.js (20 exports, I=0.25)"]
     installer_js["installer.js (7 exports, I=0.4)"]
-    mcp_registry_js["mcp-registry.js (6 exports, I=0.25)"]
-    mcp_server_js["mcp-server.js (7 exports, I=0.8)"]
+    mcp_registry_js["mcp-registry.js (8 exports, I=0.25)"]
+    mcp_server_js["mcp-server.js (7 exports, I=0.83)"]
+    session_js["session.js (10 exports, I=0)"]
     ui_js["ui.js (14 exports, I=0)"]
     updater_js["updater.js (2 exports, I=0.67)"]
     upgrader_js["upgrader.js (1 exports, I=0.5)"]
@@ -253,6 +258,7 @@ flowchart TD
 | `.agent/scripts/lib/readme-sync.mjs` | 898 | 1 / 2 | `0.67` | `escapeXml` (L105), `slugifyHeadingAnchor` (L114), `detectReadmeArchetype` (L137), `stripArchetypeBlocks` (L182), `renderThemeWordmarkSvg` (L199), `renderVhsDemoTape` (L223), `renderLlmsTxt` (L249), `scaffoldReadme` (L432) +1 more | `wiki/Codebase-Map.md` |
 | `.agent/scripts/lib/session.mjs` | 674 | 4 / 9 | `0.69` | `getSessionPath` (L16), `getSessionStatus` (L20), `startSession` (L56), `updateSession` (L130), `switchSession` (L198), `listSessions` (L220), `renderDashboard` (L242), `resumeSession` (L279) +7 more | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
 | `.agent/scripts/lib/wiki-sync.mjs` | 740 | 2 / 6 | `0.75` | `inspectSourceModule` (L36), `resolveArchlensRing` (L104), `buildWikiCodeMap` (L136), `auditWiki` (L320), `renderCodebaseMapMarkdown` (L519), `syncWiki` (L668) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md` |
+| `backend/src/main/java/io/slixes/archlens/delivery/rest/SessionTokenService.java` | 219 | 0 / 0 | `0` | `SessionTokenService` (L35), `isEnabled` (L67), `getToken` (L72), `matches` (L90), `cookieName` (L99) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/mailbox/fs/FileMailboxService.java` | 124 | 0 / 0 | `0` | `FileMailboxService` (L21), `MailboxEnvelope` (L63) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
 | `backend/src/main/java/io/slixes/archlens/mcp/ArchlensMcpService.java` | 379 | 0 / 0 | `0` | `ArchlensMcpService` (L47), `inspectArchitecture` (L104), `exportLlmDossier` (L118), `exportArchitectureDiagram` (L135), `getSnapshot` (L170), `synthesizeDipInversion` (L186), `evaluateFitness` (L210), `getFitnessHistory` (L230) +7 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/EvaluateFitnessUseCase.java` | 52 | 0 / 0 | `0` | `EvaluateFitnessUseCase` (L18), `evaluateCurrent` (L31), `evaluateGraph` (L44) | `wiki/Codebase-Map.md` |
@@ -260,12 +266,14 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/usecase/ExportDossierUseCase.java` | 36 | 0 / 0 | `0` | `ExportDossierUseCase` (L16), `execute` (L30) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/GetFitnessHistoryUseCase.java` | 147 | 0 / 0 | `0` | `GetFitnessHistoryUseCase` (L29), `getHistory` (L48) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/ManageSnapshotsUseCase.java` | 130 | 0 / 0 | `0` | `ManageSnapshotsUseCase` (L26), `getSnapshot` (L100) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/usecase/OpenedProjectRegistry.java` | 31 | 0 / 0 | `0` | `OpenedProjectRegistry` (L15), `markOpened` (L20), `isOpened` (L27) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/usecase/ProjectPathGuard.java` | 159 | 0 / 0 | `0` | `ProjectPathGuard` (L18), `Status` (L25), `Resolution` (L33), `isOk` (L34), `canonicalRoot` (L48), `tryCanonicalRoot` (L63), `resolveFileWithinRoot` (L76), `isValidSnapshotId` (L131) +1 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/ProposeScreamingMigrationUseCase.java` | 39 | 0 / 0 | `0` | `ProposeScreamingMigrationUseCase` (L16), `execute` (L31) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/usecase/ResolveFilesystemUseCase.java` | 361 | 0 / 0 | `0` | `ResolveFilesystemUseCase` (L24) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/usecase/ResolveFilesystemUseCase.java` | 343 | 0 / 0 | `0` | `ResolveFilesystemUseCase` (L25) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/SavePolicyUseCase.java` | 64 | 0 / 0 | `0` | `SavePolicyUseCase` (L19), `execute` (L34) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/SyncAdrUseCase.java` | 159 | 0 / 0 | `0` | `SyncAdrUseCase` (L17), `AdrDocument` (L22), `recordDipInversion` (L38), `recordPackageReorganization` (L78) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/SynthesizeDipInversionUseCase.java` | 38 | 0 / 0 | `0` | `SynthesizeDipInversionUseCase` (L17), `execute` (L31) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/usecase/VerifyAndRollbackRefactorUseCase.java` | 472 | 0 / 0 | `0` | `VerifyAndRollbackRefactorUseCase` (L31), `TestExecutionOutcome` (L74), `TestSuiteExecutor` (L79), `createPreRefactorSnapshot` (L106), `verifyRefactoring` (L142), `detectTestCommand` (L258), `rollbackToSnapshot` (L359), `preVisitDirectory` (L432) +2 more | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/usecase/VerifyAndRollbackRefactorUseCase.java` | 563 | 0 / 0 | `0` | `VerifyAndRollbackRefactorUseCase` (L34), `TestExecutionOutcome` (L80), `TestSuiteExecutor` (L85), `createPreRefactorSnapshot` (L112), `verifyRefactoring` (L148), `detectTestCommand` (L264), `rollbackToSnapshot` (L433), `preVisitDirectory` (L523) +2 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/usecase/WorkspacePathResolver.java` | 314 | 0 / 0 | `0` | `WorkspacePathResolver` (L16), `DEFAULT_PROJECT_ROOT` (L18), `isContainerEnvironment` (L27), `normalizeRoot` (L36), `isMacOs` (L166), `isProjectDirectory` (L174), `isIgnoredDirectory` (L190), `isSubProjectDirectory` (L208) +3 more | `wiki/Codebase-Map.md` |
 
 ### 🏛️ Ring 2: Adapters & Enforcement
@@ -283,10 +291,11 @@ flowchart TD
 | Source Module | Lines | $Ca$ / $Ce$ | Instability ($I$) | Exported AST Symbols (Line #) | Wiki Coverage |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `.agent/scripts/sdlc-engine.mjs` | 2218 | 0 / 16 | `1` | `executeRelease` (L369), `runCLI` (L541), `formatCLIResult` (L1995), `cliExitCode` (L2199) | `wiki/Codebase-Map.md`, `wiki/Skills-Reference.md`, `wiki/Traceability.md` |
-| `backend/src/main/java/io/slixes/archlens/delivery/rest/DiagramResource.java` | 461 | 0 / 0 | `0` | `DiagramResource` (L48), `getGraph` (L221), `getDiagram` (L231), `getLlmDossier` (L242), `getLlmDossierAlias` (L253), `getDiagramExport` (L264), `getGraphExportAlias` (L288), `getInvertPlan` (L304) +9 more | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/delivery/rest/DiagramResource.java` | 466 | 0 / 0 | `0` | `DiagramResource` (L48), `getGraph` (L221), `getDiagram` (L234), `getLlmDossier` (L245), `getLlmDossierAlias` (L256), `getDiagramExport` (L267), `getGraphExportAlias` (L291), `getInvertPlan` (L307) +9 more | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/FitnessResource.java` | 54 | 0 / 0 | `0` | `FitnessResource` (L23), `getFitness` (L40), `getFitnessHistory` (L49) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/delivery/rest/MailboxResource.java` | 166 | 0 / 0 | `0` | `MailboxResource` (L23), `getToAgentMailbox` (L59) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
-| `backend/src/main/java/io/slixes/archlens/delivery/rest/ProjectFilesystemResource.java` | 65 | 0 / 0 | `0` | `ProjectFilesystemResource` (L21) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/delivery/rest/MailboxResource.java` | 204 | 0 / 0 | `0` | `MailboxResource` (L25), `getToAgentMailbox` (L63), `getOpenedProjects` (L134) | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
+| `backend/src/main/java/io/slixes/archlens/delivery/rest/ProjectFilesystemResource.java` | 74 | 0 / 0 | `0` | `ProjectFilesystemResource` (L22) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/delivery/rest/SessionTokenFilter.java` | 143 | 0 / 0 | `0` | `SessionTokenFilter` (L26) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/SnapshotResource.java` | 59 | 0 / 0 | `0` | `SnapshotResource` (L24), `getSnapshot` (L48) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/VersionResource.java` | 60 | 0 / 0 | `0` | `VersionResource` (L22) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/delivery/rest/WorkspacePathResolver.java` | 55 | 0 / 0 | `0` | `WorkspacePathResolver` (L15), `DEFAULT_PROJECT_ROOT` (L17), `isContainerEnvironment` (L24), `normalizeRoot` (L28), `isMacOs` (L32), `isIgnoredDirectory` (L36), `isProjectDirectory` (L40), `scanDirectoryForProjects` (L44) | `wiki/Codebase-Map.md` |
@@ -303,7 +312,7 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/scanner/PythonAstScanner.java` | 965 | 0 / 0 | `0` | `PythonAstScanner` (L25), `languageId` (L47), `supports` (L52), `scanProject` (L182) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/RustAstScanner.java` | 184 | 0 / 0 | `0` | `RustAstScanner` (L24), `languageId` (L38), `supports` (L43), `scanProject` (L55) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/TypeScriptAstScanner.java` | 1007 | 0 / 0 | `0` | `TypeScriptAstScanner` (L25), `languageId` (L104), `supports` (L109), `scanProject` (L125) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
-| `frontend/src/App.svelte` | 429 | 1 / 16 | `0.94` |  | `wiki/Codebase-Map.md` |
+| `frontend/src/App.svelte` | 436 | 1 / 16 | `0.94` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/components/AgentDrawer.svelte` | 234 | 1 / 1 | `0.5` |  | `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md` |
 | `frontend/src/lib/components/ArchlensLogo.svelte` | 66 | 3 / 0 | `0` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/components/Canvas.svelte` | 985 | 1 / 7 | `0.88` |  | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
@@ -324,7 +333,7 @@ flowchart TD
 | `frontend/src/lib/components/SandboxToolbar.svelte` | 273 | 1 / 1 | `0.5` |  | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Mailbox-IPC.md`, `wiki/Traceability.md` |
 | `frontend/src/lib/components/SourceModal.svelte` | 236 | 1 / 2 | `0.67` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/data/demoData.ts` | 870 | 0 / 1 | `1` | `DEMO_POLICY` (L3), `DEMO_GRAPH_REAL` (L38), `DEMO_GRAPH_PROPOSAL` (L286), `ShowcasePreset` (L332), `SHOWCASE_PRESETS` (L341) | `wiki/Codebase-Map.md` |
-| `frontend/src/lib/state/diagram.svelte.ts` | 1414 | 0 / 3 | `1` | `DeclutterMode` (L30), `DiagramState` (L32), `diagramStore` (L1413) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `frontend/src/lib/state/diagram.svelte.ts` | 1417 | 0 / 3 | `1` | `DeclutterMode` (L30), `DiagramState` (L32), `diagramStore` (L1416) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `frontend/src/lib/types/diagram.ts` | 314 | 0 / 0 | `0` | `Stereotype` (L1), `EdgeKind` (L2), `CrapScore` (L4), `FieldNode` (L10), `MethodNode` (L16), `ClassNode` (L30), `ComponentNode` (L48), `DependencyEdge` (L63) +25 more | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/utils/colors.ts` | 24 | 0 / 0 | `0` | `getHealthColor` (L5), `formatCrap` (L17), `formatCoverage` (L21) | `wiki/Codebase-Map.md` |
 | `frontend/src/lib/utils/diagramExporter.ts` | 646 | 0 / 1 | `1` | `ExportDiagramType` (L10), `ExportFormatType` (L11), `ExportFramingMode` (L12), `ExportBackgroundMode` (L13), `DiagramExportOptions` (L15), `generateMermaidDiagram` (L80), `formatMermaidMarkdownBlock` (L311), `generateStandaloneSvg` (L337) +1 more | `wiki/Codebase-Map.md` |
@@ -332,13 +341,14 @@ flowchart TD
 | `frontend/src/lib/utils/martinMetrics.ts` | 408 | 0 / 1 | `1` | `ComponentMetricsSummary` (L12), `calculateComponentMartinMetrics` (L23), `calculateAllMartinMetrics` (L105), `simulateSandboxGraph` (L122), `computeScatterCoordinates` (L343), `computeNodeRadius` (L360), `buildScatterPlotPoints` (L368) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Robert-C-Martin-Metrics.md` |
 | `frontend/src/main.ts` | 10 | 0 / 2 | `1` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/vite-env.d.ts` | 3 | 0 / 0 | `0` |  | `wiki/Codebase-Map.md` |
-| `cli/bin/index.js` | 812 | 0 / 9 | `1` | `parseArgs` (L139), `main` (L526) | `wiki/Codebase-Map.md` |
-| `cli/src/analyzer.js` | 851 | 4 / 1 | `0.2` | `detectProjectLanguage` (L12), `discoverWorkspaceModules` (L124), `detectSourceRoot` (L241), `findCommonPackagePrefix` (L321), `discoverSubpackages` (L416), `classifyLayers` (L452), `parseImportLinterConfig` (L506), `generatePolicy` (L575) +2 more | `wiki/Codebase-Map.md` |
-| `cli/src/checker.js` | 1371 | 3 / 0 | `0` | `loadProjectPolicy` (L49), `TECHNICAL_MARKERS` (L70), `calculateScreamingMetric` (L105), `TECHNICAL_SUFFIXES` (L159), `TECHNICAL_PREFIXES` (L195), `extractFeatureToken` (L206), `suggestFeatureClusters` (L232), `extractTsJsStatements` (L461) +8 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
-| `cli/src/docker-runner.js` | 430 | 3 / 0 | `0` | `DEFAULT_SERVER_URL` (L12), `DEFAULT_DOCKER_IMAGE` (L13), `DEFAULT_DOCKERHUB_IMAGE` (L14), `DEFAULT_CONTAINER_NAME` (L15), `checkServerHealth` (L17), `isJavaAvailable` (L33), `getPlatformBinarySuffix` (L42), `findNativeBinary` (L52) +10 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
+| `cli/bin/index.js` | 879 | 0 / 10 | `1` | `parseArgs` (L161), `main` (L564) | `wiki/Codebase-Map.md` |
+| `cli/src/analyzer.js` | 853 | 4 / 2 | `0.33` | `detectProjectLanguage` (L13), `discoverWorkspaceModules` (L125), `detectSourceRoot` (L242), `findCommonPackagePrefix` (L322), `discoverSubpackages` (L417), `classifyLayers` (L453), `parseImportLinterConfig` (L507), `generatePolicy` (L576) +2 more | `wiki/Codebase-Map.md` |
+| `cli/src/checker.js` | 1433 | 3 / 0 | `0` | `findMatchingFiles` (L17), `loadProjectPolicy` (L58), `TECHNICAL_MARKERS` (L79), `calculateScreamingMetric` (L114), `TECHNICAL_SUFFIXES` (L168), `TECHNICAL_PREFIXES` (L204), `extractFeatureToken` (L215), `suggestFeatureClusters` (L241) +10 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `cli/src/docker-runner.js` | 484 | 3 / 1 | `0.25` | `DEFAULT_SERVER_URL` (L19), `DEFAULT_DOCKER_IMAGE` (L20), `DEFAULT_DOCKERHUB_IMAGE` (L21), `DEFAULT_CONTAINER_NAME` (L22), `checkServerHealth` (L24), `isJavaAvailable` (L40), `getPlatformBinarySuffix` (L49), `findNativeBinary` (L59) +12 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
 | `cli/src/installer.js` | 388 | 3 / 2 | `0.4` | `COMPANION_PROTOCOL_HEADER` (L20), `getCompanionProtocolBlock` (L22), `installLocalPolicy` (L40), `buildSkillsCliArgs` (L155), `getGlobalSkillDirectories` (L220), `installLocalSkills` (L253), `installGlobalSkills` (L310) | `wiki/Codebase-Map.md` |
-| `cli/src/mcp-registry.js` | 512 | 3 / 1 | `0.25` | `ARCHLENS_TOOL_SCHEMAS` (L13), `getAntigravityInstructions` (L221), `getClientConfigLocations` (L269), `resolveDockerHostWorkspace` (L364), `getMcpManifestEntry` (L382), `installMcpConfigs` (L416) | `wiki/Codebase-Map.md` |
-| `cli/src/mcp-server.js` | 703 | 1 / 4 | `0.8` | `getMcpToolsList` (L34), `getMcpResourcesList` (L42), `getMcpPromptsList` (L67), `readMcpResource` (L98), `executeToolCall` (L163), `handleMcpMessage` (L507), `startMcpStdioServer` (L674) | `wiki/Codebase-Map.md` |
+| `cli/src/mcp-registry.js` | 627 | 3 / 1 | `0.25` | `ARCHLENS_TOOL_SCHEMAS` (L13), `getAntigravityInstructions` (L221), `getClientConfigLocations` (L269), `resolveDockerHostWorkspace` (L364), `getMcpManifestEntry` (L382), `parseJsonc` (L420), `backupFile` (L491), `installMcpConfigs` (L498) | `wiki/Codebase-Map.md` |
+| `cli/src/mcp-server.js` | 709 | 1 / 5 | `0.83` | `getMcpToolsList` (L35), `getMcpResourcesList` (L43), `getMcpPromptsList` (L68), `readMcpResource` (L99), `executeToolCall` (L164), `handleMcpMessage` (L513), `startMcpStdioServer` (L680) | `wiki/Codebase-Map.md` |
+| `cli/src/session.js` | 99 | 4 / 0 | `0` | `TOKEN_HEADER` (L15), `generateSessionToken` (L17), `portFromUrl` (L21), `sessionFilePath` (L36), `readSessionToken` (L41), `writeSessionFile` (L53), `resolveSessionToken` (L67), `withAuth` (L76) +2 more | `wiki/Codebase-Map.md` |
 | `cli/src/ui.js` | 150 | 1 / 0 | `0` | `colors` (L9), `banner` (L45), `info` (L58), `success` (L62), `warn` (L66), `error` (L70), `step` (L74), `divider` (L78) +6 more | `wiki/Codebase-Map.md` |
 | `cli/src/updater.js` | 165 | 1 / 2 | `0.67` | `updateLocalPolicy` (L23), `updateGlobalSkills` (L153) | `wiki/Codebase-Map.md` |
 | `cli/src/upgrader.js` | 123 | 1 / 1 | `0.5` | `upgradeProject` (L11) | `wiki/Codebase-Map.md` |
@@ -389,6 +399,8 @@ flowchart TD
 | **ADR-009** | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | None |
 | **ADR-010** | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | ADR-009 |
 | **ADR-011** | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | ADR-010 |
+| **ADR-012** | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | ADR-011 |
+| **ADR-013** | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | ADR-012 |
 
 ---
 

@@ -38,6 +38,13 @@ class ProjectPathGuardTest {
     ProjectPathGuard.Resolution dotted =
         ProjectPathGuard.resolveFileWithinRoot(root, "src/a/../a/A.java");
     assertTrue(dotted.isOk());
+
+    // Un-canonicalized absolute path through a symlinked parent (e.g., macOS /var -> /private/var)
+    Path uncanonicalJava = tempDir.resolve("src/a/A.java");
+    ProjectPathGuard.Resolution uncanonicalAbs =
+        ProjectPathGuard.resolveFileWithinRoot(root, uncanonicalJava.toString());
+    assertTrue(uncanonicalAbs.isOk());
+    assertEquals(java, uncanonicalAbs.path());
   }
 
   @Test

@@ -81,6 +81,9 @@ public final class ProjectPathGuard {
     try {
       Path raw = Paths.get(requested.trim());
       candidate = (raw.isAbsolute() ? raw : root.resolve(raw)).toAbsolutePath().normalize();
+      if (raw.isAbsolute() && !candidate.startsWith(root)) {
+        candidate = rebaseOntoCanonicalRoot(root, candidate);
+      }
     } catch (InvalidPathException e) {
       return new Resolution(Status.INVALID, null);
     }
@@ -104,6 +107,24 @@ public final class ProjectPathGuard {
       return new Resolution(Status.NOT_FOUND, null);
     }
     return new Resolution(Status.OK, real);
+  }
+
+  /**
+   * If an ancestor directory of {@code candidate} is a symlinked alias of {@code root} (for example
+   * macOS {@code /var/folders/...} vs canonical {@code /private/var/folders/...}), rewrites that
+   * prefix to {@code root} without following symlinks inside {@code root}.
+   */
+  private static Path rebaseOntoCanonicalRoot(Path root, Path candidate) {
+    for (Path ancestor = candidate.getParent(); ancestor != null; ancestor = ancestor.getParent()) {
+      try {
+        if (Files.isDirectory(ancestor) && ancestor.toRealPath().equals(root)) {
+          return root.resolve(ancestor.relativize(candidate)).normalize();
+        }
+      } catch (IOException ignored) {
+        // Unresolvable ancestor; continue walking up
+      }
+    }
+    return candidate;
   }
 
   /** True when {@code snapshotId} matches the strict generated snapshot identifier format. */

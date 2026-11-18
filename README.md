@@ -59,7 +59,8 @@ This single command atomically provisions `.archlens/policy.json` (concentric ri
 ### 2. Run in Autonomous AI Mode, Visual Browser Studio, or CI
 
 ```bash
-# Launch the interactive Svelte 5 Concentric Ring Workbench at http://localhost:8088:
+# Launch the interactive Svelte 5 Concentric Ring Workbench on http://127.0.0.1:8088
+# (opens a one-time ?token=… link that signs the browser into this server session):
 npx @fmatar/archlens-skill start --open
 
 # Run a headless Clean Architecture, ADP Cycle & Fitness Gate check in CI/CD:
@@ -79,15 +80,19 @@ npx skills add fmatar/archlens --all -y
 npx skills add fmatar/archlens --all -g --agent claude-code -y
 ```
 
-#### Always-On Docker Daemon (`http://localhost:8088`)
+#### Always-On Docker Daemon (`http://127.0.0.1:8088`)
 ```bash
+export ARCHLENS_TOKEN="$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '=')"
 docker run -d \
   --name archlens-server \
   --restart unless-stopped \
-  -p 8088:8088 \
+  -p 127.0.0.1:8088:8088 \
+  -e ARCHLENS_TOKEN \
   -v "$HOME/workspace:/workspace" \
   ghcr.io/fmatar/archlens:latest
+# Open http://127.0.0.1:8088/?token=$ARCHLENS_TOKEN (or see `docker logs archlens-server`)
 ```
+Publish the port on `127.0.0.1` only; see [Workbench security](#workbench-security).
 
 #### Official GitHub Action for CI/CD Quality Gates
 ```yaml
@@ -259,7 +264,7 @@ flowchart TD
   }
 }
 ```
-- **Claude Code CLI**: `claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp` (or Streamable HTTP: `claude mcp add --transport http archlens http://localhost:8088/mcp`)
+- **Claude Code CLI**: `claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp` (or Streamable HTTP: `claude mcp add --transport http archlens http://127.0.0.1:8088/mcp --header "X-Archlens-Token: $ARCHLENS_TOKEN"`)
 - **Gemini CLI**: `gemini mcp add archlens -- npx -y @fmatar/archlens-skill mcp`
 
 #### Mailbox IPC Companion Queue (`.archlens/`)
@@ -325,6 +330,7 @@ flowchart TD
 | `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
 | `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` / `global` | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
+| `--host <ADDR>` | | Bind / publish the workbench on `ADDR` instead of loopback (prints a warning; the token is still required) | `127.0.0.1` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |
 | `--detect-cycles` | | Enforce Robert C. Martin Acyclic Dependencies Principle (ADP) | `false` |
@@ -342,7 +348,8 @@ Requires **Java 25 (OpenJDK / GraalVM)**, **Apache Maven 3.9+**, and **Node.js 2
 # 1. Start the Quarkus Backend (:8088)
 cd backend && ./mvnw clean quarkus:dev
 
-# 2. Start the Svelte 5 Frontend (:5173)
+# 2. Start the Svelte 5 Frontend (:5173). Use the same token for both processes, e.g.
+#    export ARCHLENS_TOKEN=dev-token   (or ARCHLENS_AUTH_ENABLED=false on the backend for local hacking)
 cd frontend && pnpm install && pnpm dev
 
 # 3. Run Full-Stack Quality Verification
@@ -353,6 +360,26 @@ npm test && npm --prefix frontend run check && npm --prefix frontend test
 </details>
 
 ---
+
+## Workbench security
+
+The workbench server can read project sources and run a project's build for verification, so it is
+locked down by default:
+
+- **Loopback only.** The server binds to `127.0.0.1`. To listen elsewhere set `ARCHLENS_HOST`
+  (or `archlens start --host <addr>`); a warning is logged. The container image listens on
+  `0.0.0.0` inside the container, so publish it with `-p 127.0.0.1:8088:8088`.
+- **Session token.** `/api/*` and `/mcp` require a per-launch token, sent as
+  `X-Archlens-Token: <token>`, `Authorization: Bearer <token>`, or the HttpOnly session cookie set by
+  opening `/?token=<token>`. `archlens start` generates the token, passes it to the server, and opens
+  the tokenized URL. The server prints `Archlens workbench ready. Open: …` and publishes the token
+  to `~/.archlens/session-<port>.json` (mode 600), which the CLI and MCP bridge read. Pin a token with
+  `ARCHLENS_TOKEN`. `/api/version` and `/q/health` stay open for health checks.
+  `ARCHLENS_AUTH_ENABLED=false` disables the check (not recommended).
+- **Path confinement.** `/api/source` only serves regular files inside the requested project root
+  (symlink and `..` escapes are rejected with 403). Refactoring verification and rollback only run
+  for a project already opened in this workbench session, and snapshot ids must match
+  `snap-<millis>-<8 hex>`.
 
 ## 📚 Documentation, Roadmap & Resources
 

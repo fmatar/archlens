@@ -222,7 +222,10 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
       throws IOException {
-    return graphCompiler.compileGraph(normalizeRoot(projectRoot), proposalId);
+    String root = normalizeRoot(projectRoot);
+    ArchitectureGraph graph = graphCompiler.compileGraph(root, proposalId);
+    getMailboxResource().getOpenedProjects().markOpened(root);
+    return graph;
   }
 
   @GET
@@ -380,7 +383,9 @@ public class DiagramResource {
   @RestStreamElementType(MediaType.APPLICATION_JSON)
   public Multi<Map<String, Object>> streamEvents(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
-    ensureWatcherRunning(normalizeRoot(projectRoot));
+    String root = normalizeRoot(projectRoot);
+    ensureWatcherRunning(root);
+    getMailboxResource().getOpenedProjects().markOpened(root);
     Multi<Map<String, Object>> heartbeat =
         Multi.createFrom()
             .ticks()

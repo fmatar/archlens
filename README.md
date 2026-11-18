@@ -11,7 +11,7 @@
 **Real-time polyglot Clean Architecture workbench, AST governance engine, and autonomous AI refactoring studio for modern software teams.**
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
-[![Release v1.1.5](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
+[![Release v1.1.6](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
 [![NPM Package](https://img.shields.io/badge/npm-@fmatar%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fmatar/archlens-skill)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -105,7 +105,7 @@ Publish the port on `127.0.0.1` only; see [Workbench security](#workbench-securi
     fitness-threshold: 0.85
 ```
 The Action runs the CLI bundled with the Action revision you pin (`@v1` follows the latest
-`v1.x.y` release; pin `@v1.1.5` for an exact version), not whatever is newest on npm. Threshold
+`v1.x.y` release; pin `@v1.1.6` for an exact version), not whatever is newest on npm. Threshold
 inputs must be plain numbers; anything else fails with a usage error (exit 2).
 
 #### Global CLI or Canary (`@dev`) Track
@@ -232,9 +232,9 @@ flowchart TD
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill@1.1.5", "mcp"],
+      "args": ["-y", "@fmatar/archlens-skill@1.1.6", "mcp"],
       "env": {
-        "ARCHLENS_SERVER_URL": "http://localhost:8088"
+        "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
     }
   }
@@ -351,7 +351,7 @@ flowchart TD
 Requires **Java 25 (OpenJDK / GraalVM)**, **Apache Maven 3.9+**, and **Node.js 22+ / pnpm**:
 ```bash
 # 1. Start the Quarkus Backend (:8088)
-cd backend && ./mvnw clean quarkus:dev
+cd backend && mvn clean quarkus:dev
 
 # 2. Start the Svelte 5 Frontend (:5173). Use the same token for both processes, e.g.
 #    export ARCHLENS_TOKEN=dev-token   (or ARCHLENS_AUTH_ENABLED=false on the backend for local hacking)
@@ -374,17 +374,22 @@ locked down by default:
 - **Loopback only.** The server binds to `127.0.0.1`. To listen elsewhere set `ARCHLENS_HOST`
   (or `archlens start --host <addr>`); a warning is logged. The container image listens on
   `0.0.0.0` inside the container, so publish it with `-p 127.0.0.1:8088:8088`.
-- **Session token.** `/api/*` and `/mcp` require a per-launch token, sent as
-  `X-Archlens-Token: <token>`, `Authorization: Bearer <token>`, or the HttpOnly session cookie set by
-  opening `/?token=<token>`. `archlens start` generates the token, passes it to the server, and opens
-  the tokenized URL. The server prints `Archlens workbench ready. Open: …` and publishes the token
-  to `~/.archlens/session-<port>.json` (mode 600), which the CLI and MCP bridge read. Pin a token with
-  `ARCHLENS_TOKEN`. `/api/version` and `/q/health` stay open for health checks.
-  `ARCHLENS_AUTH_ENABLED=false` disables the check (not recommended).
-- **Path confinement.** `/api/source` only serves regular files inside the requested project root
-  (symlink and `..` escapes are rejected with 403). Refactoring verification and rollback only run
-  for a project already opened in this workbench session, and snapshot ids must match
-  `snap-<millis>-<8 hex>`.
+- **Session token.** `/api/*` and `/mcp*` require a per-launch token (normalized across matrix
+  parameters and percent-encoding), sent as `X-Archlens-Token: <token>`,
+  `Authorization: Bearer <token>`, or the HttpOnly session cookie set by opening `/?token=<token>`.
+  `archlens start` generates the token, passes it to the server, and opens the tokenized URL.
+  Interactive TTY launches print `Archlens workbench ready. Open: ...?token=...`, while
+  non-interactive background launches omit the secret from logs unless `ARCHLENS_LOG_TOKEN=true`
+  is set and write it to `~/.archlens/session-<port>.json` (mode `0600` inside `0700` dir), which
+  the CLI and MCP bridge read. Pin a token with `ARCHLENS_TOKEN`. Exact `GET /api/version` and
+  `/q/health` stay open for health checks. `ARCHLENS_AUTH_ENABLED=false` disables the check
+  (not recommended).
+- **Path confinement & session project approval.** `/api/source` only serves regular files inside
+  the requested project root (symlink and `..` escapes return 403), and `/api/fs/directories`
+  confines browsing to `ARCHLENS_ALLOWED_ROOTS` (defaulting to `$HOME`, workspace, and container
+  mount). Refactoring verification, rollback, mailbox writes, policy saves, and ADR sync only run
+  after an explicit `POST /api/projects/open`, `runTests: true` requires `confirmRunTests: true`,
+  and snapshot ids must match `snap-<millis>-<8 hex>`.
 
 ## 📚 Documentation, Roadmap & Resources
 

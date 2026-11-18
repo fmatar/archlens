@@ -9,7 +9,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.6] - 2026-11-18
+
+### Security
+- **Matrix-parameter & path-canonicalization auth bypass fix (`C-1`)** (`#247`, `ADR-014`):
+  - Hardened `SessionTokenFilter` (`canonicalizePath`: single percent-decode, `;[^/]*` segment matrix-parameter stripping, slash collapse, lowercase `Locale.ROOT`) across both `rc.normalizedPath()` and `rc.request().path()`, leaving only exact `/api/version` unauthenticated.
+  - Added defense-in-depth `JaxRsSessionTokenFilter` (`@Provider @PreMatching @Priority(Priorities.AUTHENTICATION)`) enforcing the session token on the exact post-normalization path seen by RESTEasy Reactive routing (`GET /api/version` only when raw path is exact).
+- **Explicit project opening & unauthenticated/chained RCE mitigation (`C-2`)** (`#247`):
+  - Removed automatic `OpenedProjectRegistry.markOpened(root)` side effects from `GET /api/graph` and `GET /api/events`.
+  - Added `POST /api/projects/open` (`ProjectFilesystemResource.openProject`) as the explicit authenticated gate for session project authorization, wired into the frontend (`App.svelte`, `diagram.svelte.ts`) and MCP `syncDipAdr`.
+  - Required explicit `confirmRunTests: true` alongside `runTests: true` on `POST /api/mailbox/verify`, returning HTTP `400` without it and `403` for unopened projects first.
+- **Mailbox & policy mutation authorization (`C-3`)**:
+  - Enforced `requireOpenedProject` on `POST /api/mailbox/to-agent`, `POST /api/mailbox/sync-adr`, and `POST /api/policy`.
+  - Stamped `"origin": "workbench-session"` and `"sessionFingerprint"` (12-char non-secret SHA-256 hex digest of the session token) unconditionally on outbound `to-agent` commands so spoofed envelope origins are overwritten.
+- **Filesystem browse confinement (`M-6`)**:
+  - Restricted `GET /api/fs/directories` (`ResolveFilesystemUseCase`) to canonical allowed roots (`$HOME`, active workspace `.`, container `/workspace`, and configurable `ARCHLENS_ALLOWED_ROOTS` / `archlens.allowed.roots`), returning HTTP `403` for paths outside allowed roots and omitting hardcoded developer fallback paths.
+- **Token logging & session file permission hardening (`L-1`, `L-2`)**:
+  - Stopped printing `ARCHLENS_TOKEN` in startup logs and suppressed printing `?token=` in non-interactive background launches unless `ARCHLENS_LOG_TOKEN=true` is explicitly set (pointing non-TTY launches to `~/.archlens/session-<port>.json`).
+  - Applied POSIX `0700` permissions on `~/.archlens` unconditionally even when the directory already exists, alongside `0600` on `session-<port>.json`.
+- **GitHub Actions script injection & fork PR runner isolation (`H-1`)**:
+  - Removed inline `${{ github.* }}` interpolation from all `run:` blocks in `ci.yml`, `enforce-branch-flow.yml`, `release.yml`, and `dev-release.yml`, routing values through `env:`.
+  - Enforced `head.repo.full_name == github.repository` in `enforce-branch-flow.yml` (moved to `ubuntu-latest`) and gated self-hosted `local-archlens` CI jobs against external fork PRs.
+
+### Breaking / Migration
+- **HTTP `/api/*` & `/mcp*` authentication**: Direct REST and streamable-HTTP/SSE MCP clients must authenticate using `X-Archlens-Token: <token>` or `Authorization: Bearer <token>` (read `~/.archlens/session-8088.json` or pin `ARCHLENS_TOKEN`). Matrix-parameter paths like `/api;x/...` and `/mcp;x` now return `401`.
+- **Network binding**: Bare-metal servers bind `127.0.0.1` by default (`ARCHLENS_HOST` / `--host` for LAN); container images publish via `-p 127.0.0.1:8088:8088` and run as non-root `1001:1001`.
+- **Non-interactive token logs**: Daemon/Docker launches no longer echo `?token=` to stdout unless `ARCHLENS_LOG_TOKEN=true` is set; read `~/.archlens/session-<port>.json` or pass `ARCHLENS_TOKEN`.
+- **Explicit project authorization & test execution**: API callers must invoke `POST /api/projects/open` before `POST /api/mailbox/*` or `POST /api/policy`, and must pass `"confirmRunTests": true` when `runTests: true` on `POST /api/mailbox/verify`.
+- **Directory browsing**: `GET /api/fs/directories` denies paths outside `$HOME`, the workspace, and `ARCHLENS_ALLOWED_ROOTS` (HTTP `403`).
+
+### Fixed
+- **CI-gated release & canary pipelines (`H-2`, `M-1`)**: Added `scripts/wait-for-ci-checks.js` and `verify-ci-gate` (`ubuntu-latest`, `checks: read`) to `release.yml` and `dev-release.yml` so releases and canaries wait for `Verify & Quality Gates` and `GitHub Action Self-Test (uses ./)` to pass on `github.sha`, locked `workflow_dispatch` refs (`main`/`v*` for release, `develop` for canary), and ran full `npm test` in `npm-release`.
+- **Supply chain & container hardening (`M-4`, `M-5`)**: Added SHA-512 verification for Apache Maven downloads in `setup-toolchain`, enforced Quinoa `--frozen-lockfile`, set non-root `1001:1001` runtime user in `application.properties` (`quarkus.jib.user`) and `Dockerfile`, and scoped workflow token permissions to least-privilege (`contents: read` at workflow level).
+- **Documentation accuracy (`M-2`)**: Fixed container port-publishing flags (`-p 127.0.0.1:8088:8088`), `mvn` commands (replacing nonexistent `./mvnw`), `docker-compose.yml` portable defaults, HTTP MCP token header instructions in `wiki/MCP-Integration.md`, and live self-fitness metric (`91% Grade A`) in `docs/specs/C4_ARCHITECTURE.md`.
+- **Test coverage (`M-7`)**: Expanded unit and HTTP integration tests in `SessionTokenServiceTest`, `SessionTokenFilterTest`, `MailboxResourceTest`, `ResolveFilesystemUseCaseTest`, `smoke-test.js`, `wait-for-ci-checks.test.js`, and `workflow-hardening.test.js` (`SessionTokenService` line coverage increased from 46.15% to >86%).
+
+### Removed
+- Removed 7 synthetic `docs/proofs/*.md` files (`M-3`).
+- Removed duplicate `frontend/package-lock.json` (`M-4`) and unused `workflow_dispatch.inputs.tag` from `release.yml` (`H-2`).
+
 ## [1.1.5] - 2026-11-18
+
+> **Security Advisory:** Version `1.1.5` (along with `1.1.4`) is superseded by **`1.1.6`** due to a critical session-token bypass via matrix parameters (`/api;x/...`) and an unauthenticated/chained verification command execution vector (`C-1`, `C-2`, `C-3`). Upgrade to `1.1.6` immediately.
 
 ### Security
 - **Workbench server hardening** (`#224`–`#228`, `ADR-012`):

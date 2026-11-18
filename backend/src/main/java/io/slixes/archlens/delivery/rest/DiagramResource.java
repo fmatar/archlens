@@ -122,9 +122,14 @@ public class DiagramResource {
         new SynthesizeDipInversionUseCase(this.graphCompiler, this.dipSynthesizer);
     this.proposeScreamingMigrationUseCase =
         new ProposeScreamingMigrationUseCase(this.graphCompiler, this.screamingMigrationAssistant);
-    this.filesystemResource = new ProjectFilesystemResource();
+    io.slixes.archlens.usecase.OpenedProjectRegistry sharedRegistry =
+        new io.slixes.archlens.usecase.OpenedProjectRegistry();
+    this.filesystemResource =
+        new ProjectFilesystemResource(
+            new io.slixes.archlens.usecase.ResolveFilesystemUseCase(), sharedRegistry);
     this.snapshotResource = new SnapshotResource(graphCompiler, this.mapper);
     this.mailboxResource = new MailboxResource(mailboxService);
+    this.mailboxResource.openedProjects = sharedRegistry;
     this.savePolicyUseCase = new SavePolicyUseCase(this.graphCompiler, this.mapper);
     this.fileWatcher = new ProjectFileWatcher();
   }
@@ -223,9 +228,7 @@ public class DiagramResource {
       @QueryParam("proposalId") String proposalId)
       throws IOException {
     String root = normalizeRoot(projectRoot);
-    ArchitectureGraph graph = graphCompiler.compileGraph(root, proposalId);
-    getMailboxResource().getOpenedProjects().markOpened(root);
-    return graph;
+    return graphCompiler.compileGraph(root, proposalId);
   }
 
   @GET
@@ -339,7 +342,8 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       ArchitecturePolicy policy)
       throws IOException {
-    ArchitectureGraph updated = getSavePolicyUseCase().execute(normalizeRoot(projectRoot), policy);
+    String root = getMailboxResource().requireOpenedProject(projectRoot);
+    ArchitectureGraph updated = getSavePolicyUseCase().execute(root, policy);
     eventProcessor.onNext(
         Map.of("event", "graph-update", "type", "policy", "timestamp", System.currentTimeMillis()));
     return updated;
@@ -385,7 +389,6 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot) {
     String root = normalizeRoot(projectRoot);
     ensureWatcherRunning(root);
-    getMailboxResource().getOpenedProjects().markOpened(root);
     Multi<Map<String, Object>> heartbeat =
         Multi.createFrom()
             .ticks()
@@ -428,6 +431,10 @@ public class DiagramResource {
 
   public Map<String, Object> listProjects() {
     return getFilesystemResource().listProjects();
+  }
+
+  public Map<String, Object> openProject(String projectRoot) {
+    return getFilesystemResource().openProject(projectRoot, null);
   }
 
   public Map<String, Object> listDirectories(String rawPath) {

@@ -72,7 +72,7 @@ export async function waitForServerReady(
   return false;
 }
 
-export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.5', deps = {}) {
+export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.6', deps = {}) {
   const fetchFn = deps.fetch || fetch;
   const checks = [];
 
@@ -236,6 +236,30 @@ export async function runAuthSmokeChecks(serverUrl, token, deps = {}) {
     200
   );
   await expectStatus('Auth: /api/version stays open', `${serverUrl}/api/version`, {}, 200);
+  await expectStatus(
+    'Auth: /api;x/projects matrix param bypass is rejected',
+    `${serverUrl}/api;x/projects`,
+    {},
+    401
+  );
+  await expectStatus(
+    'Auth: /api;/graph matrix param bypass is rejected',
+    `${serverUrl}/api;/graph`,
+    {},
+    401
+  );
+  await expectStatus(
+    'Auth: /api;jsessionid=1/projects matrix param bypass is rejected',
+    `${serverUrl}/api;jsessionid=1/projects`,
+    {},
+    401
+  );
+  await expectStatus(
+    'Auth: POST /api;x/mailbox/verify matrix param bypass is rejected',
+    `${serverUrl}/api;x/mailbox/verify`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+    401
+  );
   return { passed: checks.every((c) => c.passed), checks };
 }
 

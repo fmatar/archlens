@@ -97,7 +97,7 @@ Run the backend and frontend simultaneously with live hot-reloading:
 ```bash
 # Terminal 1: Launch Quarkus Backend (Port 8088)
 cd backend
-./mvnw quarkus:dev
+mvn quarkus:dev
 
 # Terminal 2: Launch Svelte 5 Frontend (Port 5173)
 cd frontend

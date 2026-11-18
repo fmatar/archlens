@@ -14,7 +14,7 @@ class ResolveFilesystemUseCaseTest {
 
   @Test
   void testListDirectoriesAndProjects(@TempDir Path tempDir) throws IOException {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
+    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase(List.of(tempDir));
 
     // Create a Maven project
     Path mavenApp = tempDir.resolve("my-maven-app");
@@ -127,5 +127,25 @@ class ResolveFilesystemUseCaseTest {
     } finally {
       System.clearProperty("test.headless");
     }
+  }
+
+  @Test
+  void listDirectoriesDeniesPathsOutsideAllowedRoots(@TempDir Path tempDir) throws IOException {
+    Path allowed = Files.createDirectories(tempDir.resolve("allowed"));
+    Path sub = Files.createDirectories(allowed.resolve("sub"));
+    Path outside = Files.createDirectories(tempDir.resolve("outside"));
+    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase(List.of(allowed));
+
+    Map<String, Object> denied = useCase.listDirectories(outside.toString());
+    assertEquals(Boolean.TRUE, denied.get("denied"));
+    assertNull(denied.get("directories"));
+
+    Map<String, Object> atRoot = useCase.listDirectories(allowed.toString());
+    assertNull(atRoot.get("denied"));
+    assertNull(atRoot.get("parentPath"));
+
+    Map<String, Object> nested = useCase.listDirectories(sub.toString());
+    assertNull(nested.get("denied"));
+    assertNotNull(nested.get("parentPath"));
   }
 }

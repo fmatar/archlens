@@ -11,6 +11,7 @@ import io.slixes.archlens.domain.policy.ArchitecturePolicy;
 import io.slixes.archlens.engine.GraphCompiler;
 import io.slixes.archlens.mailbox.fs.FileMailboxService;
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -112,6 +113,29 @@ class DiagramResourceTest {
     ArchitecturePolicy policy = resource.getPolicy(tempDir.toString());
     assertEquals("Test", policy.title());
 
+    // Saving policy on an unopened project must be rejected (403)
+    ArchitecturePolicy validPolicy =
+        new ArchitecturePolicy(
+            "Saved Policy",
+            "src/main/java",
+            "com.test",
+            true,
+            List.of("domain", "application"),
+            List.of(List.of("domain"), List.of("application")),
+            List.of(),
+            List.of(),
+            List.of(),
+            "java");
+    WebApplicationException unopenedSave =
+        assertThrows(
+            WebApplicationException.class,
+            () -> resource.savePolicy(tempDir.toString(), validPolicy));
+    assertEquals(403, unopenedSave.getResponse().getStatus());
+
+    // Open project explicitly before mailbox write and savePolicy
+    Map<String, Object> openRes = resource.openProject(tempDir.toString());
+    assertEquals(Boolean.TRUE, openRes.get("opened"));
+
     // Test mailbox endpoints
     MailboxEnvelope initialBox = resource.getToAgentMailbox(tempDir.toString());
     assertTrue(initialBox.queue().isEmpty());
@@ -159,8 +183,8 @@ class DiagramResourceTest {
     // Test getScreamingMigrationProposal
     assertNotNull(resource.getScreamingMigrationProposal(tempDir.toString(), null));
 
-    // Test savePolicy
-    ArchitecturePolicy validPolicy =
+    // Test savePolicy on opened project
+    ArchitecturePolicy policyToSave =
         new ArchitecturePolicy(
             "Saved Policy",
             "src/main/java",
@@ -172,7 +196,7 @@ class DiagramResourceTest {
             List.of(),
             List.of(),
             "java");
-    ArchitectureGraph savedGraph = resource.savePolicy(tempDir.toString(), validPolicy);
+    ArchitectureGraph savedGraph = resource.savePolicy(tempDir.toString(), policyToSave);
     assertNotNull(savedGraph);
 
     // Test listProjects
@@ -185,12 +209,17 @@ class DiagramResourceTest {
     assertFalse(discovered.isEmpty());
 
     // Test listDirectories includes container and native picker capability flags
-    Map<String, Object> dirs = resource.listDirectories(tempDir.toString());
-    assertNotNull(dirs);
-    assertTrue(dirs.containsKey("isContainer"));
-    assertTrue(dirs.containsKey("nativePickerSupported"));
-    assertTrue(dirs.get("isContainer") instanceof Boolean);
-    assertTrue(dirs.get("nativePickerSupported") instanceof Boolean);
+    System.setProperty("archlens.allowed.roots", tempDir.toString());
+    try {
+      Map<String, Object> dirs = resource.listDirectories(tempDir.toString());
+      assertNotNull(dirs);
+      assertTrue(dirs.containsKey("isContainer"));
+      assertTrue(dirs.containsKey("nativePickerSupported"));
+      assertTrue(dirs.get("isContainer") instanceof Boolean);
+      assertTrue(dirs.get("nativePickerSupported") instanceof Boolean);
+    } finally {
+      System.clearProperty("archlens.allowed.roots");
+    }
 
     // Test pickDirectory in headless mode
     System.setProperty("test.headless", "true");

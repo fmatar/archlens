@@ -18,9 +18,10 @@ function isAuthorized(init) {
 function createMockFetch({ enforceAuth = false } = {}) {
   return async (rawUrl, init) => {
     const url = new URL(rawUrl);
+    const canonicalPath = decodeURIComponent(url.pathname).replace(/;[^/]*/g, '').toLowerCase();
     const isProtected =
-      (url.pathname.startsWith('/api/') && url.pathname !== '/api/version') ||
-      url.pathname.startsWith('/mcp');
+      (canonicalPath.startsWith('/api/') && url.pathname !== '/api/version') ||
+      canonicalPath.startsWith('/mcp');
     if (enforceAuth && isProtected && !isAuthorized(init)) {
       return { ok: false, status: 401, json: async () => ({ error: 'unauthorized' }) };
     }
@@ -136,12 +137,23 @@ describe('End-to-End Smoke Test Engine (scripts/smoke-test.js)', () => {
       fetch: createMockFetch({ enforceAuth: true })
     });
     assert.equal(ok.passed, true);
-    assert.equal(ok.checks.length, 4);
+    assert.equal(ok.checks.length, 8);
 
     const unprotected = await runAuthSmokeChecks('http://127.0.0.1:8088', 'tok', {
       fetch: createMockFetch()
     });
     assert.equal(unprotected.passed, false, 'an unauthenticated server must fail the auth smoke checks');
+
+    const leakyMatrixMock = async (rawUrl, init) => {
+      if (rawUrl.includes(';')) {
+        return { ok: true, status: 200, json: async () => ({}) };
+      }
+      return createMockFetch({ enforceAuth: true })(rawUrl, init);
+    };
+    const matrixBypassed = await runAuthSmokeChecks('http://127.0.0.1:8088', 'tok', {
+      fetch: leakyMatrixMock
+    });
+    assert.equal(matrixBypassed.passed, false, 'matrix parameter bypass must fail auth smoke checks');
   });
 
   it('runSmokeSuite orchestrates server lifecycle, HTTP/MCP checks, and clean SIGTERM teardown', async () => {

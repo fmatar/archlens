@@ -102,7 +102,9 @@ test('parseArgs parses all CLI commands and flags accurately', () => {
   assert.equal(parseArgs(['--max-violations']).maxViolations, 0);
   assert.equal(parseArgs(['--port']).port, '8088');
   assert.equal(parseArgs(['--format']).format, 'pretty');
-  assert.equal(parseArgs(['--server-url']).serverUrl, 'http://localhost:8088');
+  assert.equal(parseArgs(['--server-url']).serverUrl, 'http://127.0.0.1:8088');
+  assert.equal(parseArgs([]).serverUrl, 'http://127.0.0.1:8088');
+  assert.equal(parseArgs(['start', '--host', '0.0.0.0']).host, '0.0.0.0');
   assert.equal(parseArgs(['--path']).path, '.');
   assert.equal(parseArgs(['global', '--no-mcp']).noMcp, true);
   assert.equal(parseArgs(['--mcp', '--no-mcp']).mcp, false);

@@ -164,6 +164,13 @@
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+  {#if diagramStore.authRequired}
+    <div role="alert" class="px-4 py-2 text-xs bg-amber-950 border-b border-amber-700 text-amber-200 z-40">
+      This workbench session is not authorized. Reopen Archlens with the link printed by
+      <code class="font-mono">archlens start</code> (it ends in <code class="font-mono">?token=…</code>), or use the
+      "Archlens workbench ready. Open: …" URL from the server log. Showing demo data until then.
+    </div>
+  {/if}
   <!-- Top App Navigation -->
   <header class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-30 select-none">
     <!-- 1. Left: Source & Project Context -->

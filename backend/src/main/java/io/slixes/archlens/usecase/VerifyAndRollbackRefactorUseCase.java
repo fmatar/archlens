@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
@@ -261,7 +262,7 @@ public class VerifyAndRollbackRefactorUseCase {
     }
     if (Files.exists(rootPath.resolve("pom.xml"))) {
       Path mvnw = rootPath.resolve("mvnw");
-      if (Files.exists(mvnw) && Files.isExecutable(mvnw)) {
+      if (isProjectLocalExecutable(rootPath, mvnw)) {
         return List.of("./mvnw", "-B", "-ntp", "test");
       }
       return List.of("mvn", "-B", "-ntp", "test");
@@ -269,7 +270,7 @@ public class VerifyAndRollbackRefactorUseCase {
     if (Files.exists(rootPath.resolve("build.gradle"))
         || Files.exists(rootPath.resolve("build.gradle.kts"))) {
       Path gradlew = rootPath.resolve("gradlew");
-      if (Files.exists(gradlew) && Files.isExecutable(gradlew)) {
+      if (isProjectLocalExecutable(rootPath, gradlew)) {
         return List.of("./gradlew", "test");
       }
       return List.of("gradle", "test");
@@ -289,6 +290,20 @@ public class VerifyAndRollbackRefactorUseCase {
       return List.of("npm", "test");
     }
     return List.of();
+  }
+
+  /**
+   * A build wrapper is only trusted when it is a regular, executable file physically inside the
+   * project root (not a symlink pointing elsewhere).
+   */
+  static boolean isProjectLocalExecutable(Path rootPath, Path wrapper) {
+    try {
+      return Files.isRegularFile(wrapper, LinkOption.NOFOLLOW_LINKS)
+          && Files.isExecutable(wrapper)
+          && wrapper.toRealPath().startsWith(rootPath.toRealPath());
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   private TestExecutionOutcome executeDetectedTestSuite(String projectRoot) {
@@ -360,35 +375,54 @@ public class VerifyAndRollbackRefactorUseCase {
     if (snapshotId == null || snapshotId.isBlank()) {
       return false;
     }
-    File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
-    Path rootPath = root.toPath().toAbsolutePath().normalize();
-    File snapDir = new File(root, SNAPSHOTS_DIR + "/" + snapshotId);
-    if (!snapDir.exists()) {
+    if (!ProjectPathGuard.isValidSnapshotId(snapshotId)) {
+      throw new IllegalArgumentException("Invalid snapshot id: " + snapshotId);
+    }
+    Path rootPath =
+        ProjectPathGuard.canonicalRoot(
+            projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    Path snapshotsBase = rootPath.resolve(SNAPSHOTS_DIR);
+    Path snapPath = snapshotsBase.resolve(snapshotId);
+    if (!Files.isDirectory(snapPath, LinkOption.NOFOLLOW_LINKS)
+        || !snapPath.toRealPath().startsWith(snapshotsBase.toRealPath())) {
       return false;
     }
 
-    File backupPolicy = new File(snapDir, "policy.json");
-    if (backupPolicy.exists()) {
-      File destPolicy = new File(root, ".archlens/policy.json");
-      Files.createDirectories(destPolicy.getParentFile().toPath());
-      Files.copy(backupPolicy.toPath(), destPolicy.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    Path snapPath = snapDir.toPath();
+    // Validate the whole manifest before touching any file in the workspace.
     Path manifestPath = snapPath.resolve(MANIFEST_FILE);
     Path filesBackupRoot = snapPath.resolve(FILES_BACKUP_DIR);
-    if (Files.exists(manifestPath) && Files.isDirectory(filesBackupRoot)) {
-      List<String> manifestLines = Files.readAllLines(manifestPath, StandardCharsets.UTF_8);
-      Set<String> originalFiles = new HashSet<>();
-      for (String line : manifestLines) {
+    boolean hasFileBackup =
+        Files.isRegularFile(manifestPath, LinkOption.NOFOLLOW_LINKS)
+            && Files.isDirectory(filesBackupRoot, LinkOption.NOFOLLOW_LINKS);
+    Set<String> originalFiles = new HashSet<>();
+    if (hasFileBackup) {
+      for (String line : Files.readAllLines(manifestPath, StandardCharsets.UTF_8)) {
         String relPath = line.trim();
         if (relPath.isEmpty()) {
           continue;
         }
+        if (!ProjectPathGuard.isSafeRelativePath(rootPath, relPath)
+            || !ProjectPathGuard.isSafeRelativePath(filesBackupRoot, relPath)) {
+          throw new IllegalArgumentException(
+              "Snapshot manifest contains an unsafe path; rollback aborted: " + relPath);
+        }
         originalFiles.add(relPath);
-        Path backupFile = filesBackupRoot.resolve(relPath);
+      }
+    }
+
+    Path backupPolicy = snapPath.resolve("policy.json");
+    if (Files.isRegularFile(backupPolicy, LinkOption.NOFOLLOW_LINKS)) {
+      Path archlensDir = rootPath.resolve(".archlens");
+      Files.createDirectories(archlensDir);
+      Files.copy(
+          backupPolicy, archlensDir.resolve("policy.json"), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    if (hasFileBackup) {
+      for (String relPath : originalFiles) {
+        Path backupFile = filesBackupRoot.resolve(relPath).normalize();
         Path targetFile = rootPath.resolve(relPath).normalize();
-        if (targetFile.startsWith(rootPath) && Files.exists(backupFile)) {
+        if (Files.isRegularFile(backupFile, LinkOption.NOFOLLOW_LINKS)) {
           Path targetParent = targetFile.getParent();
           if (targetParent != null) {
             Files.createDirectories(targetParent);
@@ -400,11 +434,9 @@ public class VerifyAndRollbackRefactorUseCase {
       // Remove any newly created source files that did not exist in the pre-refactor snapshot
       List<String> currentSourceFiles = collectSourceFiles(rootPath);
       for (String currentRel : currentSourceFiles) {
-        if (!originalFiles.contains(currentRel)) {
-          Path rogueFile = rootPath.resolve(currentRel).normalize();
-          if (rogueFile.startsWith(rootPath)) {
-            Files.deleteIfExists(rogueFile);
-          }
+        if (!originalFiles.contains(currentRel)
+            && ProjectPathGuard.isSafeRelativePath(rootPath, currentRel)) {
+          Files.deleteIfExists(rootPath.resolve(currentRel).normalize());
         }
       }
     }

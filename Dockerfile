@@ -7,6 +7,9 @@ LABEL org.opencontainers.image.title="Archlens — Clean Architecture Dynamic Wo
       org.opencontainers.image.licenses="Apache-2.0"
 
 ENV LANGUAGE='en_US:en'
+# Listen on all interfaces inside the container only; publish the port on the host loopback:
+#   docker run -p 127.0.0.1:8088:8088 ...
+ENV ARCHLENS_HOST=0.0.0.0
 
 WORKDIR /work
 
@@ -21,4 +24,4 @@ RUN mkdir -p /workspace
 
 EXPOSE 8088
 
-ENTRYPOINT ["java", "-Dquarkus.http.host=0.0.0.0", "-Djava.util.logging.manager=org.jboss.logmanager.LogManager", "-jar", "/work/quarkus-run.jar"]
+ENTRYPOINT ["java", "-Djava.util.logging.manager=org.jboss.logmanager.LogManager", "-jar", "/work/quarkus-run.jar"]

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -288,64 +289,45 @@ public class ResolveFilesystemUseCase {
       return Map.of("error", "No filePath provided", "content", "");
     }
 
-    File f = new File(filePath);
-    // ponytail: resilient path fallback for external project roots and relative paths
-    if (!f.exists() || !f.isFile()) {
-      if (projectRoot != null && !projectRoot.isBlank()) {
-        File projectFile = new File(projectRoot, filePath);
-        if (projectFile.exists() && projectFile.isFile()) {
-          f = projectFile;
-        }
-      }
-      if (!f.exists() || !f.isFile()) {
-        if (filePath.startsWith("/workspace/labs/")) {
-          File hostFallback =
-              new File(filePath.replace("/workspace/labs", "/Users/fady/workspace/labs"));
-          if (hostFallback.exists() && hostFallback.isFile()) {
-            f = hostFallback;
-          }
-        }
-        if (filePath.contains("agentlens")) {
-          File fallback = new File(filePath.replace("agentlens", "archlens"));
-          if (fallback.exists() && fallback.isFile()) {
-            f = fallback;
-          }
-        }
-        if (filePath.contains("unclebob-design")) {
-          File fallback = new File(filePath.replace("unclebob-design", "archlens"));
-          if (fallback.exists() && fallback.isFile()) {
-            f = fallback;
-          }
-        }
-        if (!f.exists() || !f.isFile()) {
-          File rel = new File(".", filePath);
-          if (rel.exists() && rel.isFile()) {
-            f = rel;
-          }
-        }
-        if (!f.exists() || !f.isFile()) {
-          File parentRel = new File("..", filePath);
-          if (parentRel.exists() && parentRel.isFile()) {
-            f = parentRel;
-          }
-        }
-      }
+    Path root;
+    try {
+      root = ProjectPathGuard.canonicalRoot(WorkspacePathResolver.normalizeRoot(projectRoot));
+    } catch (IOException e) {
+      return Map.of(
+          "error", "Project root not found",
+          "filePath", filePath,
+          "content", "// Project root could not be resolved on server");
     }
 
-    if (!f.exists() || !f.isFile()) {
+    ProjectPathGuard.Resolution resolution = ProjectPathGuard.resolveFileWithinRoot(root, filePath);
+    if (resolution.status() == ProjectPathGuard.Status.OUTSIDE_ROOT
+        || resolution.status() == ProjectPathGuard.Status.INVALID) {
+      return Map.of(
+          "error",
+          "Access denied: path is outside the project root",
+          "denied",
+          true,
+          "filePath",
+          filePath,
+          "content",
+          "// Access denied: " + filePath + " is outside the opened project");
+    }
+    if (!resolution.isOk()) {
       return Map.of(
           "error", "File not found: " + filePath,
           "filePath", filePath,
           "content", "// File could not be loaded on server: " + filePath);
     }
 
+    Path file = resolution.path();
     try {
-      String content = Files.readString(f.toPath());
+      String content = Files.readString(file);
+      Path fileName = file.getFileName();
       return Map.of(
           "fileName",
-          f.getName(),
+          fileName != null ? fileName.toString() : file.toString(),
           "filePath",
-          f.getAbsolutePath(),
+          file.toString(),
           "content",
           content,
           "targetLine",

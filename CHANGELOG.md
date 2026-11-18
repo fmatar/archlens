@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **Workbench server hardening** (`#224`–`#228`):
+  - The server now binds to `127.0.0.1` by default (`ARCHLENS_HOST` / `archlens start --host` to opt in to wider binding, with a warning). The container image keeps `0.0.0.0` internally; the CLI and `docker-compose.yml` publish on `127.0.0.1` only. (`#224`)
+  - `/api/*` and `/mcp` require a per-launch session token (header, bearer, or HttpOnly cookie bootstrapped via `/?token=`). The CLI, MCP stdio bridge, smoke test, and Vite dev proxy pass it automatically. `/api/version` and `/q/health` stay open. (`#225`)
+  - `/api/source` is confined to the project root (canonical paths; symlink and `..` escapes return 403). Removed hard-coded developer fallback directories. (`#226`)
+  - `/api/mailbox/verify` and `/rollback` only operate on a project opened in the current session; build wrappers (`mvnw`, `gradlew`) must be regular files inside the project. (`#227`)
+  - Rollback validates `snapshotId` (`snap-<millis>-<8hex>`), checks the snapshot directory stays under `.archlens/snapshots`, and validates every manifest entry before any file is restored or deleted. (`#228`)
+
+### Changed
+- CLI default server URL is now `http://127.0.0.1:8088` (was `http://localhost:8088`).
+
 ## [1.1.4] - 2026-11-17
 
 ### Fixed

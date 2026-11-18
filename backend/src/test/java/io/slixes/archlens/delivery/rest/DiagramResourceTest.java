@@ -135,7 +135,7 @@ class DiagramResourceTest {
     // Test getSource (existing file)
     Path testFile = tempDir.resolve("Test.java");
     Files.writeString(testFile, "line 1\nline 2\nline 3\n");
-    Map<String, Object> source = resource.getSourceCode(testFile.toString(), 2);
+    Map<String, Object> source = resource.getSourceCode(testFile.toString(), 2, tempDir.toString());
     assertEquals("Test.java", source.get("fileName"));
     assertEquals(2, source.get("targetLine"));
     assertTrue(((String) source.get("content")).contains("line 2"));

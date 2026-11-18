@@ -66,6 +66,90 @@ class VerifyAndRollbackRefactorUseCaseTest {
     assertEquals("ROLLBACK_COMPLETE", viewerMailbox.queue().get(0).op());
   }
 
+  private static VerifyAndRollbackRefactorUseCase rollbackUseCase() {
+    ArchitectureCompiler dummyCompiler =
+        (root, proposal) ->
+            new ArchitectureGraph("Test", false, null, List.of(), List.of(), List.of());
+    return new VerifyAndRollbackRefactorUseCase(dummyCompiler, new FileMailboxService());
+  }
+
+  @Test
+  void rollbackRejectsMalformedAndTraversingSnapshotIdsWithoutDeletingFiles(@TempDir Path tempDir)
+      throws IOException {
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path source = Files.createDirectories(project.resolve("src"));
+    Path keep = Files.writeString(source.resolve("Keep.java"), "class Keep {}");
+    // A directory elsewhere that looks like a snapshot with an empty manifest
+    Path fake = Files.createDirectories(tempDir.resolve("fake/files"));
+    Files.writeString(tempDir.resolve("fake/manifest.txt"), "");
+
+    VerifyAndRollbackRefactorUseCase useCase = rollbackUseCase();
+    for (String bad :
+        new String[] {"../../../fake", "../../fake", "snap-1-0a1b2c3d/../../../fake", "x"}) {
+      assertThrows(
+          IllegalArgumentException.class,
+          () -> useCase.rollbackToSnapshot(project.toString(), bad),
+          "should reject " + bad);
+    }
+    assertTrue(Files.exists(keep), "no file may be deleted for a rejected snapshot id");
+    assertFalse(useCase.rollbackToSnapshot(project.toString(), null));
+    assertFalse(useCase.rollbackToSnapshot(project.toString(), "snap-1-0a1b2c3d"));
+    assertTrue(Files.exists(keep));
+  }
+
+  @Test
+  void rollbackRejectsSnapshotDirectorySymlinkedOutsideSnapshots(@TempDir Path tempDir)
+      throws IOException {
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path keep =
+        Files.writeString(Files.createDirectories(project.resolve("src")).resolve("K.java"), "x");
+    Path fake = Files.createDirectories(tempDir.resolve("fake/files"));
+    Files.writeString(tempDir.resolve("fake/manifest.txt"), "");
+    Path snapshots = Files.createDirectories(project.resolve(".archlens/snapshots"));
+    try {
+      Files.createSymbolicLink(snapshots.resolve("snap-1-0a1b2c3d"), fake.getParent());
+    } catch (UnsupportedOperationException | IOException e) {
+      return;
+    }
+    assertFalse(rollbackUseCase().rollbackToSnapshot(project.toString(), "snap-1-0a1b2c3d"));
+    assertTrue(Files.exists(keep));
+  }
+
+  @Test
+  void rollbackAbortsBeforeDeletingWhenManifestHasUnsafePaths(@TempDir Path tempDir)
+      throws IOException {
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path keep =
+        Files.writeString(Files.createDirectories(project.resolve("src")).resolve("K.java"), "x");
+    Path snap = Files.createDirectories(project.resolve(".archlens/snapshots/snap-1-0a1b2c3d"));
+    Files.createDirectories(snap.resolve("files"));
+    Files.writeString(snap.resolve("manifest.txt"), "src/K.java\n../../outside.java\n");
+
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> rollbackUseCase().rollbackToSnapshot(project.toString(), "snap-1-0a1b2c3d"));
+    assertTrue(Files.exists(keep));
+  }
+
+  @Test
+  void buildWrapperMustBeProjectLocalRegularFile(@TempDir Path tempDir) throws IOException {
+    Path project = Files.createDirectories(tempDir.resolve("project")).toRealPath();
+    Path outside = Files.writeString(tempDir.resolve("evil.sh"), "#!/bin/sh\n");
+    outside.toFile().setExecutable(true);
+    Path local = Files.writeString(project.resolve("mvnw"), "#!/bin/sh\n");
+    local.toFile().setExecutable(true);
+    assertTrue(VerifyAndRollbackRefactorUseCase.isProjectLocalExecutable(project, local));
+    Files.delete(local);
+    try {
+      Files.createSymbolicLink(project.resolve("mvnw"), outside);
+    } catch (UnsupportedOperationException | IOException e) {
+      return;
+    }
+    assertFalse(
+        VerifyAndRollbackRefactorUseCase.isProjectLocalExecutable(
+            project, project.resolve("mvnw")));
+  }
+
   @Test
   void testVerifyRefactoringDelta(@TempDir Path tempDir) {
     MailboxGateway mailbox = new FileMailboxService();

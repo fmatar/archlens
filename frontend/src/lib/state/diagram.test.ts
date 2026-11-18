@@ -472,4 +472,22 @@ describe('diagramStore state management', () => {
       diagramStore.graph?.edges.some((e) => e.label === 'HTTP /api/articles')
     ).toBe(true);
   });
+
+  it('flags authRequired when the API rejects the session token and clears it on success', async () => {
+    const originalFetch = globalThis.fetch;
+    try {
+      globalThis.fetch = (async () =>
+        ({ ok: false, status: 401, json: async () => ({ error: 'unauthorized' }) }) as any) as any;
+      await diagramStore.loadGraph();
+      expect(diagramStore.authRequired).toBe(true);
+      expect(diagramStore.graph).toEqual(DEMO_GRAPH_REAL);
+
+      globalThis.fetch = (async () =>
+        ({ ok: true, status: 200, json: async () => DEMO_GRAPH_REAL }) as any) as any;
+      await diagramStore.loadGraph();
+      expect(diagramStore.authRequired).toBe(false);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });

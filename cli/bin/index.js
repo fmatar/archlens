@@ -35,6 +35,7 @@ import {
   DEFAULT_SERVER_URL
 } from '../src/docker-runner.js';
 import { spawnSync } from 'node:child_process';
+import { isLoopbackHost } from '../src/session.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,8 +80,10 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --suggest-features       Suggest package-by-feature domain refactoring clusters (Uncle Bob Ch. 21)
   --fitness-threshold <NUM> Enforce minimum Architectural Fitness Index (0.0-1.0, Neal Ford)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
-  --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
+  --server-url <URL>       Archlens visual workbench URL (default: http://127.0.0.1:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
+  --host <ADDR>            Bind/publish the workbench on ADDR instead of 127.0.0.1 (exposes it to
+                           your network; access still requires the session token)
   --native                 Prefer running workbench via native Java Quarkus runner (default)
   --docker                 Force Docker container mode on start or ephemeral MCP STDIO with --mcp
   --jar <PATH>             Custom path to Archlens Quarkus runner JAR
@@ -142,7 +145,7 @@ export function parseArgs(args) {
     path: '.',
     title: null,
     prefix: null,
-    serverUrl: 'http://localhost:8088',
+    serverUrl: 'http://127.0.0.1:8088',
     port: '8088',
     open: false,
     start: false,
@@ -232,7 +235,9 @@ export function parseArgs(args) {
     } else if (arg === '--prefix') {
       parsed.prefix = args[++i];
     } else if (arg === '--server-url') {
-      parsed.serverUrl = args[++i] || 'http://localhost:8088';
+      parsed.serverUrl = args[++i] || 'http://127.0.0.1:8088';
+    } else if (arg === '--host') {
+      parsed.host = args[++i];
     } else if (arg === '--docker') {
       parsed.preferDocker = true;
     } else if (arg === '--native') {
@@ -705,8 +710,14 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
   if (options.command === 'start' || options.start) {
     try {
       const port = options.port || '8088';
-      const targetUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://localhost:${port}`);
+      const targetUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://127.0.0.1:${port}`);
       ui.info(`Checking Archlens Workbench server on ${targetUrl}...`);
+      if (options.host && !isLoopbackHost(options.host)) {
+        ui.warn(
+          `--host ${options.host}: the workbench will be reachable from other machines on your network. ` +
+            'Only the session token protects it; do not use this on untrusted networks.'
+        );
+      }
       const status = await startExecutor(options);
       if (status.status === 'running') {
         if (status.spawned) {
@@ -718,7 +729,13 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
         } else {
           ui.success(`Archlens Workbench server is active (${status.version || 'running'}).`);
         }
-        console.log(`\n  ${ui.colors.bold}Workbench URL:${ui.colors.reset} ${ui.colors.cyan}${status.serverUrl}${ui.colors.reset}\n`);
+        console.log(`\n  ${ui.colors.bold}Workbench URL:${ui.colors.reset} ${ui.colors.cyan}${status.workbenchUrl || status.serverUrl}${ui.colors.reset}\n`);
+        if (!status.token) {
+          console.log(
+            `  ${ui.colors.dim}No session token found for this server. Open the URL printed in the server log ` +
+              `("Archlens workbench ready. Open: ...") or run: docker logs ${DEFAULT_CONTAINER_NAME}${ui.colors.reset}\n`
+          );
+        }
       } else if (status.status === 'offline') {
         ui.warn(status.message || 'Archlens server is offline and neither native runner JAR nor Docker is available.');
         console.log(`\n  ${ui.colors.dim}To run offline architecture analysis:${ui.colors.reset}`);

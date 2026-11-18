@@ -495,3 +495,35 @@ test('startMcpStdioServer processes JSON-RPC lines and handles parse errors', as
   assert.ok(parsedOutputs.some((r) => r.id === 99));
   assert.ok(parsedOutputs.some((r) => r.error && r.error.code === -32700));
 });
+
+test('executeToolCall sends the session token header on workbench API calls', async () => {
+  const seen = [];
+  const deps = {
+    ensureServerRunning: async () => ({ status: 'running', token: 'live-token' }),
+    fetch: async (url, init) => {
+      seen.push({ url, init });
+      return { ok: true, json: async () => ({ portInterfaceName: 'P', interfaceCode: 'x' }) };
+    }
+  };
+  await executeToolCall(
+    'synthesizeDipInversion',
+    { fromClass: 'A', toClass: 'B', projectRoot: '/tmp/proj' },
+    { serverUrl: 'http://127.0.0.1:8088' },
+    deps
+  );
+  assert.ok(seen.length >= 1);
+  assert.equal(seen[0].init.headers['X-Archlens-Token'], 'live-token');
+
+  seen.length = 0;
+  await executeToolCall(
+    'synthesizeDipInversion',
+    { fromClass: 'A', toClass: 'B', projectRoot: '/tmp/proj' },
+    { serverUrl: 'http://127.0.0.1:65530' },
+    {
+      ...deps,
+      env: { ARCHLENS_TOKEN: 'env-token' },
+      ensureServerRunning: async () => ({ status: 'running' })
+    }
+  );
+  assert.equal(seen[0].init.headers['X-Archlens-Token'], 'env-token');
+});

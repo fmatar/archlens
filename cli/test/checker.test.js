@@ -14,7 +14,9 @@ import {
   calculateScreamingMetric,
   extractFeatureToken,
   suggestFeatureClusters,
-  calculateArchitectureFitness
+  calculateArchitectureFitness,
+  findMatchingFiles,
+  validateNumericOptions
 } from '../src/checker.js';
 
 test('loadProjectPolicy detects .archlens/policy.json', (t) => {
@@ -638,3 +640,101 @@ test('generateMermaidReport produces valid Mermaid flowchart TB with Concentric 
 
 
 
+
+function makeLargeProject(fileCount, { violation = false } = {}) {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-large-'));
+  fs.mkdirSync(path.join(tmpDir, '.archlens'), { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpDir, '.archlens', 'policy.json'),
+    JSON.stringify({ title: 'Large', src: 'src', order: ['domain', 'adapters'], levels: [['domain'], ['adapters']] })
+  );
+  const domainDir = path.join(tmpDir, 'src', 'domain');
+  const adapterDir = path.join(tmpDir, 'src', 'adapters');
+  fs.mkdirSync(domainDir, { recursive: true });
+  fs.mkdirSync(adapterDir, { recursive: true });
+  for (let i = 0; i < fileCount; i++) {
+    fs.writeFileSync(path.join(domainDir, `A${String(i).padStart(4, '0')}.java`), `package domain;\npublic class A${i} {}\n`);
+  }
+  // Sorted last ("zz") so a 500-file cap would never reach it.
+  const lastDir = path.join(tmpDir, 'src', 'zz', 'domain');
+  fs.mkdirSync(lastDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(lastDir, 'Late.java'),
+    violation
+      ? 'package zz.domain;\nimport adapters.Repo;\npublic class Late { Repo r; }\n'
+      : 'package zz.domain;\npublic class Late {}\n'
+  );
+  fs.writeFileSync(path.join(adapterDir, 'Repo.java'), 'package adapters;\npublic class Repo {}\n');
+  return tmpDir;
+}
+
+test('check scans every file by default, even beyond 500 (#232)', async () => {
+  const dir = makeLargeProject(620, { violation: true });
+  try {
+    const report = await checkArchitecture(dir, { maxViolations: 0 });
+    assert.equal(report.sourceFilesCount, 622);
+    assert.equal(report.partial, false);
+    assert.equal(report.violationsCount, 1, 'a violation in the last-scanned file must be found');
+    assert.equal(report.passed, false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an explicit --max-files cap marks the scan partial and fails unless --allow-partial (#232)', async () => {
+  const dir = makeLargeProject(30);
+  try {
+    const capped = await checkArchitecture(dir, { maxViolations: 0, maxFiles: 10 });
+    assert.equal(capped.sourceFilesCount, 10);
+    assert.equal(capped.partial, true);
+    assert.equal(capped.maxFiles, 10);
+    assert.equal(capped.passed, false, 'a partial scan must not pass the gate silently');
+
+    const sarif = JSON.parse(generateSarifReport(capped, { version: 't' }));
+    assert.equal(sarif.runs[0].properties.partial, true);
+    const note = sarif.runs[0].invocations[0];
+    assert.equal(note.executionSuccessful, false);
+    assert.equal(note.toolExecutionNotifications[0].level, 'error');
+    assert.match(note.toolExecutionNotifications[0].message.text, /Partial scan/);
+
+    const allowed = await checkArchitecture(dir, { maxViolations: 0, maxFiles: 10, allowPartial: true });
+    assert.equal(allowed.partial, true);
+    assert.equal(allowed.passed, true);
+
+    const full = await checkArchitecture(dir, { maxViolations: 0 });
+    assert.equal(full.partial, false);
+    assert.equal(full.maxFiles, null);
+    assert.equal(JSON.parse(generateSarifReport(full, { version: 't' })).runs[0].invocations, undefined);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('findMatchingFiles flags truncation only when more matching files exist', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-find-'));
+  for (let i = 0; i < 5; i++) fs.writeFileSync(path.join(dir, `f${i}.java`), '');
+  const exact = findMatchingFiles(dir, (f) => f.endsWith('.java'), 5);
+  assert.equal(exact.length, 5);
+  assert.notEqual(exact.truncated, true);
+  const capped = findMatchingFiles(dir, (f) => f.endsWith('.java'), 3);
+  assert.equal(capped.length, 3);
+  assert.equal(capped.truncated, true);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('checkArchitecture rejects non-numeric gate options instead of computing NaN (#230)', async () => {
+  const dir = makeLargeProject(1);
+  try {
+    const report = await checkArchitecture(dir, { maxViolations: '"0"' });
+    assert.equal(report.passed, false);
+    assert.match(report.error, /Invalid value for --max-violations/);
+    assert.deepEqual(validateNumericOptions({ maxViolations: 0, screamingThreshold: 0.7, fitnessThreshold: '0.85' }), []);
+    assert.equal(validateNumericOptions({ maxViolations: NaN }).length, 1);
+    assert.equal(validateNumericOptions({ maxViolations: 1.5 }).length, 1);
+    assert.equal(validateNumericOptions({ screamingThreshold: 2 }).length, 1);
+    assert.equal(validateNumericOptions({ fitnessThreshold: '' }).length, 1);
+    assert.equal(validateNumericOptions({ maxFiles: 0 }).length, 1);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

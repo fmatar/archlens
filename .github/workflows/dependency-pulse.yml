@@ -56,18 +56,24 @@ jobs:
             echo "Zero manifest changes detected. Dependencies remain up to date."
           fi
 
-      - name: Create Pull Request for Safe Upgrades
+      # The self-hosted runner image has no GitHub CLI (#234).
+      - name: Ensure GitHub CLI
+        if: steps.git_status.outputs.has_changes == 'true'
+        run: bash scripts/ensure-gh.sh
+
+      - name: Create or Update Pull Request for Safe Upgrades
         if: steps.git_status.outputs.has_changes == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BRANCH_NAME="chore/dependency-pulse-$(date +%Y%m%d%H%M%S)"
+          # One reusable branch: re-runs update the open PR instead of leaving orphan branches.
+          BRANCH_NAME="chore/dependency-pulse"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH_NAME"
+          git checkout -B "$BRANCH_NAME"
           git add pom.xml backend/pom.xml frontend/pom.xml cli/pom.xml package.json cli/package.json frontend/package.json frontend/pnpm-lock.yaml
           git commit -m "chore(deps): safe dependency pulse updates" -m "Automated safe dependency governance update verified regression-free via Dual-Gate test suite."
-          git push origin "$BRANCH_NAME"
+          git push --force origin "$BRANCH_NAME"
 
           PR_BODY=$(cat << 'EOF_BODY'
           ## Safe Dependency Pulse Update Summary
@@ -85,9 +91,23 @@ jobs:
           EOF_BODY
           )
 
-          gh pr create \
-            --base develop \
-            --head "$BRANCH_NAME" \
-            --title "chore(deps): weekly safe dependency update" \
-            --body "$PR_BODY" \
-            --label "dependencies"
+          LABEL_ARGS=()
+          if gh label list --limit 200 --json name --jq '.[].name' | grep -qx "dependencies" \
+            || gh label create "dependencies" --color "0366d6" --description "Dependency updates" >/dev/null 2>&1; then
+            LABEL_ARGS=(--label "dependencies")
+          else
+            echo "::warning::Could not find or create the 'dependencies' label; opening the PR without it."
+          fi
+
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --base develop --state open --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr edit "$EXISTING_PR" --body "$PR_BODY" "${LABEL_ARGS[@]}"
+            echo "Updated existing dependency pulse PR #${EXISTING_PR}."
+          else
+            gh pr create \
+              --base develop \
+              --head "$BRANCH_NAME" \
+              --title "chore(deps): weekly safe dependency update" \
+              --body "$PR_BODY" \
+              "${LABEL_ARGS[@]}"
+          fi

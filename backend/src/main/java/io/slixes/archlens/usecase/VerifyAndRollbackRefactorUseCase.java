@@ -8,13 +8,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +70,9 @@ public class VerifyAndRollbackRefactorUseCase {
 
   @Inject ArchitectureCompiler compiler;
   @Inject MailboxGateway mailboxGateway;
+
+  static final Duration TEST_TIMEOUT = Duration.ofSeconds(120);
+  private static final int OUTPUT_SUMMARY_CHARS = 240;
 
   private TestSuiteExecutor testExecutor = this::executeDetectedTestSuite;
 
@@ -261,7 +267,7 @@ public class VerifyAndRollbackRefactorUseCase {
     }
     if (Files.exists(rootPath.resolve("pom.xml"))) {
       Path mvnw = rootPath.resolve("mvnw");
-      if (Files.exists(mvnw) && Files.isExecutable(mvnw)) {
+      if (isProjectLocalExecutable(rootPath, mvnw)) {
         return List.of("./mvnw", "-B", "-ntp", "test");
       }
       return List.of("mvn", "-B", "-ntp", "test");
@@ -269,7 +275,7 @@ public class VerifyAndRollbackRefactorUseCase {
     if (Files.exists(rootPath.resolve("build.gradle"))
         || Files.exists(rootPath.resolve("build.gradle.kts"))) {
       Path gradlew = rootPath.resolve("gradlew");
-      if (Files.exists(gradlew) && Files.isExecutable(gradlew)) {
+      if (isProjectLocalExecutable(rootPath, gradlew)) {
         return List.of("./gradlew", "test");
       }
       return List.of("gradle", "test");
@@ -291,6 +297,20 @@ public class VerifyAndRollbackRefactorUseCase {
     return List.of();
   }
 
+  /**
+   * A build wrapper is only trusted when it is a regular, executable file physically inside the
+   * project root (not a symlink pointing elsewhere).
+   */
+  static boolean isProjectLocalExecutable(Path rootPath, Path wrapper) {
+    try {
+      return Files.isRegularFile(wrapper, LinkOption.NOFOLLOW_LINKS)
+          && Files.isExecutable(wrapper)
+          && wrapper.toRealPath().startsWith(rootPath.toRealPath());
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   private TestExecutionOutcome executeDetectedTestSuite(String projectRoot) {
     File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
     Path rootPath = root.toPath().toAbsolutePath().normalize();
@@ -298,31 +318,85 @@ public class VerifyAndRollbackRefactorUseCase {
     if (cmd.isEmpty()) {
       return new TestExecutionOutcome(false, true, "none", 0, "No test runner manifest detected");
     }
+    return runTestCommand(cmd, rootPath, TEST_TIMEOUT);
+  }
+
+  /**
+   * Runs {@code cmd} in {@code dir} and enforces {@code timeout} (#235). Output goes to a temp file
+   * instead of being read on this thread, so a hung test suite that keeps stdout open can no longer
+   * block before the timeout is checked. On timeout the whole process tree is killed.
+   */
+  static TestExecutionOutcome runTestCommand(List<String> cmd, Path dir, Duration timeout) {
     String cmdLabel = String.join(" ", cmd);
+    Path outputFile = null;
+    Process proc = null;
     try {
+      outputFile = Files.createTempFile("archlens-verify-", ".log");
       ProcessBuilder pb = new ProcessBuilder(cmd);
-      pb.directory(rootPath.toFile());
+      pb.directory(dir.toFile());
       pb.redirectErrorStream(true);
-      Process proc = pb.start();
-      byte[] outputBytes = proc.getInputStream().readAllBytes();
-      boolean finished = proc.waitFor(120, TimeUnit.SECONDS);
+      pb.redirectOutput(outputFile.toFile());
+      proc = pb.start();
+      boolean finished = proc.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
       if (!finished) {
-        proc.destroyForcibly();
+        destroyProcessTree(proc);
         return new TestExecutionOutcome(
-            true, false, cmdLabel, -1, "Test execution timed out after 120s");
+            true,
+            false,
+            cmdLabel,
+            -1,
+            "Test execution timed out after " + timeout.toSeconds() + "s");
       }
       int exitCode = proc.exitValue();
-      String rawOut = new String(outputBytes, StandardCharsets.UTF_8).trim();
-      String summary =
-          rawOut.length() > 240 ? "..." + rawOut.substring(rawOut.length() - 240) : rawOut;
+      String summary = tail(outputFile, OUTPUT_SUMMARY_CHARS);
       return new TestExecutionOutcome(true, exitCode == 0, cmdLabel, exitCode, summary);
     } catch (IOException | InterruptedException | RuntimeException e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt();
       }
+      if (proc != null && proc.isAlive()) {
+        destroyProcessTree(proc);
+      }
       return new TestExecutionOutcome(
           true, false, cmdLabel, -1, "Failed to invoke test runner: " + e.getMessage());
+    } finally {
+      if (outputFile != null) {
+        try {
+          Files.deleteIfExists(outputFile);
+        } catch (IOException e) {
+          outputFile.toFile().deleteOnExit();
+        }
+      }
     }
+  }
+
+  private static void destroyProcessTree(Process proc) {
+    proc.descendants().forEach(ProcessHandle::destroyForcibly);
+    proc.destroyForcibly();
+    try {
+      proc.waitFor(5, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
+   * Last {@code maxChars} characters of a (possibly large) log file, prefixed with "..." if cut.
+   */
+  static String tail(Path file, int maxChars) throws IOException {
+    long size = Files.size(file);
+    long readFrom = Math.max(0, size - (long) maxChars * 4);
+    byte[] bytes = new byte[(int) (size - readFrom)];
+    try (RandomAccessFile raf = new RandomAccessFile(file.toFile(), "r")) {
+      raf.seek(readFrom);
+      raf.readFully(bytes);
+    }
+    String raw = new String(bytes, StandardCharsets.UTF_8).trim();
+    boolean cut = readFrom > 0 || raw.length() > maxChars;
+    if (raw.length() > maxChars) {
+      raw = raw.substring(raw.length() - maxChars);
+    }
+    return cut ? "..." + raw : raw;
   }
 
   private void recordVerificationTelemetry(
@@ -360,35 +434,54 @@ public class VerifyAndRollbackRefactorUseCase {
     if (snapshotId == null || snapshotId.isBlank()) {
       return false;
     }
-    File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
-    Path rootPath = root.toPath().toAbsolutePath().normalize();
-    File snapDir = new File(root, SNAPSHOTS_DIR + "/" + snapshotId);
-    if (!snapDir.exists()) {
+    if (!ProjectPathGuard.isValidSnapshotId(snapshotId)) {
+      throw new IllegalArgumentException("Invalid snapshot id: " + snapshotId);
+    }
+    Path rootPath =
+        ProjectPathGuard.canonicalRoot(
+            projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
+    Path snapshotsBase = rootPath.resolve(SNAPSHOTS_DIR);
+    Path snapPath = snapshotsBase.resolve(snapshotId);
+    if (!Files.isDirectory(snapPath, LinkOption.NOFOLLOW_LINKS)
+        || !snapPath.toRealPath().startsWith(snapshotsBase.toRealPath())) {
       return false;
     }
 
-    File backupPolicy = new File(snapDir, "policy.json");
-    if (backupPolicy.exists()) {
-      File destPolicy = new File(root, ".archlens/policy.json");
-      Files.createDirectories(destPolicy.getParentFile().toPath());
-      Files.copy(backupPolicy.toPath(), destPolicy.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    }
-
-    Path snapPath = snapDir.toPath();
+    // Validate the whole manifest before touching any file in the workspace.
     Path manifestPath = snapPath.resolve(MANIFEST_FILE);
     Path filesBackupRoot = snapPath.resolve(FILES_BACKUP_DIR);
-    if (Files.exists(manifestPath) && Files.isDirectory(filesBackupRoot)) {
-      List<String> manifestLines = Files.readAllLines(manifestPath, StandardCharsets.UTF_8);
-      Set<String> originalFiles = new HashSet<>();
-      for (String line : manifestLines) {
+    boolean hasFileBackup =
+        Files.isRegularFile(manifestPath, LinkOption.NOFOLLOW_LINKS)
+            && Files.isDirectory(filesBackupRoot, LinkOption.NOFOLLOW_LINKS);
+    Set<String> originalFiles = new HashSet<>();
+    if (hasFileBackup) {
+      for (String line : Files.readAllLines(manifestPath, StandardCharsets.UTF_8)) {
         String relPath = line.trim();
         if (relPath.isEmpty()) {
           continue;
         }
+        if (!ProjectPathGuard.isSafeRelativePath(rootPath, relPath)
+            || !ProjectPathGuard.isSafeRelativePath(filesBackupRoot, relPath)) {
+          throw new IllegalArgumentException(
+              "Snapshot manifest contains an unsafe path; rollback aborted: " + relPath);
+        }
         originalFiles.add(relPath);
-        Path backupFile = filesBackupRoot.resolve(relPath);
+      }
+    }
+
+    Path backupPolicy = snapPath.resolve("policy.json");
+    if (Files.isRegularFile(backupPolicy, LinkOption.NOFOLLOW_LINKS)) {
+      Path archlensDir = rootPath.resolve(".archlens");
+      Files.createDirectories(archlensDir);
+      Files.copy(
+          backupPolicy, archlensDir.resolve("policy.json"), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    if (hasFileBackup) {
+      for (String relPath : originalFiles) {
+        Path backupFile = filesBackupRoot.resolve(relPath).normalize();
         Path targetFile = rootPath.resolve(relPath).normalize();
-        if (targetFile.startsWith(rootPath) && Files.exists(backupFile)) {
+        if (Files.isRegularFile(backupFile, LinkOption.NOFOLLOW_LINKS)) {
           Path targetParent = targetFile.getParent();
           if (targetParent != null) {
             Files.createDirectories(targetParent);
@@ -400,11 +493,9 @@ public class VerifyAndRollbackRefactorUseCase {
       // Remove any newly created source files that did not exist in the pre-refactor snapshot
       List<String> currentSourceFiles = collectSourceFiles(rootPath);
       for (String currentRel : currentSourceFiles) {
-        if (!originalFiles.contains(currentRel)) {
-          Path rogueFile = rootPath.resolve(currentRel).normalize();
-          if (rogueFile.startsWith(rootPath)) {
-            Files.deleteIfExists(rogueFile);
-          }
+        if (!originalFiles.contains(currentRel)
+            && ProjectPathGuard.isSafeRelativePath(rootPath, currentRel)) {
+          Files.deleteIfExists(rootPath.resolve(currentRel).normalize());
         }
       }
     }

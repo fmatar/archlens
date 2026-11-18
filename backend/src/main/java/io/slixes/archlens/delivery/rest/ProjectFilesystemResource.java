@@ -6,6 +6,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.Map;
 
 /**
@@ -59,6 +60,14 @@ public class ProjectFilesystemResource {
       @QueryParam("filePath") String filePath,
       @QueryParam("line") @DefaultValue("1") int line,
       @QueryParam("projectRoot") String projectRoot) {
-    return filesystemUseCase.getSourceCode(filePath, line, projectRoot);
+    Map<String, Object> result = filesystemUseCase.getSourceCode(filePath, line, projectRoot);
+    if (Boolean.TRUE.equals(result.get("denied"))) {
+      throw new WebApplicationException(
+          Response.status(Response.Status.FORBIDDEN)
+              .type(MediaType.APPLICATION_JSON)
+              .entity(result)
+              .build());
+    }
+    return result;
   }
 }

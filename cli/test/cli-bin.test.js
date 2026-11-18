@@ -102,7 +102,9 @@ test('parseArgs parses all CLI commands and flags accurately', () => {
   assert.equal(parseArgs(['--max-violations']).maxViolations, 0);
   assert.equal(parseArgs(['--port']).port, '8088');
   assert.equal(parseArgs(['--format']).format, 'pretty');
-  assert.equal(parseArgs(['--server-url']).serverUrl, 'http://localhost:8088');
+  assert.equal(parseArgs(['--server-url']).serverUrl, 'http://127.0.0.1:8088');
+  assert.equal(parseArgs([]).serverUrl, 'http://127.0.0.1:8088');
+  assert.equal(parseArgs(['start', '--host', '0.0.0.0']).host, '0.0.0.0');
   assert.equal(parseArgs(['--path']).path, '.');
   assert.equal(parseArgs(['global', '--no-mcp']).noMcp, true);
   assert.equal(parseArgs(['--mcp', '--no-mcp']).mcp, false);
@@ -481,4 +483,52 @@ test('bin/index.js executes main() when invoked via an npx / node_modules/.bin s
   } finally {
     fs.rmSync(tmpBinDir, { recursive: true, force: true });
   }
+});
+
+test('parseArgs records usage errors for non-numeric thresholds and main exits 2 (#230)', async () => {
+  const quoted = parseArgs(['check', '--max-violations', '"0"', '--fitness-threshold', 'abc']);
+  assert.equal(quoted.argErrors.length, 2);
+  assert.match(quoted.argErrors[0], /--max-violations/);
+  assert.equal(parseArgs(['check', '--max-violations', '2']).maxViolations, 2);
+  assert.equal(parseArgs(['check', '--max-violations', '2']).argErrors, undefined);
+  assert.equal(parseArgs(['check', '--max-files', '100', '--allow-partial']).maxFiles, 100);
+  assert.equal(parseArgs(['check', '--allow-partial']).allowPartial, true);
+
+  let code;
+  await main(['check', '--max-violations', '"0"'], { exit: (c) => { code = c; } });
+  assert.equal(code, 2);
+});
+
+test('check prints a partial-scan warning and fails the gate when --max-files truncates (#232)', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-bin-partial-'));
+  fs.mkdirSync(path.join(tmpDir, '.archlens'), { recursive: true });
+  fs.writeFileSync(
+    path.join(tmpDir, '.archlens', 'policy.json'),
+    JSON.stringify({ title: 'P', src: 'src', order: ['domain'], levels: [['domain']] })
+  );
+  fs.mkdirSync(path.join(tmpDir, 'src', 'domain'), { recursive: true });
+  for (let i = 0; i < 4; i++) fs.writeFileSync(path.join(tmpDir, 'src', 'domain', `C${i}.java`), 'package domain;\nclass C {}\n');
+
+  const errors = [];
+  const origErr = process.stderr.write.bind(process.stderr);
+  const origLog = console.log;
+  const origWarn = console.warn;
+  const origError = console.error;
+  const capture = (...a) => { errors.push(a.join(' ')); };
+  console.log = capture; console.warn = capture; console.error = capture;
+  process.stderr.write = (chunk) => { errors.push(String(chunk)); return true; };
+  let code;
+  try {
+    await main(['check', '-p', tmpDir, '--max-files', '2'], { exit: (c) => { code = c; } });
+    assert.equal(code, 1);
+    await main(['check', '-p', tmpDir, '--max-files', '2', '--allow-partial'], { exit: (c) => { code = c; } });
+    assert.equal(code, 0);
+    await main(['check', '-p', tmpDir, '--max-files', '2', '--format', 'json', '-O', path.join(tmpDir, 'r.json')], { exit: (c) => { code = c; } });
+    assert.equal(code, 1);
+  } finally {
+    console.log = origLog; console.warn = origWarn; console.error = origError;
+    process.stderr.write = origErr;
+  }
+  assert.ok(errors.some((l) => /Partial scan: stopped after 2 source files/.test(l)), errors.join('\n'));
+  assert.equal(JSON.parse(fs.readFileSync(path.join(tmpDir, 'r.json'), 'utf8')).partial, true);
 });

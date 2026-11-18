@@ -12,6 +12,7 @@ import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { ARCHLENS_TOOL_SCHEMAS } from './mcp-registry.js';
 import { ensureServerRunning, DEFAULT_SERVER_URL } from './docker-runner.js';
+import { resolveSessionToken, withAuth } from './session.js';
 import { generateLlmPrompt, generatePolicy } from './analyzer.js';
 import { checkArchitecture } from './checker.js';
 
@@ -28,7 +29,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '1.1.4';
+  return '1.1.5';
 }
 
 export function getMcpToolsList() {
@@ -178,6 +179,11 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     deps
   );
   const isOnline = serverStatus.status === 'running';
+  // Every workbench API call carries the per-session token (#225).
+  const sessionToken = serverStatus.token || resolveSessionToken(serverUrl, deps);
+  const rawFetch = deps.fetch || fetch;
+  const apiFetch = (url, init) =>
+    sessionToken ? rawFetch(url, withAuth(init, sessionToken)) : init === undefined ? rawFetch(url) : rawFetch(url, init);
 
   if (toolName === 'exportLlmDossier') {
     if (isOnline) {
@@ -186,9 +192,9 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
         if (args.proposalId) {
           query.set('proposalId', args.proposalId);
         }
-        let res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram/llm-dossier?${query}`);
+        let res = await apiFetch(`${serverUrl}/api/diagram/llm-dossier?${query}`);
         if (!res.ok) {
-          res = await (deps.fetch || fetch)(`${serverUrl}/api/llm-dossier?${query}`);
+          res = await apiFetch(`${serverUrl}/api/llm-dossier?${query}`);
         }
         if (res.ok) {
           const text = await res.text();
@@ -212,9 +218,9 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        let res = await (deps.fetch || fetch)(`${serverUrl}/api/graph?${query}`);
+        let res = await apiFetch(`${serverUrl}/api/graph?${query}`);
         if (!res.ok) {
-          res = await (deps.fetch || fetch)(`${serverUrl}/api/diagram?${query}`);
+          res = await apiFetch(`${serverUrl}/api/diagram?${query}`);
         }
         if (res.ok) {
           const json = await res.json();
@@ -241,7 +247,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/snapshots?${query}`);
+        const res = await apiFetch(`${serverUrl}/api/snapshots?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -274,7 +280,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(
+        const res = await apiFetch(
           `${serverUrl}/api/snapshots/${encodeURIComponent(snapshotId)}?${query}`
         );
         if (res.ok) {
@@ -313,7 +319,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ from: fromClass, to: toClass, projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/violations/invert-plan?${query}`);
+        const res = await apiFetch(`${serverUrl}/api/violations/invert-plan?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -343,7 +349,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/fitness?${query}`);
+        const res = await apiFetch(`${serverUrl}/api/fitness?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -380,7 +386,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/fitness/history?${query}`);
+        const res = await apiFetch(`${serverUrl}/api/fitness/history?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -407,7 +413,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(
+        const res = await apiFetch(
           `${serverUrl}/api/screaming/migration-proposal?${query}`
         );
         if (res.ok) {
@@ -432,7 +438,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/policy?${query}`);
+        const res = await apiFetch(`${serverUrl}/api/policy?${query}`);
         if (res.ok) {
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
@@ -462,7 +468,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
     if (isOnline) {
       try {
         const query = new URLSearchParams({ projectRoot });
-        const res = await (deps.fetch || fetch)(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
+        const res = await apiFetch(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

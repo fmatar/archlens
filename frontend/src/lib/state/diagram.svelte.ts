@@ -166,6 +166,8 @@ class DiagramState {
   selectedClass = $state<ClassNode | null>(null);
   activeProposalId = $state<string | null>(null);
   declutterMode = $state<DeclutterMode>('ARROWS');
+  /** True when the workbench API rejected this browser session (missing or stale token). */
+  authRequired = $state<boolean>(false);
   sourceFileModal = $state<{ filePath: string; line: number; content?: string } | null>(null);
 
   // Edge Bundling (Structural Corridor Aggregation)
@@ -1124,6 +1126,7 @@ class DiagramState {
       if (proposalId) params.set('proposalId', proposalId);
       
       const res = await fetch(`/api/graph?${params.toString()}`);
+      this.authRequired = res.status === 401;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.graph = await res.json();
       this.activeProposalId = proposalId || null;

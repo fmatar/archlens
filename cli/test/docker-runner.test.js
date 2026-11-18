@@ -15,7 +15,9 @@ import {
   startNativeJar,
   ensureServerRunning,
   openInBrowser,
-  executeStart
+  executeStart,
+  dockerPublishSpec,
+  serverLaunchEnv
 } from '../src/docker-runner.js';
 import * as path from 'node:path';
 
@@ -211,6 +213,111 @@ test('startContainer invokes docker run when container does not exist', () => {
   assert.equal(commands.length, 1);
   assert.ok(commands[0].includes('docker run -d --name archlens-server'));
   assert.ok(commands[0].includes('/test/workspace:/workspace'));
+  assert.ok(commands[0].includes('-p 127.0.0.1:8088:8088'), 'publishes on loopback by default');
+});
+
+test('startContainer publishes on loopback, passes the token by name only, and honours --host', () => {
+  const calls = [];
+  const mockSpawn = (cmd, args, opts) => {
+    calls.push({ cmd, args, opts });
+    return { status: 0 };
+  };
+  startContainer(
+    { workspace: '/ws', port: '9000', token: 'secret-token' },
+    { spawnSync: mockSpawn, isContainerExisting: () => false }
+  );
+  const { args, opts } = calls[0];
+  assert.ok(args.includes('127.0.0.1:9000:8088'));
+  assert.ok(args.includes('ARCHLENS_TOKEN'));
+  assert.ok(!args.some((a) => a.includes('secret-token')), 'token must not appear in argv');
+  assert.equal(opts.env.ARCHLENS_TOKEN, 'secret-token');
+
+  startContainer(
+    { workspace: '/ws', port: '9000', host: '0.0.0.0' },
+    { spawnSync: mockSpawn, isContainerExisting: () => false }
+  );
+  assert.ok(calls[1].args.includes('0.0.0.0:9000:8088'));
+  assert.equal(dockerPublishSpec('8088'), '127.0.0.1:8088:8088');
+  assert.equal(dockerPublishSpec('8088', '  '), '127.0.0.1:8088:8088');
+});
+
+test('native launches receive the session token and only an explicit bind host', () => {
+  let spawned;
+  const mockSpawn = (cmd, args, opts) => {
+    spawned = { cmd, args, opts };
+    return { pid: 1, unref() {} };
+  };
+  startNativeJar('/x/quarkus-run.jar', { token: 'tok-1' }, { spawn: mockSpawn });
+  assert.equal(spawned.opts.env.ARCHLENS_TOKEN, 'tok-1');
+  assert.equal(spawned.opts.env.ARCHLENS_HOST, process.env.ARCHLENS_HOST);
+  startNativeBinary('/x/archlens', { token: 'tok-2', host: '0.0.0.0' }, { spawn: mockSpawn });
+  assert.equal(spawned.opts.env.ARCHLENS_TOKEN, 'tok-2');
+  assert.equal(spawned.opts.env.ARCHLENS_HOST, '0.0.0.0');
+  const env = serverLaunchEnv({}, { A: '1' });
+  assert.deepEqual(env, { A: '1' });
+});
+
+test('ensureServerRunning generates a token for servers it launches and reuses published tokens', async () => {
+  let launchedWith;
+  let healthy = false;
+  const status = await ensureServerRunning(
+    { serverUrl: 'http://127.0.0.1:8088', maxWaitMs: 2000 },
+    {
+      env: {},
+      checkServerHealth: async () => ({ ok: healthy, version: '1' }),
+      findNativeBinary: () => '/bin/archlens',
+      startNativeBinary: (bin, opts) => {
+        launchedWith = opts;
+        healthy = true;
+      },
+      generateSessionToken: () => 'fresh-token'
+    }
+  );
+  assert.equal(status.status, 'running');
+  assert.equal(launchedWith.token, 'fresh-token');
+  assert.equal(status.token, 'fresh-token');
+
+  const pinned = await ensureServerRunning(
+    { serverUrl: 'http://127.0.0.1:8088', maxWaitMs: 2000 },
+    {
+      env: { ARCHLENS_TOKEN: 'pinned' },
+      checkServerHealth: async () => ({ ok: launchedWith && launchedWith.token === 'pinned' }),
+      findNativeBinary: () => '/bin/archlens',
+      startNativeBinary: (bin, opts) => {
+        launchedWith = opts;
+      }
+    }
+  );
+  assert.equal(pinned.token, 'pinned');
+
+  const already = await ensureServerRunning(
+    { serverUrl: 'http://127.0.0.1:8088' },
+    {
+      checkServerHealth: async () => ({ ok: true, version: '1' }),
+      resolveSessionToken: () => 'published-token'
+    }
+  );
+  assert.equal(already.spawned, false);
+  assert.equal(already.token, 'published-token');
+});
+
+test('ensureServerRunning keeps the original token when restarting an existing container', async () => {
+  let healthy = false;
+  const status = await ensureServerRunning(
+    { serverUrl: 'http://127.0.0.1:8088', preferDocker: true, maxWaitMs: 2000 },
+    {
+      env: {},
+      checkServerHealth: async () => ({ ok: healthy }),
+      isDockerAvailable: () => true,
+      startContainer: () => {
+        healthy = true;
+        return { action: 'started' };
+      },
+      resolveSessionToken: () => 'original-token',
+      generateSessionToken: () => 'new-token'
+    }
+  );
+  assert.equal(status.token, 'original-token');
 });
 
 test('ensureServerRunning returns running immediately if server is already healthy', async () => {
@@ -301,9 +408,10 @@ test('executeStart runs container and launches browser when open option is set',
 
   const mockRunner = async () => ({
     status: 'running',
-    serverUrl: 'http://localhost:8088',
+    serverUrl: 'http://127.0.0.1:8088',
     version: '0.0.1-Alpha-11',
-    spawned: true
+    spawned: true,
+    token: 'sess-tok'
   });
 
   const res = await executeStart(
@@ -316,8 +424,9 @@ test('executeStart runs container and launches browser when open option is set',
 
   assert.equal(res.status, 'running');
   assert.equal(res.port, '8088');
-  assert.equal(res.serverUrl, 'http://localhost:8088');
-  assert.equal(openedUrl, 'http://localhost:8088');
+  assert.equal(res.serverUrl, 'http://127.0.0.1:8088');
+  assert.equal(openedUrl, 'http://127.0.0.1:8088/?token=sess-tok');
+  assert.equal(res.workbenchUrl, 'http://127.0.0.1:8088/?token=sess-tok');
 });
 
 test('executeStart handles custom port and offline states', async () => {
@@ -334,7 +443,7 @@ test('executeStart handles custom port and offline states', async () => {
 
   assert.equal(res.status, 'offline');
   assert.equal(res.port, '9099');
-  assert.equal(res.serverUrl, 'http://localhost:9099');
+  assert.equal(res.serverUrl, 'http://127.0.0.1:9099');
 });
 
 test('findNativeBinary, startNativeBinary, and ensureServerRunning support GraalVM native binaries', async () => {

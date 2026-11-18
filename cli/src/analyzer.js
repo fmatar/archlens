@@ -8,6 +8,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { extractFileImports } from './checker.js';
+import { resolveSessionToken, withAuth } from './session.js';
 
 export function detectProjectLanguage(projectRoot) {
   const root = path.resolve(projectRoot);
@@ -672,14 +673,15 @@ function findMatchingFiles(dir, predicate, limit = 50, collected = []) {
 
 export async function generateLlmPrompt(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || '.');
-  const serverUrl = options.serverUrl || 'http://localhost:8088';
+  const serverUrl = options.serverUrl || 'http://127.0.0.1:8088';
 
   // 1. Attempt querying active Archlens backend server
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 1200);
     const apiUrl = `${serverUrl.replace(/\/$/, '')}/api/diagram/llm-dossier?projectRoot=${encodeURIComponent(root)}`;
-    const res = await fetch(apiUrl, { signal: controller.signal });
+    const token = options.token || resolveSessionToken(serverUrl);
+    const res = await fetch(apiUrl, withAuth({ signal: controller.signal }, token));
     clearTimeout(timeoutId);
     if (res.ok) {
       const text = await res.text();

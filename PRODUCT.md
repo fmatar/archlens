@@ -103,5 +103,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-009 | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | #8714 | None |
 | ADR-010 | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | #8454 | ADR-009 |
 | ADR-011 | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | #4934 | ADR-010 |
+| ADR-012 | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | #224 | ADR-011 |
+| ADR-013 | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | #247 | ADR-012 |
 <!-- ADR_INDEX_END -->
 

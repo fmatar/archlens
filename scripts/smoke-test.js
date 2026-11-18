@@ -19,6 +19,7 @@ import { spawn, execSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { handleMcpMessage } from '../cli/src/mcp-server.js';
 import { installMcpConfigs } from '../cli/src/mcp-registry.js';
+import { generateSessionToken, withAuth, TOKEN_HEADER } from '../cli/src/session.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,7 +72,7 @@ export async function waitForServerReady(
   return false;
 }
 
-export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.4', deps = {}) {
+export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.5', deps = {}) {
   const fetchFn = deps.fetch || fetch;
   const checks = [];
 
@@ -197,6 +198,45 @@ export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.1.4', d
     passed: checks.every((c) => c.passed),
     checks
   };
+}
+
+/**
+ * Verifies the per-session token guard (#225): protected endpoints reject missing or wrong tokens
+ * and accept the right one; the version probe stays open.
+ */
+export async function runAuthSmokeChecks(serverUrl, token, deps = {}) {
+  const fetchFn = deps.fetch || fetch;
+  const checks = [];
+  async function expectStatus(name, url, init, expected) {
+    const start = Date.now();
+    try {
+      const res = await fetchFn(url, init);
+      const passed = res.status === expected;
+      checks.push({
+        name,
+        passed,
+        durationMs: Date.now() - start,
+        detail: `HTTP ${res.status} (expected ${expected})`
+      });
+    } catch (err) {
+      checks.push({ name, passed: false, durationMs: Date.now() - start, detail: err.message });
+    }
+  }
+  await expectStatus('Auth: /api/graph without token is rejected', `${serverUrl}/api/graph`, {}, 401);
+  await expectStatus(
+    'Auth: /api/graph with wrong token is rejected',
+    `${serverUrl}/api/graph`,
+    { headers: { [TOKEN_HEADER]: `${token}-invalid` } },
+    401
+  );
+  await expectStatus(
+    'Auth: /api/fitness with session token is accepted',
+    `${serverUrl}/api/fitness`,
+    withAuth({}, token),
+    200
+  );
+  await expectStatus('Auth: /api/version stays open', `${serverUrl}/api/version`, {}, 200);
+  return { passed: checks.every((c) => c.passed), checks };
 }
 
 export async function runMcpStdioSmokeChecks(serverUrl, projectRoot = REPO_ROOT, deps = {}) {
@@ -337,6 +377,9 @@ export async function runSmokeSuite(options = {}, deps = {}) {
   const expectedVersion = pkgJson.version;
   const port = options.port || (await (deps.findFreePort || findFreePort)());
   const serverUrl = `http://127.0.0.1:${port}`;
+  const token = options.token || generateSessionToken();
+  const rawFetch = deps.fetch || fetch;
+  const authedDeps = { ...deps, fetch: (url, init) => rawFetch(url, withAuth(init, token)) };
 
   console.log(`🚀 Booting Archlens Workbench (${jarPath}) on ${serverUrl}...`);
   const child = spawnFn(
@@ -344,7 +387,7 @@ export async function runSmokeSuite(options = {}, deps = {}) {
     [`-Dquarkus.http.port=${port}`, '-Dquarkus.http.host=127.0.0.1', '-jar', jarPath],
     {
       cwd: repoRoot,
-      env: { ...process.env, ARCHLENS_PROJECT_ROOT: repoRoot },
+      env: { ...process.env, ARCHLENS_PROJECT_ROOT: repoRoot, ARCHLENS_TOKEN: token },
       stdio: ['ignore', 'pipe', 'pipe']
     }
   );
@@ -389,23 +432,24 @@ export async function runSmokeSuite(options = {}, deps = {}) {
       throw new Error(`Quarkus server failed to become ready on ${serverUrl}.\n${outputLog}`);
     }
 
-    const httpResults = await runHttpSmokeChecks(serverUrl, expectedVersion, deps);
-    for (const c of httpResults.checks) {
+    const httpResults = await runHttpSmokeChecks(serverUrl, expectedVersion, authedDeps);
+    const authResults = await runAuthSmokeChecks(serverUrl, token, { ...deps, fetch: rawFetch });
+    for (const c of [...httpResults.checks, ...authResults.checks]) {
       const icon = c.passed ? '✅' : '❌';
       console.log(`  ${icon} ${c.name} (${c.durationMs}ms) -> ${c.detail}`);
     }
 
-    const mcpResults = await runMcpStdioSmokeChecks(serverUrl, repoRoot, deps);
+    const mcpResults = await runMcpStdioSmokeChecks(serverUrl, repoRoot, authedDeps);
     console.log(
       `  ✅ MCP Stdio Bridge & Multi-Agent Registry -> ${mcpResults.toolsCount} tools, ${mcpResults.resourcesCount} resources verified, DIP port=${mcpResults.dipPort}`
     );
 
-    if (!httpResults.passed || !mcpResults.passed) {
+    if (!httpResults.passed || !authResults.passed || !mcpResults.passed) {
       throw new Error('One or more smoke checks failed.');
     }
 
     console.log(`\n🎉 All End-to-End Smoke Checks Passed (v${expectedVersion})!`);
-    return { passed: true, httpResults, mcpResults };
+    return { passed: true, httpResults, authResults, mcpResults };
   } finally {
     readinessAbort.abort();
     if (!childExited) {

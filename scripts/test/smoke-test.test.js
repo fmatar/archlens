@@ -6,12 +6,24 @@ import {
   waitForServerReady,
   runHttpSmokeChecks,
   runMcpStdioSmokeChecks,
+  runAuthSmokeChecks,
   runSmokeSuite
 } from '../smoke-test.js';
 
-function createMockFetch() {
-  return async (rawUrl) => {
+function isAuthorized(init) {
+  const token = init?.headers?.['X-Archlens-Token'];
+  return Boolean(token) && !token.endsWith('-invalid');
+}
+
+function createMockFetch({ enforceAuth = false } = {}) {
+  return async (rawUrl, init) => {
     const url = new URL(rawUrl);
+    const isProtected =
+      (url.pathname.startsWith('/api/') && url.pathname !== '/api/version') ||
+      url.pathname.startsWith('/mcp');
+    if (enforceAuth && isProtected && !isAuthorized(init)) {
+      return { ok: false, status: 401, json: async () => ({ error: 'unauthorized' }) };
+    }
     if (url.pathname === '/') {
       return {
         ok: true,
@@ -119,11 +131,25 @@ describe('End-to-End Smoke Test Engine (scripts/smoke-test.js)', () => {
     assert.equal(mcpResult.policyTitle, 'Archlens');
   });
 
+  it('runAuthSmokeChecks requires 401 without/with wrong token and 200 with the session token', async () => {
+    const ok = await runAuthSmokeChecks('http://127.0.0.1:8088', 'tok', {
+      fetch: createMockFetch({ enforceAuth: true })
+    });
+    assert.equal(ok.passed, true);
+    assert.equal(ok.checks.length, 4);
+
+    const unprotected = await runAuthSmokeChecks('http://127.0.0.1:8088', 'tok', {
+      fetch: createMockFetch()
+    });
+    assert.equal(unprotected.passed, false, 'an unauthenticated server must fail the auth smoke checks');
+  });
+
   it('runSmokeSuite orchestrates server lifecycle, HTTP/MCP checks, and clean SIGTERM teardown', async () => {
     const port = await findFreePort();
     assert.ok(port > 1024);
 
     let killedWith = null;
+    let spawnedEnv = null;
     const mockChild = new EventEmitter();
     mockChild.stderr = new EventEmitter();
     mockChild.kill = (sig) => {
@@ -136,12 +162,17 @@ describe('End-to-End Smoke Test Engine (scripts/smoke-test.js)', () => {
       {
         existsSync: () => true,
         readFileSync: () => JSON.stringify({ version: '0.1.1' }),
-        spawn: () => mockChild,
-        fetch: createMockFetch()
+        spawn: (cmd, args, opts) => {
+          spawnedEnv = opts.env;
+          return mockChild;
+        },
+        fetch: createMockFetch({ enforceAuth: true })
       }
     );
 
     assert.equal(suiteResult.passed, true);
+    assert.ok(spawnedEnv.ARCHLENS_TOKEN, 'smoke server must be launched with a session token');
+    assert.ok(suiteResult.authResults.passed);
     assert.equal(killedWith, 'SIGTERM');
 
     await assert.rejects(

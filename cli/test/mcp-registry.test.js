@@ -10,7 +10,9 @@ import {
   getClientConfigLocations,
   getMcpManifestEntry,
   installMcpConfigs,
-  resolveDockerHostWorkspace
+  resolveDockerHostWorkspace,
+  parseJsonc,
+  backupFile
 } from '../src/mcp-registry.js';
 
 test('ARCHLENS_TOOL_SCHEMAS defines 10 Clean Architecture tools', () => {
@@ -276,4 +278,111 @@ test('installMcpConfigs honors scopeOnly filter to restrict updates to global or
     fs.rmSync(tmpHome, { recursive: true, force: true });
     fs.rmSync(tmpProject, { recursive: true, force: true });
   }
+});
+
+function tempWorkspace() {
+  const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-home-'));
+  const tmpProject = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-proj-'));
+  return { tmpHome, tmpProject };
+}
+
+test('installer leaves an unparseable MCP config untouched and reports it (#229)', () => {
+  const { tmpHome, tmpProject } = tempWorkspace();
+  const cursorDir = path.join(tmpProject, '.cursor');
+  fs.mkdirSync(cursorDir, { recursive: true });
+  const cursorFile = path.join(cursorDir, 'mcp.json');
+  const broken = '{ "mcpServers": { "other": { "command": "x" } }  oops not json';
+  fs.writeFileSync(cursorFile, broken);
+
+  const result = installMcpConfigs({ path: tmpProject, homedir: tmpHome, scopeOnly: 'local' });
+  const cursor = result.configuredClients.find((c) => c.path === cursorFile);
+  assert.equal(cursor.action, 'skipped');
+  assert.match(cursor.error, /Could not parse/);
+  assert.match(cursor.error, /left unchanged/);
+  assert.equal(fs.readFileSync(cursorFile, 'utf8'), broken, 'file content must be byte-identical');
+  assert.deepEqual(
+    fs.readdirSync(cursorDir).filter((f) => f.endsWith('.bak')),
+    [],
+    'nothing is written for skipped files'
+  );
+});
+
+test('installer refuses to replace a JSON config that is not an object (#229)', () => {
+  const { tmpHome, tmpProject } = tempWorkspace();
+  fs.mkdirSync(path.join(tmpProject, '.cursor'), { recursive: true });
+  const cursorFile = path.join(tmpProject, '.cursor', 'mcp.json');
+  fs.writeFileSync(cursorFile, '["not", "an", "object"]');
+  const result = installMcpConfigs({ path: tmpProject, homedir: tmpHome, scopeOnly: 'local' });
+  assert.equal(result.configuredClients.find((c) => c.path === cursorFile).action, 'skipped');
+  assert.equal(fs.readFileSync(cursorFile, 'utf8'), '["not", "an", "object"]');
+});
+
+test('installer updates JSONC configs (comments, trailing commas) keeping other servers, with a backup (#229)', () => {
+  const { tmpHome, tmpProject } = tempWorkspace();
+  const vscodeDir = path.join(tmpProject, '.vscode');
+  fs.mkdirSync(vscodeDir, { recursive: true });
+  const vscodeFile = path.join(vscodeDir, 'mcp.json');
+  const original = `{
+  // VS Code allows comments here
+  "servers": {
+    "github": { "type": "http", "url": "https://api.example.com/mcp/" }, /* keep me */
+  },
+  "inputs": [],
+}
+`;
+  fs.writeFileSync(vscodeFile, original);
+
+  const result = installMcpConfigs({
+    path: tmpProject,
+    homedir: tmpHome,
+    scopeOnly: 'local',
+    now: new Date('2026-11-18T17:30:00Z')
+  });
+  const vscode = result.configuredClients.find((c) => c.path === vscodeFile);
+  assert.equal(vscode.action, 'updated');
+  const updated = JSON.parse(fs.readFileSync(vscodeFile, 'utf8'));
+  assert.equal(updated.servers.github.url, 'https://api.example.com/mcp/', 'other servers survive');
+  assert.ok(updated.servers.archlens, 'archlens entry added');
+  assert.deepEqual(updated.inputs, []);
+  assert.equal(vscode.backupPath, `${vscodeFile}.archlens-20261118T173000.bak`);
+  assert.equal(fs.readFileSync(vscode.backupPath, 'utf8'), original, 'backup is the untouched original');
+  assert.match(vscode.warning, /Comments .* were not preserved/);
+});
+
+test('installer backs up plain JSON configs before modifying them (#229)', () => {
+  const { tmpHome, tmpProject } = tempWorkspace();
+  fs.mkdirSync(path.join(tmpProject, '.cursor'), { recursive: true });
+  const cursorFile = path.join(tmpProject, '.cursor', 'mcp.json');
+  const original = JSON.stringify({ mcpServers: { other: { command: 'other-mcp' } }, theme: 'dark' });
+  fs.writeFileSync(cursorFile, original);
+  const result = installMcpConfigs({ path: tmpProject, homedir: tmpHome, scopeOnly: 'local' });
+  const cursor = result.configuredClients.find((c) => c.path === cursorFile);
+  const updated = JSON.parse(fs.readFileSync(cursorFile, 'utf8'));
+  assert.equal(updated.mcpServers.other.command, 'other-mcp');
+  assert.equal(updated.theme, 'dark');
+  assert.ok(updated.mcpServers.archlens);
+  assert.equal(fs.readFileSync(cursor.backupPath, 'utf8'), original);
+  assert.equal(cursor.warning, undefined);
+
+  const dry = installMcpConfigs({ path: tmpProject, homedir: tmpHome, scopeOnly: 'local', dryRun: true });
+  assert.equal(dry.configuredClients.find((c) => c.path === cursorFile).backupPath, undefined);
+});
+
+test('parseJsonc handles comments and trailing commas without touching string contents', () => {
+  const { value, hadComments } = parseJsonc('{\n // c\n "url": "http://x//y", /* b */ "a": [1, 2,], "q": "\\"//",\n}');
+  assert.equal(hadComments, true);
+  assert.deepEqual(value, { url: 'http://x//y', a: [1, 2], q: '"//' });
+  assert.equal(parseJsonc('{"a":1}').hadComments, false);
+  assert.deepEqual(parseJsonc('').value, {});
+  assert.throws(() => parseJsonc('{"a": }'));
+  assert.throws(() => parseJsonc('{"a": 1 /* open'), /Unterminated/);
+});
+
+test('backupFile writes a timestamped copy', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-bak-'));
+  const f = path.join(dir, 'c.json');
+  fs.writeFileSync(f, '{"x":1}');
+  const b = backupFile(f, new Date('2026-01-02T03:04:05Z'));
+  assert.equal(b, `${f}.archlens-20260102T030405.bak`);
+  assert.equal(fs.readFileSync(b, 'utf8'), '{"x":1}');
 });

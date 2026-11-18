@@ -2,6 +2,7 @@ package io.slixes.archlens.delivery.rest;
 
 import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
 import io.slixes.archlens.domain.mailbox.MailboxGateway;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
 import io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase;
 import io.slixes.archlens.usecase.WorkspacePathResolver;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -9,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Map;
 
@@ -29,6 +31,8 @@ public class MailboxResource {
   @Inject VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase;
 
   @Inject io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase;
+
+  @Inject OpenedProjectRegistry openedProjects;
 
   public MailboxResource() {}
 
@@ -104,12 +108,9 @@ public class MailboxResource {
             : -1;
     String snapshotId = (String) request.getOrDefault("snapshotId", "");
     boolean runTests = Boolean.TRUE.equals(request.get("runTests"));
+    String root = requireOpenedProject(projectRoot);
     return verifyAndRollbackUseCase.verifyRefactoring(
-        WorkspacePathResolver.normalizeRoot(projectRoot),
-        baseline,
-        baselineCycles,
-        snapshotId,
-        runTests);
+        root, baseline, baselineCycles, snapshotId, runTests);
   }
 
   @POST
@@ -119,10 +120,47 @@ public class MailboxResource {
       Map<String, Object> request)
       throws IOException {
     String snapshotId = (String) request.get("snapshotId");
-    boolean success =
-        verifyAndRollbackUseCase.rollbackToSnapshot(
-            WorkspacePathResolver.normalizeRoot(projectRoot), snapshotId);
+    String root = requireOpenedProject(projectRoot);
+    boolean success;
+    try {
+      success = verifyAndRollbackUseCase.rollbackToSnapshot(root, snapshotId);
+    } catch (IllegalArgumentException e) {
+      throw jsonError(Response.Status.BAD_REQUEST, e.getMessage());
+    }
     return Map.of("success", success, "snapshotId", snapshotId != null ? snapshotId : "");
+  }
+
+  /** Registry of projects opened in this session; lazily created outside of CDI (unit tests). */
+  public OpenedProjectRegistry getOpenedProjects() {
+    if (openedProjects == null) {
+      openedProjects = new OpenedProjectRegistry();
+    }
+    return openedProjects;
+  }
+
+  /**
+   * Normalizes {@code projectRoot} and rejects it with 403 unless it is a project opened in this
+   * workbench session. Verification can run the project's test suite and rollback deletes files, so
+   * both are confined to projects the user actually opened.
+   */
+  private String requireOpenedProject(String projectRoot) {
+    String root = WorkspacePathResolver.normalizeRoot(projectRoot);
+    if (!getOpenedProjects().isOpened(root)) {
+      throw jsonError(
+          Response.Status.FORBIDDEN,
+          "Project root is not opened in this workbench session; open it before verifying or"
+              + " rolling back");
+    }
+    return root;
+  }
+
+  private static WebApplicationException jsonError(Response.Status status, String message) {
+    return new WebApplicationException(
+        Response.status(status)
+            .type(MediaType.APPLICATION_JSON)
+            .entity(
+                Map.of("success", false, "error", message != null ? message : status.toString()))
+            .build());
   }
 
   @POST

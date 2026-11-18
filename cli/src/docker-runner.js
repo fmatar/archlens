@@ -8,8 +8,15 @@ import { spawn, spawnSync, execSync } from 'node:child_process';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
+import {
+  generateSessionToken,
+  isLoopbackHost,
+  resolveSessionToken,
+  withTokenQuery,
+  writeSessionFile
+} from './session.js';
 
-export const DEFAULT_SERVER_URL = 'http://localhost:8088';
+export const DEFAULT_SERVER_URL = 'http://127.0.0.1:8088';
 export const DEFAULT_DOCKER_IMAGE = 'ghcr.io/fmatar/archlens:latest';
 export const DEFAULT_DOCKERHUB_IMAGE = 'docker.io/fmatar/archlens:latest';
 export const DEFAULT_CONTAINER_NAME = 'archlens-server';
@@ -96,6 +103,17 @@ export function findNativeBinary(options = {}, deps = {}) {
   return null;
 }
 
+/**
+ * Environment for a server process the CLI launches: hands over the session token and, only when
+ * explicitly requested, a non-loopback bind address.
+ */
+export function serverLaunchEnv(options = {}, baseEnv = process.env) {
+  const env = { ...baseEnv };
+  if (options.token) env.ARCHLENS_TOKEN = options.token;
+  if (options.host) env.ARCHLENS_HOST = options.host;
+  return env;
+}
+
 export function startNativeBinary(binaryPath, options = {}, deps = {}) {
   const port = options.port || '8088';
   const customSpawn = deps.spawn || spawn;
@@ -107,7 +125,8 @@ export function startNativeBinary(binaryPath, options = {}, deps = {}) {
 
   const child = customSpawn(binaryPath, args, {
     detached: true,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    env: serverLaunchEnv(options)
   });
 
   if (child && typeof child.unref === 'function') {
@@ -178,7 +197,8 @@ export function startNativeJar(jarPath, options = {}, deps = {}) {
 
   const child = customSpawn('java', jvmArgs, {
     detached: true,
-    stdio: 'ignore'
+    stdio: 'ignore',
+    env: serverLaunchEnv(options)
   });
 
   if (child && typeof child.unref === 'function') {
@@ -226,6 +246,12 @@ export function isContainerExisting(containerName = DEFAULT_CONTAINER_NAME, cust
   }
 }
 
+/** Host-side port publish spec: loopback only unless a wider bind host was explicitly requested. */
+export function dockerPublishSpec(port = '8088', host) {
+  const bindHost = host && String(host).trim() ? String(host).trim() : '127.0.0.1';
+  return `${bindHost}:${port}:8088`;
+}
+
 export function startContainer(options = {}, deps = {}) {
   const containerName = options.containerName || DEFAULT_CONTAINER_NAME;
   const image = options.image || DEFAULT_DOCKER_IMAGE;
@@ -247,25 +273,30 @@ export function startContainer(options = {}, deps = {}) {
     return { action: 'started', containerName };
   }
 
+  const publish = dockerPublishSpec(port, options.host);
+  // The token is passed by name only (-e ARCHLENS_TOKEN) so it never appears on the command line.
+  const tokenArgs = options.token ? ['-e', 'ARCHLENS_TOKEN'] : [];
   const runArgs = [
     'run',
     '-d',
     '--name',
     containerName,
     '-p',
-    `${port}:8088`,
+    publish,
+    ...tokenArgs,
     '-v',
     `${workspace}:/workspace`,
     image
   ];
+  const env = serverLaunchEnv({ token: options.token });
 
   if (deps.execSync && !deps.spawnSync) {
     customExec(
-      `docker run -d --name ${containerName} -p ${port}:8088 -v "${workspace}:/workspace" ${image}`,
-      { stdio: 'pipe', timeout: 15000 }
+      `docker run -d --name ${containerName} -p ${publish}${options.token ? ' -e ARCHLENS_TOKEN' : ''} -v "${workspace}:/workspace" ${image}`,
+      { stdio: 'pipe', timeout: 15000, env }
     );
   } else {
-    customSpawn('docker', runArgs, { stdio: 'pipe', timeout: 15000 });
+    customSpawn('docker', runArgs, { stdio: 'pipe', timeout: 15000, env });
   }
 
   return { action: 'created', containerName, mode: 'docker' };
@@ -287,6 +318,8 @@ export async function ensureServerRunning(options = {}, deps = {}) {
   const dockerChecker = deps.isDockerAvailable || isDockerAvailable;
   const starter = deps.startContainer || startContainer;
 
+  const tokenResolver = deps.resolveSessionToken || resolveSessionToken;
+
   // 1. Initial health inspection
   const initialCheck = await healthChecker(serverUrl, 1000);
   if (initialCheck.ok) {
@@ -294,9 +327,18 @@ export async function ensureServerRunning(options = {}, deps = {}) {
       status: 'running',
       serverUrl,
       version: initialCheck.version,
-      spawned: false
+      spawned: false,
+      token: tokenResolver(serverUrl, deps) || undefined
     };
   }
+
+  // The token for a server we launch: pinned via ARCHLENS_TOKEN, or freshly generated.
+  const env = deps.env || process.env;
+  let token =
+    options.token ||
+    (env.ARCHLENS_TOKEN && env.ARCHLENS_TOKEN.trim()) ||
+    (deps.generateSessionToken || generateSessionToken)();
+  options = { ...options, token };
 
   let launchedMode = null;
   let launchedJarPath = null;
@@ -335,8 +377,15 @@ export async function ensureServerRunning(options = {}, deps = {}) {
     const dockerAvailable = spawnDocker && dockerChecker(deps.execSync || execSync);
     if (dockerAvailable) {
       try {
-        starter(options, deps);
+        const started = starter(options, deps);
         launchedMode = 'docker';
+        if (started && started.action === 'created') {
+          // New container: it received our token, publish it for other local clients.
+          writeSessionFile(options.port || '8088', token, deps.session || {});
+        } else if (started && started.action === 'started') {
+          // Restarted container keeps the token it was created with.
+          token = tokenResolver(serverUrl, deps) || undefined;
+        }
       } catch (err) {
         return {
           status: 'error',
@@ -368,7 +417,8 @@ export async function ensureServerRunning(options = {}, deps = {}) {
         spawned: true,
         mode: launchedMode,
         jarPath: launchedJarPath,
-        binaryPath: launchedBinaryPath
+        binaryPath: launchedBinaryPath,
+        token
       };
     }
   }
@@ -380,6 +430,7 @@ export async function ensureServerRunning(options = {}, deps = {}) {
     mode: launchedMode,
     jarPath: launchedJarPath,
     binaryPath: launchedBinaryPath,
+    token,
     message: `Archlens ${launchedMode === 'jar' || launchedMode === 'binary' ? 'native server' : 'container'} launched; service is warming up.`
   };
 }
@@ -405,7 +456,7 @@ export async function executeStart(options = {}, deps = {}) {
   const runner = deps.ensureServerRunning || ensureServerRunning;
   const opener = deps.openInBrowser || openInBrowser;
   const port = options.port || '8088';
-  const serverUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://localhost:${port}`);
+  const serverUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://127.0.0.1:${port}`);
   const workspace = path.resolve(options.path || options.workspace || '.');
 
   const status = await runner({
@@ -415,14 +466,17 @@ export async function executeStart(options = {}, deps = {}) {
     ...options
   }, deps);
 
+  const workbenchUrl = withTokenQuery(serverUrl, status.token);
   if (status.status === 'running' && options.open) {
-    opener(serverUrl, deps.spawnSync || spawnSync);
+    opener(workbenchUrl, deps.spawnSync || spawnSync);
   }
 
   return {
     ...status,
     port,
-    serverUrl
+    serverUrl,
+    workbenchUrl,
+    exposed: Boolean(options.host && !isLoopbackHost(options.host))
   };
 }
 

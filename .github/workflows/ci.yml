@@ -14,6 +14,9 @@ jobs:
   verify:
     name: Verify & Quality Gates
     runs-on: local-archlens
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout Code
@@ -51,6 +54,15 @@ jobs:
 
       - name: Archlens Clean Architecture Conformance Gate
         run: node cli/bin/index.js check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85 --format sarif --output archlens-results.sarif
+
+      # Publish the Archlens findings to the Security tab / PR annotations (#236). Skipped for
+      # fork PRs, which do not get security-events: write.
+      - name: Upload Architecture SARIF to Code Scanning
+        if: always() && hashFiles('archlens-results.sarif') != '' && (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: archlens-results.sarif
+          category: archlens-clean-architecture
 
       - name: Upload Architecture SARIF Report
         uses: actions/upload-artifact@v7
@@ -96,3 +108,42 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  action-self-test:
+    name: GitHub Action Self-Test (uses ./)
+    runs-on: local-archlens
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      # Paths contain spaces on purpose: inputs must reach the CLI verbatim (#230).
+      - name: Action passes on a conforming fixture
+        uses: ./
+        with:
+          path: 'action/fixtures/conforming app'
+          max-violations: '0'
+          detect-cycles: 'true'
+          sarif-file: 'action self-test/conforming.sarif'
+          upload-sarif: 'false'
+
+      - name: Action fails on a violating fixture
+        id: violating
+        continue-on-error: true
+        uses: ./
+        with:
+          path: 'action/fixtures/violating app'
+          max-violations: '0'
+          detect-cycles: 'true'
+          sarif-file: 'action self-test/violating.sarif'
+          upload-sarif: 'false'
+
+      - name: Assert gate outcomes
+        env:
+          VIOLATING_OUTCOME: ${{ steps.violating.outcome }}
+        run: |
+          test -s "action self-test/conforming.sarif"
+          if [ "$VIOLATING_OUTCOME" != "failure" ]; then
+            echo "::error::The Action did not fail on the violating fixture (outcome: $VIOLATING_OUTCOME)"
+            exit 1
+          fi
+          node -e "const s=JSON.parse(require('fs').readFileSync('action self-test/violating.sarif','utf8')); if (!s.runs[0].results.length) process.exit(1)"
+          echo "Action self-test passed: conforming fixture green, violating fixture red."

@@ -35,6 +35,7 @@ import {
   DEFAULT_SERVER_URL
 } from '../src/docker-runner.js';
 import { spawnSync } from 'node:child_process';
+import { isLoopbackHost } from '../src/session.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,13 +75,18 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -p, --path <DIR>         Target repository path (default: current directory)
   -t, --title <NAME>       Project title displayed in Archlens workbench
   --max-violations <NUM>   Maximum allowable outward dependency violations (default: 0)
+  --max-files <NUM>        Stop scanning after NUM source files (default: no limit); a partial
+                           scan fails the gate unless --allow-partial is given
+  --allow-partial          Let a scan truncated by --max-files pass the gate (prints a warning)
   --detect-cycles          Enforce Robert C. Martin Acyclic Dependencies Principle (ADP)
   --screaming-threshold <NUM> Enforce minimum Screaming Architecture score (0.0-1.0, Uncle Bob Ch. 21)
   --suggest-features       Suggest package-by-feature domain refactoring clusters (Uncle Bob Ch. 21)
   --fitness-threshold <NUM> Enforce minimum Architectural Fitness Index (0.0-1.0, Neal Ford)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
-  --server-url <URL>       Archlens visual workbench URL (default: http://localhost:8088)
+  --server-url <URL>       Archlens visual workbench URL (default: http://127.0.0.1:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
+  --host <ADDR>            Bind/publish the workbench on ADDR instead of 127.0.0.1 (exposes it to
+                           your network; access still requires the session token)
   --native                 Prefer running workbench via native Java Quarkus runner (default)
   --docker                 Force Docker container mode on start or ephemeral MCP STDIO with --mcp
   --jar <PATH>             Custom path to Archlens Quarkus runner JAR
@@ -136,13 +142,29 @@ ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
 `);
 }
 
+/**
+ * Parses a numeric flag value. A missing value keeps the documented default; a non-numeric value
+ * (e.g. a literal "\"0\"" from a mis-quoted CI step, #230) is recorded as a usage error instead of
+ * silently becoming NaN.
+ */
+function parseNumericFlag(parsed, flag, raw, fallback) {
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || String(raw).trim() === '') {
+    parsed.argErrors = parsed.argErrors || [];
+    parsed.argErrors.push(`Invalid numeric value for ${flag}: ${JSON.stringify(raw)}`);
+    return fallback;
+  }
+  return n;
+}
+
 export function parseArgs(args) {
   const parsed = {
     command: null,
     path: '.',
     title: null,
     prefix: null,
-    serverUrl: 'http://localhost:8088',
+    serverUrl: 'http://127.0.0.1:8088',
     port: '8088',
     open: false,
     start: false,
@@ -206,13 +228,17 @@ export function parseArgs(args) {
     } else if (arg === '--detect-cycles' || arg === '--cycles' || arg === '--fail-on-cycles') {
       parsed.detectCycles = true;
     } else if (arg === '--screaming-threshold' || arg === '--screaming') {
-      parsed.screamingThreshold = Number(args[++i] || 0.6);
+      parsed.screamingThreshold = parseNumericFlag(parsed, arg, args[++i], 0.6);
     } else if (arg === '--suggest-features' || arg === '--suggest' || arg === '--features') {
       parsed.suggestFeatures = true;
     } else if (arg === '--fitness-threshold' || arg === '--fitness') {
-      parsed.fitnessThreshold = Number(args[++i] || 0.8);
+      parsed.fitnessThreshold = parseNumericFlag(parsed, arg, args[++i], 0.8);
     } else if (arg === '--max-violations') {
-      parsed.maxViolations = Number(args[++i] || 0);
+      parsed.maxViolations = parseNumericFlag(parsed, arg, args[++i], 0);
+    } else if (arg === '--max-files') {
+      parsed.maxFiles = parseNumericFlag(parsed, arg, args[++i], undefined);
+    } else if (arg === '--allow-partial') {
+      parsed.allowPartial = true;
     } else if (arg === '--format') {
       parsed.format = (args[++i] || 'pretty').toLowerCase();
     } else if (arg === '--output' || arg === '-O') {
@@ -232,7 +258,9 @@ export function parseArgs(args) {
     } else if (arg === '--prefix') {
       parsed.prefix = args[++i];
     } else if (arg === '--server-url') {
-      parsed.serverUrl = args[++i] || 'http://localhost:8088';
+      parsed.serverUrl = args[++i] || 'http://127.0.0.1:8088';
+    } else if (arg === '--host') {
+      parsed.host = args[++i];
     } else if (arg === '--docker') {
       parsed.preferDocker = true;
     } else if (arg === '--native') {
@@ -388,7 +416,17 @@ function executeMcpInstall(options) {
     ui.warn('No active AI client configurations found (~/.claude, ~/.gemini). Use --force to deploy anyway.');
   } else {
     for (const client of result.configuredClients) {
+      if (client.action === 'skipped') {
+        ui.error(`Skipped MCP config for ${client.name}: ${client.error}`);
+        continue;
+      }
       ui.success(`Configured MCP for ${client.name} (${client.action}): ${client.path}${modeSuffix}`);
+      if (client.backupPath) {
+        ui.info(`  Backup of previous config: ${client.backupPath}`);
+      }
+      if (client.warning) {
+        ui.warn(`  ${client.warning}`);
+      }
     }
   }
 }
@@ -536,6 +574,11 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
     return exit(0);
   }
 
+  if (options.argErrors && options.argErrors.length > 0) {
+    options.argErrors.forEach((msg) => ui.error(msg));
+    return exit(2);
+  }
+
   if (options.version) {
     console.log(getPackageVersion());
     return exit(0);
@@ -569,7 +612,19 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
       const report = await checkArchitecture(targetRoot, options);
       if (report.error) {
         ui.error(report.error);
-        return exit(1);
+        return exit(report.error.startsWith('Invalid value') ? 2 : 1);
+      }
+      if (report.partial) {
+        const msg =
+          `Partial scan: stopped after ${report.maxFiles} source files (--max-files). ` +
+          (report.allowPartial
+            ? 'Continuing because --allow-partial was given; results do not cover the whole repository.'
+            : 'The gate fails unless --allow-partial is given.');
+        if (options.format === 'pretty') {
+          ui.warn(msg);
+        } else {
+          process.stderr.write(`WARNING: ${msg}\n`);
+        }
       }
 
       let formattedOutput = null;
@@ -606,7 +661,7 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
       }
 
       console.log(`\n  ${ui.colors.bold}Architecture Governance Results (${report.projectTitle}):${ui.colors.reset}`);
-      console.log(`  - Source Files Analyzed: ${report.sourceFilesCount}`);
+      console.log(`  - Source Files Analyzed: ${report.sourceFilesCount}${report.partial ? ' (PARTIAL SCAN)' : ''}`);
       console.log(`  - Governed Packages:     ${report.packagesCount}`);
       console.log(`  - Detected Violations:   ${report.violationsCount} (threshold: ${report.maxViolations})`);
       if (report.cyclesCount > 0) {
@@ -661,7 +716,7 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
         return exit(0);
       } else {
         ui.error(
-          `Clean Architecture Gate FAILED (${report.violationsCount} violation(s), ${
+          `Clean Architecture Gate FAILED (${report.partial && !report.allowPartial ? 'partial scan, ' : ''}${report.violationsCount} violation(s), ${
             report.cyclesCount || 0
           } cycle(s)${failOnScreaming ? ', screaming score below threshold' : ''}${failOnFitness ? ', fitness below threshold' : ''})!`
         );
@@ -705,8 +760,14 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
   if (options.command === 'start' || options.start) {
     try {
       const port = options.port || '8088';
-      const targetUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://localhost:${port}`);
+      const targetUrl = options.serverUrl || (port === '8088' ? DEFAULT_SERVER_URL : `http://127.0.0.1:${port}`);
       ui.info(`Checking Archlens Workbench server on ${targetUrl}...`);
+      if (options.host && !isLoopbackHost(options.host)) {
+        ui.warn(
+          `--host ${options.host}: the workbench will be reachable from other machines on your network. ` +
+            'Only the session token protects it; do not use this on untrusted networks.'
+        );
+      }
       const status = await startExecutor(options);
       if (status.status === 'running') {
         if (status.spawned) {
@@ -718,7 +779,13 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
         } else {
           ui.success(`Archlens Workbench server is active (${status.version || 'running'}).`);
         }
-        console.log(`\n  ${ui.colors.bold}Workbench URL:${ui.colors.reset} ${ui.colors.cyan}${status.serverUrl}${ui.colors.reset}\n`);
+        console.log(`\n  ${ui.colors.bold}Workbench URL:${ui.colors.reset} ${ui.colors.cyan}${status.workbenchUrl || status.serverUrl}${ui.colors.reset}\n`);
+        if (!status.token) {
+          console.log(
+            `  ${ui.colors.dim}No session token found for this server. Open the URL printed in the server log ` +
+              `("Archlens workbench ready. Open: ...") or run: docker logs ${DEFAULT_CONTAINER_NAME}${ui.colors.reset}\n`
+          );
+        }
       } else if (status.status === 'offline') {
         ui.warn(status.message || 'Archlens server is offline and neither native runner JAR nor Docker is available.');
         console.log(`\n  ${ui.colors.dim}To run offline architecture analysis:${ui.colors.reset}`);

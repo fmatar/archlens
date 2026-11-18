@@ -3,8 +3,12 @@ services:
     image: ghcr.io/fmatar/archlens:latest
     container_name: archlens
     ports:
-      - "8088:8088"
+      # Loopback only: the workbench must not be reachable from other machines (#224)
+      - "127.0.0.1:8088:8088"
     environment:
+      # Session token for /api and /mcp (#225). Leave unset to let the server generate one and print
+      # "Archlens workbench ready. Open: ..." in `docker compose logs`.
+      - ARCHLENS_TOKEN=${ARCHLENS_TOKEN:-}
       - PROJECT_ROOT=${PROJECT_ROOT:-/workspace/labs/archlens}
       - JAVA_OPTS=-Xms128m -Xmx512m
     volumes:

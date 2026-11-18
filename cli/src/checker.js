@@ -9,13 +9,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-function findMatchingFiles(dir, predicate, maxFiles = 500, results = []) {
-  if (!fs.existsSync(dir) || results.length >= maxFiles) return results;
+/**
+ * Collects files under {@code dir} matching {@code predicate}. There is no cap by default (#232);
+ * when {@code maxFiles} is finite and more matching files exist, {@code results.truncated} is set
+ * so callers can report a partial scan instead of silently passing.
+ */
+export function findMatchingFiles(dir, predicate, maxFiles = Infinity, results = []) {
+  if (!fs.existsSync(dir) || results.truncated) return results;
 
   try {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (results.length >= maxFiles) break;
+      if (results.truncated) break;
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
@@ -36,6 +41,10 @@ function findMatchingFiles(dir, predicate, maxFiles = 500, results = []) {
         }
         findMatchingFiles(fullPath, predicate, maxFiles, results);
       } else if (predicate(entry.name)) {
+        if (results.length >= maxFiles) {
+          results.truncated = true;
+          break;
+        }
         results.push(fullPath);
       }
     }
@@ -815,6 +824,29 @@ export function calculateMaxMainSequenceDistance(pkgTypeStats, packageEdges, pkg
   return Math.round(maxDistance * 100) / 100;
 }
 
+/**
+ * Rejects non-numeric gate options (#230): e.g. a literal "\"0\"" from a mis-quoted CI step
+ * used to become NaN and make the gate silently impossible to pass.
+ */
+export function validateNumericOptions(options = {}) {
+  const errors = [];
+  const checks = [
+    ['maxViolations', '--max-violations', (n) => Number.isInteger(n) && n >= 0],
+    ['screamingThreshold', '--screaming-threshold', (n) => n >= 0 && n <= 1],
+    ['fitnessThreshold', '--fitness-threshold', (n) => n >= 0 && n <= 1],
+    ['maxFiles', '--max-files', (n) => Number.isInteger(n) && n > 0]
+  ];
+  for (const [key, flag, valid] of checks) {
+    const raw = options[key];
+    if (raw === undefined || raw === null) continue;
+    const n = typeof raw === 'number' ? raw : Number(String(raw).trim() === '' ? NaN : raw);
+    if (!Number.isFinite(n) || !valid(n)) {
+      errors.push(`Invalid value for ${flag}: ${JSON.stringify(raw)}.`);
+    }
+  }
+  return errors;
+}
+
 export async function checkArchitecture(projectRoot, options = {}) {
   const root = path.resolve(projectRoot || '.');
   const policy = loadProjectPolicy(root);
@@ -829,6 +861,12 @@ export async function checkArchitecture(projectRoot, options = {}) {
   }
 
   const maxViolations = options.maxViolations !== undefined ? Number(options.maxViolations) : 0;
+  const numericErrors = validateNumericOptions(options);
+  if (numericErrors.length > 0) {
+    return { passed: false, violationsCount: 0, violations: [], error: numericErrors.join(' ') };
+  }
+  const maxFiles =
+    options.maxFiles !== undefined && options.maxFiles !== null ? Number(options.maxFiles) : Infinity;
   const levels = policy.levels || [];
   const tierNames = ['Domain Core (L0)', 'Application (L1)', 'Adapters (L2)', 'Infrastructure (L3)'];
 
@@ -853,8 +891,10 @@ export async function checkArchitecture(projectRoot, options = {}) {
       !f.endsWith('.d.ts') &&
       !f.startsWith('test_') &&
       !f.endsWith('_test.py'),
-    500
+    maxFiles
   );
+  const partial = Boolean(sourceFiles.truncated);
+  const allowPartial = Boolean(options.allowPartial);
 
   const violations = [];
   const packageEdges = new Map();
@@ -970,6 +1010,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
     fitness.fitnessScore < fitnessThreshold;
 
   const passed =
+    (!partial || allowPartial) &&
     violations.length <= maxViolations &&
     (!failOnCycles || cycles.length === 0) &&
     !failOnScreaming &&
@@ -992,6 +1033,9 @@ export async function checkArchitecture(projectRoot, options = {}) {
     levels: policy.levels || [],
     edges: serializedEdges,
     sourceFilesCount: sourceFiles.length,
+    partial,
+    allowPartial,
+    maxFiles: Number.isFinite(maxFiles) ? maxFiles : null,
     packagesCount: (policy.order || []).length,
     violationsCount: violations.length,
     cyclesCount: cycles.length,
@@ -1247,7 +1291,25 @@ export function generateSarifReport(report, options = {}) {
             rules
           }
         },
-        results: sarifResults
+        results: sarifResults,
+        ...(report.partial
+          ? {
+              properties: { partial: true, maxFiles: report.maxFiles },
+              invocations: [
+                {
+                  executionSuccessful: Boolean(report.allowPartial),
+                  toolExecutionNotifications: [
+                    {
+                      level: report.allowPartial ? 'warning' : 'error',
+                      message: {
+                        text: `Partial scan: stopped after ${report.maxFiles} source files (--max-files). Results do not cover the whole repository.`
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          : {})
       }
     ]
   };

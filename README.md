@@ -104,6 +104,9 @@ Publish the port on `127.0.0.1` only; see [Workbench security](#workbench-securi
     screaming-threshold: 0.70
     fitness-threshold: 0.85
 ```
+The Action runs the CLI bundled with the Action revision you pin (`@v1` follows the latest
+`v1.x.y` release; pin `@v1.1.5` for an exact version), not whatever is newest on npm. Threshold
+inputs must be plain numbers; anything else fails with a usage error (exit 2).
 
 #### Global CLI or Canary (`@dev`) Track
 ```bash
@@ -333,6 +336,8 @@ flowchart TD
 | `--host <ADDR>` | | Bind / publish the workbench on `ADDR` instead of loopback (prints a warning; the token is still required) | `127.0.0.1` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |
+| `--max-files <N>` | | Stop scanning after `N` source files; a truncated scan fails the gate and is flagged in SARIF/JSON | no limit |
+| `--allow-partial` | | Let a scan truncated by `--max-files` pass the gate (prints a warning) | `false` |
 | `--detect-cycles` | | Enforce Robert C. Martin Acyclic Dependencies Principle (ADP) | `false` |
 | `--screaming-threshold <N>` | | Enforce minimum Screaming Architecture score (`0.0`–`1.0`) | `0.60` |
 | `--fitness-threshold <N>` | | Enforce minimum Architectural Fitness Index (`0.0`–`1.0`) | `0.80` |

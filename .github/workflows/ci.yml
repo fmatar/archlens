@@ -96,3 +96,42 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  action-self-test:
+    name: GitHub Action Self-Test (uses ./)
+    runs-on: local-archlens
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      # Paths contain spaces on purpose: inputs must reach the CLI verbatim (#230).
+      - name: Action passes on a conforming fixture
+        uses: ./
+        with:
+          path: 'action/fixtures/conforming app'
+          max-violations: '0'
+          detect-cycles: 'true'
+          sarif-file: 'action self-test/conforming.sarif'
+          upload-sarif: 'false'
+
+      - name: Action fails on a violating fixture
+        id: violating
+        continue-on-error: true
+        uses: ./
+        with:
+          path: 'action/fixtures/violating app'
+          max-violations: '0'
+          detect-cycles: 'true'
+          sarif-file: 'action self-test/violating.sarif'
+          upload-sarif: 'false'
+
+      - name: Assert gate outcomes
+        env:
+          VIOLATING_OUTCOME: ${{ steps.violating.outcome }}
+        run: |
+          test -s "action self-test/conforming.sarif"
+          if [ "$VIOLATING_OUTCOME" != "failure" ]; then
+            echo "::error::The Action did not fail on the violating fixture (outcome: $VIOLATING_OUTCOME)"
+            exit 1
+          fi
+          node -e "const s=JSON.parse(require('fs').readFileSync('action self-test/violating.sarif','utf8')); if (!s.runs[0].results.length) process.exit(1)"
+          echo "Action self-test passed: conforming fixture green, violating fixture red."

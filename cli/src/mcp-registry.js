@@ -413,6 +413,88 @@ export function getMcpManifestEntry(serverUrl = 'http://localhost:8088', options
   };
 }
 
+/**
+ * Parses JSON or JSONC (// and /* *\/ comments, trailing commas), as used by VS Code and other
+ * MCP clients. Throws on anything else. Returns { value, hadComments }.
+ */
+export function parseJsonc(text) {
+  const src = String(text).replace(/^\uFEFF/, '');
+  let out = '';
+  let hadComments = false;
+  let inString = false;
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    const next = src[i + 1];
+    if (inString) {
+      out += ch;
+      if (ch === '\\') {
+        out += next ?? '';
+        i++;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      out += ch;
+    } else if (ch === '/' && next === '/') {
+      hadComments = true;
+      while (i < src.length && src[i] !== '\n') i++;
+      out += '\n';
+    } else if (ch === '/' && next === '*') {
+      hadComments = true;
+      const end = src.indexOf('*/', i + 2);
+      if (end === -1) throw new Error('Unterminated block comment');
+      i = end + 1;
+      out += ' ';
+    } else {
+      out += ch;
+    }
+  }
+  // Remove trailing commas before } or ] (strings are intact, comments are gone).
+  let cleaned = '';
+  inString = false;
+  for (let i = 0; i < out.length; i++) {
+    const ch = out[i];
+    if (inString) {
+      cleaned += ch;
+      if (ch === '\\') {
+        cleaned += out[i + 1] ?? '';
+        i++;
+      } else if (ch === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      cleaned += ch;
+      continue;
+    }
+    if (ch === ',') {
+      let j = i + 1;
+      while (j < out.length && /\s/.test(out[j])) j++;
+      if (out[j] === '}' || out[j] === ']') {
+        continue;
+      }
+    }
+    cleaned += ch;
+  }
+  if (cleaned.trim() === '') {
+    return { value: {}, hadComments };
+  }
+  return { value: JSON.parse(cleaned), hadComments };
+}
+
+/** Copies an existing config next to itself with a timestamp before it is modified. */
+export function backupFile(filePath, now = new Date()) {
+  const stamp = (now instanceof Date ? now : new Date(now)).toISOString().replace(/[-:]/g, '').replace(/\..*$/, '');
+  const backupPath = `${filePath}.archlens-${stamp}.bak`;
+  fs.copyFileSync(filePath, backupPath);
+  return backupPath;
+}
+
 export function installMcpConfigs(options = {}) {
   const projectRoot = path.resolve(options.path || '.');
   const homedir = options.homedir || os.homedir();
@@ -458,12 +540,37 @@ export function installMcpConfigs(options = {}) {
       });
     } else if (target.type === 'json-manifest') {
       let manifest = {};
-      if (fs.existsSync(target.filePath)) {
+      let hadComments = false;
+      if (targetExists) {
+        // Never overwrite a config we cannot parse: that would erase the user's other MCP
+        // servers and settings (#229). JSONC (comments, trailing commas) is accepted.
+        let parsed;
         try {
-          manifest = JSON.parse(fs.readFileSync(target.filePath, 'utf8'));
-        } catch {
-          manifest = {};
+          parsed = parseJsonc(fs.readFileSync(target.filePath, 'utf8'));
+        } catch (err) {
+          results.push({
+            id: target.id,
+            name: target.name,
+            path: target.filePath,
+            type: target.type,
+            action: 'skipped',
+            error: `Could not parse ${target.filePath}: ${err.message}. File left unchanged; fix it or add the archlens entry manually.`
+          });
+          continue;
         }
+        if (!parsed.value || typeof parsed.value !== 'object' || Array.isArray(parsed.value)) {
+          results.push({
+            id: target.id,
+            name: target.name,
+            path: target.filePath,
+            type: target.type,
+            action: 'skipped',
+            error: `${target.filePath} does not contain a JSON object. File left unchanged.`
+          });
+          continue;
+        }
+        manifest = parsed.value;
+        hadComments = parsed.hadComments;
       }
 
       const entryOptions = {
@@ -488,8 +595,12 @@ export function installMcpConfigs(options = {}) {
         manifest.mcpServers.archlens = getMcpManifestEntry(serverUrl, entryOptions);
       }
 
+      let backupPath = null;
       if (!dryRun) {
         fs.mkdirSync(path.dirname(target.filePath), { recursive: true });
+        if (targetExists) {
+          backupPath = backupFile(target.filePath, options.now);
+        }
         fs.writeFileSync(target.filePath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
       }
 
@@ -498,7 +609,11 @@ export function installMcpConfigs(options = {}) {
         name: target.name,
         path: target.filePath,
         type: target.type,
-        action: targetExists ? 'updated' : 'created'
+        action: targetExists ? 'updated' : 'created',
+        ...(backupPath ? { backupPath } : {}),
+        ...(hadComments
+          ? { warning: `Comments in ${target.filePath} were not preserved${backupPath ? `; original saved to ${backupPath}` : ''}.` }
+          : {})
       });
     }
   }

@@ -1,0 +1,1 @@
+{ "title": "Action fixture", "src": "src", "order": ["domain", "adapters"], "levels": [["domain"], ["adapters"]] }

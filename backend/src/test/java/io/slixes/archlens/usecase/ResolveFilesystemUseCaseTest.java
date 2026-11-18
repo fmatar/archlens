@@ -64,6 +64,49 @@ class ResolveFilesystemUseCaseTest {
   }
 
   @Test
+  void getSourceCodeRejectsFilesOutsideProjectRoot(@TempDir Path tempDir) throws IOException {
+    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path secret = Files.writeString(tempDir.resolve("secret.env"), "TOKEN=abc");
+
+    Map<String, Object> absolute = useCase.getSourceCode(secret.toString(), 1, project.toString());
+    assertEquals(Boolean.TRUE, absolute.get("denied"));
+    assertFalse(((String) absolute.get("content")).contains("TOKEN=abc"));
+
+    Map<String, Object> traversal = useCase.getSourceCode("../secret.env", 1, project.toString());
+    assertEquals(Boolean.TRUE, traversal.get("denied"));
+    assertFalse(((String) traversal.get("content")).contains("TOKEN=abc"));
+  }
+
+  @Test
+  void getSourceCodeRejectsSymlinkEscapes(@TempDir Path tempDir) throws IOException {
+    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path secret = Files.writeString(tempDir.resolve("secret.env"), "TOKEN=abc");
+    try {
+      Files.createSymbolicLink(project.resolve("Innocent.java"), secret);
+    } catch (UnsupportedOperationException | IOException e) {
+      return;
+    }
+    Map<String, Object> result = useCase.getSourceCode("Innocent.java", 1, project.toString());
+    assertEquals(Boolean.TRUE, result.get("denied"));
+    assertFalse(((String) result.get("content")).contains("TOKEN=abc"));
+  }
+
+  @Test
+  void getSourceCodeResolvesRelativePathsAgainstProjectRoot(@TempDir Path tempDir)
+      throws IOException {
+    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
+    Path src = Files.createDirectories(tempDir.resolve("src/main/java"));
+    Files.writeString(src.resolve("A.java"), "class A {}");
+    Map<String, Object> result =
+        useCase.getSourceCode("src/main/java/A.java", 3, tempDir.toString());
+    assertEquals("A.java", result.get("fileName"));
+    assertEquals("class A {}", result.get("content"));
+    assertNull(result.get("denied"));
+  }
+
+  @Test
   void testListProjectsDiscovery() {
     ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
     Map<String, Object> projects = useCase.listProjects();

@@ -49,8 +49,8 @@ test('getMcpResourcesList defines canonical llms.txt, policy, and fitness resour
   assert.equal(resources[2].uri, 'archlens://fitness');
 });
 
-test('readMcpResource returns markdown content of llms.txt', () => {
-  const res = readMcpResource('archlens://llms.txt');
+test('readMcpResource returns markdown content of llms.txt', async () => {
+  const res = await readMcpResource('archlens://llms.txt');
   assert.ok(res.contents);
   assert.equal(res.contents.length, 1);
   assert.equal(res.contents[0].uri, 'archlens://llms.txt');
@@ -119,6 +119,42 @@ test('handleMcpMessage responds to resources/read', async () => {
   assert.ok(resp.result.contents);
   assert.equal(resp.result.contents[0].uri, 'archlens://llms.txt');
   assert.ok(resp.result.contents[0].text.includes('# Archlens'));
+});
+
+test('handleMcpMessage resources/read awaits async checkArchitecture for archlens://fitness', async () => {
+  const resp = await handleMcpMessage(
+    { jsonrpc: '2.0', id: 51, method: 'resources/read', params: { uri: 'archlens://fitness' } },
+    { path: '/tmp/proj' },
+    {
+      checkArchitecture: async () => ({
+        passed: true,
+        fitness: { fitnessScore: 94.5, grade: 'A', passed: true }
+      })
+    }
+  );
+  assert.equal(resp.id, 51);
+  const parsed = JSON.parse(resp.result.contents[0].text);
+  assert.equal(parsed.fitnessScore, 94.5);
+  assert.equal(parsed.grade, 'A');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-fitness-res-'));
+  try {
+    fs.mkdirSync(path.join(tmpDir, '.archlens'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.archlens', 'policy.json'),
+      JSON.stringify({ title: 'Tmp', src: 'src', levels: [['domain']] })
+    );
+    const realResp = await handleMcpMessage(
+      { jsonrpc: '2.0', id: 52, method: 'resources/read', params: { uri: 'archlens://fitness' } },
+      { path: tmpDir }
+    );
+    const realParsed = JSON.parse(realResp.result.contents[0].text);
+    assert.equal(typeof realParsed.fitnessScore, 'number');
+    assert.equal(typeof realParsed.grade, 'string');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test('handleMcpMessage returns error for unknown resource uri', async () => {

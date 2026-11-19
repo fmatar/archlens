@@ -49,7 +49,9 @@ flowchart TD
   _247["Ticket #247 (fix/security-hotfix-v1-1-6)"]
   ADR_014["ADR-014: Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain"]
   ADR_015["ADR-015: Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity"]
-  _263["Ticket #263"]
+  _263["Ticket #263 (feature/issue-#263-phase-1-5-native-securerandom-rollback-t)"]
+  ADR_016["ADR-016: Wave 1 MCP Confinement Pure-Git Tag Caching and Watcher Root Switching"]
+  _265["Ticket #265"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -114,6 +116,8 @@ flowchart TD
   ADR_013 -.->|ADR Drift| ADR_014
   _263 -->|triggered_drift_adr| ADR_015
   ADR_014 -.->|ADR Drift| ADR_015
+  _265 -->|triggered_drift_adr| ADR_016
+  ADR_015 -.->|ADR Drift| ADR_016
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -145,6 +149,7 @@ flowchart TD
 | **ADR-013** | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | #247 | ADR-012 |
 | **ADR-014** | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | #247 | ADR-013 |
 | **ADR-015** | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
+| **ADR-016** | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
 
 ---
 

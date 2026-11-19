@@ -96,7 +96,7 @@ export function getMcpPromptsList() {
   ];
 }
 
-export function readMcpResource(uri, options = {}, deps = {}) {
+export async function readMcpResource(uri, options = {}, deps = {}) {
   const projectRoot = path.resolve(options.path || '.');
   const fileReader = deps.readFileSync || fs.readFileSync;
   const fileExists = deps.existsSync || fs.existsSync;
@@ -146,7 +146,7 @@ export function readMcpResource(uri, options = {}, deps = {}) {
 
   if (uri === 'archlens://fitness') {
     const checker = deps.checkArchitecture || checkArchitecture;
-    const report = checker(projectRoot, { detectCycles: true });
+    const report = await checker(projectRoot, { detectCycles: true });
     return {
       contents: [
         {
@@ -661,7 +661,7 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
   if (method === 'resources/read') {
     const uri = params?.uri;
     try {
-      const readResult = readMcpResource(uri, options, deps);
+      const readResult = await readMcpResource(uri, options, deps);
       return {
         jsonrpc: '2.0',
         id,

@@ -51,7 +51,7 @@ flowchart TD
   ADR_015["ADR-015: Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity"]
   _263["Ticket #263 (feature/issue-#263-phase-1-5-native-securerandom-rollback-t)"]
   ADR_016["ADR-016: Wave 1 MCP Confinement Pure-Git Tag Caching and Watcher Root Switching"]
-  _265["Ticket #265"]
+  _265["Ticket #265 (feature/issue-#265-wave-1-correctness-and-auth)"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]

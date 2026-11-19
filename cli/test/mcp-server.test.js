@@ -17,11 +17,12 @@ import {
 
 test('getMcpToolsList formats tools conforming to MCP specification', () => {
   const tools = getMcpToolsList();
-  assert.equal(tools.length, 10);
+  assert.equal(tools.length, 11);
 
   const names = tools.map((t) => t.name);
   assert.ok(names.includes('inspectArchitecture'));
   assert.ok(names.includes('exportLlmDossier'));
+  assert.ok(names.includes('exportArchitectureDiagram'));
   assert.ok(names.includes('listSnapshots'));
   assert.ok(names.includes('getSnapshot'));
   assert.ok(names.includes('synthesizeDipInversion'));
@@ -88,7 +89,7 @@ test('handleMcpMessage responds to tools/list', async () => {
   const req = { jsonrpc: '2.0', id: 3, method: 'tools/list' };
   const resp = await handleMcpMessage(req);
   assert.equal(resp.id, 3);
-  assert.equal(resp.result.tools.length, 10);
+  assert.equal(resp.result.tools.length, 11);
 });
 
 test('handleMcpMessage responds to resources/list and prompts/list', async () => {
@@ -526,4 +527,38 @@ test('executeToolCall sends the session token header on workbench API calls', as
     }
   );
   assert.equal(seen[0].init.headers['X-Archlens-Token'], 'env-token');
+});
+
+test('executeToolCall supports exportArchitectureDiagram online and offline', async () => {
+  const seen = [];
+  const online = await executeToolCall(
+    'exportArchitectureDiagram',
+    { projectRoot: '/tmp/proj', diagramType: 'CLASS_UML', violationsOnly: true },
+    { serverUrl: 'http://127.0.0.1:8088' },
+    {
+      ensureServerRunning: async () => ({ status: 'running', token: 'tok-1' }),
+      fetch: async (url, init) => {
+        seen.push({ url, init });
+        return { ok: true, text: async () => 'classDiagram\n  class OrderService' };
+      }
+    }
+  );
+  assert.ok(online.content[0].text.startsWith('classDiagram'));
+  assert.match(seen[0].url, /\/api\/diagram\/export\?/);
+  assert.match(seen[0].url, /type=CLASS_UML/);
+  assert.match(seen[0].url, /violationsOnly=true/);
+  assert.equal(seen[0].init.headers['X-Archlens-Token'], 'tok-1');
+
+  const tmpProj = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mmd-'));
+  try {
+    const offline = await executeToolCall(
+      'exportArchitectureDiagram',
+      { projectRoot: tmpProj, diagramType: 'COMPONENT_RINGS' },
+      {},
+      { ensureServerRunning: async () => ({ status: 'offline' }) }
+    );
+    assert.ok(offline.content[0].text.startsWith('flowchart TB'));
+  } finally {
+    fs.rmSync(tmpProj, { recursive: true, force: true });
+  }
 });

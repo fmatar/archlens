@@ -121,12 +121,12 @@ describe('End-to-End Smoke Test Engine (scripts/smoke-test.js)', () => {
     assert.equal(versionCheck.passed, false);
   });
 
-  it('runMcpStdioSmokeChecks verifies JSON-RPC 2.0 initialize, 10 tools/list, resources/list, and tools/call', async () => {
+  it('runMcpStdioSmokeChecks verifies JSON-RPC 2.0 initialize, 11 tools/list, resources/list, and tools/call', async () => {
     const mcpResult = await runMcpStdioSmokeChecks('http://127.0.0.1:8088', process.cwd(), {
       fetch: createMockFetch()
     });
     assert.equal(mcpResult.passed, true);
-    assert.equal(mcpResult.toolsCount, 10);
+    assert.equal(mcpResult.toolsCount, 11);
     assert.ok(mcpResult.resourcesCount >= 1);
     assert.equal(mcpResult.dipPort, 'StripeGatewayPort');
     assert.equal(mcpResult.policyTitle, 'Archlens');

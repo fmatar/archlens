@@ -132,13 +132,21 @@ public class MailboxResource {
       throws IOException {
     String snapshotId = (String) request.get("snapshotId");
     String root = requireOpenedProject(projectRoot);
-    boolean success;
+    VerifyAndRollbackRefactorUseCase.RollbackResult result;
     try {
-      success = verifyAndRollbackUseCase.rollbackToSnapshot(root, snapshotId);
+      result = verifyAndRollbackUseCase.rollback(root, snapshotId);
     } catch (IllegalArgumentException e) {
       throw jsonError(Response.Status.BAD_REQUEST, e.getMessage());
     }
-    return Map.of("success", success, "snapshotId", snapshotId != null ? snapshotId : "");
+    return Map.of(
+        "success",
+        result.restored(),
+        "snapshotId",
+        snapshotId != null ? snapshotId : "",
+        "trashDir",
+        result.trashDir(),
+        "trashedFiles",
+        result.trashedFiles());
   }
 
   /** Registry of projects opened in this session; lazily created outside of CDI (unit tests). */

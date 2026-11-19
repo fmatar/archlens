@@ -23,7 +23,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 - **Local Workstation & Container**: Runs either via a zero-dependency standalone container (`ghcr.io/fmatar/archlens:latest` on port 8088), an auto-launching native JVM runner (`quarkus-run.jar` in ~0.5s), or bare-metal dev mode (`mvn quarkus:dev` + `npm run dev`).
 - **AI Agent Pairing (Dual Protocol)**:
   - **Mailbox IPC Companion Protocol**: Asynchronous, file-based IPC in `.archlens/` (`to-agent.json` and `to-viewer.json`) for local paired refactoring tasks (`APPLY_PROPOSAL`, `INVERT_DEPENDENCY`, `REGEN`, `REFRESH_CRAP`).
-  - **Model Context Protocol (MCP)**: Native HTTP/SSE (`/mcp`, `/mcp/sse`) and CLI stdio bridge exposing tools (`inspectArchitecture`, `synthesizeDipInversion`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`).
+  - **Model Context Protocol (MCP)**: Native HTTP/SSE (`/mcp`, `/mcp/sse`) and CLI stdio bridge exposing tools (`inspectArchitecture`, `synthesizeDipInversion`, `exportLlmDossier`, `exportArchitectureDiagram`, `listSnapshots`, `getSnapshot`).
 - **Architectural Policy**: Version-controlled `.archlens/policy.json` placed directly inside target repositories, defining concentric tiers (Domain Core, Application, Adapters, Infrastructure), package order, and structural proposals.
 
 ## Capabilities and Constraints
@@ -106,5 +106,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-012 | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | #224 | ADR-011 |
 | ADR-013 | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | #247 | ADR-012 |
 | ADR-014 | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | #247 | ADR-013 |
+| ADR-015 | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
 <!-- ADR_INDEX_END -->
 

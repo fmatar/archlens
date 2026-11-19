@@ -132,8 +132,30 @@ public class ArchlensMcpService {
         WorkspacePathResolver.normalizeRoot(projectRoot), normalizedProposal);
   }
 
+  @Tool(
+      description =
+          "Export a deterministic Mermaid architecture diagram (COMPONENT_RINGS, CLASS_UML, or DIP_REFACTOR) for the target project.")
   public String exportArchitectureDiagram(
-      String projectRoot, String diagramType, String proposalId, boolean violationsOnly)
+      @ToolArg(
+              description =
+                  "Absolute or relative path to the target project directory. Defaults to current directory.",
+              defaultValue = ".")
+          String projectRoot,
+      @ToolArg(
+              description =
+                  "Diagram export type: COMPONENT_RINGS, CLASS_UML, or DIP_REFACTOR. Defaults to COMPONENT_RINGS.",
+              defaultValue = "COMPONENT_RINGS")
+          String diagramType,
+      @ToolArg(
+              description =
+                  "Optional structural proposal ID. Defaults to empty for active architecture.",
+              defaultValue = "")
+          String proposalId,
+      @ToolArg(
+              description =
+                  "When true, restrict exported nodes and edges to outward Clean Architecture violations.",
+              defaultValue = "false")
+          boolean violationsOnly)
       throws IOException {
     String normalizedProposal = proposalId == null || proposalId.isBlank() ? null : proposalId;
     if (exportDiagramUseCase == null) {

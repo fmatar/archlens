@@ -4,15 +4,40 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkus.runtime.ShutdownEvent;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SessionTokenServiceTest {
+
+  @Test
+  void avoidsBuildTimeRandomFieldsInNativeImageHeap() throws IllegalAccessException {
+    boolean hasStaticRandom =
+        Arrays.stream(SessionTokenService.class.getDeclaredFields())
+            .anyMatch((Field f) ->
+                Modifier.isStatic(f.getModifiers()) && Random.class.isAssignableFrom(f.getType()));
+    assertFalse(
+        hasStaticRandom,
+        "SessionTokenService must not hold a static Random/SecureRandom in the GraalVM image heap");
+
+    SessionTokenService constructed = new SessionTokenService();
+    for (Field f : SessionTokenService.class.getDeclaredFields()) {
+      if (Random.class.isAssignableFrom(f.getType())) {
+        f.setAccessible(true);
+        assertNull(
+            f.get(constructed),
+            "Newly constructed SessionTokenService must not eagerly instantiate Random in <init>");
+      }
+    }
+  }
 
   @Test
   void usesConfiguredTokenAndComparesExactly() {

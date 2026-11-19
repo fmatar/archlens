@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkiverse.mcp.server.PromptMessage;
 import io.quarkiverse.mcp.server.TextResourceContents;
+import io.quarkiverse.mcp.server.Tool;
+import io.quarkiverse.mcp.server.ToolArg;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
 import io.slixes.archlens.domain.fitness.FitnessEvaluation;
 import io.slixes.archlens.domain.fitness.FitnessHistoryTrend;
@@ -206,6 +208,17 @@ class ArchlensMcpServiceTest {
     assertTrue(
         dipPrompt.getParameters()[1].isAnnotationPresent(NotBlank.class),
         "dipRefactoringPrompt.toClass must be annotated with @NotBlank");
+
+    Method exportDiagram =
+        ArchlensMcpService.class.getMethod(
+            "exportArchitectureDiagram", String.class, String.class, String.class, boolean.class);
+    assertTrue(
+        exportDiagram.isAnnotationPresent(Tool.class),
+        "exportArchitectureDiagram must be exposed as an MCP @Tool");
+    assertTrue(
+        Arrays.stream(exportDiagram.getParameters())
+            .allMatch(p -> p.isAnnotationPresent(ToolArg.class)),
+        "exportArchitectureDiagram parameters must carry @ToolArg metadata");
   }
 
   @Test

@@ -72,6 +72,23 @@ class MailboxResourceTest {
             tempDir.toString(), Map.of("snapshotId", "snap-1700000000000-deadbeef"));
     assertNotNull(rollbackRes);
     assertEquals(false, rollbackRes.get("success"));
+    assertEquals(java.util.List.of(), rollbackRes.get("trashedFiles"));
+
+    // Snapshot + post-snapshot file -> rollback reports recoverable trash (#228)
+    Path srcDir = Files.createDirectories(tempDir.resolve("src"));
+    Files.writeString(srcDir.resolve("Base.java"), "class Base {}");
+    String snapId = verifyUseCase.createPreRefactorSnapshot(tempDir.toString());
+    Path extra = Files.writeString(srcDir.resolve("Draft.java"), "class Draft {}");
+
+    Map<String, Object> restoredRes =
+        resource.rollbackRefactoring(tempDir.toString(), Map.of("snapshotId", snapId));
+    assertEquals(true, restoredRes.get("success"));
+    assertEquals(".archlens/trash/" + snapId, restoredRes.get("trashDir"));
+    assertEquals(java.util.List.of("src/Draft.java"), restoredRes.get("trashedFiles"));
+    assertFalse(Files.exists(extra));
+    assertEquals(
+        "class Draft {}",
+        Files.readString(tempDir.resolve(".archlens/trash/" + snapId + "/src/Draft.java")));
   }
 
   private static MailboxResource verifyResource() {

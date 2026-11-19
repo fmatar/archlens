@@ -60,10 +60,26 @@ class VerifyAndRollbackRefactorUseCaseTest {
         Files.exists(roguePortFile),
         "Newly created agent files not in pre-refactor snapshot must be removed on rollback");
 
-    // 4. Verify viewer mailbox ACK
+    Path trashedPortFile =
+        tempDir
+            .resolve(".archlens/trash")
+            .resolve(snapshotId)
+            .resolve("src/main/java/com/example/OrderRepoPort.java");
+    assertTrue(
+        Files.exists(trashedPortFile),
+        "Removed post-snapshot files must be moved to recoverable .archlens/trash/<snapshotId>/ (#228)");
+    assertEquals(
+        "package com.example;\npublic interface OrderRepoPort {}\n",
+        Files.readString(trashedPortFile));
+
+    // 4. Verify viewer mailbox ACK includes trashed file report
     MailboxEnvelope viewerMailbox = mailbox.readMailbox(tempDir.toString(), false);
     assertFalse(viewerMailbox.queue().isEmpty());
-    assertEquals("ROLLBACK_COMPLETE", viewerMailbox.queue().get(0).op());
+    MailboxEnvelope.MailboxCommand ack = viewerMailbox.queue().get(0);
+    assertEquals("ROLLBACK_COMPLETE", ack.op());
+    assertEquals(".archlens/trash/" + snapshotId, ack.payload().get("trashDir"));
+    assertEquals(
+        List.of("src/main/java/com/example/OrderRepoPort.java"), ack.payload().get("trashedFiles"));
   }
 
   private static VerifyAndRollbackRefactorUseCase rollbackUseCase() {

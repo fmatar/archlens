@@ -51,6 +51,41 @@ export const ARCHLENS_TOOL_SCHEMAS = {
       required: []
     }
   },
+  exportArchitectureDiagram: {
+    name: 'exportArchitectureDiagram',
+    description:
+      'Export a deterministic Mermaid architecture diagram (COMPONENT_RINGS, CLASS_UML, or DIP_REFACTOR) for the target project.',
+    parameters: {
+      type: 'object',
+      properties: {
+        projectRoot: {
+          type: 'string',
+          description:
+            'Absolute or relative path to the target project directory. Defaults to current directory.',
+          default: '.'
+        },
+        diagramType: {
+          type: 'string',
+          description:
+            'Diagram export type: COMPONENT_RINGS, CLASS_UML, or DIP_REFACTOR. Defaults to COMPONENT_RINGS.',
+          default: 'COMPONENT_RINGS'
+        },
+        proposalId: {
+          type: 'string',
+          description:
+            'Optional structural proposal ID. Defaults to empty for active architecture.',
+          default: ''
+        },
+        violationsOnly: {
+          type: 'boolean',
+          description:
+            'When true, restrict exported nodes and edges to outward Clean Architecture violations.',
+          default: false
+        }
+      },
+      required: []
+    }
+  },
   listSnapshots: {
     name: 'listSnapshots',
     description:
@@ -238,8 +273,9 @@ It strictly enforces Uncle Bob's Dependency Rule: source code dependencies must 
 - **Main Sequence Balance Invariant**: Distance from Main Sequence $D = |A + I - 1| \le 0.35$ avoiding Zones of Pain and Uselessness.
 - **Architectural Fitness Index (AFI)**: Composite fitness score (0-100%) and letter grade (A-F) tracking regression trends.
 
-## Available MCP Tools (10):
+## Available MCP Tools (11):
 - \`exportLlmDossier\`: Primary tool to diagnose architectural drift and generate copy-ready LLM refactoring instructions with Dependency Inversion Principle (DIP) interface port prescriptions. Accepts \`{ "projectRoot": "." }\`.
+- \`exportArchitectureDiagram\`: Exports deterministic Mermaid architecture diagrams (\`COMPONENT_RINGS\`, \`CLASS_UML\`, or \`DIP_REFACTOR\`) with optional \`violationsOnly\` filtering.
 - \`inspectArchitecture\`: Returns full structural JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics.
 - \`synthesizeDipInversion\`: Synthesizes a polyglot Dependency Inversion port (Java/Python/TS/Go/Rust) with caller and adapter diff previews. Accepts \`{ "fromClass": "...", "toClass": "...", "projectRoot": "." }\`.
 - \`evaluateFitness\`: Evaluates the Architecture Fitness Index (\`AFI\` 0-100%, Grade \`A\`-\`F\`), Main Sequence metrics ($I, A, D$), and Screaming Architecture Score (\`SAS\`).

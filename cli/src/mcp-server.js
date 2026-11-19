@@ -14,7 +14,7 @@ import { ARCHLENS_TOOL_SCHEMAS } from './mcp-registry.js';
 import { ensureServerRunning, DEFAULT_SERVER_URL } from './docker-runner.js';
 import { resolveSessionToken, withAuth } from './session.js';
 import { generateLlmPrompt, generatePolicy } from './analyzer.js';
-import { checkArchitecture } from './checker.js';
+import { checkArchitecture, generateMermaidReport } from './checker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -212,6 +212,41 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       serverUrl
     });
     return { content: [{ type: 'text', text: dossier }] };
+  }
+
+  if (toolName === 'exportArchitectureDiagram') {
+    const diagramType = args.diagramType || 'COMPONENT_RINGS';
+    const violationsOnly = Boolean(args.violationsOnly);
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({
+          projectRoot,
+          type: diagramType,
+          violationsOnly: String(violationsOnly)
+        });
+        if (args.proposalId) {
+          query.set('proposalId', args.proposalId);
+        }
+        let res = await apiFetch(`${serverUrl}/api/diagram/export?${query}`);
+        if (!res.ok) {
+          res = await apiFetch(`${serverUrl}/api/graph/export?${query}`);
+        }
+        if (res.ok) {
+          const text = await res.text();
+          return { content: [{ type: 'text', text }] };
+        }
+      } catch (err) {
+        process.stderr.write(
+          `[archlens-mcp] Online diagram export error: ${err.message}. Using offline engine.\n`
+        );
+      }
+    }
+
+    const checker = deps.checkArchitecture || checkArchitecture;
+    const mermaidGen = deps.generateMermaidReport || generateMermaidReport;
+    const report = checker(projectRoot, { detectCycles: true });
+    const text = mermaidGen(report, { diagramType, violationsOnly });
+    return { content: [{ type: 'text', text }] };
   }
 
   if (toolName === 'inspectArchitecture') {

@@ -475,6 +475,7 @@ class DiagramResourceTest {
       // Opening a second project while watcher is running switches the watched root directly
       resource.openProject(second.toString());
       assertEquals(second.toRealPath(), resource.fileWatcher.getWatchedRoot());
+      assertNotNull(new ProjectFilesystemResource(null).openProject(second.toString(), null));
     } finally {
       resource.fileWatcher.stop();
     }

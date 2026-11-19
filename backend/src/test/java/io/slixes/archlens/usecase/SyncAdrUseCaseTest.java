@@ -56,4 +56,25 @@ class SyncAdrUseCaseTest {
     File adr2 = new File(tempDir.toFile(), "docs/adr/" + doc2.filename());
     assertTrue(adr2.exists());
   }
+
+  @Test
+  void testRecordDipInversionRejectsSymlinkedDocsAdrDirectory(@TempDir Path tempDir)
+      throws IOException {
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path outside = Files.createDirectories(tempDir.resolve("outside"));
+    Files.createDirectories(project.resolve("docs"));
+    Files.createSymbolicLink(project.resolve("docs/adr"), outside);
+
+    SyncAdrUseCase useCase = new SyncAdrUseCase();
+    assertThrows(
+        IOException.class,
+        () -> useCase.recordDipInversion(project.toString(), "a.Foo", "b.Bar", "BarPort", "why"));
+    try (var entries = Files.list(outside)) {
+      assertEquals(0L, entries.count());
+    }
+
+    assertThrows(
+        IOException.class,
+        () -> SyncAdrUseCase.ensureNoSymlinkOnPath(project.toRealPath(), outside.resolve("x.md")));
+  }
 }

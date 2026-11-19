@@ -26,7 +26,7 @@ public class FileMailboxService implements MailboxGateway {
   private static final String TO_AGENT = "to-agent.json";
   private static final String TO_VIEWER = "to-viewer.json";
 
-  private File getFile(String projectRoot, String fileName) {
+  private File getFile(String projectRoot, String fileName, boolean createDir) {
     File dir;
     if (projectRoot != null && !projectRoot.isBlank()) {
       File primary = new File(projectRoot, PRIMARY_MAILBOX_DIR);
@@ -49,7 +49,7 @@ public class FileMailboxService implements MailboxGateway {
     } else {
       dir = new File(PRIMARY_MAILBOX_DIR);
     }
-    if (!dir.exists()) {
+    if (createDir && !dir.exists()) {
       try {
         Files.createDirectories(dir.toPath());
       } catch (IOException ignored) {
@@ -61,7 +61,7 @@ public class FileMailboxService implements MailboxGateway {
 
   @Override
   public synchronized MailboxEnvelope readMailbox(String projectRoot, boolean isToAgent) {
-    File file = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
+    File file = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, false);
     if (!file.exists()) {
       return new MailboxEnvelope(1, List.of());
     }
@@ -80,7 +80,7 @@ public class FileMailboxService implements MailboxGateway {
       Map<String, Object> target,
       Map<String, Object> payload)
       throws IOException {
-    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
+    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, true);
     MailboxEnvelope current = readMailbox(projectRoot, isToAgent);
 
     long newId = current.nextId();
@@ -97,7 +97,7 @@ public class FileMailboxService implements MailboxGateway {
   @Override
   public synchronized MailboxEnvelope.MailboxCommand popOldest(
       String projectRoot, boolean isToAgent) throws IOException {
-    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
+    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, true);
     MailboxEnvelope current = readMailbox(projectRoot, isToAgent);
     if (current.queue().isEmpty()) {
       return null;

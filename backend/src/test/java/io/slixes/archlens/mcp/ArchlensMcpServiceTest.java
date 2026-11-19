@@ -141,7 +141,21 @@ class ArchlensMcpServiceTest {
   }
 
   @Test
-  void testSyncDipAdrTool(@TempDir Path tempDir) throws IOException {
+  void testSyncDipAdrRequiresActiveWorkspaceOrOpenedProject(@TempDir Path tempDir)
+      throws IOException {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            mcpService.syncDipAdr(
+                tempDir.toString(),
+                "com.example.OrderService",
+                "com.example.PaymentGateway",
+                "PaymentGatewayPort",
+                "Eliminate outward adapter coupling"));
+
+    assertNotNull(mcpService.requireAuthorizedWriteRoot("."));
+
+    mcpService.getOpenedProjects().markOpened(tempDir.toString());
     SyncAdrUseCase.AdrDocument adr =
         mcpService.syncDipAdr(
             tempDir.toString(),

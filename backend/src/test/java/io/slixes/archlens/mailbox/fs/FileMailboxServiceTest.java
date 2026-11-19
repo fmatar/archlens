@@ -90,4 +90,12 @@ class FileMailboxServiceTest {
     assertEquals(2, envelope.nextId());
     assertEquals(1, envelope.queue().size());
   }
+
+  @Test
+  void testReadMailboxDoesNotCreateDirectoryOnDisk(@TempDir Path tempDir) {
+    Path unopened = tempDir.resolve("unopened-project");
+    MailboxEnvelope env = service.readMailbox(unopened.toString(), true);
+    assertTrue(env.queue().isEmpty());
+    assertFalse(java.nio.file.Files.exists(unopened.resolve(".archlens")));
+  }
 }

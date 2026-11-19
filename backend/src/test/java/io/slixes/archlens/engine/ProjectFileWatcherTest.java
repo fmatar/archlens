@@ -78,10 +78,21 @@ class ProjectFileWatcherTest {
     Path targetFile = targetDir.resolve("Ignored.java");
     Files.writeString(targetFile, "class Ignored {}");
 
+    Path trashDir = Files.createDirectories(tempDir.resolve(".archlens/trash/snap-1"));
+    Files.writeString(trashDir.resolve("Trashed.java"), "class Trashed {}");
+
     boolean triggered = latch.await(300, TimeUnit.MILLISECONDS);
+    var keysField = ProjectFileWatcher.class.getDeclaredField("watchKeys");
+    keysField.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    var watchedDirs = ((java.util.Map<?, Path>) keysField.get(watcher)).values();
+    assertFalse(
+        watchedDirs.stream().anyMatch(p -> p.toString().contains("trash")),
+        ".archlens/trash must never be registered in WatchService");
     watcher.stop();
 
-    assertFalse(triggered, "Watcher should ignore events in target/ directory");
+    assertFalse(
+        triggered, "Watcher should ignore events in target/ and .archlens/trash/ directories");
   }
 
   @Test

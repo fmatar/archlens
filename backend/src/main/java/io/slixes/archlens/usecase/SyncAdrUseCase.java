@@ -132,18 +132,7 @@ public class SyncAdrUseCase {
   }
 
   static void ensureNoSymlinkOnPath(Path canonicalRoot, Path candidate) throws IOException {
-    Path normalized = candidate.toAbsolutePath().normalize();
-    if (!normalized.startsWith(canonicalRoot)) {
-      throw new IOException("Refusing to write ADR outside project root: " + candidate);
-    }
-    Path rel = canonicalRoot.relativize(normalized);
-    Path cursor = canonicalRoot;
-    for (Path part : rel) {
-      cursor = cursor.resolve(part);
-      if (Files.isSymbolicLink(cursor)) {
-        throw new IOException("Refusing to write ADR across symlink: " + cursor);
-      }
-    }
+    ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, candidate);
   }
 
   private int determineNextAdrIndex(File adrDirectory) {

@@ -32,7 +32,8 @@ public class ProjectFileWatcher {
           ".idea",
           ".vscode",
           "cache",
-          "snapshots");
+          "snapshots",
+          "trash");
 
   private static final Set<String> WATCHED_EXTENSIONS =
       Set.of(".java", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".clj", ".cljs", ".json");
@@ -43,6 +44,7 @@ public class ProjectFileWatcher {
 
   private volatile WatchService watchService;
   private volatile Path watchedRoot;
+  private volatile Consumer<Path> activeCallback;
   private Thread watcherThread;
   private ScheduledExecutorService debounceScheduler;
   private ScheduledFuture<?> pendingDebounceTask;
@@ -63,6 +65,13 @@ public class ProjectFileWatcher {
     return watchedRoot;
   }
 
+  public synchronized void switchRootIfRunning(Path newRoot) {
+    Consumer<Path> callback = this.activeCallback;
+    if (running.get() && callback != null) {
+      start(newRoot, callback);
+    }
+  }
+
   public synchronized void start(Path rootPath, Consumer<Path> onChange) {
     if (rootPath == null || !Files.exists(rootPath)) {
       return;
@@ -70,6 +79,7 @@ public class ProjectFileWatcher {
 
     Path normalizedRoot = normalizeRoot(rootPath);
     if (running.get() && normalizedRoot.equals(watchedRoot)) {
+      this.activeCallback = onChange;
       return;
     }
     if (running.get()) {
@@ -88,6 +98,7 @@ public class ProjectFileWatcher {
 
       registerRecursive(normalizedRoot, activeService);
       this.watchedRoot = normalizedRoot;
+      this.activeCallback = onChange;
       running.set(true);
 
       this.watcherThread =
@@ -114,6 +125,7 @@ public class ProjectFileWatcher {
 
   public synchronized void stop() {
     this.watchedRoot = null;
+    this.activeCallback = null;
     boolean wasRunning = running.getAndSet(false);
 
     if (debounceScheduler != null) {

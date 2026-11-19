@@ -97,11 +97,11 @@ public class FileMailboxService implements MailboxGateway {
   @Override
   public synchronized MailboxEnvelope.MailboxCommand popOldest(
       String projectRoot, boolean isToAgent) throws IOException {
-    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, true);
     MailboxEnvelope current = readMailbox(projectRoot, isToAgent);
     if (current.queue().isEmpty()) {
       return null;
     }
+    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, true);
 
     MailboxEnvelope.MailboxCommand oldest = current.queue().get(0);
     List<MailboxEnvelope.MailboxCommand> remaining =

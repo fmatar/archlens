@@ -278,6 +278,16 @@ class ManageSnapshotsUseCaseTest {
     Files.deleteIfExists(archlensDir.resolve("policy.json"));
     Files.deleteIfExists(repo.resolve(".archlens/cache/v0.1.0.json"));
     assertNotNull(useCase.getSnapshot("v0.1.0", repo.toString()));
+
+    Path outsideSnap = tempDir.resolve("outside-snap.json");
+    Files.writeString(outsideSnap, "{}");
+    Path snaps = Files.createDirectories(repo.resolve(".archlens/snapshots"));
+    Files.createSymbolicLink(snaps.resolve("sym01.json"), outsideSnap);
+    IOException symEx =
+        assertThrows(IOException.class, () -> useCase.getSnapshot("sym01", repo.toString()));
+    assertFalse(
+        symEx.getMessage().contains("ADR"),
+        "Snapshot symlink rejection must use neutral wording rather than ADR-specific text");
   }
 
   @Test

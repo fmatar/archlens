@@ -177,13 +177,13 @@ public class ManageSnapshotsUseCase {
 
     Path snapshotFile = canonicalRoot.resolve(".archlens/snapshots/" + snapshotId + ".json");
     if (Files.isRegularFile(snapshotFile)) {
-      SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, snapshotFile);
+      ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, snapshotFile);
       return mapper.readValue(snapshotFile.toFile(), ArchitectureGraph.class);
     }
 
     Path cacheFile = canonicalRoot.resolve(".archlens/cache/" + snapshotId + ".json");
     if (Files.isRegularFile(cacheFile)) {
-      SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheFile);
+      ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, cacheFile);
       return mapper.readValue(cacheFile.toFile(), ArchitectureGraph.class);
     }
 
@@ -246,10 +246,10 @@ public class ManageSnapshotsUseCase {
           architectureCompiler.compileGraph(canonicalWorktree.toString(), null);
       if (graph != null && canPersistCache(canonicalRoot)) {
         Path cacheDir = canonicalRoot.resolve(".archlens/cache");
-        SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheDir);
+        ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, cacheDir);
         Files.createDirectories(cacheDir);
         Path cacheFile = cacheDir.resolve(tag + ".json");
-        SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheFile);
+        ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, cacheFile);
         Path tmpFile = Files.createTempFile(cacheDir, tag + "-", ".tmp");
         try {
           mapper.writeValue(tmpFile.toFile(), graph);
@@ -272,7 +272,7 @@ public class ManageSnapshotsUseCase {
       Files.deleteIfExists(tagArchlensDir);
     }
     Path tagPolicy = tagArchlensDir.resolve("policy.json");
-    SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalWorktree, tagPolicy);
+    ProjectPathGuard.ensureNoSymlinkOnPath(canonicalWorktree, tagPolicy);
     if (Files.isRegularFile(tagPolicy, LinkOption.NOFOLLOW_LINKS)) {
       ArchitecturePolicy parsed = architectureCompiler.loadPolicy(canonicalWorktree.toString());
       String configuredSrc = parsed != null ? parsed.src() : null;
@@ -285,7 +285,7 @@ public class ManageSnapshotsUseCase {
     Path activePolicy = canonicalRoot.resolve(".archlens/policy.json");
     if (!Files.exists(tagPolicy, LinkOption.NOFOLLOW_LINKS)
         && Files.isRegularFile(activePolicy, LinkOption.NOFOLLOW_LINKS)) {
-      SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, activePolicy);
+      ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, activePolicy);
       Files.createDirectories(tagArchlensDir);
       Files.copy(activePolicy, tagPolicy, StandardCopyOption.REPLACE_EXISTING);
     }

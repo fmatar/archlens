@@ -245,5 +245,45 @@ describe('diagramStore extended coverage tests', () => {
       globalThis.fetch = originalFetch;
     }
   });
+
+  it('loadGraph clears isLoading immediately after /api/graph before slow /api/fitness completes', async () => {
+    const originalFetch = globalThis.fetch;
+    let releaseFitness!: () => void;
+    let markFitnessStarted!: () => void;
+    const fitnessGate = new Promise<void>((resolve) => {
+      releaseFitness = resolve;
+    });
+    const fitnessStarted = new Promise<void>((resolve) => {
+      markFitnessStarted = resolve;
+    });
+
+    globalThis.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/graph')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ title: 'FastGraph', components: [], edges: [], unassigned: [] })
+        };
+      }
+      if (url.startsWith('/api/fitness')) {
+        markFitnessStarted();
+        await fitnessGate;
+        return { ok: true, status: 200, json: async () => ({ fitnessScore: 0.9, grade: 'A', rules: [] }) };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    });
+
+    try {
+      const pendingLoad = diagramStore.loadGraph();
+      await fitnessStarted;
+      expect(diagramStore.graph?.title).toBe('FastGraph');
+      expect(diagramStore.isLoading).toBe(false);
+      releaseFitness();
+      await pendingLoad;
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 

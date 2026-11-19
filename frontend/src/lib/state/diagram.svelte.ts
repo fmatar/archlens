@@ -1141,6 +1141,7 @@ class DiagramState {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.graph = await res.json();
       this.activeProposalId = proposalId || null;
+      this.isLoading = false;
       await this.loadFitness();
     } catch (e: any) {
       // Graceful fallback to embedded demo dataset

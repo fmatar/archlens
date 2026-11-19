@@ -93,10 +93,15 @@ class FileMailboxServiceTest {
   }
 
   @Test
-  void testReadMailboxDoesNotCreateDirectoryOnDisk(@TempDir Path tempDir) {
+  void testReadMailboxDoesNotCreateDirectoryOnDisk(@TempDir Path tempDir) throws IOException {
     Path unopened = tempDir.resolve("unopened-project");
     MailboxEnvelope env = service.readMailbox(unopened.toString(), true);
     assertTrue(env.queue().isEmpty());
     assertFalse(java.nio.file.Files.exists(unopened.resolve(".archlens")));
+
+    assertNull(service.popOldest(unopened.toString(), true));
+    assertFalse(
+        java.nio.file.Files.exists(unopened.resolve(".archlens")),
+        "popOldest on an empty unopened mailbox must not create .archlens on disk");
   }
 }

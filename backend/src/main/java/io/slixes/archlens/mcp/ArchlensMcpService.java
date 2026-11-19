@@ -26,6 +26,8 @@ import io.slixes.archlens.usecase.ExportDiagramUseCase;
 import io.slixes.archlens.usecase.ExportDossierUseCase;
 import io.slixes.archlens.usecase.GetFitnessHistoryUseCase;
 import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.ProjectPathGuard;
 import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SyncAdrUseCase;
 import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
@@ -35,6 +37,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -64,6 +67,8 @@ public class ArchlensMcpService {
 
   @Inject SyncAdrUseCase syncAdrUseCase;
 
+  @Inject OpenedProjectRegistry openedProjects;
+
   @Inject ObjectMapper objectMapper;
 
   public ArchlensMcpService() {}
@@ -89,6 +94,25 @@ public class ArchlensMcpService {
         new ProposeScreamingMigrationUseCase(
             architectureCompiler, new ScreamingMigrationAssistant());
     this.syncAdrUseCase = new SyncAdrUseCase();
+    this.openedProjects = new OpenedProjectRegistry();
+  }
+
+  public OpenedProjectRegistry getOpenedProjects() {
+    if (openedProjects == null) {
+      openedProjects = new OpenedProjectRegistry();
+    }
+    return openedProjects;
+  }
+
+  String requireAuthorizedWriteRoot(String projectRoot) throws IOException {
+    String normalized = WorkspacePathResolver.normalizeRoot(projectRoot);
+    Path target = ProjectPathGuard.canonicalRoot(normalized);
+    Path activeWorkspace = ProjectPathGuard.canonicalRoot(WorkspacePathResolver.normalizeRoot("."));
+    if (!target.equals(activeWorkspace) && !getOpenedProjects().isOpened(target.toString())) {
+      throw new IllegalArgumentException(
+          "Project root is not opened in this session: " + projectRoot);
+    }
+    return target.toString();
   }
 
   private ObjectMapper mapper() {
@@ -310,12 +334,9 @@ public class ArchlensMcpService {
               defaultValue = "Invert outward Clean Architecture dependency")
           String reason)
       throws IOException {
+    String authorizedRoot = requireAuthorizedWriteRoot(projectRoot);
     return syncAdrUseCase.recordDipInversion(
-        WorkspacePathResolver.normalizeRoot(projectRoot),
-        sourceClass,
-        targetClass,
-        interfacePortName,
-        reason);
+        authorizedRoot, sourceClass, targetClass, interfacePortName, reason);
   }
 
   @Resource(

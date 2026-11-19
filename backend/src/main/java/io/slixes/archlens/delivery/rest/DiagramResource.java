@@ -124,14 +124,16 @@ public class DiagramResource {
         new ProposeScreamingMigrationUseCase(this.graphCompiler, this.screamingMigrationAssistant);
     io.slixes.archlens.usecase.OpenedProjectRegistry sharedRegistry =
         new io.slixes.archlens.usecase.OpenedProjectRegistry();
+    this.fileWatcher = new ProjectFileWatcher();
     this.filesystemResource =
         new ProjectFilesystemResource(
-            new io.slixes.archlens.usecase.ResolveFilesystemUseCase(), sharedRegistry);
+            new io.slixes.archlens.usecase.ResolveFilesystemUseCase(),
+            sharedRegistry,
+            this.fileWatcher);
     this.snapshotResource = new SnapshotResource(graphCompiler, this.mapper);
     this.mailboxResource = new MailboxResource(mailboxService);
     this.mailboxResource.openedProjects = sharedRegistry;
     this.savePolicyUseCase = new SavePolicyUseCase(this.graphCompiler, this.mapper);
-    this.fileWatcher = new ProjectFileWatcher();
   }
 
   public DiagramResource(
@@ -402,25 +404,39 @@ public class DiagramResource {
   }
 
   public void ensureWatcherRunning(String projectRoot) {
-    ProjectFileWatcher watcher = getFileWatcher();
-    if (!watcher.isRunning()) {
-      Thread.ofVirtual()
-          .name("archlens-watcher-starter")
-          .start(() -> {
-            try {
-              watcher.start(
-                  Paths.get(projectRoot),
-                  path ->
-                      eventProcessor.onNext(
-                          Map.of(
-                              "event", "graph-update",
-                              "path", path.toString(),
-                              "timestamp", System.currentTimeMillis())));
-            } catch (Exception e) {
-              LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
-            }
-          });
+    String normalized = WorkspacePathResolver.normalizeRoot(projectRoot);
+    if (!isAuthorizedWatchRoot(normalized)) {
+      return;
     }
+    ProjectFileWatcher watcher = getFileWatcher();
+    java.nio.file.Path desiredRoot = Paths.get(normalized);
+    Thread.ofVirtual()
+        .name("archlens-watcher-starter")
+        .start(() -> {
+          try {
+            watcher.start(
+                desiredRoot,
+                path ->
+                    eventProcessor.onNext(
+                        Map.of(
+                            "event", "graph-update",
+                            "path", path.toString(),
+                            "timestamp", System.currentTimeMillis())));
+          } catch (Exception e) {
+            LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
+          }
+        });
+  }
+
+  private boolean isAuthorizedWatchRoot(String normalizedRoot) {
+    return io.slixes.archlens.usecase.ProjectPathGuard.tryCanonicalRoot(normalizedRoot)
+        .map(target ->
+            getFilesystemResource().getOpenedProjects().isOpened(target.toString())
+                || io.slixes.archlens.usecase.ProjectPathGuard.tryCanonicalRoot(
+                        WorkspacePathResolver.normalizeRoot("."))
+                    .map(target::equals)
+                    .orElse(false))
+        .orElse(false);
   }
 
   public void notifyGraphUpdate(Map<String, Object> payload) {

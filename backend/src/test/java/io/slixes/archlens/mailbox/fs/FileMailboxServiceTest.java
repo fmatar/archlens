@@ -63,6 +63,9 @@ class FileMailboxServiceTest {
     // Verify viewer inbox as well
     MailboxEnvelope viewerBox = service.readMailbox(root, false);
     assertEquals(1, viewerBox.nextId());
+    assertNull(service.popOldest(root, false));
+    service.appendCommand(root, false, "ACK", Map.of(), Map.of());
+    assertNotNull(service.popOldest(root, false));
 
     // 7. Verify handling of corrupted JSON file (triggers catch block)
     File corruptedFile = new File(new File(root, ".archlens"), "to-agent.json");
@@ -89,5 +92,18 @@ class FileMailboxServiceTest {
     MailboxEnvelope envelope = service.readMailbox(root, true);
     assertEquals(2, envelope.nextId());
     assertEquals(1, envelope.queue().size());
+  }
+
+  @Test
+  void testReadMailboxDoesNotCreateDirectoryOnDisk(@TempDir Path tempDir) throws IOException {
+    Path unopened = tempDir.resolve("unopened-project");
+    MailboxEnvelope env = service.readMailbox(unopened.toString(), true);
+    assertTrue(env.queue().isEmpty());
+    assertFalse(java.nio.file.Files.exists(unopened.resolve(".archlens")));
+
+    assertNull(service.popOldest(unopened.toString(), true));
+    assertFalse(
+        java.nio.file.Files.exists(unopened.resolve(".archlens")),
+        "popOldest on an empty unopened mailbox must not create .archlens on disk");
   }
 }

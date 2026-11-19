@@ -32,7 +32,8 @@ public class ProjectFileWatcher {
           ".idea",
           ".vscode",
           "cache",
-          "snapshots");
+          "snapshots",
+          "trash");
 
   private static final Set<String> WATCHED_EXTENSIONS =
       Set.of(".java", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".clj", ".cljs", ".json");
@@ -42,6 +43,8 @@ public class ProjectFileWatcher {
   private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
 
   private volatile WatchService watchService;
+  private volatile Path watchedRoot;
+  private volatile Consumer<Path> activeCallback;
   private Thread watcherThread;
   private ScheduledExecutorService debounceScheduler;
   private ScheduledFuture<?> pendingDebounceTask;
@@ -58,13 +61,34 @@ public class ProjectFileWatcher {
     return running.get();
   }
 
+  public Path getWatchedRoot() {
+    return watchedRoot;
+  }
+
+  public synchronized void switchRootIfRunning(Path newRoot) {
+    Consumer<Path> callback = this.activeCallback;
+    if (running.get() && callback != null) {
+      start(newRoot, callback);
+    }
+  }
+
   public synchronized void start(Path rootPath, Consumer<Path> onChange) {
-    if (running.get() || rootPath == null || !Files.exists(rootPath)) {
+    if (rootPath == null || !Files.exists(rootPath)) {
       return;
     }
 
+    Path normalizedRoot = normalizeRoot(rootPath);
+    if (running.get() && normalizedRoot.equals(watchedRoot)) {
+      this.activeCallback = onChange;
+      return;
+    }
+    if (running.get()) {
+      stop();
+    }
+
     try {
-      this.watchService = FileSystems.getDefault().newWatchService();
+      WatchService activeService = FileSystems.getDefault().newWatchService();
+      this.watchService = activeService;
       this.debounceScheduler =
           Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "archlens-watcher-debounce");
@@ -72,14 +96,25 @@ public class ProjectFileWatcher {
             return t;
           });
 
-      registerRecursive(rootPath);
+      registerRecursive(normalizedRoot, activeService);
+      this.watchedRoot = normalizedRoot;
+      this.activeCallback = onChange;
       running.set(true);
 
-      this.watcherThread = new Thread(() -> processEvents(onChange), "archlens-file-watcher");
+      this.watcherThread =
+          new Thread(() -> processEvents(activeService, onChange), "archlens-file-watcher");
       this.watcherThread.setDaemon(true);
       this.watcherThread.start();
     } catch (IOException e) {
       stop();
+    }
+  }
+
+  private static Path normalizeRoot(Path rootPath) {
+    try {
+      return rootPath.toRealPath();
+    } catch (IOException e) {
+      return rootPath.toAbsolutePath().normalize();
     }
   }
 
@@ -89,12 +124,13 @@ public class ProjectFileWatcher {
   }
 
   public synchronized void stop() {
-    if (!running.getAndSet(false)) {
-      return;
-    }
+    this.watchedRoot = null;
+    this.activeCallback = null;
+    boolean wasRunning = running.getAndSet(false);
 
     if (debounceScheduler != null) {
       debounceScheduler.shutdownNow();
+      debounceScheduler = null;
     }
 
     if (watchService != null) {
@@ -103,16 +139,22 @@ public class ProjectFileWatcher {
       } catch (IOException e) {
         LOG.debugf(e, "Error closing WatchService");
       }
+      watchService = null;
     }
 
-    if (watcherThread != null) {
+    if (wasRunning && watcherThread != null && watcherThread != Thread.currentThread()) {
       watcherThread.interrupt();
+      try {
+        watcherThread.join(250);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
-
+    watcherThread = null;
     watchKeys.clear();
   }
 
-  private void registerRecursive(Path root) throws IOException {
+  private void registerRecursive(Path root, WatchService activeService) throws IOException {
     Files.walkFileTree(
         root,
         new SimpleFileVisitor<>() {
@@ -133,21 +175,26 @@ public class ProjectFileWatcher {
 
             WatchKey key =
                 dir.register(
-                    watchService,
+                    activeService,
                     StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY,
                     StandardWatchEventKinds.ENTRY_DELETE);
             watchKeys.put(key, dir);
             return FileVisitResult.CONTINUE;
           }
+
+          @Override
+          public FileVisitResult visitFileFailed(Path file, IOException exc) {
+            return FileVisitResult.CONTINUE;
+          }
         });
   }
 
-  private void processEvents(Consumer<Path> onChange) {
-    while (running.get()) {
+  private void processEvents(WatchService activeService, Consumer<Path> onChange) {
+    while (running.get() && this.watchService == activeService) {
       WatchKey key;
       try {
-        key = watchService.poll(100, TimeUnit.MILLISECONDS);
+        key = activeService.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException | ClosedWatchServiceException e) {
         break;
       }
@@ -177,7 +224,7 @@ public class ProjectFileWatcher {
         if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
           try {
             if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
-              registerRecursive(child);
+              registerRecursive(child, activeService);
             }
           } catch (IOException ignored) {
           }

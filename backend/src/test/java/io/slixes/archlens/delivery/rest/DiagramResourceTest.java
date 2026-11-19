@@ -446,4 +446,38 @@ class DiagramResourceTest {
         source.contains("import io.slixes.archlens.usecase.WorkspacePathResolver;"),
         "DiagramResource must explicitly import Ring 1 io.slixes.archlens.usecase.WorkspacePathResolver");
   }
+
+  @Test
+  void testEnsureWatcherRunningRejectsUnopenedRootAndSwitchesOnOpenProject(@TempDir Path tempDir)
+      throws Exception {
+    Path unopened = Files.createDirectories(tempDir.resolve("unopened-watch"));
+    Path second = Files.createDirectories(tempDir.resolve("opened-watch-b"));
+    DiagramResource resource =
+        new DiagramResource(
+            new GraphCompiler(),
+            new FileMailboxService(),
+            null,
+            new com.fasterxml.jackson.databind.ObjectMapper());
+    try {
+      resource.ensureWatcherRunning(unopened.toString());
+      Thread.sleep(150);
+      assertFalse(
+          resource.fileWatcher.isRunning(),
+          "ensureWatcherRunning must not watch an unopened external directory");
+
+      resource.openProject(unopened.toString());
+      resource.ensureWatcherRunning(unopened.toString());
+      for (int i = 0; i < 20 && resource.fileWatcher.getWatchedRoot() == null; i++) {
+        Thread.sleep(50);
+      }
+      assertEquals(unopened.toRealPath(), resource.fileWatcher.getWatchedRoot());
+
+      // Opening a second project while watcher is running switches the watched root directly
+      resource.openProject(second.toString());
+      assertEquals(second.toRealPath(), resource.fileWatcher.getWatchedRoot());
+      assertNotNull(new ProjectFilesystemResource(null).openProject(second.toString(), null));
+    } finally {
+      resource.fileWatcher.stop();
+    }
+  }
 }

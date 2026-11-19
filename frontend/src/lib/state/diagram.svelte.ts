@@ -1127,7 +1127,6 @@ class DiagramState {
     await this.loadPolicy();
     await this.loadGraph();
     await this.loadSnapshots();
-    await this.loadFitness();
   }
 
   async loadGraph(proposalId?: string | null) {
@@ -1142,7 +1141,8 @@ class DiagramState {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.graph = await res.json();
       this.activeProposalId = proposalId || null;
-      this.loadFitness();
+      this.isLoading = false;
+      await this.loadFitness();
     } catch (e: any) {
       // Graceful fallback to embedded demo dataset
       if (proposalId === 'clean-core') {

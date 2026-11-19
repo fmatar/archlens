@@ -1,5 +1,6 @@
 package io.slixes.archlens.delivery.rest;
 
+import io.slixes.archlens.engine.ProjectFileWatcher;
 import io.slixes.archlens.usecase.OpenedProjectRegistry;
 import io.slixes.archlens.usecase.ResolveFilesystemUseCase;
 import io.slixes.archlens.usecase.WorkspacePathResolver;
@@ -25,20 +26,29 @@ public class ProjectFilesystemResource {
 
   @Inject ResolveFilesystemUseCase filesystemUseCase;
   @Inject OpenedProjectRegistry openedProjects;
+  @Inject ProjectFileWatcher fileWatcher;
 
   public ProjectFilesystemResource() {
     this.filesystemUseCase = new ResolveFilesystemUseCase();
   }
 
   public ProjectFilesystemResource(ResolveFilesystemUseCase filesystemUseCase) {
-    this(filesystemUseCase, new OpenedProjectRegistry());
+    this(filesystemUseCase, new OpenedProjectRegistry(), null);
   }
 
   public ProjectFilesystemResource(
       ResolveFilesystemUseCase filesystemUseCase, OpenedProjectRegistry openedProjects) {
+    this(filesystemUseCase, openedProjects, null);
+  }
+
+  public ProjectFilesystemResource(
+      ResolveFilesystemUseCase filesystemUseCase,
+      OpenedProjectRegistry openedProjects,
+      ProjectFileWatcher fileWatcher) {
     this.filesystemUseCase =
         filesystemUseCase != null ? filesystemUseCase : new ResolveFilesystemUseCase();
     this.openedProjects = openedProjects != null ? openedProjects : new OpenedProjectRegistry();
+    this.fileWatcher = fileWatcher;
   }
 
   OpenedProjectRegistry getOpenedProjects() {
@@ -68,8 +78,12 @@ public class ProjectFilesystemResource {
         WorkspacePathResolver.normalizeRoot(rawRoot == null || rawRoot.isBlank() ? "." : rawRoot);
     return getOpenedProjects()
         .markOpened(normalized)
-        .<Map<String, Object>>map(
-            canonical -> Map.of("opened", true, "projectRoot", canonical.toString()))
+        .<Map<String, Object>>map(canonical -> {
+          if (fileWatcher != null) {
+            fileWatcher.switchRootIfRunning(canonical);
+          }
+          return Map.of("opened", true, "projectRoot", canonical.toString());
+        })
         .orElseThrow(() ->
             new WebApplicationException(
                 Response.status(Response.Status.BAD_REQUEST)

@@ -86,7 +86,7 @@ public class ProjectFileWatcher {
             return t;
           });
 
-      registerRecursive(normalizedRoot);
+      registerRecursive(normalizedRoot, activeService);
       this.watchedRoot = normalizedRoot;
       running.set(true);
 
@@ -114,12 +114,11 @@ public class ProjectFileWatcher {
 
   public synchronized void stop() {
     this.watchedRoot = null;
-    if (!running.getAndSet(false)) {
-      return;
-    }
+    boolean wasRunning = running.getAndSet(false);
 
     if (debounceScheduler != null) {
       debounceScheduler.shutdownNow();
+      debounceScheduler = null;
     }
 
     if (watchService != null) {
@@ -128,9 +127,10 @@ public class ProjectFileWatcher {
       } catch (IOException e) {
         LOG.debugf(e, "Error closing WatchService");
       }
+      watchService = null;
     }
 
-    if (watcherThread != null && watcherThread != Thread.currentThread()) {
+    if (wasRunning && watcherThread != null && watcherThread != Thread.currentThread()) {
       watcherThread.interrupt();
       try {
         watcherThread.join(250);
@@ -138,11 +138,11 @@ public class ProjectFileWatcher {
         Thread.currentThread().interrupt();
       }
     }
-
+    watcherThread = null;
     watchKeys.clear();
   }
 
-  private void registerRecursive(Path root) throws IOException {
+  private void registerRecursive(Path root, WatchService activeService) throws IOException {
     Files.walkFileTree(
         root,
         new SimpleFileVisitor<>() {
@@ -163,11 +163,16 @@ public class ProjectFileWatcher {
 
             WatchKey key =
                 dir.register(
-                    watchService,
+                    activeService,
                     StandardWatchEventKinds.ENTRY_CREATE,
                     StandardWatchEventKinds.ENTRY_MODIFY,
                     StandardWatchEventKinds.ENTRY_DELETE);
             watchKeys.put(key, dir);
+            return FileVisitResult.CONTINUE;
+          }
+
+          @Override
+          public FileVisitResult visitFileFailed(Path file, IOException exc) {
             return FileVisitResult.CONTINUE;
           }
         });
@@ -207,7 +212,7 @@ public class ProjectFileWatcher {
         if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
           try {
             if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
-              registerRecursive(child);
+              registerRecursive(child, activeService);
             }
           } catch (IOException ignored) {
           }

@@ -388,6 +388,36 @@ test('executeToolCall syncDipAdr sends POST /api/mailbox/sync-adr?projectRoot=..
   );
 });
 
+test('executeToolCall syncDipAdr only auto-opens launch workspace and fails closed on HTTP 403', async () => {
+  const seenUrls = [];
+  await assert.rejects(
+    () =>
+      executeToolCall(
+        'syncDipAdr',
+        {
+          sourceClass: 'OrderUseCase',
+          targetClass: 'JpaOrderRepository',
+          interfacePortName: 'OrderRepositoryPort',
+          projectRoot: '/tmp/unopened-other-repo'
+        },
+        { serverUrl: 'http://127.0.0.1:8088', path: '/tmp/launch-workspace' },
+        {
+          ensureServerRunning: async () => ({ status: 'running', token: 'tok' }),
+          fetch: async (url) => {
+            seenUrls.push(String(url));
+            return { ok: false, status: 403, json: async () => ({ error: 'Forbidden' }) };
+          }
+        }
+      ),
+    /403|not opened|Forbidden/i
+  );
+  assert.equal(
+    seenUrls.some((u) => u.includes('/api/projects/open')),
+    false,
+    'Must not auto-open arbitrary external projectRoot'
+  );
+});
+
 test('executeToolCall covers listSnapshots, getSnapshot, evaluateFitness, getFitnessHistory, proposeScreamingMigration, and getPolicy online and offline', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-all-'));
   try {

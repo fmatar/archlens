@@ -124,4 +124,28 @@ class ProjectFileWatcherTest {
 
     assertTrue(triggeredB, "Expected watcher to switch from projectA to projectB");
   }
+
+  @Test
+  @DisplayName("stop cleans up WatchService and scheduler even if running was false")
+  void testStopCleansUpPartiallyInitializedResources() throws Exception {
+    ProjectFileWatcher watcher = new ProjectFileWatcher(50);
+    var ws = java.nio.file.FileSystems.getDefault().newWatchService();
+    var exec = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+
+    var wsField = ProjectFileWatcher.class.getDeclaredField("watchService");
+    wsField.setAccessible(true);
+    wsField.set(watcher, ws);
+
+    var execField = ProjectFileWatcher.class.getDeclaredField("debounceScheduler");
+    execField.setAccessible(true);
+    execField.set(watcher, exec);
+
+    watcher.stop();
+    assertTrue(
+        exec.isShutdown(), "stop() must shut down debounceScheduler even when running==false");
+    assertThrows(
+        java.nio.file.ClosedWatchServiceException.class,
+        ws::poll,
+        "stop() must close watchService even when running==false");
+  }
 }

@@ -45,10 +45,13 @@ class ManageSnapshotsUseCaseTest {
     cmd[0] = "git";
     System.arraycopy(args, 0, cmd, 1, args.length);
     ProcessBuilder pb = new ProcessBuilder(cmd).directory(repo.toFile());
-    pb.environment().put("GIT_AUTHOR_NAME", "Test");
-    pb.environment().put("GIT_AUTHOR_EMAIL", "test@example.com");
-    pb.environment().put("GIT_COMMITTER_NAME", "Test");
-    pb.environment().put("GIT_COMMITTER_EMAIL", "test@example.com");
+    ManageSnapshotsUseCase.scrubGitEnvironment(
+        pb.environment(),
+        Map.of(
+            "GIT_AUTHOR_NAME", "Test",
+            "GIT_AUTHOR_EMAIL", "test@example.com",
+            "GIT_COMMITTER_NAME", "Test",
+            "GIT_COMMITTER_EMAIL", "test@example.com"));
     Process p = pb.start();
     String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
     String err = new String(p.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
@@ -214,5 +217,107 @@ class ManageSnapshotsUseCaseTest {
     // Live git index and tracked working tree must remain completely untouched
     String gitStatus = runGit(repo, "status", "--porcelain", "--untracked-files=no");
     assertEquals("", gitStatus.trim(), "Git index and tracked working tree must not be mutated");
+  }
+
+  @Test
+  void testGitTagNeutralizesTrackedSymlinksAndUntrustedPolicySrc(@TempDir Path tempDir)
+      throws Exception {
+    Path outsideDir = Files.createDirectories(tempDir.resolve("outside-host-dir"));
+    Path outsideJava = Files.createDirectories(outsideDir.resolve("com/secret"));
+    Files.writeString(
+        outsideJava.resolve("SecretKey.java"), "package com.secret;\npublic class SecretKey {}\n");
+
+    Path repo = Files.createDirectories(tempDir.resolve("evil-repo"));
+    runGit(repo, "init");
+
+    // Tag v0.1.0-symlink: tracked symlink .archlens -> outsideDir (no policy.json in outsideDir)
+    Files.createSymbolicLink(repo.resolve(".archlens"), outsideDir);
+    Path srcDir = Files.createDirectories(repo.resolve("src/main/java/com/demo"));
+    Files.writeString(srcDir.resolve("Safe.java"), "package com.demo;\npublic class Safe {}\n");
+    runGit(repo, "add", ".");
+    runGit(repo, "commit", "-m", "tag with symlinked .archlens");
+    runGit(repo, "tag", "v0.1.0");
+
+    // Replace symlink with real .archlens/policy.json in v0.2.0-escape whose src escapes worktree
+    Files.delete(repo.resolve(".archlens"));
+    Path archlensDir = Files.createDirectories(repo.resolve(".archlens"));
+    Files.writeString(
+        archlensDir.resolve("policy.json"),
+        "{\"title\":\"Escape\",\"src\":\""
+            + outsideDir.toAbsolutePath().toString().replace("\\", "\\\\")
+            + "\",\"prefix\":\"com\",\"hierarchical\":true,\"levels\":[[\"secret\"]]}");
+    runGit(repo, "add", "-A");
+    runGit(repo, "commit", "-m", "tag with escaping policy src");
+    runGit(repo, "tag", "v0.2.0");
+
+    // Current working tree has legitimate local policy.json
+    Files.writeString(
+        archlensDir.resolve("policy.json"),
+        "{\"title\":\"SafeApp\",\"src\":\"src/main/java\",\"prefix\":\"com.demo\","
+            + "\"hierarchical\":true,\"levels\":[[\"demo\"]]}");
+
+    ManageSnapshotsUseCase useCase =
+        new ManageSnapshotsUseCase(createRealJavaCompiler(), new ObjectMapper());
+
+    // 1. Extracting v0.1.0 must NOT write policy.json through tracked .archlens symlink into
+    // outsideDir
+    useCase.getSnapshot("v0.1.0", repo.toString());
+    assertFalse(
+        Files.exists(outsideDir.resolve("policy.json")),
+        "Tracked .archlens symlink inside git tag must never write policy.json into host directory");
+
+    // 2. Extracting v0.2.0 must NOT honor escaping policy.json src pointing to outsideDir
+    ArchitectureGraph v020 = useCase.getSnapshot("v0.2.0", repo.toString());
+    boolean leakedSecretClass =
+        v020.components().stream()
+            .flatMap(c -> c.classes().stream())
+            .anyMatch(cls -> cls.name().contains("SecretKey"));
+    assertFalse(leakedSecretClass, "Untrusted tag policy src must never scan outside worktree");
+
+    // 3. Also compiles cleanly when neither tag nor active workspace has a policy.json
+    Files.deleteIfExists(archlensDir.resolve("policy.json"));
+    Files.deleteIfExists(repo.resolve(".archlens/cache/v0.1.0.json"));
+    assertNotNull(useCase.getSnapshot("v0.1.0", repo.toString()));
+  }
+
+  @Test
+  void testUnopenedProjectSkipsDiskCacheAndPrePlantedTmpSymlinkIsIgnored(@TempDir Path tempDir)
+      throws Exception {
+    Path repo = initTwoTagJavaRepo(tempDir);
+    OpenedProjectRegistry registry = new OpenedProjectRegistry();
+    ManageSnapshotsUseCase useCase =
+        new ManageSnapshotsUseCase(createRealJavaCompiler(), new ObjectMapper());
+    Field regField = ManageSnapshotsUseCase.class.getDeclaredField("openedProjects");
+    regField.setAccessible(true);
+    regField.set(useCase, registry);
+
+    // Unopened external repo: compiles historical tag in memory without creating .archlens/cache
+    ArchitectureGraph unopenedGraph = useCase.getSnapshot("v0.1.0", repo.toString());
+    assertEquals(1L, unopenedGraph.edges().stream().filter(e -> e.isViolating()).count());
+    assertFalse(
+        Files.exists(repo.resolve(".archlens/cache")),
+        "GET/read on unopened repo must not create .archlens/cache on disk");
+
+    // Once opened, pre-planted v0.1.0.json.tmp symlink must NOT be overwritten
+    registry.markOpened(repo.toString());
+    Path victimFile = tempDir.resolve("victim.json");
+    Files.writeString(victimFile, "SAFE");
+    Path cacheDir = Files.createDirectories(repo.resolve(".archlens/cache"));
+    Files.createSymbolicLink(cacheDir.resolve("v0.1.0.json.tmp"), victimFile);
+
+    useCase.getSnapshot("v0.1.0", repo.toString());
+    assertEquals("SAFE", Files.readString(victimFile), "Must not write through .json.tmp symlink");
+    assertTrue(Files.exists(cacheDir.resolve("v0.1.0.json")));
+
+    java.util.HashMap<String, String> env = new java.util.HashMap<>();
+    env.put("GIT_DIR", "/outer/.git");
+    env.put("GIT_WORK_TREE", "/outer");
+    env.put("GIT_COMMON_DIR", "/outer/.git");
+    env.put("GIT_INDEX_FILE", "/outer/.git/index");
+    ManageSnapshotsUseCase.scrubGitEnvironment(env, Map.of("GIT_INDEX_FILE", "/tmp/idx"));
+    assertFalse(env.containsKey("GIT_DIR"));
+    assertFalse(env.containsKey("GIT_WORK_TREE"));
+    assertFalse(env.containsKey("GIT_COMMON_DIR"));
+    assertEquals("/tmp/idx", env.get("GIT_INDEX_FILE"));
   }
 }

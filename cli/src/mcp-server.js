@@ -501,12 +501,24 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       );
     }
     if (isOnline) {
+      const launchRoot = path.resolve(options.path || '.');
+      const resolveReal = (p) => {
+        try {
+          return fs.realpathSync(p);
+        } catch {
+          return path.resolve(p);
+        }
+      };
+      const isLaunchWorkspace = resolveReal(projectRoot) === resolveReal(launchRoot);
+      let authFailure = null;
       try {
-        await apiFetch(`${serverUrl}/api/projects/open`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectRoot })
-        });
+        if (isLaunchWorkspace) {
+          await apiFetch(`${serverUrl}/api/projects/open`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectRoot })
+          });
+        }
         const query = new URLSearchParams({ projectRoot });
         const res = await apiFetch(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
           method: 'POST',
@@ -522,8 +534,16 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
         }
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          authFailure = new Error(
+            `syncDipAdr rejected (HTTP ${res.status}): project root is not opened in this session`
+          );
+        }
       } catch (err) {
         process.stderr.write(`[archlens-mcp] Online syncDipAdr error: ${err.message}.\n`);
+      }
+      if (authFailure) {
+        throw authFailure;
       }
     }
     return {

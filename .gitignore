@@ -34,6 +34,9 @@ reports/
 .envrc
 
 # Agentic SDLC Ephemeral Cache, Binaries & Snapshots
+.archlens/cache/
+.archlens/trash/
+.superpowers/
 .agent/.cache/
 .agent/.sdlc-session.json
 .agent/.receipt-key

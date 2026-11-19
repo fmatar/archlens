@@ -403,24 +403,33 @@ public class DiagramResource {
 
   public void ensureWatcherRunning(String projectRoot) {
     ProjectFileWatcher watcher = getFileWatcher();
-    if (!watcher.isRunning()) {
-      Thread.ofVirtual()
-          .name("archlens-watcher-starter")
-          .start(() -> {
-            try {
-              watcher.start(
-                  Paths.get(projectRoot),
-                  path ->
-                      eventProcessor.onNext(
-                          Map.of(
-                              "event", "graph-update",
-                              "path", path.toString(),
-                              "timestamp", System.currentTimeMillis())));
-            } catch (Exception e) {
-              LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
-            }
-          });
+    java.nio.file.Path desiredRoot = Paths.get(WorkspacePathResolver.normalizeRoot(projectRoot));
+    java.nio.file.Path currentWatched = watcher.getWatchedRoot();
+    try {
+      if (currentWatched != null
+          && java.nio.file.Files.exists(desiredRoot)
+          && currentWatched.equals(desiredRoot.toRealPath())) {
+        return;
+      }
+    } catch (IOException ignored) {
+      // Proceed to watcher.start which handles normalization
     }
+    Thread.ofVirtual()
+        .name("archlens-watcher-starter")
+        .start(() -> {
+          try {
+            watcher.start(
+                desiredRoot,
+                path ->
+                    eventProcessor.onNext(
+                        Map.of(
+                            "event", "graph-update",
+                            "path", path.toString(),
+                            "timestamp", System.currentTimeMillis())));
+          } catch (Exception e) {
+            LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
+          }
+        });
   }
 
   public void notifyGraphUpdate(Map<String, Object> payload) {

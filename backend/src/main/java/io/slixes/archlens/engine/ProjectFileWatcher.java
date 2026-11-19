@@ -42,6 +42,7 @@ public class ProjectFileWatcher {
   private final Map<WatchKey, Path> watchKeys = new ConcurrentHashMap<>();
 
   private volatile WatchService watchService;
+  private volatile Path watchedRoot;
   private Thread watcherThread;
   private ScheduledExecutorService debounceScheduler;
   private ScheduledFuture<?> pendingDebounceTask;
@@ -58,13 +59,26 @@ public class ProjectFileWatcher {
     return running.get();
   }
 
+  public Path getWatchedRoot() {
+    return watchedRoot;
+  }
+
   public synchronized void start(Path rootPath, Consumer<Path> onChange) {
-    if (running.get() || rootPath == null || !Files.exists(rootPath)) {
+    if (rootPath == null || !Files.exists(rootPath)) {
       return;
     }
 
+    Path normalizedRoot = normalizeRoot(rootPath);
+    if (running.get() && normalizedRoot.equals(watchedRoot)) {
+      return;
+    }
+    if (running.get()) {
+      stop();
+    }
+
     try {
-      this.watchService = FileSystems.getDefault().newWatchService();
+      WatchService activeService = FileSystems.getDefault().newWatchService();
+      this.watchService = activeService;
       this.debounceScheduler =
           Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "archlens-watcher-debounce");
@@ -72,14 +86,24 @@ public class ProjectFileWatcher {
             return t;
           });
 
-      registerRecursive(rootPath);
+      registerRecursive(normalizedRoot);
+      this.watchedRoot = normalizedRoot;
       running.set(true);
 
-      this.watcherThread = new Thread(() -> processEvents(onChange), "archlens-file-watcher");
+      this.watcherThread =
+          new Thread(() -> processEvents(activeService, onChange), "archlens-file-watcher");
       this.watcherThread.setDaemon(true);
       this.watcherThread.start();
     } catch (IOException e) {
       stop();
+    }
+  }
+
+  private static Path normalizeRoot(Path rootPath) {
+    try {
+      return rootPath.toRealPath();
+    } catch (IOException e) {
+      return rootPath.toAbsolutePath().normalize();
     }
   }
 
@@ -89,6 +113,7 @@ public class ProjectFileWatcher {
   }
 
   public synchronized void stop() {
+    this.watchedRoot = null;
     if (!running.getAndSet(false)) {
       return;
     }
@@ -105,8 +130,13 @@ public class ProjectFileWatcher {
       }
     }
 
-    if (watcherThread != null) {
+    if (watcherThread != null && watcherThread != Thread.currentThread()) {
       watcherThread.interrupt();
+      try {
+        watcherThread.join(250);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
 
     watchKeys.clear();
@@ -143,11 +173,11 @@ public class ProjectFileWatcher {
         });
   }
 
-  private void processEvents(Consumer<Path> onChange) {
-    while (running.get()) {
+  private void processEvents(WatchService activeService, Consumer<Path> onChange) {
+    while (running.get() && this.watchService == activeService) {
       WatchKey key;
       try {
-        key = watchService.poll(100, TimeUnit.MILLISECONDS);
+        key = activeService.poll(100, TimeUnit.MILLISECONDS);
       } catch (InterruptedException | ClosedWatchServiceException e) {
         break;
       }

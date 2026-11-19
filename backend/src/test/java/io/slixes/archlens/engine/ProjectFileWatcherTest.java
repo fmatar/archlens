@@ -93,4 +93,31 @@ class ProjectFileWatcherTest {
     assertFalse(ProjectFileWatcher.isWatchedFile(Path.of("image.png")));
     assertFalse(ProjectFileWatcher.isWatchedFile(Path.of("binary.class")));
   }
+
+  @Test
+  @DisplayName(
+      "start switches watched root when called with a new project directory and stays put on same root")
+  void testSwitchesWatchedRoot(@TempDir Path tempDir) throws Exception {
+    Path projectA = Files.createDirectories(tempDir.resolve("project-a"));
+    Path projectB = Files.createDirectories(tempDir.resolve("project-b"));
+    ProjectFileWatcher watcher = new ProjectFileWatcher(50);
+
+    CountDownLatch latchB = new CountDownLatch(1);
+    watcher.start(projectA, p -> {});
+    Path firstRoot = watcher.getWatchedRoot();
+    assertEquals(projectA.toRealPath(), firstRoot);
+
+    watcher.start(projectA, p -> {});
+    assertEquals(firstRoot, watcher.getWatchedRoot());
+
+    watcher.start(projectB, p -> latchB.countDown());
+    assertEquals(projectB.toRealPath(), watcher.getWatchedRoot());
+
+    Files.writeString(projectB.resolve("SwitchedService.java"), "class SwitchedService {}");
+    boolean triggeredB = latchB.await(5, TimeUnit.SECONDS);
+    watcher.stop();
+    assertNull(watcher.getWatchedRoot());
+
+    assertTrue(triggeredB, "Expected watcher to switch from projectA to projectB");
+  }
 }

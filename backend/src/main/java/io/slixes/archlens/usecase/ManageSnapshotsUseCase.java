@@ -38,7 +38,7 @@ import java.util.regex.Pattern;
 public class ManageSnapshotsUseCase {
 
   private static final Pattern VALID_SNAPSHOT_ID =
-      Pattern.compile("^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$");
+      Pattern.compile("^[A-Za-z0-9](?:[A-Za-z0-9_+-]|\\.(?!\\.)){0,127}$");
 
   @Inject ArchitectureCompiler architectureCompiler;
 
@@ -52,9 +52,7 @@ public class ManageSnapshotsUseCase {
   }
 
   static boolean isValidSnapshotId(String snapshotId) {
-    return snapshotId != null
-        && VALID_SNAPSHOT_ID.matcher(snapshotId).matches()
-        && !snapshotId.contains("..");
+    return snapshotId != null && VALID_SNAPSHOT_ID.matcher(snapshotId).matches();
   }
 
   public List<Map<String, Object>> listSnapshots(String projectRoot) {
@@ -82,55 +80,55 @@ public class ManageSnapshotsUseCase {
       }
     }
 
-    File gitDir = new File(root, ".git");
-    if (gitDir.exists()) {
-      try {
-        Process process =
-            new ProcessBuilder(
-                    "git",
-                    "for-each-ref",
-                    "--sort=-version:refname",
-                    "--sort=-creatordate",
-                    "--count=10",
-                    "--format=%(refname:short)|%(creatordate:short)",
-                    "refs/tags")
-                .directory(new File(root))
-                .start();
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader reader =
-            new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-          String line;
-          while ((line = reader.readLine()) != null) {
-            lines.add(line.trim());
-          }
-        }
-        boolean finished = process.waitFor(2, TimeUnit.SECONDS);
-        if (!finished) {
-          process.destroyForcibly();
-        } else if (process.exitValue() == 0) {
-          String today = LocalDate.now(ZoneOffset.UTC).toString();
-          for (String entry : lines) {
-            if (entry.isEmpty()) {
-              continue;
-            }
-            int sep = entry.indexOf('|');
-            String tag = sep >= 0 ? entry.substring(0, sep).trim() : entry;
-            String rawDate = sep >= 0 ? entry.substring(sep + 1).trim() : "";
-            String date = rawDate.matches("\\d{4}-\\d{2}-\\d{2}") ? rawDate : today;
-            if (isValidSnapshotId(tag) && seenIds.add(tag)) {
-              snapshots.add(Map.of("id", tag, "label", tag, "tag", tag, "date", date));
-            }
-          }
-        }
-      } catch (IOException ignored) {
-        // Gracefully continue with available list
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    if (new File(root, ".git").exists()) {
+      appendGitTags(root, snapshots, seenIds);
     }
 
     return snapshots;
+  }
+
+  private static void appendGitTags(
+      String root, List<Map<String, Object>> snapshots, Set<String> seenIds) {
+    try {
+      Process process =
+          new ProcessBuilder(
+                  "git",
+                  "for-each-ref",
+                  "--sort=-version:refname",
+                  "--sort=-creatordate",
+                  "--count=10",
+                  "--format=%(refname:short)|%(creatordate:short)",
+                  "refs/tags")
+              .directory(new File(root))
+              .start();
+      List<String> lines = new ArrayList<>();
+      try (BufferedReader reader =
+          new BufferedReader(
+              new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+        String line;
+        while ((line = reader.readLine()) != null) {
+          lines.add(line.trim());
+        }
+      }
+      if (process.waitFor(2, TimeUnit.SECONDS) && process.exitValue() == 0) {
+        String today = LocalDate.now(ZoneOffset.UTC).toString();
+        for (String entry : lines) {
+          String[] parts = entry.split("\\|", 2);
+          String tag = parts[0].trim();
+          String rawDate = parts.length > 1 ? parts[1].trim() : "";
+          String date = rawDate.matches("\\d{4}-\\d{2}-\\d{2}") ? rawDate : today;
+          if (isValidSnapshotId(tag) && seenIds.add(tag)) {
+            snapshots.add(Map.of("id", tag, "label", tag, "tag", tag, "date", date));
+          }
+        }
+      } else {
+        process.destroyForcibly();
+      }
+    } catch (IOException ignored) {
+      // Gracefully continue with available list
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   public ArchitectureGraph getSnapshot(String snapshotId, String projectRoot) throws IOException {
@@ -153,14 +151,18 @@ public class ManageSnapshotsUseCase {
       return mapper.readValue(cacheFile.toFile(), ArchitectureGraph.class);
     }
 
-    if (Files.exists(canonicalRoot.resolve(".git")) && architectureCompiler != null) {
+    if (architectureCompiler == null) {
+      return null;
+    }
+
+    if (Files.exists(canonicalRoot.resolve(".git"))) {
       ArchitectureGraph tagGraph = compileAndCacheGitTag(canonicalRoot, snapshotId);
       if (tagGraph != null) {
         return tagGraph;
       }
     }
 
-    return architectureCompiler != null ? architectureCompiler.compileGraph(root, null) : null;
+    return architectureCompiler.compileGraph(root, null);
   }
 
   private ArchitectureGraph compileAndCacheGitTag(Path canonicalRoot, String tag)
@@ -180,44 +182,40 @@ public class ManageSnapshotsUseCase {
     Path tempDir = Files.createTempDirectory("archlens-tag-");
     try {
       Path worktree = Files.createDirectories(tempDir.resolve("tree"));
-      Path tempIndex = tempDir.resolve("index");
-      Map<String, String> gitEnv = Map.of("GIT_INDEX_FILE", tempIndex.toString());
+      Map<String, String> gitEnv = Map.of("GIT_INDEX_FILE", tempDir.resolve("index").toString());
 
-      if (runGitCommand(canonicalRoot, gitEnv, "git", "read-tree", "refs/tags/" + tag) != 0) {
-        return null;
-      }
-      if (runGitCommand(
-              canonicalRoot,
-              gitEnv,
-              "git",
-              "checkout-index",
-              "-a",
-              "-f",
-              "--prefix=" + worktree + File.separator)
-          != 0) {
+      boolean extracted =
+          runGitCommand(canonicalRoot, gitEnv, "git", "read-tree", "refs/tags/" + tag) == 0
+              && runGitCommand(
+                      canonicalRoot,
+                      gitEnv,
+                      "git",
+                      "checkout-index",
+                      "-a",
+                      "-f",
+                      "--prefix=" + worktree + File.separator)
+                  == 0;
+      if (!extracted) {
         return null;
       }
 
       Path tagPolicy = worktree.resolve(".archlens/policy.json");
       Path activePolicy = canonicalRoot.resolve(".archlens/policy.json");
-      if (!Files.exists(tagPolicy)
-          && Files.isRegularFile(activePolicy)
-          && !Files.isSymbolicLink(activePolicy)) {
+      if (!Files.exists(tagPolicy) && Files.isRegularFile(activePolicy)) {
+        SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, activePolicy);
         Files.createDirectories(Objects.requireNonNull(tagPolicy.getParent()));
         Files.copy(activePolicy, tagPolicy, StandardCopyOption.REPLACE_EXISTING);
       }
 
       ArchitectureGraph graph = architectureCompiler.compileGraph(worktree.toString(), null);
-      if (graph != null) {
-        Path cacheDir = canonicalRoot.resolve(".archlens/cache");
-        SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheDir);
-        Files.createDirectories(cacheDir);
-        Path cacheFile = cacheDir.resolve(tag + ".json");
-        SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheFile);
-        Path tmpFile = cacheDir.resolve(tag + ".json.tmp");
-        mapper.writeValue(tmpFile.toFile(), graph);
-        Files.move(tmpFile, cacheFile, StandardCopyOption.REPLACE_EXISTING);
-      }
+      Path cacheDir = canonicalRoot.resolve(".archlens/cache");
+      SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheDir);
+      Files.createDirectories(cacheDir);
+      Path cacheFile = cacheDir.resolve(tag + ".json");
+      SyncAdrUseCase.ensureNoSymlinkOnPath(canonicalRoot, cacheFile);
+      Path tmpFile = cacheDir.resolve(tag + ".json.tmp");
+      mapper.writeValue(tmpFile.toFile(), graph);
+      Files.move(tmpFile, cacheFile, StandardCopyOption.REPLACE_EXISTING);
       return graph;
     } finally {
       deleteRecursively(tempDir);
@@ -233,11 +231,11 @@ public class ManageSnapshotsUseCase {
       }
       Process process = pb.start();
       process.getInputStream().readAllBytes();
-      if (!process.waitFor(5, TimeUnit.SECONDS)) {
-        process.destroyForcibly();
-        return -1;
+      if (process.waitFor(5, TimeUnit.SECONDS)) {
+        return process.exitValue();
       }
-      return process.exitValue();
+      process.destroyForcibly();
+      return -1;
     } catch (IOException e) {
       return -1;
     } catch (InterruptedException e) {
@@ -247,9 +245,6 @@ public class ManageSnapshotsUseCase {
   }
 
   private static void deleteRecursively(Path root) {
-    if (root == null || !Files.exists(root)) {
-      return;
-    }
     try {
       Files.walkFileTree(
           root,

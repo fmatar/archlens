@@ -137,6 +137,11 @@ class ManageSnapshotsUseCaseTest {
     assertThrows(
         IllegalArgumentException.class, () -> useCase.getSnapshot("sub/dir", tempDir.toString()));
     assertThrows(IllegalArgumentException.class, () -> useCase.getSnapshot("", tempDir.toString()));
+    assertThrows(
+        IllegalArgumentException.class, () -> useCase.getSnapshot(null, tempDir.toString()));
+    assertNull(
+        new ManageSnapshotsUseCase(null, new ObjectMapper())
+            .getSnapshot("missing", tempDir.toString()));
 
     // Fallback compilation
     ArchitectureGraph fallback = useCase.getSnapshot("not-cached", tempDir.toString());
@@ -152,6 +157,7 @@ class ManageSnapshotsUseCaseTest {
     Files.writeString(
         snapshotsDir.resolve("manual-01.json"),
         "{\"title\":\"ManualSnap\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
+    Files.writeString(snapshotsDir.resolve("-invalid.json"), "{}");
 
     ManageSnapshotsUseCase useCase =
         new ManageSnapshotsUseCase(createRealJavaCompiler(), new ObjectMapper());
@@ -159,6 +165,7 @@ class ManageSnapshotsUseCaseTest {
     List<Map<String, Object>> listed = useCase.listSnapshots(repo.toString());
     List<String> ids = listed.stream().map(m -> (String) m.get("id")).toList();
     assertTrue(ids.contains("manual-01"), "Should include saved .archlens/snapshots/*.json");
+    assertFalse(ids.contains("-invalid"), "Should skip invalid snapshot filenames");
     assertTrue(ids.contains("v0.1.0"), "Should also merge git tags even when snapshots exist");
     assertTrue(ids.contains("v0.2.0"), "Should include v0.2.0 git tag");
     for (Map<String, Object> item : listed) {
@@ -189,6 +196,20 @@ class ManageSnapshotsUseCaseTest {
     // Second read hits .archlens/cache/v0.1.0.json
     ArchitectureGraph v010Cached = useCase.getSnapshot("v0.1.0", repo.toString());
     assertEquals(1L, v010Cached.edges().stream().filter(e -> e.isViolating()).count());
+
+    // v0.2.0 already contains .archlens/policy.json in its git tree (0 violations)
+    ArchitectureGraph v020 = useCase.getSnapshot("v0.2.0", repo.toString());
+    assertEquals(0L, v020.edges().stream().filter(e -> e.isViolating()).count());
+
+    // Deduplicate when a snapshot file shares the same ID as a git tag
+    Files.writeString(
+        snapshotsDir.resolve("v0.2.0.json"),
+        "{\"title\":\"SavedTagSnap\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
+    long v020Count =
+        useCase.listSnapshots(repo.toString()).stream()
+            .filter(m -> "v0.2.0".equals(m.get("id")))
+            .count();
+    assertEquals(1L, v020Count);
 
     // Live git index and tracked working tree must remain completely untouched
     String gitStatus = runGit(repo, "status", "--porcelain", "--untracked-files=no");

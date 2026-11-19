@@ -13,8 +13,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Recoverable rollback trash (`#228`, `#247`)**: `VerifyAndRollbackRefactorUseCase.rollback` (`POST /api/mailbox/rollback` and `ROLLBACK_COMPLETE` mailbox telemetry) now moves post-snapshot source files into `.archlens/trash/<snapshotId>/` instead of deleting them permanently, reporting `trashDir` and `trashedFiles`.
 - **`exportArchitectureDiagram` MCP `@Tool` parity (`#247`)**: Added `@Tool` / `@ToolArg` annotations on `ArchlensMcpService.exportArchitectureDiagram` and wired online (`/api/diagram/export`) + offline Mermaid fallback parity across `cli/src/mcp-registry.js` and `cli/src/mcp-server.js` (11 MCP tools).
 
+### Security
+- **MCP `syncDipAdr` confinement, ADR symlink guard & read-only mailbox `GET` (`#265`, `ADR-016`)**:
+  - Restricted `ArchlensMcpService.syncDipAdr` to the canonical active launch workspace (`.`) or roots explicitly opened in `OpenedProjectRegistry`.
+  - Rejected symlink segments and outside-root paths when writing `docs/adr/*.md` in `SyncAdrUseCase` and `.archlens/cache/*.json` in `ManageSnapshotsUseCase`.
+  - Stopped `FileMailboxService.readMailbox` (`GET /api/mailbox/to-agent` and `GET /api/mailbox/to-viewer`) from creating `.archlens/` directories on disk during read-only polls.
+
 ### Fixed
 - **GraalVM Native Image `SecureRandom` build failure (`#263`)**: Replaced the static `SecureRandom` field in `SessionTokenService` with lazy runtime instantiation inside `generateToken()` so `quarkus-maven-plugin -Pnative` no longer rejects a `Random` instance in the image heap.
+- **CLI MCP `archlens://fitness` resource (`#265`)**: Made `readMcpResource` `async` and awaited `checkArchitecture` so `resources/read` returns evaluated fitness JSON instead of `"{}"`.
+- **Historical Git tag Release Comparator & Fitness History (`#265`)**: `ManageSnapshotsUseCase` and `GetFitnessHistoryUseCase` now list Git tags with creation dates via `git for-each-ref`, materialize uncached tags into ephemeral directories via isolated `GIT_INDEX_FILE` (`git read-tree` + `git checkout-index`) without mutating `.git/HEAD` or `.git/index`, and persist compiled graphs to `.archlens/cache/<tag>.json` instead of substituting the live working tree.
+- **Live `ProjectFileWatcher` project switching & duplicate `loadFitness()` scan (`#265`)**: `ProjectFileWatcher` now restarts cleanly when `projectRoot` changes across opened projects, and `diagramStore.setProjectRoot` awaits `loadFitness()` once inside `loadGraph()` instead of triggering two full-repo AST scans.
 
 ## [1.1.6] - 2026-11-18
 

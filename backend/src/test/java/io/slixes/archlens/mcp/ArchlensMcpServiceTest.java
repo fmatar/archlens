@@ -154,6 +154,7 @@ class ArchlensMcpServiceTest {
                 "Eliminate outward adapter coupling"));
 
     assertNotNull(mcpService.requireAuthorizedWriteRoot("."));
+    assertNotNull(new ArchlensMcpService().getOpenedProjects());
 
     mcpService.getOpenedProjects().markOpened(tempDir.toString());
     SyncAdrUseCase.AdrDocument adr =

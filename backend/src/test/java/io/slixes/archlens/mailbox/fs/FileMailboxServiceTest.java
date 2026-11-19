@@ -63,6 +63,7 @@ class FileMailboxServiceTest {
     // Verify viewer inbox as well
     MailboxEnvelope viewerBox = service.readMailbox(root, false);
     assertEquals(1, viewerBox.nextId());
+    assertNull(service.popOldest(root, false));
 
     // 7. Verify handling of corrupted JSON file (triggers catch block)
     File corruptedFile = new File(new File(root, ".archlens"), "to-agent.json");

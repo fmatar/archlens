@@ -19,6 +19,10 @@ class ProjectFileWatcherTest {
     ProjectFileWatcher watcher = new ProjectFileWatcher();
     assertFalse(watcher.isRunning());
 
+    watcher.start(null, p -> {});
+    watcher.start(tempDir.resolve("missing"), p -> {});
+    assertFalse(watcher.isRunning());
+
     watcher.start(tempDir, p -> {});
     assertTrue(watcher.isRunning());
 

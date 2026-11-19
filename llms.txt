@@ -91,10 +91,11 @@ npx @fmatar/archlens-skill mcp                 # Launch MCP stdio bridge server
 
 When Archlens is registered as an MCP server, AI assistants can query it using standard MCP primitives:
 
-### MCP Tools (10):
+### MCP Tools (11):
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
 | `exportLlmDossier` | `projectRoot` (default: `.`), `proposalId` | Diagnoses outward dependency breaches and outputs a Markdown refactoring prompt with concrete DIP interface port prescriptions. |
+| `exportArchitectureDiagram` | `projectRoot`, `diagramType` (`COMPONENT_RINGS` \| `CLASS_UML` \| `DIP_REFACTOR`), `proposalId`, `violationsOnly` | Exports deterministic Mermaid architecture diagrams for concentric rings, class UML, or DIP port inversions. |
 | `inspectArchitecture` | `projectRoot` (default: `.`) | Returns full JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics. |
 | `synthesizeDipInversion` | `fromClass` (required), `toClass` (required), `projectRoot` | Synthesizes a complete Dependency Inversion Principle (DIP) interface port (`Java`, `Python`, `TypeScript`, `Go`, `Rust`), adapter/caller diffs, and surgical prompt. |
 | `evaluateFitness` | `projectRoot` (default: `.`) | Evaluates the Composite Architecture Fitness Index (AFI score `0`–`100`, grade `A`–`F`, rule breakdowns). |

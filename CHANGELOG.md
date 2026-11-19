@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Recoverable rollback trash (`#228`, `#247`)**: `VerifyAndRollbackRefactorUseCase.rollback` (`POST /api/mailbox/rollback` and `ROLLBACK_COMPLETE` mailbox telemetry) now moves post-snapshot source files into `.archlens/trash/<snapshotId>/` instead of deleting them permanently, reporting `trashDir` and `trashedFiles`.
+- **`exportArchitectureDiagram` MCP `@Tool` parity (`#247`)**: Added `@Tool` / `@ToolArg` annotations on `ArchlensMcpService.exportArchitectureDiagram` and wired online (`/api/diagram/export`) + offline Mermaid fallback parity across `cli/src/mcp-registry.js` and `cli/src/mcp-server.js` (11 MCP tools).
+
+### Fixed
+- **GraalVM Native Image `SecureRandom` build failure (`#263`)**: Replaced the static `SecureRandom` field in `SessionTokenService` with lazy runtime instantiation inside `generateToken()` so `quarkus-maven-plugin -Pnative` no longer rejects a `Random` instance in the image heap.
+
 ## [1.1.6] - 2026-11-18
 
 ### Security

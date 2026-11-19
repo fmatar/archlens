@@ -280,15 +280,15 @@ export async function runMcpStdioSmokeChecks(serverUrl, projectRoot = REPO_ROOT,
     throw new Error('MCP initialize failed to return tools capability');
   }
 
-  // 2. tools/list (must expose all 10 tools)
+  // 2. tools/list (must expose all 11 tools)
   const listResp = await handleMcpMessage(
     { jsonrpc: '2.0', id: 2, method: 'tools/list' },
     options,
     mcpDeps
   );
   const tools = listResp?.result?.tools || [];
-  if (tools.length !== 10) {
-    throw new Error(`Expected 10 MCP tools, got ${tools.length}`);
+  if (tools.length !== 11) {
+    throw new Error(`Expected 11 MCP tools, got ${tools.length}`);
   }
 
   // 3. resources/list

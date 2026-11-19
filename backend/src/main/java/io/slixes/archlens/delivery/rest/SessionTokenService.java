@@ -50,9 +50,8 @@ public class SessionTokenService {
   @ConfigProperty(name = "quarkus.http.port", defaultValue = "8088")
   int httpPort;
 
-  private static final SecureRandom RANDOM = new SecureRandom();
-
   private volatile String token;
+  private volatile SecureRandom random;
   private Path sessionFile;
   private Path sessionDirOverride;
 
@@ -86,7 +85,7 @@ public class SessionTokenService {
               configuredToken
                   .map(String::trim)
                   .filter(t -> !t.isEmpty())
-                  .orElseGet(SessionTokenService::generateToken);
+                  .orElseGet(this::generateToken);
         }
         current = token;
       }
@@ -123,10 +122,20 @@ public class SessionTokenService {
     return "archlens_session_" + httpPort;
   }
 
-  static String generateToken() {
+  String generateToken() {
     byte[] bytes = new byte[TOKEN_BYTES];
-    RANDOM.nextBytes(bytes);
+    secureRandom().nextBytes(bytes);
     return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+  }
+
+  private SecureRandom secureRandom() {
+    // Lazy instance field keeps SecureRandom out of the GraalVM build-time image heap (#263).
+    SecureRandom rng = random;
+    if (rng == null) {
+      rng = new SecureRandom();
+      random = rng;
+    }
+    return rng;
   }
 
   /** True when {@code host} is a loopback address or name. */

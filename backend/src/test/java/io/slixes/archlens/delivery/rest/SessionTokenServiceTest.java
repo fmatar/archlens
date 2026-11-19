@@ -4,15 +4,36 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkus.runtime.ShutdownEvent;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Arrays;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SessionTokenServiceTest {
+
+  @Test
+  void avoidsBuildTimeRandomFieldsInNativeImageHeap() {
+    boolean hasStaticRandom =
+        Arrays.stream(SessionTokenService.class.getDeclaredFields())
+            .anyMatch((Field f) ->
+                Modifier.isStatic(f.getModifiers()) && Random.class.isAssignableFrom(f.getType()));
+    assertFalse(
+        hasStaticRandom,
+        "SessionTokenService must not hold a static Random/SecureRandom in the GraalVM image heap");
+
+    SessionTokenService service = new SessionTokenService(true, null, "127.0.0.1", 8088);
+    String first = service.generateToken();
+    String second = service.generateToken();
+    assertNotEquals(first, second, "repeated generateToken calls reuse lazy CSPRNG safely");
+    assertTrue(second.length() >= 43);
+  }
 
   @Test
   void usesConfiguredTokenAndComparesExactly() {

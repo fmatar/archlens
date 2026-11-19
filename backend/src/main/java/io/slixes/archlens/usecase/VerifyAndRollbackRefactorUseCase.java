@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -34,8 +35,11 @@ import java.util.concurrent.TimeUnit;
 public class VerifyAndRollbackRefactorUseCase {
 
   private static final String SNAPSHOTS_DIR = ".archlens/snapshots";
+  private static final String TRASH_DIR = ".archlens/trash";
   private static final String MANIFEST_FILE = "manifest.txt";
   private static final String FILES_BACKUP_DIR = "files";
+
+  public record RollbackResult(boolean restored, String trashDir, List<String> trashedFiles) {}
 
   private static final Set<String> IGNORED_DIRS =
       Set.of(
@@ -431,8 +435,16 @@ public class VerifyAndRollbackRefactorUseCase {
    * pre-refactor snapshot.
    */
   public boolean rollbackToSnapshot(String projectRoot, String snapshotId) throws IOException {
+    return rollback(projectRoot, snapshotId).restored();
+  }
+
+  /**
+   * Rolls back `.archlens/policy.json` and modified source files, moving any post-snapshot source
+   * files into `.archlens/trash/<snapshotId>/` so uncommitted work stays recoverable (#228).
+   */
+  public RollbackResult rollback(String projectRoot, String snapshotId) throws IOException {
     if (snapshotId == null || snapshotId.isBlank()) {
-      return false;
+      return new RollbackResult(false, "", List.of());
     }
     if (!ProjectPathGuard.isValidSnapshotId(snapshotId)) {
       throw new IllegalArgumentException("Invalid snapshot id: " + snapshotId);
@@ -444,7 +456,7 @@ public class VerifyAndRollbackRefactorUseCase {
     Path snapPath = snapshotsBase.resolve(snapshotId);
     if (!Files.isDirectory(snapPath, LinkOption.NOFOLLOW_LINKS)
         || !snapPath.toRealPath().startsWith(snapshotsBase.toRealPath())) {
-      return false;
+      return new RollbackResult(false, "", List.of());
     }
 
     // Validate the whole manifest before touching any file in the workspace.
@@ -469,6 +481,9 @@ public class VerifyAndRollbackRefactorUseCase {
       }
     }
 
+    Path trashSnapRoot = rootPath.resolve(TRASH_DIR).resolve(snapshotId);
+    ensureNoSymlinkOnPath(rootPath, trashSnapRoot);
+
     Path backupPolicy = snapPath.resolve("policy.json");
     if (Files.isRegularFile(backupPolicy, LinkOption.NOFOLLOW_LINKS)) {
       Path archlensDir = rootPath.resolve(".archlens");
@@ -477,6 +492,7 @@ public class VerifyAndRollbackRefactorUseCase {
           backupPolicy, archlensDir.resolve("policy.json"), StandardCopyOption.REPLACE_EXISTING);
     }
 
+    List<String> trashedFiles = new ArrayList<>();
     if (hasFileBackup) {
       for (String relPath : originalFiles) {
         Path backupFile = filesBackupRoot.resolve(relPath).normalize();
@@ -490,15 +506,24 @@ public class VerifyAndRollbackRefactorUseCase {
         }
       }
 
-      // Remove any newly created source files that did not exist in the pre-refactor snapshot
+      // Move newly created post-snapshot source files to recoverable .archlens/trash/<snapshotId>/
       List<String> currentSourceFiles = collectSourceFiles(rootPath);
       for (String currentRel : currentSourceFiles) {
-        if (!originalFiles.contains(currentRel)
-            && ProjectPathGuard.isSafeRelativePath(rootPath, currentRel)) {
-          Files.deleteIfExists(rootPath.resolve(currentRel).normalize());
+        if (!originalFiles.contains(currentRel)) {
+          Path sourceFile = rootPath.resolve(currentRel).normalize();
+          if (Files.isRegularFile(sourceFile, LinkOption.NOFOLLOW_LINKS)) {
+            Path trashTarget = trashSnapRoot.resolve(currentRel).normalize();
+            ensureNoSymlinkOnPath(rootPath, trashTarget);
+            Files.createDirectories(Objects.requireNonNull(trashTarget.getParent()));
+            Files.move(sourceFile, trashTarget, StandardCopyOption.REPLACE_EXISTING);
+            trashedFiles.add(currentRel);
+          }
         }
       }
     }
+
+    String trashRelDir = trashedFiles.isEmpty() ? "" : TRASH_DIR + "/" + snapshotId;
+    List<String> immutableTrashed = List.copyOf(trashedFiles);
 
     // Acknowledge rollback in viewer mailbox
     mailboxGateway.appendCommand(
@@ -506,9 +531,25 @@ public class VerifyAndRollbackRefactorUseCase {
         false,
         "ROLLBACK_COMPLETE",
         Map.of("snapshotId", snapshotId),
-        Map.of("status", "SUCCESS", "message", "Workspace restored to snapshot " + snapshotId));
+        Map.of(
+            "status",
+            "SUCCESS",
+            "message",
+            "Workspace restored to snapshot " + snapshotId,
+            "trashDir",
+            trashRelDir,
+            "trashedFiles",
+            immutableTrashed));
 
-    return true;
+    return new RollbackResult(true, trashRelDir, immutableTrashed);
+  }
+
+  private static void ensureNoSymlinkOnPath(Path rootPath, Path target) {
+    for (Path p = target; !p.equals(rootPath); p = Objects.requireNonNull(p.getParent())) {
+      if (Files.isSymbolicLink(p)) {
+        throw new IllegalArgumentException("Rollback trash path must not traverse a symbolic link");
+      }
+    }
   }
 
   private List<String> collectSourceFiles(Path rootPath) throws IOException {

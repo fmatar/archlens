@@ -202,7 +202,7 @@ flowchart TD
 ```
 
 <details>
-<summary><strong>🧰 Available MCP Tools (10), Resources (3), Prompts (2) & Per-Agent Setup Manifests</strong></summary>
+<summary><strong>🧰 Available MCP Tools (11), Resources (3), Prompts (2) & Per-Agent Setup Manifests</strong></summary>
 
 #### MCP 2.0 Surface (`quarkus-mcp-server` + `@fmatar/archlens-skill mcp`)
 
@@ -210,6 +210,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **`@Tool`** | `inspectArchitecture` | Extracts the full Clean Architecture graph: concentric rings, classes, edges (`isViolating`), and ADP cycles. |
 | **`@Tool`** | `exportLlmDossier` | Generates a Markdown refactoring dossier diagnosing outward breaches and prescribing concrete DIP ports. |
+| **`@Tool`** | `exportArchitectureDiagram` | Exports deterministic Mermaid architecture diagrams (`COMPONENT_RINGS`, `CLASS_UML`, or `DIP_REFACTOR`) with optional `violationsOnly` filtering. |
 | **`@Tool`** | `synthesizeDipInversion` | Synthesizes a polyglot Dependency Inversion port (Java/Python/TS/Go/Rust) with caller & adapter diff previews. |
 | **`@Tool`** | `evaluateFitness` | Computes the Architecture Fitness Index (`AFI` 0–100%, Grade `A`–`F`), Main Sequence ($I, A, D$), and Screaming Score (`SAS`). |
 | **`@Tool`** | `getFitnessHistory` | Retrieves historical fitness snapshots and regression trajectory (`IMPROVING`, `STABLE`, `DEGRADING`). |

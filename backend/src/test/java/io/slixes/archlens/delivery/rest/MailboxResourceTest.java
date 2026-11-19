@@ -66,6 +66,11 @@ class MailboxResourceTest {
     assertNotNull(res);
     assertTrue(res.passed());
 
+    // Rollback null request / missing snapshotId and non-existent snapshot
+    Map<String, Object> nullReqRes = resource.rollbackRefactoring(tempDir.toString(), null);
+    assertEquals(false, nullReqRes.get("success"));
+    assertEquals("", nullReqRes.get("snapshotId"));
+
     // Rollback non-existent snapshot
     Map<String, Object> rollbackRes =
         resource.rollbackRefactoring(

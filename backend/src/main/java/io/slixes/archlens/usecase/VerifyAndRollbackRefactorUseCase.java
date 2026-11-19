@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -480,6 +481,9 @@ public class VerifyAndRollbackRefactorUseCase {
       }
     }
 
+    Path trashSnapRoot = rootPath.resolve(TRASH_DIR).resolve(snapshotId);
+    ensureNoSymlinkOnPath(rootPath, trashSnapRoot);
+
     Path backupPolicy = snapPath.resolve("policy.json");
     if (Files.isRegularFile(backupPolicy, LinkOption.NOFOLLOW_LINKS)) {
       Path archlensDir = rootPath.resolve(".archlens");
@@ -503,23 +507,16 @@ public class VerifyAndRollbackRefactorUseCase {
       }
 
       // Move newly created post-snapshot source files to recoverable .archlens/trash/<snapshotId>/
-      Path trashSnapRoot = rootPath.resolve(TRASH_DIR).resolve(snapshotId);
       List<String> currentSourceFiles = collectSourceFiles(rootPath);
       for (String currentRel : currentSourceFiles) {
-        if (!originalFiles.contains(currentRel)
-            && ProjectPathGuard.isSafeRelativePath(rootPath, currentRel)) {
+        if (!originalFiles.contains(currentRel)) {
           Path sourceFile = rootPath.resolve(currentRel).normalize();
           if (Files.isRegularFile(sourceFile, LinkOption.NOFOLLOW_LINKS)) {
-            Files.createDirectories(trashSnapRoot);
-            if (ProjectPathGuard.isSafeRelativePath(trashSnapRoot, currentRel)) {
-              Path trashTarget = trashSnapRoot.resolve(currentRel).normalize();
-              Path trashParent = trashTarget.getParent();
-              if (trashParent != null) {
-                Files.createDirectories(trashParent);
-              }
-              Files.move(sourceFile, trashTarget, StandardCopyOption.REPLACE_EXISTING);
-              trashedFiles.add(currentRel);
-            }
+            Path trashTarget = trashSnapRoot.resolve(currentRel).normalize();
+            ensureNoSymlinkOnPath(rootPath, trashTarget);
+            Files.createDirectories(Objects.requireNonNull(trashTarget.getParent()));
+            Files.move(sourceFile, trashTarget, StandardCopyOption.REPLACE_EXISTING);
+            trashedFiles.add(currentRel);
           }
         }
       }
@@ -545,6 +542,14 @@ public class VerifyAndRollbackRefactorUseCase {
             immutableTrashed));
 
     return new RollbackResult(true, trashRelDir, immutableTrashed);
+  }
+
+  private static void ensureNoSymlinkOnPath(Path rootPath, Path target) {
+    for (Path p = target; !p.equals(rootPath); p = Objects.requireNonNull(p.getParent())) {
+      if (Files.isSymbolicLink(p)) {
+        throw new IllegalArgumentException("Rollback trash path must not traverse a symbolic link");
+      }
+    }
   }
 
   private List<String> collectSourceFiles(Path rootPath) throws IOException {

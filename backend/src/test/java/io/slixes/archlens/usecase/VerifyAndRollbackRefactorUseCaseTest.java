@@ -80,6 +80,9 @@ class VerifyAndRollbackRefactorUseCaseTest {
     assertEquals(".archlens/trash/" + snapshotId, ack.payload().get("trashDir"));
     assertEquals(
         List.of("src/main/java/com/example/OrderRepoPort.java"), ack.payload().get("trashedFiles"));
+
+    // 5. Repeat rollback when .archlens/trash already exists inside rootPath
+    assertTrue(useCase.rollbackToSnapshot(tempDir.toString(), snapshotId));
   }
 
   private static VerifyAndRollbackRefactorUseCase rollbackUseCase() {
@@ -145,6 +148,51 @@ class VerifyAndRollbackRefactorUseCaseTest {
         IllegalArgumentException.class,
         () -> rollbackUseCase().rollbackToSnapshot(project.toString(), "snap-1-0a1b2c3d"));
     assertTrue(Files.exists(keep));
+  }
+
+  @Test
+  void rollbackWithNoPostSnapshotFilesAndSymlinkedTrashGuards(@TempDir Path tempDir)
+      throws IOException {
+    Path project = Files.createDirectories(tempDir.resolve("project"));
+    Path src = Files.createDirectories(project.resolve("src"));
+    Path base = Files.writeString(src.resolve("Base.java"), "class Base {}");
+    VerifyAndRollbackRefactorUseCase useCase = rollbackUseCase();
+    String snapId = useCase.createPreRefactorSnapshot(project.toString());
+
+    // 1. Clean rollback with zero post-snapshot files -> trashDir is empty
+    Files.writeString(base, "class Base { int x; }");
+    VerifyAndRollbackRefactorUseCase.RollbackResult clean =
+        useCase.rollback(project.toString(), snapId);
+    assertTrue(clean.restored());
+    assertEquals("", clean.trashDir());
+    assertEquals(List.of(), clean.trashedFiles());
+    assertEquals("class Base {}", Files.readString(base));
+
+    // 2. Symlinked post-snapshot source file is not moved as a regular file
+    Path outsideSource = Files.writeString(tempDir.resolve("Outside.java"), "class Outside {}");
+    boolean symlinksSupported = true;
+    try {
+      Files.createSymbolicLink(src.resolve("Linked.java"), outsideSource);
+    } catch (UnsupportedOperationException | IOException e) {
+      symlinksSupported = false;
+    }
+    if (symlinksSupported) {
+      VerifyAndRollbackRefactorUseCase.RollbackResult withLink =
+          useCase.rollback(project.toString(), snapId);
+      assertTrue(withLink.restored());
+      assertEquals(List.of(), withLink.trashedFiles());
+      assertTrue(Files.exists(outsideSource));
+      Files.deleteIfExists(src.resolve("Linked.java"));
+
+      // 3. Symlinked .archlens/trash pointing outside project root must be rejected
+      Path outsideTrash = Files.createDirectories(tempDir.resolve("outside-trash"));
+      Files.writeString(src.resolve("NewWork.java"), "class NewWork {}");
+      Files.createSymbolicLink(project.resolve(".archlens/trash"), outsideTrash);
+      assertThrows(
+          IllegalArgumentException.class, () -> useCase.rollback(project.toString(), snapId));
+      assertFalse(Files.exists(outsideTrash.resolve(snapId)));
+      assertTrue(Files.exists(src.resolve("NewWork.java")));
+    }
   }
 
   @Test

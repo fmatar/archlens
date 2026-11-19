@@ -24,7 +24,7 @@ flowchart LR
         end
         
         subgraph McpServer ["MCP Service (/mcp & /mcp/sse + CLI Stdio)"]
-            Tools["10 Tools (inspectArchitecture, synthesizeDipInversion, evaluateFitness, ...)<br/>3 Resources (llms.txt, policy, fitness)<br/>2 Prompts (architectural-review, dip-refactoring-guide)"]
+            Tools["11 Tools (inspectArchitecture, exportArchitectureDiagram, synthesizeDipInversion, evaluateFitness, ...)<br/>3 Resources (llms.txt, policy, fitness)<br/>2 Prompts (architectural-review, dip-refactoring-guide)"]
         end
     end
 

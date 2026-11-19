@@ -244,7 +244,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
 
     const checker = deps.checkArchitecture || checkArchitecture;
     const mermaidGen = deps.generateMermaidReport || generateMermaidReport;
-    const report = checker(projectRoot, { detectCycles: true });
+    const report = await checker(projectRoot, { detectCycles: true });
     const text = mermaidGen(report, { diagramType, violationsOnly });
     return { content: [{ type: 'text', text }] };
   }

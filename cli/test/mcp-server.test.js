@@ -529,35 +529,86 @@ test('executeToolCall sends the session token header on workbench API calls', as
   assert.equal(seen[0].init.headers['X-Archlens-Token'], 'env-token');
 });
 
-test('executeToolCall supports exportArchitectureDiagram online and offline', async () => {
+test('executeToolCall supports exportArchitectureDiagram online, fallback endpoint, and offline policy/UML', async () => {
   const seen = [];
   const online = await executeToolCall(
     'exportArchitectureDiagram',
-    { projectRoot: '/tmp/proj', diagramType: 'CLASS_UML', violationsOnly: true },
+    {
+      projectRoot: '/tmp/proj',
+      diagramType: 'CLASS_UML',
+      proposalId: 'prop-1',
+      violationsOnly: true
+    },
     { serverUrl: 'http://127.0.0.1:8088' },
     {
       ensureServerRunning: async () => ({ status: 'running', token: 'tok-1' }),
       fetch: async (url, init) => {
         seen.push({ url, init });
+        // Simulate /api/diagram/export returning 404 so /api/graph/export alias is exercised
+        if (url.includes('/api/diagram/export')) {
+          return { ok: false, status: 404 };
+        }
         return { ok: true, text: async () => 'classDiagram\n  class OrderService' };
       }
     }
   );
   assert.ok(online.content[0].text.startsWith('classDiagram'));
+  assert.equal(seen.length, 2);
   assert.match(seen[0].url, /\/api\/diagram\/export\?/);
-  assert.match(seen[0].url, /type=CLASS_UML/);
-  assert.match(seen[0].url, /violationsOnly=true/);
+  assert.match(seen[1].url, /\/api\/graph\/export\?/);
+  assert.match(seen[1].url, /proposalId=prop-1/);
+  assert.match(seen[1].url, /type=CLASS_UML/);
+  assert.match(seen[1].url, /violationsOnly=true/);
   assert.equal(seen[0].init.headers['X-Archlens-Token'], 'tok-1');
 
   const tmpProj = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mmd-'));
   try {
-    const offline = await executeToolCall(
+    fs.mkdirSync(path.join(tmpProj, '.archlens'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpProj, '.archlens', 'policy.json'),
+      JSON.stringify({
+        title: 'FixtureApp',
+        sourceRoot: 'src',
+        packagePrefix: 'com.fixture',
+        levels: [['core'], ['web']]
+      })
+    );
+    fs.mkdirSync(path.join(tmpProj, 'src', 'com', 'fixture', 'core'), { recursive: true });
+    fs.mkdirSync(path.join(tmpProj, 'src', 'com', 'fixture', 'web'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpProj, 'src', 'com', 'fixture', 'core', 'CoreEntity.java'),
+      'package com.fixture.core;\nimport com.fixture.web.WebCtrl;\npublic class CoreEntity { WebCtrl w; }\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpProj, 'src', 'com', 'fixture', 'web', 'WebCtrl.java'),
+      'package com.fixture.web;\nimport com.fixture.core.CoreEntity;\npublic class WebCtrl { CoreEntity c; }\n'
+    );
+
+    // Online fetch throws -> falls back to awaited offline checkArchitecture + violationsOnly
+    const offlineRings = await executeToolCall(
       'exportArchitectureDiagram',
-      { projectRoot: tmpProj, diagramType: 'COMPONENT_RINGS' },
+      { projectRoot: tmpProj, violationsOnly: true },
+      { serverUrl: 'http://127.0.0.1:8088' },
+      {
+        ensureServerRunning: async () => ({ status: 'running', token: 'tok-1' }),
+        fetch: async () => {
+          throw new Error('network down');
+        }
+      }
+    );
+    assert.ok(offlineRings.content[0].text.startsWith('flowchart TB'));
+    assert.match(offlineRings.content[0].text, /comp_core/);
+    assert.match(offlineRings.content[0].text, /VIOLATION/);
+    assert.doesNotMatch(offlineRings.content[0].text, /comp_web --> comp_core/);
+
+    const offlineUml = await executeToolCall(
+      'exportArchitectureDiagram',
+      { projectRoot: tmpProj, diagramType: 'CLASS_UML', violationsOnly: true },
       {},
       { ensureServerRunning: async () => ({ status: 'offline' }) }
     );
-    assert.ok(offline.content[0].text.startsWith('flowchart TB'));
+    assert.ok(offlineUml.content[0].text.startsWith('classDiagram'));
+    assert.match(offlineUml.content[0].text, /CoreEntity/);
   } finally {
     fs.rmSync(tmpProj, { recursive: true, force: true });
   }

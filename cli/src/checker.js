@@ -1372,6 +1372,36 @@ export function generateMermaidReport(report, options = {}) {
     ].join('\n');
   }
 
+  if (diagramType.includes('CLASS') || diagramType.includes('UML')) {
+    const umlLines = ['classDiagram'];
+    const seenPairs = new Set();
+    for (const v of violations) {
+      const src = sanitizeMermaidId(
+        v.fromFile ? path.basename(v.fromFile, path.extname(v.fromFile)) : v.fromPkg || 'Caller'
+      );
+      const tgt = sanitizeMermaidId(
+        v.toImport ? v.toImport.split('.').pop() : v.toPkg || 'Dependency'
+      );
+      const pair = `${src}->${tgt}`;
+      if (seenPairs.has(pair)) continue;
+      seenPairs.add(pair);
+      umlLines.push(`  class ${src}`);
+      umlLines.push(`  class ${tgt}`);
+      umlLines.push(`  ${src} ..> ${tgt} : violation`);
+    }
+    if (!options.violationsOnly && Array.isArray(report.edges)) {
+      for (const edge of report.edges) {
+        const src = sanitizeMermaidId(edge.from);
+        const tgt = sanitizeMermaidId(edge.to);
+        const pair = `${src}->${tgt}`;
+        if (seenPairs.has(pair)) continue;
+        seenPairs.add(pair);
+        umlLines.push(`  ${src} --> ${tgt}`);
+      }
+    }
+    return umlLines.join('\n') + '\n';
+  }
+
   const levels = Array.isArray(report.levels) && report.levels.length > 0
     ? report.levels
     : [['domain'], ['application'], ['adapters'], ['infrastructure']];
@@ -1409,7 +1439,7 @@ export function generateMermaidReport(report, options = {}) {
     violationEdgeIndices.push(edgeIdx++);
   }
 
-  if (Array.isArray(report.edges)) {
+  if (!options.violationsOnly && Array.isArray(report.edges)) {
     for (const edge of report.edges) {
       const key = `${edge.from}->${edge.to}`;
       if (emittedPairs.has(key)) continue;

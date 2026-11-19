@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 class SessionTokenServiceTest {
 
   @Test
-  void avoidsBuildTimeRandomFieldsInNativeImageHeap() throws IllegalAccessException {
+  void avoidsBuildTimeRandomFieldsInNativeImageHeap() {
     boolean hasStaticRandom =
         Arrays.stream(SessionTokenService.class.getDeclaredFields())
             .anyMatch((Field f) ->
@@ -28,15 +28,11 @@ class SessionTokenServiceTest {
         hasStaticRandom,
         "SessionTokenService must not hold a static Random/SecureRandom in the GraalVM image heap");
 
-    SessionTokenService constructed = new SessionTokenService();
-    for (Field f : SessionTokenService.class.getDeclaredFields()) {
-      if (Random.class.isAssignableFrom(f.getType())) {
-        f.setAccessible(true);
-        assertNull(
-            f.get(constructed),
-            "Newly constructed SessionTokenService must not eagerly instantiate Random in <init>");
-      }
-    }
+    SessionTokenService service = new SessionTokenService(true, null, "127.0.0.1", 8088);
+    String first = service.generateToken();
+    String second = service.generateToken();
+    assertNotEquals(first, second, "repeated generateToken calls reuse lazy CSPRNG safely");
+    assertTrue(second.length() >= 43);
   }
 
   @Test

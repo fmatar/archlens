@@ -18,11 +18,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class PythonAstScanner implements LanguageScanner {
+
+  private static final Logger LOG = Logger.getLogger(PythonAstScanner.class);
 
   private static final Pattern FROM_IMPORT_PATTERN =
       Pattern.compile("^\\s*from\\s+([a-zA-Z0-9_.]+)(?:\\s+|(?<=\\.))import\\s+(.+)$");
@@ -202,8 +206,10 @@ public class PythonAstScanner implements LanguageScanner {
             : rootPath;
     boolean stripSrcPrefix = !Files.exists(rootPath.resolve("src").resolve("__init__.py"));
 
+    AtomicInteger skippedFiles = new AtomicInteger();
     Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
-    List<Path> pyFiles = discoverPythonFiles(scanPath, rootPath, omitPatterns);
+    List<Path> pyFiles = discoverPythonFiles(scanPath, rootPath, omitPatterns, skippedFiles);
+    List<Path> readablePyFiles = new ArrayList<>(pyFiles.size());
 
     Map<String, String> internalModules = new HashMap<>(); // moduleOrExportKey -> canonicalTargetId
     Map<String, List<String>> moduleToClassIds = new HashMap<>();
@@ -211,6 +217,15 @@ public class PythonAstScanner implements LanguageScanner {
     Map<Path, List<String>> fileLogicalLines = new HashMap<>();
 
     for (Path pyFile : pyFiles) {
+      List<String> rawLines;
+      try {
+        rawLines = Files.readAllLines(pyFile, StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable Python file %s: %s", pyFile, e.getMessage());
+        skippedFiles.incrementAndGet();
+        continue;
+      }
+      readablePyFiles.add(pyFile);
       String rawRel = rootPath.relativize(pyFile).toString();
       String canonicalRel = toCanonicalRelPath(pyFile, effectiveRoot, rootPath, stripSrcPrefix);
       String modId = toModuleId(canonicalRel);
@@ -218,8 +233,7 @@ public class PythonAstScanner implements LanguageScanner {
       fileToModuleId.put(pyFile, modId);
       internalModules.put(modId, modId);
       internalModules.putIfAbsent(rawModId, modId);
-      List<String> logical =
-          extractLogicalStatements(Files.readAllLines(pyFile, StandardCharsets.UTF_8));
+      List<String> logical = extractLogicalStatements(rawLines);
       fileLogicalLines.put(pyFile, logical);
 
       List<String> declaredClassIds = new ArrayList<>();
@@ -254,7 +268,7 @@ public class PythonAstScanner implements LanguageScanner {
     // Pass 1.5: Index __init__.py symbol & submodule re-exports (up to 4 hops for chained barrels)
     for (int hop = 0; hop < 4; hop++) {
       boolean added = false;
-      for (Path pyFile : pyFiles) {
+      for (Path pyFile : readablePyFiles) {
         Path fn = pyFile.getFileName();
         if (fn == null || !fn.toString().equals("__init__.py")) {
           continue;
@@ -296,7 +310,7 @@ public class PythonAstScanner implements LanguageScanner {
     List<DependencyEdge> edges = new ArrayList<>();
 
     // Pass 2: Parse source contents and resolve dependency edges
-    for (Path pyFile : pyFiles) {
+    for (Path pyFile : readablePyFiles) {
       String rel = toCanonicalRelPath(pyFile, effectiveRoot, rootPath, stripSrcPrefix);
       String currentModule = fileToModuleId.get(pyFile);
       Path fn = pyFile.getFileName();
@@ -576,7 +590,7 @@ public class PythonAstScanner implements LanguageScanner {
       }
     }
 
-    return new ScanResult(classes, edges);
+    return new ScanResult(classes, edges, skippedFiles.get());
   }
 
   private static final class ParsedPythonClass {
@@ -957,8 +971,11 @@ public class PythonAstScanner implements LanguageScanner {
     return null;
   }
 
-  private List<Path> discoverPythonFiles(Path scanPath, Path rootPath, Set<String> omitPatterns) {
+  private List<Path> discoverPythonFiles(
+      Path scanPath, Path rootPath, Set<String> omitPatterns, AtomicInteger skippedFiles) {
     return FileScannerUtil.findFiles(
-        scanPath, p -> p.toString().endsWith(".py") && !isIgnored(p, rootPath, omitPatterns));
+        scanPath,
+        p -> p.toString().endsWith(".py") && !isIgnored(p, rootPath, omitPatterns),
+        skippedFiles);
   }
 }

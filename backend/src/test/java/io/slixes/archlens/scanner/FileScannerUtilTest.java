@@ -18,7 +18,6 @@ class FileScannerUtilTest {
   void testIsIgnoredDirectory() {
     assertTrue(FileScannerUtil.isIgnoredDirectory(Path.of(".git")));
     assertTrue(FileScannerUtil.isIgnoredDirectory(Path.of(".archlens")));
-    assertTrue(FileScannerUtil.isIgnoredDirectory(Path.of(".uml-viewer")));
     assertTrue(FileScannerUtil.isIgnoredDirectory(Path.of("target")));
     assertTrue(FileScannerUtil.isIgnoredDirectory(Path.of("build")));
     assertTrue(FileScannerUtil.isIgnoredDirectory(Path.of("node_modules")));
@@ -227,5 +226,200 @@ class FileScannerUtilTest {
                 e.from().endsWith("CheckoutClient")
                     && e.to().equals("services.payments.routes")
                     && "HTTP /api/payments/charge".equals(e.label())));
+  }
+
+  @Test
+  void testScannersCountSkippedUnreadableOrMalformedFilesWithoutAbortingScan(@TempDir Path tempDir)
+      throws IOException {
+    byte[] invalidUtf8 = new byte[] {(byte) 0xFF, (byte) 0xFE, (byte) 0xC0, (byte) 0xAF};
+
+    // 1. Java: 1 valid + 1 unparseable + 1 IOException via custom parser
+    Path javaRoot = tempDir.resolve("java-proj");
+    Path javaSrc = javaRoot.resolve("src/main/java/com/acme");
+    Files.createDirectories(javaSrc);
+    Files.writeString(javaSrc.resolve("Good.java"), "package com.acme; public class Good {}");
+    Files.writeString(javaSrc.resolve("BadSyntax.java"), "package com.acme; public class {{{");
+
+    JavaAstScanner javaScanner = new JavaAstScanner();
+    LanguageScanner.ScanResult javaRes = javaScanner.scanProject(javaRoot.toString(), null, "");
+    assertEquals(1, javaRes.classes().size());
+    assertEquals(1, javaRes.skippedFiles());
+
+    JavaAstScanner ioThrowingJavaScanner =
+        new JavaAstScanner(
+            (JavaAstScanner.JavaParserFunction)
+                p -> {
+                  throw new IOException("disk read error");
+                });
+    LanguageScanner.ScanResult javaAllFailed =
+        ioThrowingJavaScanner.scanProject(javaRoot.toString(), null, "");
+    assertEquals(0, javaAllFailed.classes().size());
+    assertEquals(2, javaAllFailed.skippedFiles());
+
+    // 2. Python: 1 valid + 1 invalid UTF-8 (IOException)
+    Path pyRoot = tempDir.resolve("py-proj");
+    Path pySrc = pyRoot.resolve("src/domain");
+    Files.createDirectories(pySrc);
+    Files.writeString(pyRoot.resolve("pyproject.toml"), "[project]\nname='demo'\n");
+    Files.writeString(pySrc.resolve("good.py"), "class Order:\n    pass\n");
+    Files.write(pySrc.resolve("corrupt.py"), invalidUtf8);
+
+    PythonAstScanner pyScanner = new PythonAstScanner();
+    LanguageScanner.ScanResult pyRes = pyScanner.scanProject(pyRoot.toString(), "src", "");
+    assertEquals(1, pyRes.classes().size());
+    assertEquals(1, pyRes.skippedFiles());
+
+    // 3. TypeScript: 1 valid + 1 invalid UTF-8 (IOException) + corrupt tsconfig.json + corrupt
+    // backend route
+    Path tsRoot = tempDir.resolve("ts-proj");
+    Path tsSrc = tsRoot.resolve("src/domain");
+    Path tsBackend = tsRoot.resolve("backend");
+    Files.createDirectories(tsSrc);
+    Files.createDirectories(tsBackend);
+    Files.write(tsRoot.resolve("tsconfig.json"), invalidUtf8);
+    Files.writeString(
+        tsSrc.resolve("good.ts"),
+        "export class Invoice { load() { return fetch('/api/invoices'); } }\n");
+    Files.write(tsSrc.resolve("corrupt.ts"), invalidUtf8);
+    Files.write(tsBackend.resolve("BrokenRoute.java"), invalidUtf8);
+
+    TypeScriptAstScanner tsScanner = new TypeScriptAstScanner();
+    LanguageScanner.ScanResult tsRes = tsScanner.scanProject(tsRoot.toString(), "src", "");
+    assertEquals(1, tsRes.classes().size());
+    assertEquals(2, tsRes.skippedFiles());
+
+    // 4. Go: 1 valid + 1 test file + 1 invalid UTF-8 (IOException) + corrupt go.mod
+    Path goRoot = tempDir.resolve("go-proj");
+    Path goSrc = goRoot.resolve("pkg/orders");
+    Files.createDirectories(goSrc);
+    Files.write(goRoot.resolve("go.mod"), invalidUtf8);
+    Files.writeString(goSrc.resolve("good.go"), "package orders\ntype Order struct {\n}\n");
+    Files.writeString(goSrc.resolve("good_test.go"), "package orders\n");
+    Files.write(goSrc.resolve("corrupt.go"), invalidUtf8);
+
+    GoAstScanner goScanner = new GoAstScanner();
+    LanguageScanner.ScanResult goRes = goScanner.scanProject(goRoot.toString(), null, "");
+    assertEquals(1, goRes.classes().size());
+    assertEquals(1, goRes.skippedFiles());
+
+    // 5. Rust: 1 valid + 1 invalid UTF-8 (IOException)
+    Path rsRoot = tempDir.resolve("rs-proj");
+    Path rsSrc = rsRoot.resolve("src/domain");
+    Files.createDirectories(rsSrc);
+    Files.writeString(rsRoot.resolve("Cargo.toml"), "[package]\nname = \"demo\"\n");
+    Files.writeString(rsSrc.resolve("good.rs"), "pub struct Ledger;\n");
+    Files.write(rsSrc.resolve("corrupt.rs"), invalidUtf8);
+
+    RustAstScanner rsScanner = new RustAstScanner();
+    LanguageScanner.ScanResult rsRes = rsScanner.scanProject(rsRoot.toString(), "src", "");
+    assertEquals(1, rsRes.classes().size());
+    assertEquals(1, rsRes.skippedFiles());
+
+    // 6. Corrupt workspace manifests and backend route files log & count without throwing
+    Path wsCorrupt = tempDir.resolve("ws-corrupt");
+    Files.createDirectories(wsCorrupt.resolve("backend"));
+    Files.write(wsCorrupt.resolve("settings.gradle.kts"), invalidUtf8);
+    Files.write(wsCorrupt.resolve("Cargo.toml"), invalidUtf8);
+    Files.write(wsCorrupt.resolve("pnpm-workspace.yaml"), invalidUtf8);
+    Files.write(wsCorrupt.resolve("package.json"), invalidUtf8);
+    Files.write(wsCorrupt.resolve("backend/BrokenResource.java"), invalidUtf8);
+
+    assertTrue(FileScannerUtil.discoverWorkspaceModules(wsCorrupt).isEmpty());
+    assertTrue(FileScannerUtil.indexBackendRestRoutes(wsCorrupt).isEmpty());
+    java.util.concurrent.atomic.AtomicInteger routeSkips =
+        new java.util.concurrent.atomic.AtomicInteger();
+    assertTrue(FileScannerUtil.indexBackendRestRoutes(wsCorrupt, routeSkips).isEmpty());
+    assertEquals(1, routeSkips.get());
+
+    assertEquals(2, FileScannerUtil.findFiles(pySrc, 2, p -> p.toString().endsWith(".py")).size());
+    Files.writeString(pySrc.resolve("test_order.py"), "def test_ok(): pass\n");
+    Files.writeString(pySrc.resolve("NOTES.txt"), "not python\n");
+    assertEquals(1, pyScanner.scanProject(pyRoot.toString(), "src", "").skippedFiles());
+  }
+
+  @Test
+  void testGraphAndScanResultClampNegativeSkippedFilesAndHandleEmptyWorkspaces(
+      @TempDir Path tempDir) throws IOException {
+    assertEquals(
+        0,
+        new io.slixes.archlens.domain.graph.ArchitectureGraph(
+                "T", false, null, List.of(), List.of(), List.of(), List.of(), null, -5)
+            .skippedFiles());
+    assertEquals(0, new LanguageScanner.ScanResult(List.of(), List.of(), -3).skippedFiles());
+
+    Path emptyWs = tempDir.resolve("empty-ws");
+    Files.createDirectories(emptyWs.resolve("src/main/java"));
+    Files.createDirectories(emptyWs.resolve("packages/web"));
+    Files.createDirectories(emptyWs.resolve("crates/core"));
+    Files.writeString(emptyWs.resolve("pnpm-workspace.yaml"), "packages:\n  - 'packages/*'\n");
+    Files.writeString(emptyWs.resolve("Cargo.toml"), "[workspace]\nmembers = [\"crates/*\"]\n");
+
+    assertEquals(0, new JavaAstScanner().scanProject(emptyWs.toString(), null, "").skippedFiles());
+    assertEquals(
+        0,
+        new TypeScriptAstScanner()
+            .scanProject(emptyWs.toString(), "missing-src", "")
+            .skippedFiles());
+    assertEquals(
+        0, new RustAstScanner().scanProject(emptyWs.toString(), "missing-src", "").skippedFiles());
+
+    Path twoJavaRoot = tempDir.resolve("two-java");
+    Path twoJavaSrc = twoJavaRoot.resolve("src/main/java/com/acme");
+    Files.createDirectories(twoJavaSrc);
+    Files.writeString(twoJavaSrc.resolve("A.java"), "package com.acme; class A {}");
+    Files.writeString(twoJavaSrc.resolve("B.java"), "package com.acme; class B {}");
+    assertEquals(
+        2,
+        new JavaAstScanner((JavaAstScanner.JavaParserFunction) null)
+            .scanProject(twoJavaRoot.toString(), null, "")
+            .skippedFiles());
+    assertEquals(
+        2,
+        new JavaAstScanner((JavaAstScanner.JavaParserFunction) p -> null)
+            .scanProject(twoJavaRoot.toString(), null, "")
+            .skippedFiles());
+  }
+
+  @Test
+  void testPosixUnreadableDirectoryWalkLogsAndCountsSkips(@TempDir Path tempDir)
+      throws IOException {
+    Path lockedWs = tempDir.resolve("locked-ws");
+    Path lockedSub = lockedWs.resolve("packages/locked");
+    Files.createDirectories(lockedSub);
+    Files.writeString(lockedWs.resolve("pnpm-workspace.yaml"), "packages:\n  - 'packages/*'\n");
+    Path packagesParent = lockedWs.resolve("packages");
+    try {
+      java.util.Set<java.nio.file.attribute.PosixFilePermission> noPerms = java.util.Set.of();
+      Files.setPosixFilePermissions(lockedSub, noPerms);
+      java.util.concurrent.atomic.AtomicInteger walkSkips =
+          new java.util.concurrent.atomic.AtomicInteger();
+      assertTrue(
+          FileScannerUtil.findFiles(lockedWs, 4, p -> p.toString().endsWith(".java")).isEmpty());
+      assertEquals(1, FileScannerUtil.findFiles(lockedWs, 4, null, walkSkips).size());
+      assertTrue(
+          FileScannerUtil.findFiles(lockedWs, 4, p -> p.toString().endsWith(".java"), walkSkips)
+              .isEmpty());
+      assertTrue(FileScannerUtil.findDirectories(lockedWs, 4, p -> false).isEmpty());
+      if (!Files.isReadable(lockedSub)) {
+        assertTrue(walkSkips.get() >= 2);
+      }
+
+      Files.setPosixFilePermissions(
+          lockedSub, java.nio.file.attribute.PosixFilePermissions.fromString("rwxr-xr-x"));
+      Files.setPosixFilePermissions(packagesParent, noPerms);
+      if (!Files.isReadable(packagesParent)) {
+        assertTrue(FileScannerUtil.discoverWorkspaceModules(lockedWs).isEmpty());
+      }
+    } catch (UnsupportedOperationException ignored) {
+      // Non-POSIX filesystem
+    } finally {
+      try {
+        Files.setPosixFilePermissions(
+            packagesParent, java.nio.file.attribute.PosixFilePermissions.fromString("rwxr-xr-x"));
+        Files.setPosixFilePermissions(
+            lockedSub, java.nio.file.attribute.PosixFilePermissions.fromString("rwxr-xr-x"));
+      } catch (Exception ignored) {
+      }
+    }
   }
 }

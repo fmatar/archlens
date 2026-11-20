@@ -6,7 +6,7 @@ description: >-
   and Model Context Protocol (MCP) diagnostics for Archlens. Use when auditing
   layer boundaries, inverting outward dependencies (DIP), or running Archlens.
 license: Apache-2.0
-compatibility: "Node.js >= 18"
+compatibility: "Node.js >= 22"
 version: 1.1.6
 metadata:
   author: fmatar
@@ -18,7 +18,7 @@ metadata:
 Use this skill when analyzing, governing, or refactoring codebases using **Archlens (Dynamic Clean Architecture Workbench)**.
 
 This skill equips agents (Antigravity, Gemini CLI, Claude Code) to:
-1. Enforce Uncle Bob's **Dependency Rule** (dependencies strictly point inward).
+1. Enforce the **Clean Architecture Dependency Rule** (dependencies strictly point inward).
 2. Scaffold and maintain `.archlens/policy.json` architectural layer policies.
 3. Act as the autonomous refactoring companion to the visual workbench via mailbox queues (`.archlens/to-agent.json` and `.archlens/to-viewer.json`).
 4. Export LLM Refactoring Prompt Dossiers prescribing concrete Dependency Inversion Principle (DIP) interface ports.
@@ -88,9 +88,6 @@ npx @fmatar/archlens-skill prompt --path . --copy
 # Synchronize policy with newly added packages:
 npx @fmatar/archlens-skill update --path .
 
-# Migrate legacy .uml-viewer configuration to modern .archlens layout:
-npx @fmatar/archlens-skill upgrade --path .
-
 # Auto-configure MCP manifests for AI assistants (Antigravity, Claude, Cursor):
 npx @fmatar/archlens-skill --mcp
 
@@ -116,8 +113,8 @@ When the user asks to start Archlens, launch the studio, or open the visual work
 
 Archlens provides a real-time visual canvas (`http://localhost:8088`). When human architects interact with the UI, tasks are dispatched through a bidirectional mailbox IPC protocol:
 
-- **Inbound queue (UI $\rightarrow$ Agent)**: `.archlens/to-agent.json` (or `.uml-viewer/to-agent.json`)
-- **Outbound events (Agent $\rightarrow$ UI)**: `.archlens/to-viewer.json` (or `.uml-viewer/to-viewer.json`)
+- **Inbound queue (UI $\rightarrow$ Agent)**: `.archlens/to-agent.json`
+- **Outbound events (Agent $\rightarrow$ UI)**: `.archlens/to-viewer.json`
 
 ### Mailbox Format (`to-agent.json`)
 ```json

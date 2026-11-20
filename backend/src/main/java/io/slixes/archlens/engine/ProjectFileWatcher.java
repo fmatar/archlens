@@ -36,7 +36,7 @@ public class ProjectFileWatcher {
           "trash");
 
   private static final Set<String> WATCHED_EXTENSIONS =
-      Set.of(".java", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".clj", ".cljs", ".json");
+      Set.of(".java", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".svelte", ".json");
 
   private final long debounceMs;
   private final AtomicBoolean running = new AtomicBoolean(false);
@@ -167,9 +167,7 @@ public class ProjectFileWatcher {
             }
             String dirName = fileName.toString();
             if (EXCLUDED_DIRS.contains(dirName)
-                || (dirName.startsWith(".")
-                    && !dirName.equals(".archlens")
-                    && !dirName.equals(".uml-viewer"))) {
+                || (dirName.startsWith(".") && !dirName.equals(".archlens"))) {
               return FileVisitResult.SKIP_SUBTREE;
             }
 
@@ -185,6 +183,7 @@ public class ProjectFileWatcher {
 
           @Override
           public FileVisitResult visitFileFailed(Path file, IOException exc) {
+            LOG.debugf("Watcher skipping unreadable path %s: %s", file, exc.getMessage());
             return FileVisitResult.CONTINUE;
           }
         });
@@ -226,7 +225,8 @@ public class ProjectFileWatcher {
             if (Files.isDirectory(child, LinkOption.NOFOLLOW_LINKS)) {
               registerRecursive(child, activeService);
             }
-          } catch (IOException ignored) {
+          } catch (IOException e) {
+            LOG.debugf("Watcher skipping transient directory %s: %s", child, e.getMessage());
           }
         }
 

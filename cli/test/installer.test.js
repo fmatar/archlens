@@ -53,9 +53,9 @@ test('installLocalPolicy preserves existing policy unless force is set', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-preserve-test-'));
 
   try {
-    const umlDir = path.join(tmpDir, '.uml-viewer');
-    fs.mkdirSync(umlDir, { recursive: true });
-    const policyFile = path.join(umlDir, 'policy.json');
+    const archlensDir = path.join(tmpDir, '.archlens');
+    fs.mkdirSync(archlensDir, { recursive: true });
+    const policyFile = path.join(archlensDir, 'policy.json');
     fs.writeFileSync(policyFile, JSON.stringify({ title: 'Original Policy' }));
 
     // Run without force

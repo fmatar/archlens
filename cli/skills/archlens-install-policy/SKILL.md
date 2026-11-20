@@ -3,9 +3,9 @@ name: archlens-install-policy
 description: >-
   Inspects any target codebase, detects programming languages and packages, and
   scaffolds an Archlens Clean Architecture policy (.archlens/policy.json) and
-  agent workbench companion integration. Use when setting up or upgrading Archlens.
+  agent workbench companion integration. Use when setting up or updating Archlens.
 license: Apache-2.0
-compatibility: "Node.js >= 18"
+compatibility: "Node.js >= 22"
 version: 1.1.6
 metadata:
   author: fmatar
@@ -25,7 +25,6 @@ Trigger this skill whenever the user asks to:
 - "Install Archlens policy in this project"
 - "Setup Archlens" or "Configure Clean Architecture policy"
 - "Initialize .archlens/policy.json"
-- "Upgrade Archlens config from .uml-viewer to .archlens"
 - "Connect repository to Archlens workbench"
 - "Prepare this repository for Archlens refactoring companion"
 - "Export LLM refactoring prompt / Clean Architecture diagnostic dossier"
@@ -47,14 +46,11 @@ When executed, this skill generates the following artifacts in the target projec
 3. **`CLAUDE.md` and `AGENTS.md`**:
    - Injects the Clean Architecture Companion Protocol to instruct agents how to handle inbound mailbox tasks (`REGEN`, `APPLY_PROPOSAL`, `REFRESH_CRAP`) and enforce the Dependency Inversion Principle.
 
-> [!NOTE]
-> Backward Compatibility: Projects with existing `.uml-viewer/` configurations continue to function without modification. Upgrading to `.archlens/` is recommended for standard alignment.
-
 ---
 
 ## 🛠️ Execution Instructions for Agents
 
-### Step 1: Run the Archlens Installer or Upgrader
+### Step 1: Run the Archlens Installer
 Execute the cross-platform CLI via NPX against the target repository (passing `--mcp` so the `archlens` MCP server is also registered if not yet configured):
 
 ```bash
@@ -67,9 +63,6 @@ npx @fmatar/archlens-skill --path . --yes --mcp --docker
 # Initialize policy only (skip MCP client configuration):
 npx @fmatar/archlens-skill --path . --yes --no-mcp
 
-# Or upgrade an existing project from .uml-viewer to .archlens
-npx @fmatar/archlens-skill upgrade --path .
-
 # Or export LLM Refactoring Prompt Dossier (copy-ready markdown)
 npx @fmatar/archlens-skill prompt --path .
 
@@ -81,19 +74,15 @@ npx @fmatar/archlens-skill prompt --path . --copy
 - `--path <DIR>`: Target project directory (defaults to current directory).
 - `--title <NAME>`: Custom project display title.
 - `--prefix <PKG>`: Explicit package prefix (e.g. `com.mycompany.service`).
-- `--server-url <URL>`: Archlens workbench endpoint (defaults to `http://localhost:8088`).
+- `--server-url <URL>`: Archlens workbench endpoint (defaults to `http://127.0.0.1:8088`).
 - `--mcp` / `--no-mcp`: Register (or skip) Archlens MCP manifests across Antigravity, Claude, Cursor, Gemini CLI, and VS Code.
 - `--docker`: Configure MCP as an ephemeral `docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio` container instead of `npx`.
 - `--update`: Re-scans code for new packages and updates existing policy.
-- `--upgrade`: Migrates legacy `.uml-viewer/` configuration and mailboxes to `.archlens/`.
 - `--force`: Overwrite existing `.archlens/policy.json` if present.
 
 Alternatively, agents can run the bundled Python script:
 ```bash
 python3 scripts/init_policy.py --path .
-
-# Or upgrade:
-python3 scripts/init_policy.py --path . --upgrade
 ```
 
 ### Step 2: Review Generated Policy

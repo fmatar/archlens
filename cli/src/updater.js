@@ -28,22 +28,11 @@ export function updateLocalPolicy(projectRoot, options = {}) {
     throw new Error(`Target directory does not exist: ${root}`);
   }
 
-  const primaryDir = path.join(root, '.archlens');
-  const legacyDir = path.join(root, '.uml-viewer');
-  const primaryPolicy = path.join(primaryDir, 'policy.json');
-  const legacyPolicy = path.join(legacyDir, 'policy.json');
+  const targetDir = path.join(root, '.archlens');
+  const policyFile = path.join(targetDir, 'policy.json');
 
-  let targetDir = primaryDir;
-  let policyFile = primaryPolicy;
-
-  if (fs.existsSync(primaryPolicy)) {
-    targetDir = primaryDir;
-    policyFile = primaryPolicy;
-  } else if (fs.existsSync(legacyPolicy)) {
-    targetDir = legacyDir;
-    policyFile = legacyPolicy;
-  } else {
-    throw new Error(`Archlens policy not found at ${primaryPolicy}. Run init first.`);
+  if (!fs.existsSync(policyFile)) {
+    throw new Error(`Archlens policy not found at ${policyFile}. Run init first.`);
   }
 
   const configFile = path.join(targetDir, 'workbench.config.json');

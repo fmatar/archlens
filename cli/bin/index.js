@@ -19,7 +19,6 @@ import {
 } from '../src/analyzer.js';
 import { installLocalPolicy, installLocalSkills, installGlobalSkills } from '../src/installer.js';
 import { updateLocalPolicy, updateGlobalSkills } from '../src/updater.js';
-import { upgradeProject } from '../src/upgrader.js';
 import {
   checkArchitecture,
   generateSarifReport,
@@ -65,7 +64,6 @@ ${ui.colors.bold}COMMANDS:${ui.colors.reset}
   start                    Start Archlens Workbench container (auto-resurrects on demand)
   check                    Audit repository against Clean Architecture policy rules
   update                   Update existing policy with newly discovered packages and refresh skills
-  upgrade                  Upgrade legacy .uml-viewer configuration to .archlens
   skills                   Install Archlens skills via npx skills (local project or -g global)
   global                   Install Archlens skills and global MCP manifests for AI coding assistants
   prompt                   Export Clean Architecture LLM Refactoring Prompt Dossier
@@ -78,10 +76,10 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --max-files <NUM>        Stop scanning after NUM source files (default: no limit); a partial
                            scan fails the gate unless --allow-partial is given
   --allow-partial          Let a scan truncated by --max-files pass the gate (prints a warning)
-  --detect-cycles          Enforce Robert C. Martin Acyclic Dependencies Principle (ADP)
-  --screaming-threshold <NUM> Enforce minimum Screaming Architecture score (0.0-1.0, Uncle Bob Ch. 21)
-  --suggest-features       Suggest package-by-feature domain refactoring clusters (Uncle Bob Ch. 21)
-  --fitness-threshold <NUM> Enforce minimum Architectural Fitness Index (0.0-1.0, Neal Ford)
+  --detect-cycles          Enforce Acyclic Dependencies Principle (ADP)
+  --screaming-threshold <NUM> Enforce minimum Screaming Architecture score (0.0-1.0)
+  --suggest-features       Suggest package-by-feature domain refactoring clusters
+  --fitness-threshold <NUM> Enforce minimum Architectural Fitness Index (0.0-1.0)
   --prefix <PKG>           Common package prefix (e.g. com.example.app)
   --server-url <URL>       Archlens visual workbench URL (default: http://127.0.0.1:8088)
   --port <PORT>            Workbench HTTP port (default: 8088)
@@ -98,7 +96,6 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -c, --copy               Copy LLM prompt output directly to system clipboard
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
-  --upgrade                Upgrade mode: migrate .uml-viewer to .archlens
   --format <FORMAT>        Output format: pretty (default), json, sarif
   -O, --output <PATH>      Write audit report to specified file path
   -f, --force              Overwrite existing policy files
@@ -130,9 +127,6 @@ ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
 
   ${ui.colors.dim}# Initialize policy in current directory with default settings:${ui.colors.reset}
   npx @fmatar/archlens-skill --yes
-
-  ${ui.colors.dim}# Upgrade legacy .uml-viewer configuration to .archlens:${ui.colors.reset}
-  npx @fmatar/archlens-skill upgrade
 
   ${ui.colors.dim}# Install Archlens skill globally for Claude Code and Gemini CLI:${ui.colors.reset}
   npx @fmatar/archlens-skill global
@@ -174,7 +168,6 @@ export function parseArgs(args) {
     skills: false,
     agent: null,
     update: false,
-    upgrade: false,
     mcp: false,
     noMcp: false,
     check: false,
@@ -219,8 +212,6 @@ export function parseArgs(args) {
       parsed.global = true;
     } else if (arg === '--update' || arg === '-u') {
       parsed.update = true;
-    } else if (arg === '--upgrade') {
-      parsed.upgrade = true;
     } else if (arg === '--prompt') {
       parsed.prompt = true;
     } else if (arg === '--check') {
@@ -274,7 +265,7 @@ export function parseArgs(args) {
 
   if (positional.length > 0) {
     const cmd = positional[0].toLowerCase();
-    if (['init', 'start', 'update', 'upgrade', 'skills', 'global', 'prompt', 'mcp', 'check', 'help', 'version'].includes(cmd)) {
+    if (['init', 'start', 'update', 'skills', 'global', 'prompt', 'mcp', 'check', 'help', 'version'].includes(cmd)) {
       parsed.command = cmd;
     } else if (!parsed.title && !parsed.path) {
       parsed.path = positional[0];
@@ -285,7 +276,6 @@ export function parseArgs(args) {
   if (parsed.command === 'version') parsed.version = true;
   if (parsed.command === 'start') parsed.start = true;
   if (parsed.command === 'update') parsed.update = true;
-  if (parsed.command === 'upgrade') parsed.upgrade = true;
   if (parsed.command === 'skills') parsed.skills = true;
   if (parsed.command === 'global') parsed.global = true;
   if (parsed.command === 'prompt') parsed.prompt = true;
@@ -339,11 +329,6 @@ async function runInteractive(options, deps = {}) {
       value: 'update',
       label: `${ui.colors.bold}Update Existing Policy & Skills${ui.colors.reset}`,
       description: 'Re-scans code for new packages and updates installed agent skills'
-    },
-    {
-      value: 'upgrade',
-      label: `${ui.colors.bold}Upgrade Legacy Config (.uml-viewer -> .archlens)${ui.colors.reset}`,
-      description: 'Migrate configuration and mailbox directories to modern .archlens layout'
     }
   ];
 
@@ -398,10 +383,6 @@ async function runInteractive(options, deps = {}) {
 
   if (selectedAction === 'update') {
     executeUpdate(targetRoot, execOptions);
-  }
-
-  if (selectedAction === 'upgrade') {
-    executeUpgrade(targetRoot, execOptions);
   }
 
   printCompletionMessage(targetRoot, execOptions.serverUrl);
@@ -487,27 +468,6 @@ function executeLocalSkillsInstall(targetRoot, options) {
     for (const inst of result.installed) {
       ui.success(`Installed skill for ${inst.agent}: ${inst.path}${modeSuffix}`);
     }
-  }
-}
-
-function executeUpgrade(targetRoot, options) {
-  const modeSuffix = options.dryRun ? ' (dry run)' : '';
-  ui.step(1, 1, `Migrating Configuration to .archlens${modeSuffix}`);
-  const result = upgradeProject(targetRoot, options);
-
-  if (result.migrated) {
-    ui.success(
-      `Migrated legacy directory: ${path.relative(targetRoot, result.legacyDir)} -> ${path.relative(targetRoot, result.primaryDir)}`
-    );
-    if (result.migratedFiles.length > 0) {
-      ui.info(`Files moved: ${result.migratedFiles.join(', ')}`);
-    }
-  } else {
-    ui.info('Project is already aligned with .archlens configuration standard.');
-  }
-
-  if (result.updatedCompanions.length > 0) {
-    ui.success(`Updated companion references in: ${result.updatedCompanions.join(', ')}`);
   }
 }
 
@@ -662,6 +622,11 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
 
       console.log(`\n  ${ui.colors.bold}Architecture Governance Results (${report.projectTitle}):${ui.colors.reset}`);
       console.log(`  - Source Files Analyzed: ${report.sourceFilesCount}${report.partial ? ' (PARTIAL SCAN)' : ''}`);
+      if (report.skippedFiles > 0) {
+        ui.warn(
+          `Skipped ${report.skippedFiles} unreadable file(s): ${(report.skippedFilePaths || []).slice(0, 5).join(', ')}`
+        );
+      }
       console.log(`  - Governed Packages:     ${report.packagesCount}`);
       console.log(`  - Detected Violations:   ${report.violationsCount} (threshold: ${report.maxViolations})`);
       if (report.cyclesCount > 0) {
@@ -811,7 +776,6 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
     !options.skills &&
     !options.global &&
     !options.update &&
-    !options.upgrade &&
     !options.prompt &&
     !options.mcp
   );
@@ -828,9 +792,7 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
 
   // Non-interactive or flag-driven execution
   try {
-    if (options.upgrade) {
-      executeUpgrade(targetRoot, options);
-    } else if (options.update) {
+    if (options.update) {
       executeUpdate(targetRoot, options);
     } else if (options.command === 'skills' || (options.skills && options.global && !options.yes)) {
       if (options.global) {
@@ -858,7 +820,7 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
         executeMcpInstall({ ...options, path: targetRoot });
       } else if (
         options.command === 'global' ||
-        (options.global && options.command !== 'skills' && !options.skills && !options.update && !options.upgrade)
+        (options.global && options.command !== 'skills' && !options.skills && !options.update)
       ) {
         executeMcpInstall({ ...options, path: targetRoot, scopeOnly: 'global' });
       }

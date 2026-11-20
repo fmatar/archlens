@@ -738,3 +738,72 @@ test('checkArchitecture rejects non-numeric gate options instead of computing Na
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('checkArchitecture counts and reports unreadable files/directories in stderr, CLI pretty output, and SARIF (#240)', async () => {
+  const dir = makeLargeProject(2);
+  const stderrChunks = [];
+  const origWrite = process.stderr.write.bind(process.stderr);
+  try {
+    const brokenLink = path.join(dir, 'src', 'domain', 'BrokenLink.java');
+    fs.symlinkSync(path.join(dir, 'src', 'domain', 'does-not-exist.java'), brokenLink);
+
+    const lockedDir = path.join(dir, 'src', 'domain', 'locked-sub');
+    fs.mkdirSync(lockedDir, { recursive: true });
+    let dirIsUnreadable = false;
+    try {
+      fs.chmodSync(lockedDir, 0o000);
+      try {
+        fs.readdirSync(lockedDir);
+      } catch {
+        dirIsUnreadable = true;
+      }
+    } catch {
+      // Non-POSIX platform
+    }
+
+    process.stderr.write = (chunk) => {
+      stderrChunks.push(String(chunk));
+      return true;
+    };
+
+    const report = await checkArchitecture(dir);
+    process.stderr.write = origWrite;
+
+    const expectedSkips = dirIsUnreadable ? 2 : 1;
+    assert.equal(report.skippedFiles, expectedSkips);
+    assert.ok(report.skippedFilePaths.some((p) => p.endsWith('BrokenLink.java')));
+    assert.ok(stderrChunks.some((line) => line.includes('BrokenLink.java')));
+    if (dirIsUnreadable) {
+      assert.ok(stderrChunks.some((line) => line.includes('locked-sub')));
+    }
+
+    const sarif = JSON.parse(generateSarifReport(report, { version: '1.1.6' }));
+    assert.equal(sarif.runs[0].properties.skippedFiles, expectedSkips);
+    assert.equal(sarif.runs[0].invocations[0].executionSuccessful, true);
+    assert.match(
+      sarif.runs[0].invocations[0].toolExecutionNotifications[0].message.text,
+      /Skipped .* unreadable source file/
+    );
+
+    const { main } = await import('../bin/index.js');
+    const logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(' '));
+    let exitCode = null;
+    try {
+      await main(['check', '-p', dir], { exit: (c) => { exitCode = c; } });
+    } finally {
+      console.log = origLog;
+    }
+    assert.equal(exitCode, 0);
+    assert.ok(logs.some((l) => l.includes('Skipped') && l.includes('BrokenLink.java')));
+  } finally {
+    process.stderr.write = origWrite;
+    try {
+      fs.chmodSync(path.join(dir, 'src', 'domain', 'locked-sub'), 0o755);
+    } catch {
+      // ignore
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

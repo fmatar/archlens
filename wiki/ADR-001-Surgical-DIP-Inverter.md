@@ -27,7 +27,7 @@ We implemented an automated **Surgical DIP Inverter** spanning the Quarkus backe
 
 ### Positive
 - Remediation time for outward violations reduced from 10–15 minutes of manual editing to a single click.
-- Consistent interface naming and placement standards adhering to Robert C. Martin's Dependency Inversion Principle.
+- Consistent interface naming and placement standards adhering to the Dependency Inversion Principle.
 - Clean separation of concerns: the workbench synthesizes the architecture plan, while companion agents (Claude / Antigravity) execute the code modifications and test suites.
 
 ### Negative / Trade-offs

@@ -11,7 +11,7 @@ flowchart TD
   INV_01["INV-01: Zero direct commits, merges, or pushes to `main` or `develop` (enforced by 4-Layer Git Guard & Stage 7 Merkle Gate Receipts)."]
   INV_02["INV-02: 100% of code changes require an active SDLC ticket session and Dual-Gate verification ($\ge 85\%$ diff coverage, $\ge 80\%$ mutation score)."]
   INV_03["INV-03: Core Domain entities (Ring 0) must remain pure with zero imports from outer Web, DB, or framework layers (Clean Architecture Dependency Rule)."]
-  INV_04["INV-04: Polyglot AST Scanners must emit class/interface-level `DependencyEdge` endpoints when symbols or classes exist (falling back to module `ClassNode` IDs for function-only modules) and classify abstract/interface stereotypes (`INTERFACE`, `ABSTRACT`) accurately for Robert C. Martin metrics ($C_a, C_e, I, A, D$)."]
+  INV_04["INV-04: Polyglot Scanners must emit class/interface-level `DependencyEdge` endpoints when symbols or classes exist (falling back to module `ClassNode` IDs for function-only modules) and classify abstract/interface stereotypes (`INTERFACE`, `ABSTRACT`) accurately for component coupling metrics ($C_a, C_e, I, A, D$)."]
   INV_05["INV-05: All architectural or contract deviations from this constitution require a linked ADR (`docs/adr/ADR-00X.md`) synchronized with `PRODUCT.md` and `docs/DECISION_MAP.md`."]
   CAP_01["CAP-01: Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures"]
   SPEC_01["SPEC-01 (docs/specs/cap-01.md)"]
@@ -52,6 +52,8 @@ flowchart TD
   _263["Ticket #263 (feature/issue-#263-phase-1-5-native-securerandom-rollback-t)"]
   ADR_016["ADR-016: Wave 1 MCP Confinement Pure-Git Tag Caching and Watcher Root Switching"]
   _265["Ticket #265 (feature/issue-#265-wave-1-correctness-and-auth)"]
+  ADR_017["ADR-017: Phase 2 Skipped-File Telemetry Clojure Removal and Provenance Cleanup"]
+  _238["Ticket #238 (feature/issue-#238-phase-2-trust-hygiene-and-skipped-files)"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -118,6 +120,8 @@ flowchart TD
   ADR_014 -.->|ADR Drift| ADR_015
   _265 -->|triggered_drift_adr| ADR_016
   ADR_015 -.->|ADR Drift| ADR_016
+  _238 -->|triggered_drift_adr| ADR_017
+  ADR_016 -.->|ADR Drift| ADR_017
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -150,6 +154,7 @@ flowchart TD
 | **ADR-014** | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | #247 | ADR-013 |
 | **ADR-015** | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
 | **ADR-016** | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
+| **ADR-017** | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
 
 ---
 

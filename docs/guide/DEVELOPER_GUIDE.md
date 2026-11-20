@@ -1,6 +1,6 @@
 # Archlens Developer & Contributor Guide
 
-Welcome to the **Archlens** developer community! This comprehensive guide provides everything required to understand the codebase, set up your local development environment, build and test each module, implement new polyglot language scanners, extend the Model Context Protocol (MCP) server, and contribute adhering to Robert C. Martin (Uncle Bob) craftsmanship standards.
+Welcome to the **Archlens** developer community! This comprehensive guide provides everything required to understand the codebase, set up your local development environment, build and test each module, implement new polyglot language scanners, extend the Model Context Protocol (MCP) server, and contribute adhering to Clean Architecture craftsmanship standards.
 
 ---
 
@@ -8,15 +8,14 @@ Welcome to the **Archlens** developer community! This comprehensive guide provid
 
 Archlens is engineered around **Clean Architecture** and the **Dependency Inversion Principle (DIP)**:
 
-> *"Source code dependencies must point only inward, toward higher-level policies."*  
-> — **Robert C. Martin (Uncle Bob)**
+> *"Source code dependencies must point only inward, toward higher-level policies."*
 
 ```mermaid
 flowchart TD
     subgraph Rings ["Clean Architecture Concentric Rings (.archlens/policy.json)"]
         L3["Infrastructure & Delivery (Ring 3)<br/>• REST Resources (delivery.rest) & Quarkus Server<br/>• Native Quarkus MCP 2.0 Service (mcp)<br/>• Svelte 5 Web UI Canvas & CLI Entrypoints"]
         L2["Adapters (Ring 2)<br/>• Mailbox IPC Adapter (mailbox.fs.FileMailboxService)"]
-        L1["Application, Engine & Scanners (Ring 1)<br/>• Use Cases (EvaluateFitness, SynthesizeDipInversion, ExportDossier, ...)<br/>• GraphCompiler, ProjectFileWatcher & CrapScoreCalculator<br/>• Polyglot AST Scanners (scanner.*: Java, Python, TS/Svelte, Rust, Go, Clojure)"]
+        L1["Application, Engine & Scanners (Ring 1)<br/>• Use Cases (EvaluateFitness, SynthesizeDipInversion, ExportDossier, ...)<br/>• GraphCompiler, ProjectFileWatcher & CrapScoreCalculator<br/>• Polyglot Scanners (scanner.*: Java, Python, TS/Svelte, Rust, Go)"]
         L0["Domain Core (Ring 0)<br/>• ArchitectureGraph, ComponentNode, ClassNode, DependencyEdge<br/>• ArchitecturePolicy, DependencyRuleValidator & PackageCycleDetector<br/>• DipInversionSynthesizer, ScreamingArchitectureAnalyzer & FitnessCalculator"]
         
         L3 --> L2
@@ -55,10 +54,9 @@ archlens/
 │   ├── src/docker-runner.js  # 4-Tier Auto-Resurrection engine (Live -> Native JAR -> Docker -> Offline)
 │   ├── src/installer.js      # Policy scaffolder and companion guideline injector (AGENTS.md / CLAUDE.md)
 │   ├── src/mcp-registry.js   # Multi-client MCP manifest registry (Antigravity, Claude, Gemini, Cursor, VS Code)
-│   ├── src/mcp-server.js     # JSON-RPC 2.0 stdio MCP server with 10 tools, 3 resources & offline fallback
+│   ├── src/mcp-server.js     # JSON-RPC 2.0 stdio MCP server with 11 tools, 3 resources & offline fallback
 │   ├── src/updater.js        # Safe incremental policy updater
-│   ├── src/upgrader.js       # Legacy .uml-viewer to .archlens migration tool
-│   └── test/                 # 80+ Node native test runner unit & integration tests
+│   └── test/                 # 125+ Node native test runner unit & integration tests
 ├── scripts/                  # Build, Release, Telemetry & End-to-End Smoke Automation
 │   ├── smoke-test.js         # Packaged JAR + REST API + MCP SSE + MCP Stdio E2E smoke runner
 │   ├── generate-report.js    # Full-stack JaCoCo, Vitest, JUnit & Git telemetry aggregator
@@ -80,9 +78,9 @@ Ensure the following tools are installed on your workstation:
 
 | Tool | Minimum Version | Recommended | Notes |
 | :--- | :--- | :--- | :--- |
-| **Java** | OpenJDK 21 | OpenJDK 25 / GraalVM 25 | Required for records, pattern matching, and backend compilation |
+| **Java** | OpenJDK 25 | OpenJDK 25 / GraalVM 25 | Required for records, pattern matching, and backend compilation |
 | **Maven** | 3.9.0 | 3.9.9+ | Primary backend build orchestrator |
-| **Node.js** | 20.0.0 | 22.0.0+ | Required for frontend tooling and CLI execution |
+| **Node.js** | 22.0.0 | 22.0.0+ | Required for frontend tooling and CLI execution |
 | **pnpm** | 9.0.0 | Latest | Recommended package manager for frontend dependencies |
 | **Docker** | 24.0.0 | Latest | Optional; required for container packaging and runtime tests |
 
@@ -187,7 +185,7 @@ npm run smoke:build
 1. **Bundled Svelte 5 Workbench UI (`GET /`)**: Verifies the frontend bundle is embedded and served by Quarkus.
 2. **REST API Contracts**: Validates `/api/version`, `/api/graph`, `/api/fitness`, `/api/fitness/history`, `/api/violations/invert-plan`, and `/api/policy`.
 3. **Native Quarkus MCP 2.0 SSE Transport (`GET /mcp/sse`)**: Verifies `200 OK` and `content-type: text/event-stream`.
-4. **CLI MCP JSON-RPC 2.0 Stdio Bridge**: Verifies `initialize`, `tools/list` (`10` tools), `resources/list`, and `tools/call` (`evaluateFitness`, `synthesizeDipInversion`, `getPolicy`).
+4. **CLI MCP JSON-RPC 2.0 Stdio Bridge**: Verifies `initialize`, `tools/list` (`11` tools), `resources/list`, and `tools/call` (`evaluateFitness`, `synthesizeDipInversion`, `getPolicy`).
 5. **Multi-Agent MCP Installer Dry-Run**: Validates `installMcpConfigs({ dryRun: true })` across detected AI assistant targets.
 
 ---
@@ -271,23 +269,8 @@ public class SwiftAstScanner implements LanguageScanner {
 }
 ```
 
-### Step 2: Register in `LanguageScannerRegistry`
-Register the scanner inside `backend/src/main/java/io/slixes/archlens/scanner/LanguageScannerRegistry.java`:
-
-```java
-@Inject SwiftAstScanner swiftScanner;
-
-@PostConstruct
-void init() {
-  scanners.add(javaScanner);
-  scanners.add(pythonScanner);
-  scanners.add(typeScriptScanner);
-  scanners.add(rustScanner);
-  scanners.add(goScanner);
-  scanners.add(clojureScanner);
-  scanners.add(swiftScanner); // Added scanner
-}
-```
+### Step 2: Automatic CDI Discovery in `LanguageScannerRegistry`
+Any `@ApplicationScoped` class implementing `LanguageScanner` is automatically discovered via CDI `Instance<LanguageScanner>` in `backend/src/main/java/io/slixes/archlens/scanner/LanguageScannerRegistry.java` alongside the built-in Java, Python, TypeScript, Rust, and Go scanners.
 
 ### Step 3: Add Polyglot DIP Port Synthesis Template (Optional)
 In `backend/src/main/java/io/slixes/archlens/domain/dossier/DipInversionSynthesizer.java`, add the idiomatic interface/protocol template for the new language (e.g., Swift `protocol <Target>Port`) so the Surgical DIP Inverter and `synthesizeDipInversion` MCP tool generate native code diffs.
@@ -354,17 +337,17 @@ Every pull request must pass all quality gates cleanly without warnings:
 | **Spotless Code Formatting** | `mvn spotless:check` / `mvn spotless:apply` | 0 formatting discrepancies |
 | **PMD Static Analysis** | `mvn pmd:check` | 0 violations (`failOnViolation=true`) |
 | **SpotBugs Security Analysis** | `mvn compile spotbugs:check` | 0 bugs (`threshold=Low`, `effort=Max`) |
-| **Backend Unit & Arch Tests** | `mvn test` | 100% passing (320+ tests, $\ge 85\%$ JaCoCo coverage) |
-| **CLI & Script Test Suite** | `npm test` | 100% passing (101+ Node native tests, $\ge 85\%$ coverage) |
-| **E2E Packaged JAR & MCP Smoke** | `npm run smoke` (or `npm run smoke:build`) | 100% passing (UI bundle, 7 REST APIs, MCP SSE, 10 MCP tools) |
+| **Backend Unit & Arch Tests** | `mvn -f backend/pom.xml test` | 100% passing (`>= 75%` bundle / `>= 85%` diff JaCoCo coverage) |
+| **CLI & Script Test Suite** | `npm test` | 100% passing (190+ Node native tests) |
+| **E2E Packaged JAR & MCP Smoke** | `npm run smoke` (or `npm run smoke:build`) | 100% passing (UI bundle, REST APIs, MCP SSE, 11 MCP tools) |
 | **Self-Governance Arch Gate** | `node cli/bin/index.js check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85` | 0 outward violations, 0 ADP cycles, Grade A Fitness |
-| **Frontend Unit Tests** | `npm --prefix frontend test` | 100% passing Vitest tests (53+ tests) |
-| **Frontend Type Checking** | `npm --prefix frontend run check` | 0 TypeScript or Svelte 5 errors |
+| **Frontend Unit Tests** | `pnpm --dir frontend test` | 100% passing Vitest tests (68+ tests) |
+| **Frontend Type Checking** | `pnpm --dir frontend run check` | 0 TypeScript or Svelte 5 errors |
 | **Wiki Determinism Audit** | `node .agent/scripts/sdlc-engine.mjs wiki audit --strict` | 14/14 wiki pages valid, 100% modules mapped |
 
 ---
 
-## 🎯 8. Uncle Bob Test Craftsmanship Standards
+## 🎯 8. Test Craftsmanship Standards
 
 To maintain clean code and protect against regression without brittle tests, adhere to these principles:
 

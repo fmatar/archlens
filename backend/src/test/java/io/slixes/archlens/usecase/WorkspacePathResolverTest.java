@@ -31,10 +31,11 @@ class WorkspacePathResolverTest {
   }
 
   @Test
-  void testNormalizeRootAliases() {
-    assertEquals("foo/archlens/bar", WorkspacePathResolver.normalizeRoot("foo/agentlens/bar"));
+  void testNormalizeRootDoesNotRewriteArbitraryRepoNames() {
+    assertEquals("foo/other-app/bar", WorkspacePathResolver.normalizeRoot("foo/other-app/bar"));
     assertEquals(
-        "foo/archlens/bar", WorkspacePathResolver.normalizeRoot("foo/unclebob-design/bar"));
+        "/workspace/labs/sample-service",
+        WorkspacePathResolver.normalizeRoot("/workspace/labs/sample-service"));
   }
 
   @Test
@@ -43,9 +44,9 @@ class WorkspacePathResolverTest {
     fakeWorkspace.toFile().mkdirs();
     System.setProperty("archlens.container.workspace", fakeWorkspace.toString());
     try {
-      String userHome = System.getProperty("user.home", "/Users/fady");
-      String result = WorkspacePathResolver.normalizeRoot(userHome + "/workspace/khasis/khasis-ui");
-      assertEquals(fakeWorkspace.toString() + "/khasis/khasis-ui", result);
+      String userHome = System.getProperty("user.home", "/Users/developer");
+      String result = WorkspacePathResolver.normalizeRoot(userHome + "/workspace/acme/web-ui");
+      assertEquals(fakeWorkspace.toString() + "/acme/web-ui", result);
 
       String result2 = WorkspacePathResolver.normalizeRoot("/Users/someone/workspace/other/proj");
       assertEquals(fakeWorkspace.toString() + "/other/proj", result2);

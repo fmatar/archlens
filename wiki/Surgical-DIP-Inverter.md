@@ -1,7 +1,6 @@
 # Surgical DIP Inverter
 
-> *"High-level modules should not depend on low-level modules. Both should depend on abstractions. Abstractions should not depend on details. Details should depend on abstractions."*  
-> — **Robert C. Martin (The Dependency Inversion Principle)**
+> *"High-level modules should not depend on low-level modules. Both should depend on abstractions. Abstractions should not depend on details. Details should depend on abstractions."*
 
 The **Surgical DIP Inverter** transforms violation remediation from a tedious manual chore into a 1-click automated operation. Instead of merely alerting you to an outward Clean Architecture violation, Archlens automatically analyzes the participating classes across **Java, Python, TypeScript, Go, and Rust** (`CAP-03`), synthesizes the idiomatic language interface port (`interface`, `typing.Protocol`, or `pub trait`), previews the adapter and caller diffs, and dispatches a refactoring directive to your AI companion.
 

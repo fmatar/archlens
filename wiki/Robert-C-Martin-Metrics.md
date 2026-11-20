@@ -1,8 +1,8 @@
-# Robert C. Martin Coupling & Stability Metrics
+# Component Coupling & Stability Metrics
 
-In *Clean Architecture* and *Agile Software Development: Principles, Patterns, and Practices*, Robert C. Martin (Uncle Bob) formalized mathematical metrics to evaluate the stability, abstractness, and balance of software packages and components.
+Package coupling and abstractness metrics evaluate the stability, abstractness, and structural balance of software packages and components.
 
-Archlens implements Uncle Bob's complete metrics suite natively in both the active architecture analyzer and the interactive sandbox simulation engine.
+Archlens implements the complete coupling & Main Sequence metrics suite natively in both the active architecture analyzer and the interactive sandbox simulation engine.
 
 ---
 
@@ -33,13 +33,13 @@ $$A = \frac{N_a}{N_c}$$
 
 ## 📈 The Main Sequence & Architectural Zones
 
-Uncle Bob established that stable components should be abstract, while unstable components should be concrete. The ideal relationship forms a line from $(A=0, I=1)$ to $(A=1, I=0)$, known as the **Main Sequence**:
+Stable components should be abstract, while unstable components should be concrete. The ideal relationship forms a line from $(A=0, I=1)$ to $(A=1, I=0)$, known as the **Main Sequence**:
 
 $$A + I = 1$$
 
 ```mermaid
 xychart-beta
-    title "Robert C. Martin Main Sequence & Zones"
+    title "Main Sequence & Architectural Zones"
     x-axis "Instability (I: 0 = Stable, 1 = Instable)" [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
     y-axis "Abstractness (A: 0 = Concrete, 1 = Abstract)" 0 --> 1
     line [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]
@@ -96,7 +96,7 @@ Abstractness (A)
 
 ## 📊 Interactive Main Sequence Scatter Plot & Quadrant Analyzer
 
-Archlens features a built-in 2D Cartesian SVG scatter plot modal to visually inspect your system's architecture against Uncle Bob's metrics in real time.
+Archlens features a built-in 2D Cartesian SVG scatter plot modal to visually inspect your system's architecture against Main Sequence metrics in real time.
 
 ```text
                   Main Sequence (A + I = 1)
@@ -124,7 +124,7 @@ Abstractness (A)             \
 - **Sandbox Drawer**: Click **`Open Scatter Plot (M)`** inside the Sandbox Metrics dock.
 
 ### 2. Visualization Features
-- **Uncle Bob's Ideal Line**: Rendered as a distinct green dashed line ($A + I = 1$).
+- **Main Sequence Ideal Line**: Rendered as a distinct green dashed line ($A + I = 1$).
 - **Balanced Corridor**: Shaded tolerance ribbon representing $|A + I - 1| \le 0.25$.
 - **Dynamic Node Radii**: Component bubble size scales proportionally with total class count ($N_c$), clamped between 6px and 22px for readability.
 - **Tier Color Coding**: Points inherit their concentric ring tier color (L0 Domain Core, L1 Application, L2 Adapters, L3 Frameworks/Infrastructure).

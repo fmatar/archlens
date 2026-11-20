@@ -16,6 +16,7 @@
   import PolicyEditorModal from './lib/components/PolicyEditorModal.svelte';
   import ExportDiagramModal from './lib/components/ExportDiagramModal.svelte';
   import ArchlensLogo from './lib/components/ArchlensLogo.svelte';
+  import SkippedFilesBanner from './lib/components/SkippedFilesBanner.svelte';
   import { ShieldCheck, AlertTriangle, Search, FolderOpen, Bot, FlaskConical, Activity, Sliders, AlertCircle, Radio, Megaphone, Share2 } from '@lucide/svelte';
   import type { DependencyEdge } from './lib/types/diagram';
 
@@ -172,6 +173,7 @@
       "Archlens workbench ready. Open: …" URL from the server log. Showing demo data until then.
     </div>
   {/if}
+  <SkippedFilesBanner count={diagramStore.skippedFilesCount} />
   <!-- Top App Navigation -->
   <header class="h-12 bg-slate-900 border-b border-slate-800 px-4 flex items-center justify-between z-30 select-none">
     <!-- 1. Left: Source & Project Context -->

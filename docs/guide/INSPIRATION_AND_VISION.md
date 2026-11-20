@@ -1,60 +1,42 @@
-# Inspiration and Architectural Vision
+# Architectural Vision
 
-> *"Architecture is about intent. It is not about frameworks, tools, or delivery mechanisms. A good architecture allows decisions about frameworks, tools, and delivery mechanisms to be deferred until the last responsible moment."*  
-> — **Robert C. Martin (Uncle Bob)**
-
----
-
-## 1. The Heritage
-
-Throughout modern software development, few works have provided greater clarity or enduring guidance than Robert C. Martin’s books and essays. *Clean Code*, *Clean Architecture*, and the formulation of the SOLID principles have served as vital reference points across entire engineering careers. When codebases begin to decay under the weight of tightly coupled frameworks and circular dependencies, Uncle Bob’s principles offer the compass needed to restore order.
-
-When Uncle Bob published [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), the vision struck an immediate chord. He set out to turn the Clean Architecture Dependency Rule—the concentric circles every engineer recognizes from the book—into an interactive, living instrument right on the developer's screen.
-
-His original repository was a creative and exploratory Clojure prototype. It revealed how dynamic layout, mutation testing, CRAP complexity metrics, and an AI agent could work in concert to give developers immediate architectural feedback.
+> *"Source code dependencies must point only inward, toward higher-level policies."*
 
 ---
 
-## 2. The Enterprise Imperative
+## 1. Why Dynamic Architecture Governance Matters
 
-As inspiring as the original vision was, enterprise software ecosystems carry distinct operational and architectural realities:
+Modern software teams and autonomous AI coding agents ship features rapidly, yet without continuous structural guardrails codebases accumulate outward dependency leaks, circular package dependencies, and tightly coupled framework calls. Static diagrams drift out of date the day after they are drawn, while text-only linters surface raw violations without visual context or concrete remediation paths.
 
-* **Modern Language Features**: Modern enterprise Java systems rely on Java 17, 21, and 25 features—records, sealed interfaces, pattern matching, virtual threads, and deep framework annotations (Quarkus, Spring Boot, Jakarta EE).
-* **Scale and Modularity**: Enterprise repositories often contain hundreds or thousands of classes spanning multi-module builds, multi-layer persistence models, and rich domain services.
-* **Frictionless Toolchains**: Tooling must integrate naturally into mainstream CI/CD environments, run instantly in developer browsers without desktop graphics dependencies (such as Processing or Quil), and support multiple projects without manual configuration rewrites.
-
-Inspired by Uncle Bob’s north star, we embarked on rebuilding the entire platform from the ground up for modern enterprise environments.
+Inspired by Clean Architecture principles, **Archlens** turns concentric ring governance into a live, interactive workbench right in the browser and terminal.
 
 ---
 
-## 3. Engineering Pillars of the Modern Workbench
+## 2. The Enterprise Reality
 
-### A. Enterprise Java 21+ AST Scanner
-Instead of ad-hoc text parsing, the backend engine is built with Quarkus and JavaParser configured for language level Java 21+. It parses modern Java constructs with zero friction:
-- Full support for records, text blocks, sealed class hierarchies, and complex generics.
-- Real-time extraction of field and method signatures, cyclomatic complexity (McCabe metric), and CRAP score calculations ($CC^2 \cdot (1 - \text{Cov})^3 + CC$).
-- Fast AST indexing capable of scanning hundreds of source files in seconds.
+Production repositories carry concrete operational requirements:
 
-### B. Reactive Svelte 5 Architecture Canvas
-The frontend was engineered with Svelte 5 and SVG to deliver smooth visual interactivity:
-- **Hierarchical Layouts**: Packages and proposal layers arrange themselves into clean concentric levels with Level 0 (Domain Core) at the center.
-- **Directional Vectors**: Dependencies flowing inward (conforming) render as subtle grey paths. Any outward violation where an inner domain layer reaches into an outer adapter renders as a vivid red directional arrow.
-- **Dynamic Decluttering**: Toggle between full arrow topologies, collapsed layer badges, and class-level details to maintain clarity across large systems.
-
-### C. Multi-Project Governance
-Architectural evaluation is no longer locked to a single workspace. With a simple dropdown or query parameter, developers and architects can evaluate any repository on their machine—validating legacy systems, microservices, or complex platforms like Rootine.ai against their declared architectural policies.
-
-### D. Autonomous Agent Collaboration
-The workbench decouples the visual interface from any single AI vendor. By operating through a durable, file-based mailbox queue in `.uml-viewer/`, the workbench allows autonomous AI coding agents (such as Google Antigravity) to act as collaborative architecture companions:
-- Reading pending proposal requests.
-- Refactoring Java code to resolve red dependency rule violations.
-- Running test suites to verify that behavior is preserved.
-- Triggering live hot-reloads on the visual canvas.
+* **Modern Polyglot Stacks**: Enterprise systems span Java 25 (records, sealed types, virtual threads), Python, TypeScript / Svelte 5, Rust, and Go across multi-module builds and workspaces.
+* **Scale and Visibility**: Repositories contain hundreds of classes where unreadable or malformed files must be surfaced explicitly (`skippedFiles`) rather than silently omitted.
+* **Zero-Friction Toolchains**: Governance must run headlessly in CI/CD (emitting SARIF 2.1.0), launch locally on `127.0.0.1:8088` with per-session token protection, and integrate directly with AI coding assistants over MCP 2.0.
 
 ---
 
-## 4. Carrying the Standard Forward
+## 3. Core Engineering Pillars
 
-Uncle Bob taught us that architecture is a discipline of vigilance—a commitment to keeping our business rules pristine and decoupled from the delivery mechanisms that deliver them. 
+### A. Polyglot Scanners & Explicit Telemetry
+The Quarkus Java 25 backend combines JavaParser 3.28 AST analysis for Java 25 with statement-normalizing scanners for Python, TypeScript/JS/Svelte 5, Rust, and Go:
+- Extracts classes, interfaces, records, method signatures, cyclomatic complexity, and CRAP scores ($CC^2 \cdot (1 - \text{Cov})^3 + CC$).
+- Counts and logs unreadable or unparseable files explicitly so scans are never silently incomplete.
 
-This workbench exists to honor that standard and make it actionable, visual, and undeniable for every engineer and team building modern software today.
+### B. Reactive Svelte 5 Concentric Canvas
+The frontend pairs Svelte 5 runes with SVG and a high-scale HTML5 2D `<canvas>` renderer:
+- **Concentric Ring Layouts**: Components arrange into concentric levels with Level 0 (Domain Core) at the center.
+- **Directional Violation X-Ray**: Conforming inward dependencies render subtly while outward breaches stand out in crimson.
+- **"What-If" Sandbox & DIP Synthesis**: Prototype class moves in memory and synthesize Dependency Inversion Principle (DIP) interface ports before modifying files on disk.
+
+### C. Closed-Loop Autonomous Agent Collaboration
+Through both native Model Context Protocol (MCP 2.0) endpoints and the `.archlens/` mailbox queue (`to-agent.json` / `to-viewer.json`), AI coding agents can:
+- Inspect outward breaches and package cycles.
+- Synthesize inner-layer ports and refactor outer adapters.
+- Verify violation/cycle deltas and test suites, with recoverable rollback via `.archlens/trash/<snapshotId>/`.

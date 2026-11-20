@@ -136,7 +136,7 @@ Dispatched when requesting refreshed code complexity and mutation metrics.
 
 When `INVERT_DEPENDENCY` or `APPLY_PROPOSAL` is dispatched via `POST /api/mailbox/to-agent`, `VerifyAndRollbackRefactorUseCase` automatically captures a transactional pre-refactor snapshot (`snap-<timestamp>`) under `.archlens/snapshots/<snapshotId>/`:
 - `policy.json`: Full backup of `.archlens/policy.json`.
-- `manifest.txt` & `files/`: Complete copy of all scanned project source files (`.java`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.svelte`, `.go`, `.rs`, `.clj`, `.cljs`, `.cljc`, `.edn`, `.kt`).
+- `manifest.txt` & `files/`: Complete copy of all scanned project source files (`.java`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.svelte`, `.go`, `.rs`, `.kt`).
 - Optional `architecturalIntent` notes entered in `InvertDipModal.svelte` or `SandboxToolbar.svelte` are embedded directly in the `.archlens/to-agent.json` command payload.
 
 In addition to `.archlens/to-agent.json` and `.archlens/to-viewer.json`, `MailboxResource.java` exposes three closed-loop governance endpoints wired directly into the **`AgentDrawer.svelte`** telemetry bar (`Verify Refactor`, `Record ADR`, and `Revert Snapshot` buttons):

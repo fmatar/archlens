@@ -38,10 +38,6 @@ export function detectProjectLanguage(projectRoot) {
     return 'go';
   }
 
-  if (exists('project.clj') || exists('deps.edn')) {
-    return 'clojure';
-  }
-
   if (exists('CMakeLists.txt') || exists('Makefile')) {
     return 'cpp';
   }
@@ -67,7 +63,6 @@ function findNestedSourceRoots(dir, lang, depth = 0, maxDepth = 5, results = [])
     'out',
     'bin',
     '.archlens',
-    '.uml-viewer',
     '.mvn',
     'infra',
     'cpln',
@@ -249,7 +244,6 @@ export function detectSourceRoot(projectRoot, lang) {
     python: ['src', 'app', 'lib', '.'],
     rust: ['src'],
     go: ['pkg', 'internal', 'cmd', '.'],
-    clojure: ['src', 'src/clj'],
     cpp: ['src', 'include', '.']
   };
 
@@ -602,8 +596,7 @@ export function generatePolicy(projectRoot, options = {}) {
     typescript: ['node:', '@types/'],
     python: ['sys', 'os', 'pathlib'],
     rust: ['std::', 'core::'],
-    go: ['fmt', 'os', 'net/http'],
-    clojure: ['clojure.']
+    go: ['fmt', 'os', 'net/http']
   };
 
   return {

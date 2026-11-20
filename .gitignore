@@ -11,11 +11,8 @@ frontend/dist/
 .vscode/
 *.iml
 .DS_Store
-.uml-viewer/
 coverage/
 **/coverage/
-.grok/
-.metrics/
 test-results/
 **/test-results/
 playwright-report/

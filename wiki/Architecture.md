@@ -17,7 +17,7 @@ flowchart LR
         Server["Quarkus REST & SSE Server<br/>(Java 25 Runtime)"]
         
         subgraph Core ["Analysis & Governance Engine"]
-            Scanner["Polyglot AST Scanners<br/>(Java, TS, Python, Go, Rust, Clojure)"]
+            Scanner["Polyglot Scanners<br/>(Java, TS, Python, Go, Rust)"]
             Rules["Clean Architecture Rule Engine<br/>(Concentric Ring Validator)"]
             Synthesizer["Surgical DIP Synthesizer<br/>(JavaParser AST Extractor)"]
             Metrics["Quality Metrics Engine<br/>(CRAP Score & Mutation Stats)"]
@@ -51,7 +51,7 @@ flowchart LR
 
 ## 🎯 The Concentric Rings
 
-Archlens enforces Robert C. Martin's concentric Clean Architecture rings:
+Archlens enforces concentric Clean Architecture rings:
 
 ```mermaid
 graph TD
@@ -87,7 +87,6 @@ The backend employs an extensible Service Provider Interface (`LanguageScanner` 
 - **Python (`PythonAstScanner`)**: Indentation-aware statement scanner detecting classes, `ABC`/`@abstractmethod` (`ABSTRACT`), `Protocol` (`INTERFACE`), `@dataclass`/`NamedTuple`/`TypedDict` (`RECORD`), method signatures, and type annotations (`CAP-01`).
 - **Go (`GoAstScanner`)**: Package, `struct`, and `interface` declaration scanner with intra-module import resolution via `go.mod`.
 - **Rust (`RustAstScanner`)**: Crate and module scanner detecting `struct`, `enum`, `trait` (`INTERFACE`), `fn` signatures, and `use crate::` / `super::` paths.
-- **Clojure (`ClojureAstScanner`)**: Namespace (`ns`) declaration, `:require` dependency, and `defn`/`defprotocol`/`defrecord` scanner.
 
 ---
 
@@ -95,6 +94,6 @@ The backend employs an extensible Service Provider Interface (`LanguageScanner` 
 
 The user interface uses Svelte 5 Runes for state management and UI reactivity:
 - **`$state`**: Holds active architecture models, graph components, and sandbox simulation layers.
-- **`$derived`**: Reactively recalculates Robert C. Martin metrics ($C_a, C_e, I, A, D$), violation deltas, and edge styles on every staged move.
+- **`$derived`**: Reactively recalculates component coupling metrics ($C_a, C_e, I, A, D$), violation deltas, and edge styles on every staged move.
 - **`$effect`**: Drives high-performance GSAP transitions and canvas re-layouts.
 - **EventSource (`/api/events`)**: Connects to the backend SSE stream, reacting instantaneously to file saves, agent mailbox updates, and live AST refreshes.

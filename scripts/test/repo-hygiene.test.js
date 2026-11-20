@@ -1,0 +1,103 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+function listCandidateFiles() {
+  const out = execFileSync(
+    'git',
+    ['ls-files', '--cached', '--others', '--exclude-standard'],
+    { cwd: REPO_ROOT, encoding: 'utf8' }
+  );
+  return Array.from(
+    new Set(
+      out
+        .split('\n')
+        .map((f) => f.trim())
+        .filter(Boolean)
+    )
+  ).filter((f) => fs.existsSync(path.join(REPO_ROOT, f)));
+}
+
+test('Phase 2 repo hygiene (#237, #238, #239): no personal paths, legacy aliases, Clojure scanner, or .uml-viewer artifacts', () => {
+  const exemptHistorical = new Set([
+    'CHANGELOG.md',
+    'docs/DECISION_MAP.md',
+    'docs/AUDIT_CHAIN.jsonl',
+    'scripts/test/repo-hygiene.test.js'
+  ]);
+
+  const forbidden = [
+    { label: 'hardcoded personal path (/Users/fady)', pattern: /\/Users\/fady\b/ },
+    { label: 'legacy alias (agentlens)', pattern: /\bagentlens\b/ },
+    { label: 'legacy alias (unclebob-design)', pattern: /\bunclebob-design\b/ },
+    { label: 'legacy directory (.uml-viewer)', pattern: /\.uml-viewer\b/ },
+    { label: 'removed Clojure scanner (ClojureAstScanner)', pattern: /\bClojureAstScanner\b/ }
+  ];
+
+  const clojureExtPattern = /\.(?:clj|cljs|cljc)\b/;
+
+  const files = listCandidateFiles();
+  assert.equal(
+    files.some(
+      (f) => f.startsWith('.metrics/') || f.startsWith('.grok/') || f.includes('.uml-viewer/')
+    ),
+    false,
+    '.metrics/, .grok/, and .uml-viewer/ prototype artifacts must not exist in repo'
+  );
+
+  const violations = [];
+  for (const rel of files) {
+    if (exemptHistorical.has(rel) || rel.startsWith('docs/adr/')) {
+      continue;
+    }
+    for (const { label, pattern } of forbidden) {
+      if (pattern.test(rel)) {
+        violations.push(`${rel} (path): matched ${label}`);
+      }
+    }
+    const full = path.join(REPO_ROOT, rel);
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) {
+      continue;
+    }
+    if (rel.endsWith('.md') && stat.size === 0) {
+      violations.push(`${rel}: markdown file must not be truncated to 0 bytes`);
+      continue;
+    }
+    if (/\.(png|jpg|jpeg|gif|mp4|webm|ico|woff2?|ttf|pdf)$/i.test(rel) || rel.includes('/scripts/bin/')) {
+      continue;
+    }
+    const content = fs.readFileSync(full, 'utf8');
+    for (const { label, pattern } of forbidden) {
+      if (pattern.test(content)) {
+        violations.push(`${rel}: matched ${label}`);
+      }
+    }
+    if ((rel.startsWith('docs/') || rel.startsWith('wiki/') || rel === 'README.md') && clojureExtPattern.test(content)) {
+      violations.push(`${rel}: stale Clojure extension reference (.clj/.cljs/.cljc)`);
+    }
+  }
+
+  assert.deepEqual(violations, []);
+});
+
+test('Phase 2 setup & Node engine consistency (#237): engines.node >=22.0.0 and no broken ./mvnw doc commands', () => {
+  for (const manifestRel of ['package.json', 'cli/package.json', 'frontend/package.json']) {
+    const pkg = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, manifestRel), 'utf8'));
+    assert.equal(pkg.engines?.node, '>=22.0.0', `${manifestRel} must declare engines.node >=22.0.0`);
+  }
+
+  for (const docRel of ['README.md', 'CONTRIBUTING.md', 'docs/guide/DEVELOPER_GUIDE.md']) {
+    const doc = fs.readFileSync(path.join(REPO_ROOT, docRel), 'utf8');
+    assert.equal(doc.includes('./mvnw'), false, `${docRel} must not reference non-existent ./mvnw`);
+  }
+
+  const notice = fs.readFileSync(path.join(REPO_ROOT, 'NOTICE'), 'utf8');
+  assert.match(notice, /Copyright 2026 Fady Matar/);
+  assert.match(notice, /e05c9bf/);
+});

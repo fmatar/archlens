@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import org.jboss.logging.Logger;
 
 /**
  * Use case orchestrating transactional refactoring verification and workspace source/policy
@@ -33,6 +34,8 @@ import java.util.concurrent.TimeUnit;
  */
 @ApplicationScoped
 public class VerifyAndRollbackRefactorUseCase {
+
+  private static final Logger LOG = Logger.getLogger(VerifyAndRollbackRefactorUseCase.class);
 
   private static final String SNAPSHOTS_DIR = ".archlens/snapshots";
   private static final String TRASH_DIR = ".archlens/trash";
@@ -45,7 +48,6 @@ public class VerifyAndRollbackRefactorUseCase {
       Set.of(
           ".git",
           ".archlens",
-          ".uml-viewer",
           ".agent",
           ".agents",
           ".github",
@@ -70,7 +72,7 @@ public class VerifyAndRollbackRefactorUseCase {
   private static final Set<String> SOURCE_EXTENSIONS =
       Set.of(
           ".java", ".py", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".svelte", ".go", ".rs",
-          ".clj", ".cljs", ".cljc", ".edn", ".kt");
+          ".kt");
 
   @Inject ArchitectureCompiler compiler;
   @Inject MailboxGateway mailboxGateway;
@@ -425,8 +427,10 @@ public class VerifyAndRollbackRefactorUseCase {
               verification.remainingViolations(),
               "summary",
               verification.summary()));
-    } catch (IOException ignored) {
-      // Non-fatal telemetry write
+    } catch (IOException e) {
+      LOG.warnf(
+          "Failed to append verification telemetry to mailbox for %s: %s",
+          projectRoot, e.getMessage());
     }
   }
 

@@ -47,21 +47,8 @@ export function installLocalPolicy(projectRoot, options = {}) {
     throw new Error(`Target directory does not exist: ${root}`);
   }
 
-  const primaryDir = path.join(root, '.archlens');
-  const legacyDir = path.join(root, '.uml-viewer');
-
-  const primaryPolicyFile = path.join(primaryDir, 'policy.json');
-  const legacyPolicyFile = path.join(legacyDir, 'policy.json');
-
-  let targetDir = primaryDir;
-  let policyFile = primaryPolicyFile;
-
-  // Honor legacy directory if present and primary does not exist yet
-  if (!fs.existsSync(primaryPolicyFile) && fs.existsSync(legacyPolicyFile)) {
-    targetDir = legacyDir;
-    policyFile = legacyPolicyFile;
-  }
-
+  const targetDir = path.join(root, '.archlens');
+  const policyFile = path.join(targetDir, 'policy.json');
   const configFile = path.join(targetDir, 'workbench.config.json');
 
   let policyCreated = false;

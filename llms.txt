@@ -8,7 +8,7 @@ Archlens models software systems as concentric Clean Architecture rings, continu
 
 ## 🏛️ Clean Architecture Concentric Hierarchy
 
-Source code dependencies must point strictly inward toward higher-level policies (Uncle Bob's Dependency Rule):
+Source code dependencies must point strictly inward toward higher-level policies (the Clean Architecture Dependency Rule):
 
 ```
 [Level 3: Infrastructure / Web / DB / CLI / Frameworks]
@@ -45,7 +45,7 @@ Archlens continuously evaluates five foundational architectural invariants:
    - **Invariant**: The component/package dependency structure must be a Directed Acyclic Graph (DAG) with zero cycles.
    - **Remediation**: Break cycles using interface extraction or merging interdependent feature packages.
 3. **Screaming Architecture Invariant (SAS)**:
-   - **Invariant**: Systems should scream business domain use cases rather than framework technology (Uncle Bob Ch. 21).
+   - **Invariant**: Systems should scream business domain use cases rather than framework technology.
    - **Metric**: Screaming Architecture Score (SAS) from 0.0 to 1.0 (Feature vs Technical packaging). Minimum threshold: $\ge 0.70$.
 4. **Main Sequence Balance Invariant ($A, I, D$)**:
    - **Invariant**: Components must remain in the balanced corridor avoiding the **Zone of Pain** (brittle, highly concrete, widely depended upon) and the **Zone of Uselessness** (abstract with no dependents).

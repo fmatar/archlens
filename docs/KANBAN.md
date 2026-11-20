@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-10 14:03:01 UTC`
+> **Last Synced**: `2026-11-20 00:35:00 UTC`
 
 ---
 
@@ -13,15 +13,9 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
-|  |  |  | #4934: [FIX] fix: fix-npx-symlink-entrypoint-and-release-v1-1-4 |  |
-|  |  |  | #8454: [FEAT] feat: auto-mcp-onboarding-and-release-v1-1-3 |  |
-|  |  |  | #8714: [FEAT] feat: Add Quarkus MCP STDIO Docker container transport |  |
-|  |  |  | #9283: [FEAT] feat: release-v1-1-2 |  |
-|  |  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |
-|  |  |  | #222: [FEAT] feat: release-v1-1-1 |  |
-|  |  |  | #6157: [FEAT] feat: upgrade-backend-and-frontend-latest-ga-dependencies |  |
-|  |  |  | #6538: [FEAT] feat: hexagonal-vault-brand-identity-ui-and-readme-10-30-90 |  |
-|  |  |  | #4772: [FEAT] feat: Add multi-format Architecture Diagram Export (Mermaid, SVG, PNG) |  |
+|  |  |  | #237, #238, #239, #240, #241: Phase 2 Trust, Hygiene & Skipped-File Telemetry |  |
+|  | #244: CLI `check` & backend parity |  |  | #263: Phase 1.5 Native SecureRandom, Trash & Diagram MCP (`PR #264`) |
+|  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |  |
 |  |  |  |  | #7896: [FEAT] feat: milestone-3-monorepo-cross-lang-and-ast-idioms |
 |  |  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |
 |  |  |  |  | #1097: [FEAT] feat(mailbox): closed-loop-refactor-verification-and-rollback `[Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v0.1.2)]` |

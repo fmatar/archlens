@@ -44,10 +44,6 @@ public class SavePolicyUseCase {
     Path rootPath = Paths.get(normalizedRoot);
 
     Path configDir = rootPath.resolve(".archlens");
-    if (!Files.exists(configDir) && Files.exists(rootPath.resolve(".uml-viewer"))) {
-      configDir = rootPath.resolve(".uml-viewer");
-    }
-
     if (!Files.exists(configDir)) {
       Files.createDirectories(configDir);
     }

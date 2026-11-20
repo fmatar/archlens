@@ -40,36 +40,19 @@ public class GraphCompiler implements ArchitectureCompiler {
   private final ObjectMapper mapper = new ObjectMapper();
 
   private static final String PRIMARY_CONFIG_DIR = ".archlens";
-  private static final String LEGACY_CONFIG_DIR = ".uml-viewer";
   private static final String POLICY_FILENAME = "policy.json";
 
   private File resolvePolicyFile(String projectRoot) {
     if (projectRoot != null && !projectRoot.isBlank()) {
-      File primary = new File(projectRoot, PRIMARY_CONFIG_DIR + "/" + POLICY_FILENAME);
-      if (primary.exists()) {
-        return primary;
-      }
-      File legacy = new File(projectRoot, LEGACY_CONFIG_DIR + "/" + POLICY_FILENAME);
-      if (legacy.exists()) {
-        return legacy;
-      }
-      return primary;
+      return new File(projectRoot, PRIMARY_CONFIG_DIR + "/" + POLICY_FILENAME);
     }
     File primaryLocal = new File(PRIMARY_CONFIG_DIR, POLICY_FILENAME);
     if (primaryLocal.exists()) {
       return primaryLocal;
     }
-    File legacyLocal = new File(LEGACY_CONFIG_DIR, POLICY_FILENAME);
-    if (legacyLocal.exists()) {
-      return legacyLocal;
-    }
     File primaryParent = new File("../" + PRIMARY_CONFIG_DIR, POLICY_FILENAME);
     if (primaryParent.exists()) {
       return primaryParent;
-    }
-    File legacyParent = new File("../" + LEGACY_CONFIG_DIR, POLICY_FILENAME);
-    if (legacyParent.exists()) {
-      return legacyParent;
     }
     return primaryLocal;
   }
@@ -80,64 +63,12 @@ public class GraphCompiler implements ArchitectureCompiler {
       try {
         return mapper.readValue(policyFile, ArchitecturePolicy.class);
       } catch (Exception e) {
-        System.err.println(
-            "Error reading policy from " + policyFile.getAbsolutePath() + ": " + e.getMessage());
-        e.printStackTrace();
+        LOG.warnf(
+            "Failed to parse policy from %s: %s", policyFile.getAbsolutePath(), e.getMessage());
       }
     }
 
     File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
-    File policyEdn = new File(root, "examples/uml-viewer.policy.edn");
-    if (policyEdn.exists()) {
-      return new ArchitecturePolicy(
-          "Uncle Bob UML Viewer",
-          "src",
-          "uml-viewer",
-          true,
-          List.of(
-              "domain",
-              "source",
-              "graph",
-              "clojure-language",
-              "engine",
-              "application",
-              "adapters",
-              "main"),
-          List.of(
-              List.of("domain", "source", "graph", "clojure-language"),
-              List.of("engine"),
-              List.of("application"),
-              List.of("adapters"),
-              List.of("main")),
-          List.of("quil", "javax.swing"),
-          List.of(
-              new Proposal(
-                  "clean-core",
-                  "Clean Architecture Standard",
-                  List.of(
-                      new Proposal.ProposalLayer(
-                          "domain",
-                          "Level 0: Domain & Interfaces",
-                          List.of("domain", "source", "graph", "clojure-language"),
-                          List.of()),
-                      new Proposal.ProposalLayer(
-                          "engine", "Level 1: Layout Engine", List.of("engine"), List.of()),
-                      new Proposal.ProposalLayer(
-                          "application",
-                          "Level 2: Application Use Cases",
-                          List.of("application"),
-                          List.of()),
-                      new Proposal.ProposalLayer(
-                          "adapters",
-                          "Level 3: Quil & UI Adapters",
-                          List.of("adapters"),
-                          List.of()),
-                      new Proposal.ProposalLayer(
-                          "main", "Level 4: Main Entrypoint", List.of("main"), List.of())),
-                  List.of())),
-          List.of());
-    }
-
     String projectTitle = root.getName().equals(".") ? "Current Workspace" : root.getName();
 
     return new ArchitecturePolicy(
@@ -433,7 +364,8 @@ public class GraphCompiler implements ArchitectureCompiler {
         evaluatedEdges,
         List.of(),
         cycles,
-        screamingMetric);
+        screamingMetric,
+        scan.skippedFiles());
   }
 
   private boolean isKnownNode(

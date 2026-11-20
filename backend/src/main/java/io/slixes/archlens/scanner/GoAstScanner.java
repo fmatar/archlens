@@ -18,11 +18,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class GoAstScanner implements LanguageScanner {
+
+  private static final Logger LOG = Logger.getLogger(GoAstScanner.class);
 
   private static final Pattern PACKAGE_PATTERN = Pattern.compile("^\\s*package\\s+([a-zA-Z0-9_]+)");
   private static final Pattern SINGLE_IMPORT_PATTERN =
@@ -73,10 +77,12 @@ public class GoAstScanner implements LanguageScanner {
     Map<String, String> internalPackages = new HashMap<>();
     Set<String> seenClassIds = new HashSet<>();
 
+    AtomicInteger skippedFiles = new AtomicInteger();
     List<Path> goFiles =
         FileScannerUtil.findFiles(
             scanDir.toPath(),
-            p -> p.toString().endsWith(".go") && !p.toString().endsWith("_test.go"));
+            p -> p.toString().endsWith(".go") && !p.toString().endsWith("_test.go"),
+            skippedFiles);
 
     Path rootPath = rootDir.toPath();
     for (Path goFile : goFiles) {
@@ -86,10 +92,16 @@ public class GoAstScanner implements LanguageScanner {
     }
 
     for (Path goFile : goFiles) {
+      List<String> lines;
+      try {
+        lines = Files.readAllLines(goFile, StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable Go file %s: %s", goFile, e.getMessage());
+        skippedFiles.incrementAndGet();
+        continue;
+      }
       String rel = rootPath.relativize(goFile).toString();
       String currentPackage = toGoPackageId(rel);
-
-      List<String> lines = Files.readAllLines(goFile, StandardCharsets.UTF_8);
       List<FieldNode> fields = new ArrayList<>();
       List<MethodNode> methods = new ArrayList<>();
       Set<String> importedPaths = new HashSet<>();
@@ -249,7 +261,7 @@ public class GoAstScanner implements LanguageScanner {
       }
     }
 
-    return new ScanResult(classes, edges);
+    return new ScanResult(classes, edges, skippedFiles.get());
   }
 
   private String readGoModuleName(File rootDir) {
@@ -265,7 +277,8 @@ public class GoAstScanner implements LanguageScanner {
           return t.substring(7).trim();
         }
       }
-    } catch (Exception ignored) {
+    } catch (IOException e) {
+      LOG.warnf("Skipping unreadable go.mod %s: %s", goMod, e.getMessage());
     }
     return "";
   }

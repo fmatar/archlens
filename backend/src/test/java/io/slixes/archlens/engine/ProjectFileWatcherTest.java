@@ -103,7 +103,7 @@ class ProjectFileWatcherTest {
     assertTrue(ProjectFileWatcher.isWatchedFile(Path.of("app.py")));
     assertTrue(ProjectFileWatcher.isWatchedFile(Path.of("main.go")));
     assertTrue(ProjectFileWatcher.isWatchedFile(Path.of("lib.rs")));
-    assertTrue(ProjectFileWatcher.isWatchedFile(Path.of("core.clj")));
+    assertFalse(ProjectFileWatcher.isWatchedFile(Path.of("core.clj")));
     assertTrue(ProjectFileWatcher.isWatchedFile(Path.of("policy.json")));
     assertFalse(ProjectFileWatcher.isWatchedFile(Path.of("image.png")));
     assertFalse(ProjectFileWatcher.isWatchedFile(Path.of("binary.class")));

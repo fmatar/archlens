@@ -48,8 +48,10 @@ export function findMatchingFiles(dir, predicate, maxFiles = Infinity, results =
         results.push(fullPath);
       }
     }
-  } catch {
-    // Ignore unreadable directories
+  } catch (err) {
+    results.skippedCount = (results.skippedCount || 0) + 1;
+    results.skippedPaths = [...(results.skippedPaths || []), dir];
+    results.skippedErrors = [...(results.skippedErrors || []), `${dir}: ${err.message}`];
   }
 
   return results;
@@ -59,7 +61,6 @@ export function loadProjectPolicy(projectRoot) {
   const root = path.resolve(projectRoot);
   const candidates = [
     path.join(root, '.archlens', 'policy.json'),
-    path.join(root, '.uml-viewer', 'policy.json'),
     path.join(root, 'policy.json')
   ];
 
@@ -900,6 +901,13 @@ export async function checkArchitecture(projectRoot, options = {}) {
   const packageEdges = new Map();
   const pkgTypeStats = new Map();
   const pkgCouplingCounts = new Map();
+  let skippedFiles = sourceFiles.skippedCount || 0;
+  const skippedFilePaths = (sourceFiles.skippedPaths || []).map((p) => path.relative(root, p));
+  if (!options.silent && Array.isArray(sourceFiles.skippedErrors)) {
+    for (const msg of sourceFiles.skippedErrors) {
+      process.stderr.write(`[archlens] WARN: Skipping unreadable directory ${msg}\n`);
+    }
+  }
 
   for (const file of sourceFiles) {
     try {
@@ -974,8 +982,15 @@ export async function checkArchitecture(projectRoot, options = {}) {
           }
         }
       }
-    } catch {
-      // Ignore unreadable files
+    } catch (err) {
+      skippedFiles += 1;
+      const relSkipped = path.relative(root, file);
+      skippedFilePaths.push(relSkipped);
+      if (!options.silent) {
+        process.stderr.write(
+          `[archlens] WARN: Skipping unreadable file ${relSkipped}: ${err.message}\n`
+        );
+      }
     }
   }
 
@@ -1033,6 +1048,8 @@ export async function checkArchitecture(projectRoot, options = {}) {
     levels: policy.levels || [],
     edges: serializedEdges,
     sourceFilesCount: sourceFiles.length,
+    skippedFiles,
+    skippedFilePaths,
     partial,
     allowPartial,
     maxFiles: Number.isFinite(maxFiles) ? maxFiles : null,
@@ -1278,6 +1295,33 @@ export function generateSarifReport(report, options = {}) {
     });
   }
 
+  const runProperties = {};
+  if (report.partial) {
+    runProperties.partial = true;
+    runProperties.maxFiles = report.maxFiles;
+  }
+  if (report.skippedFiles > 0) {
+    runProperties.skippedFiles = report.skippedFiles;
+  }
+
+  const notifications = [];
+  if (report.partial) {
+    notifications.push({
+      level: report.allowPartial ? 'warning' : 'error',
+      message: {
+        text: `Partial scan: stopped after ${report.maxFiles} source files (--max-files). Results do not cover the whole repository.`
+      }
+    });
+  }
+  if (report.skippedFiles > 0) {
+    notifications.push({
+      level: 'warning',
+      message: {
+        text: `Skipped ${report.skippedFiles} unreadable source file(s): ${(report.skippedFilePaths || []).slice(0, 5).join(', ')}`
+      }
+    });
+  }
+
   const sarif = {
     $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
     version: '2.1.0',
@@ -1292,20 +1336,13 @@ export function generateSarifReport(report, options = {}) {
           }
         },
         results: sarifResults,
-        ...(report.partial
+        ...(Object.keys(runProperties).length > 0 ? { properties: runProperties } : {}),
+        ...(notifications.length > 0
           ? {
-              properties: { partial: true, maxFiles: report.maxFiles },
               invocations: [
                 {
-                  executionSuccessful: Boolean(report.allowPartial),
-                  toolExecutionNotifications: [
-                    {
-                      level: report.allowPartial ? 'warning' : 'error',
-                      message: {
-                        text: `Partial scan: stopped after ${report.maxFiles} source files (--max-files). Results do not cover the whole repository.`
-                      }
-                    }
-                  ]
+                  executionSuccessful: report.partial ? Boolean(report.allowPartial) : true,
+                  toolExecutionNotifications: notifications
                 }
               ]
             }

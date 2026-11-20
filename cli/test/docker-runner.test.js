@@ -19,21 +19,41 @@ import {
   dockerPublishSpec,
   serverLaunchEnv
 } from '../src/docker-runner.js';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+test('docker-runner uses spawnSync argument arrays only and contains no execSync shell branches', () => {
+  const runnerPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/docker-runner.js');
+  const sourceWithoutComments = fs
+    .readFileSync(runnerPath, 'utf8')
+    .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+  assert.equal(
+    /\bexecSync\b/.test(sourceWithoutComments),
+    false,
+    'docker-runner.js must not import or invoke execSync'
+  );
+});
 
 test('checkServerHealth reports offline when port is unreachable', async () => {
   const result = await checkServerHealth('http://127.0.0.1:59999', 200);
   assert.equal(result.ok, false);
 });
 
-test('isJavaAvailable detects availability from command execution', () => {
-  const mockExecSuccess = () => 'openjdk version "25.0.4"';
-  assert.equal(isJavaAvailable(mockExecSuccess), true);
-
-  const mockExecFail = () => {
-    throw new Error('command not found: java');
+test('isJavaAvailable detects availability via spawnSync argument array', () => {
+  const calls = [];
+  const mockSpawnSuccess = (cmd, args) => {
+    calls.push({ cmd, args });
+    return { status: 0, stderr: 'openjdk version "25.0.4"' };
   };
-  assert.equal(isJavaAvailable(mockExecFail), false);
+  assert.equal(isJavaAvailable(mockSpawnSuccess), true);
+  assert.deepEqual(calls[0], { cmd: 'java', args: ['-version'] });
+
+  const mockSpawnNonZero = () => ({ status: 1, stderr: 'not found' });
+  assert.equal(isJavaAvailable(mockSpawnNonZero), false);
+
+  const mockSpawnError = () => ({ status: null, error: new Error('ENOENT') });
+  assert.equal(isJavaAvailable(mockSpawnError), false);
 });
 
 test('findNativeJar discovers jar from options, environment, and candidate paths', () => {
@@ -148,72 +168,129 @@ test('ensureServerRunning respects preferDocker option and skips native JAR', as
   assert.equal(status.mode, 'docker');
 });
 
-test('isDockerAvailable detects availability from command execution', () => {
-  const mockExecSuccess = () => 'Server Version: 29.0';
-  assert.equal(isDockerAvailable(mockExecSuccess), true);
-
-  const mockExecFail = () => {
-    throw new Error('command not found: docker');
+test('isDockerAvailable detects availability via spawnSync argument array', () => {
+  const calls = [];
+  const mockSpawnSuccess = (cmd, args) => {
+    calls.push({ cmd, args });
+    return { status: 0, stdout: 'Server Version: 29.0' };
   };
-  assert.equal(isDockerAvailable(mockExecFail), false);
+  assert.equal(isDockerAvailable(mockSpawnSuccess), true);
+  assert.deepEqual(calls[0], { cmd: 'docker', args: ['info'] });
+
+  const mockSpawnFail = () => ({ status: 1, error: new Error('command not found: docker') });
+  assert.equal(isDockerAvailable(mockSpawnFail), false);
 });
 
-test('isContainerRunning checks container name match', () => {
-  const mockExecRunning = () => 'archlens-server';
-  assert.equal(isContainerRunning('archlens-server', mockExecRunning), true);
+test('isContainerRunning checks container name match via spawnSync argument array', () => {
+  const calls = [];
+  const mockSpawnRunning = (cmd, args) => {
+    calls.push({ cmd, args });
+    return { status: 0, stdout: 'archlens-server\n' };
+  };
+  assert.equal(isContainerRunning('archlens-server', mockSpawnRunning), true);
+  assert.deepEqual(calls[0], {
+    cmd: 'docker',
+    args: ['ps', '--filter', 'name=^/archlens-server$', '--format', '{{.Names}}']
+  });
 
-  const mockExecStopped = () => '';
-  assert.equal(isContainerRunning('archlens-server', mockExecStopped), false);
+  const mockSpawnStopped = () => ({ status: 0, stdout: '' });
+  assert.equal(isContainerRunning('archlens-server', mockSpawnStopped), false);
 });
 
-test('isContainerExisting checks container existence in any state', () => {
-  const mockExecExists = () => 'archlens-server';
-  assert.equal(isContainerExisting('archlens-server', mockExecExists), true);
+test('isContainerExisting checks container existence in any state via spawnSync argument array', () => {
+  const calls = [];
+  const mockSpawnExists = (cmd, args) => {
+    calls.push({ cmd, args });
+    return { status: 0, stdout: 'archlens-server\n' };
+  };
+  assert.equal(isContainerExisting('archlens-server', mockSpawnExists), true);
+  assert.deepEqual(calls[0], {
+    cmd: 'docker',
+    args: ['ps', '-a', '--filter', 'name=^/archlens-server$', '--format', '{{.Names}}']
+  });
 
-  const mockExecMissing = () => '';
-  assert.equal(isContainerExisting('archlens-server', mockExecMissing), false);
+  const mockSpawnMissing = () => ({ status: 0, stdout: '' });
+  assert.equal(isContainerExisting('archlens-server', mockSpawnMissing), false);
 });
 
-test('startContainer invokes docker start when container exists', () => {
-  const commands = [];
-  const mockExec = (cmd) => {
-    commands.push(cmd);
-    return '';
+test('startContainer invokes docker start with argument array when container exists', () => {
+  const calls = [];
+  const mockSpawn = (cmd, args) => {
+    calls.push({ cmd, args });
+    return { status: 0, stdout: '' };
   };
 
   const result = startContainer(
     { containerName: 'archlens-server' },
     {
-      execSync: mockExec,
+      spawnSync: mockSpawn,
       isContainerExisting: () => true
     }
   );
 
   assert.equal(result.action, 'started');
-  assert.equal(commands.length, 1);
-  assert.ok(commands[0].includes('docker start archlens-server'));
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0], { cmd: 'docker', args: ['start', 'archlens-server'] });
 });
 
-test('startContainer invokes docker run when container does not exist', () => {
-  const commands = [];
-  const mockExec = (cmd) => {
-    commands.push(cmd);
-    return '';
+test('startContainer invokes docker run with argument array safely for paths with spaces and throws on non-zero status', () => {
+  const calls = [];
+  const mockSpawn = (cmd, args) => {
+    calls.push({ cmd, args });
+    return { status: 0, stdout: '' };
   };
 
+  const workspaceWithSpaces = path.resolve('/test/my workspace "quoted"');
   const result = startContainer(
-    { containerName: 'archlens-server', workspace: '/test/workspace' },
+    { containerName: 'archlens-server', workspace: workspaceWithSpaces },
     {
-      execSync: mockExec,
+      spawnSync: mockSpawn,
       isContainerExisting: () => false
     }
   );
 
   assert.equal(result.action, 'created');
-  assert.equal(commands.length, 1);
-  assert.ok(commands[0].includes('docker run -d --name archlens-server'));
-  assert.ok(commands[0].includes('/test/workspace:/workspace'));
-  assert.ok(commands[0].includes('-p 127.0.0.1:8088:8088'), 'publishes on loopback by default');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].cmd, 'docker');
+  assert.ok(calls[0].args.includes('archlens-server'));
+  assert.ok(calls[0].args.includes(`${workspaceWithSpaces}:/workspace`));
+  assert.ok(calls[0].args.includes('127.0.0.1:8088:8088'), 'publishes on loopback by default');
+
+  assert.throws(
+    () =>
+      startContainer(
+        { containerName: 'archlens-server', workspace: '/test/ws' },
+        {
+          spawnSync: () => ({ status: 125, stderr: 'port is already allocated' }),
+          isContainerExisting: () => false
+        }
+      ),
+    /port is already allocated/
+  );
+
+  assert.throws(
+    () =>
+      startContainer(
+        { containerName: 'archlens-server', workspace: '/test/ws' },
+        {
+          spawnSync: () => ({ status: 1, stderr: '' }),
+          isContainerExisting: () => true
+        }
+      ),
+    /docker start exited with status 1/
+  );
+
+  assert.throws(
+    () =>
+      startContainer(
+        { containerName: 'archlens-server', workspace: '/test/ws' },
+        {
+          spawnSync: () => ({ status: null, error: new Error('spawnSync docker ENOENT') }),
+          isContainerExisting: () => true
+        }
+      ),
+    /ENOENT/
+  );
 });
 
 test('startContainer publishes on loopback, passes the token by name only, and honours --host', () => {

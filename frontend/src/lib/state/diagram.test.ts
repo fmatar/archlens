@@ -8,6 +8,8 @@ describe('diagramStore state management', () => {
     diagramStore.selectedClass = null;
     diagramStore.activeProposalId = null;
     diagramStore.declutterMode = 'ARROWS';
+    diagramStore.authRequired = false;
+    diagramStore.graph = DEMO_GRAPH_REAL;
   });
 
   it('should initialize with default states', () => {
@@ -486,7 +488,19 @@ describe('diagramStore state management', () => {
         ({ ok: true, status: 200, json: async () => DEMO_GRAPH_REAL }) as any) as any;
       await diagramStore.loadGraph();
       expect(diagramStore.authRequired).toBe(false);
+      expect(diagramStore.skippedFilesCount).toBe(0);
+
+      globalThis.fetch = (async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => ({ ...DEMO_GRAPH_REAL, skippedFiles: 3 })
+        }) as any) as any;
+      await diagramStore.loadGraph();
+      expect(diagramStore.skippedFilesCount).toBe(3);
     } finally {
+      diagramStore.graph = DEMO_GRAPH_REAL;
+      diagramStore.authRequired = false;
       globalThis.fetch = originalFetch;
     }
   });

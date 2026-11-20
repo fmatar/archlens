@@ -110,6 +110,7 @@ export interface ArchitectureGraph {
   unassigned: ClassNode[];
   cycles?: PackageCycle[];
   screamingMetric?: ScreamingMetric;
+  skippedFiles?: number;
 }
 
 export interface ProposalLayer {

@@ -13,7 +13,7 @@
 ### Features
 - **[⚡ Surgical DIP Inverter](Surgical-DIP-Inverter)**
 - **[🧪 Architectural Sandbox](Architectural-Sandbox)**
-- **[📊 Robert C. Martin Metrics](Robert-C-Martin-Metrics)**
+- **[📊 Component Coupling Metrics](Robert-C-Martin-Metrics)**
 
 ---
 

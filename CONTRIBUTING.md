@@ -3,7 +3,7 @@
 Thank you for your interest in contributing to **Archlens**! We welcome contributions of all kinds: polyglot AST scanners, visualization enhancements, UI/UX polish, Model Context Protocol (MCP) tooling, bug fixes, documentation improvements, and autonomous agent workflows.
 
 > [!TIP]
-> For an in-depth architectural breakdown, instructions on adding new polyglot language scanners, MCP server extension guides, and Uncle Bob test craftsmanship standards, see the **[Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)** and **[Contributors & Acknowledgements](CONTRIBUTORS.md)**.
+> For an in-depth architectural breakdown, instructions on adding new polyglot language scanners, MCP server extension guides, and test engineering standards, see the **[Developer & Contributor Guide](docs/guide/DEVELOPER_GUIDE.md)** and **[Contributors](CONTRIBUTORS.md)**.
 
 ---
 
@@ -17,9 +17,9 @@ Archlens has adopted the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 
 ### Prerequisites
 
-- **Java**: Java 25 (Java 25 recommended for local testing)
+- **Java**: Java 25 (OpenJDK / GraalVM 25)
 - **Maven**: Apache Maven 3.9+
-- **Node.js**: Node 20+ and `pnpm` (for frontend) / `npm` (for CLI)
+- **Node.js**: Node.js 22+ and `pnpm` (for frontend) / `npm` (for CLI)
 - **Docker**: (Optional) Docker Engine 24+ for container packaging
 
 ### Repository Layout
@@ -29,7 +29,7 @@ archlens/
 ├── backend/            # Quarkus 3.x REST, SSE & native MCP server, Polyglot AST Scanners, Rule Engine
 ├── frontend/           # Svelte 5 + Tailwind CSS v4 dynamic visualization canvas
 ├── cli/                # Zero-dependency CLI (@fmatar/archlens-skill), MCP registry, stdio runner
-├── docs/               # Architecture specs (C4), User Guide, Developer Guide, Vision & Inspiration
+├── docs/               # Architecture specs (C4), User Guide, Developer Guide, Vision
 ├── .archlens/          # Active architectural policy and mailbox IPC queue
 └── pom.xml             # Root reactor POM (com.slixes:archlens)
 ```
@@ -43,10 +43,9 @@ archlens/
 The backend provides hot-reload during development:
 
 ```bash
-cd backend
-./mvnw quarkus:dev
+mvn -f backend/pom.xml quarkus:dev
 ```
-The REST API, SSE stream, and MCP endpoints start at `http://localhost:8088`.
+The REST API, SSE stream, and MCP endpoints start at `http://127.0.0.1:8088` (share `ARCHLENS_TOKEN` with the frontend dev server, or set `ARCHLENS_AUTH_ENABLED=false` for local-only hacking).
 
 ### 2. Running the Frontend (Vite Dev Server)
 
@@ -67,11 +66,10 @@ node bin/index.js --help
 
 ### 4. Running Containerized
 
-To test the multi-stage single-container distribution locally:
+To test the single-container distribution locally:
 
 ```bash
-docker build -t archlens:local .
-docker run -d -p 8088:8088 -v $(pwd):/workspace archlens:local
+docker run -d -p 127.0.0.1:8088:8088 -v "$(pwd):/workspace:ro" ghcr.io/fmatar/archlens:latest
 ```
 
 ---
@@ -82,23 +80,17 @@ Before opening a pull request, ensure all linters, formatting, and test gates pa
 
 ```bash
 # Apply Spotless code formatting to Java sources
-mvn spotless:apply
+mvn -f backend/pom.xml spotless:apply
 
-# Run full reactor build, unit tests, and coverage checks
-mvn clean verify
+# Run backend build, unit tests, JaCoCo, PMD, and SpotBugs gates
+mvn -f backend/pom.xml clean spotless:check verify pmd:check spotbugs:check
 
-# Run backend PMD static analysis
-mvn -f backend/pom.xml pmd:check
-
-# Run backend SpotBugs security checks
-mvn -f backend/pom.xml compile spotbugs:check
-
-# Run CLI test suite (43+ tests)
-npm --prefix cli test
+# Run CLI & repository script test suites
+npm test
 
 # Run frontend unit tests and type checks
-npm --prefix frontend test
-npm --prefix frontend run check
+pnpm --dir frontend run check
+pnpm --dir frontend test
 ```
 
 ---
@@ -106,7 +98,7 @@ npm --prefix frontend run check
 ## Branching & Pull Request Process
 
 1. **Branch off `develop`**:
-   All feature and chore branches must branch off and target the `develop` integration branch:
+   All feature and fix branches must branch off and target the `develop` integration branch:
    ```bash
    git checkout develop
    git pull origin develop
@@ -123,4 +115,4 @@ npm --prefix frontend run check
 3. **Open a Pull Request**:
    - Push your branch to GitHub and open a PR against `develop`.
    - Complete all items in the pull request checklist.
-   - Once reviewed and CI status checks pass, the PR will be merged into `develop` and periodically promoted to `main`.
+   - Once reviewed and CI status checks pass, the PR will be merged into `develop` and promoted to `main` on release.

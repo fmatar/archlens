@@ -5,9 +5,9 @@ max_score: 40
 na_heuristics: 
 p0_count: 1
 p1_count: 1
-target_identity: "file:/Users/fady/workspace/labs/archlens/frontend/src/App.svelte"
+target_identity: "file:frontend/src/App.svelte"
 target_fingerprint: "sha256:1d7be431b2edeee9b7d8d558612fcefa83157861cb8c662229af31b09a038e3b"
-target_path: /Users/fady/workspace/labs/archlens/frontend/src/App.svelte
+target_path: frontend/src/App.svelte
 timestamp: 2026-10-06T19-49-01Z
 slug: frontend-src-app-svelte
 ---

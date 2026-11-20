@@ -17,11 +17,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class RustAstScanner implements LanguageScanner {
+
+  private static final Logger LOG = Logger.getLogger(RustAstScanner.class);
 
   private static final Pattern USE_PATTERN =
       Pattern.compile("^\\s*use\\s+([a-zA-Z0-9_:]+)(?:\\s*as\\s+([a-zA-Z0-9_]+))?;");
@@ -54,22 +58,25 @@ public class RustAstScanner implements LanguageScanner {
   @Override
   public ScanResult scanProject(String projectRoot, String srcRelativePath, String basePrefix)
       throws IOException {
+    AtomicInteger skippedFiles = new AtomicInteger();
     File rootDir = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
     File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
     List<Path> rsFiles = new ArrayList<>();
     if (scanDir.exists()) {
       rsFiles.addAll(
-          FileScannerUtil.findFiles(scanDir.toPath(), p -> p.toString().endsWith(".rs")));
+          FileScannerUtil.findFiles(
+              scanDir.toPath(), p -> p.toString().endsWith(".rs"), skippedFiles));
     }
     if (rsFiles.isEmpty() && rootDir.exists()) {
       for (Path memberDir : FileScannerUtil.discoverWorkspaceModules(rootDir.toPath())) {
         Path memberSrc = memberDir.resolve("src");
         Path targetScan = Files.isDirectory(memberSrc) ? memberSrc : memberDir;
-        rsFiles.addAll(FileScannerUtil.findFiles(targetScan, p -> p.toString().endsWith(".rs")));
+        rsFiles.addAll(
+            FileScannerUtil.findFiles(targetScan, p -> p.toString().endsWith(".rs"), skippedFiles));
       }
     }
     if (rsFiles.isEmpty()) {
-      return new ScanResult(List.of(), List.of());
+      return new ScanResult(List.of(), List.of(), skippedFiles.get());
     }
 
     List<ClassNode> classes = new ArrayList<>();
@@ -84,11 +91,17 @@ public class RustAstScanner implements LanguageScanner {
     }
 
     for (Path rsFile : rsFiles) {
+      List<String> lines;
+      try {
+        lines = Files.readAllLines(rsFile, StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable Rust file %s: %s", rsFile, e.getMessage());
+        skippedFiles.incrementAndGet();
+        continue;
+      }
       String rel = rootPath.relativize(rsFile).toString();
       String currentModule = toRustModuleId(rel);
       String packageName = getPackageName(currentModule);
-
-      List<String> lines = Files.readAllLines(rsFile, StandardCharsets.UTF_8);
       List<FieldNode> fields = new ArrayList<>();
       List<MethodNode> methods = new ArrayList<>();
       Set<String> importedPaths = new HashSet<>();
@@ -154,7 +167,7 @@ public class RustAstScanner implements LanguageScanner {
       }
     }
 
-    return new ScanResult(classes, edges);
+    return new ScanResult(classes, edges, skippedFiles.get());
   }
 
   private String toRustModuleId(String relPath) {

@@ -13,6 +13,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Map;
+import org.jboss.logging.Logger;
 
 /**
  * REST endpoint managing the bidirectional mailbox queue between workbench UI and companion agents.
@@ -23,6 +24,8 @@ import java.util.Map;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class MailboxResource {
+
+  private static final Logger LOG = Logger.getLogger(MailboxResource.class);
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
@@ -93,7 +96,8 @@ public class MailboxResource {
       try {
         String snapshotId = verifyAndRollbackUseCase.createPreRefactorSnapshot(root);
         mutablePayload.putIfAbsent("snapshotId", snapshotId);
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.warnf("Failed to capture pre-refactor snapshot for %s: %s", root, e.getMessage());
       }
     }
 

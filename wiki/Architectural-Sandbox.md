@@ -46,7 +46,7 @@ The floating bottom toolbar maintains a continuous delta calculation:
 - **`⚡ -2 Violations`**: Indicates the simulated move successfully eliminated two architectural breaches.
 - **`⚡ +1 Violation`**: Alerts you that the move inadvertently introduced a new outward dependency violation.
 
-### 3. Integrated Robert C. Martin Metrics Drawer
+### 3. Integrated Component Coupling Metrics Drawer
 Clicking **`Metrics & Staged`** on the bottom dock opens a slide-out drawer displaying live coupling metrics for every component in the simulated architecture:
 - Afferent Coupling ($C_a$) & Efferent Coupling ($C_e$)
 - Instability index ($I$)

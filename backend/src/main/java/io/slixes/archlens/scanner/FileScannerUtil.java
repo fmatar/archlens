@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -16,18 +17,21 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jboss.logging.Logger;
 
 /**
  * Utility class providing hardened, fault-tolerant filesystem traversal.
  *
- * <p>Prunes hidden, metadata, and dependency directories before entry, and gracefully continues
- * past unreadable special files (e.g. Unix domain sockets like .git/fsmonitor--daemon.ipc, broken
- * symlinks, or transient lock files).
+ * <p>Prunes hidden, metadata, and dependency directories before entry, and logs/counts unreadable
+ * paths (e.g. broken symlinks, permission errors, or transient lock files).
  */
 public final class FileScannerUtil {
+
+  private static final Logger LOG = Logger.getLogger(FileScannerUtil.class);
 
   private static final Set<String> DEFAULT_IGNORED_DIRS =
       Set.of(
@@ -46,7 +50,6 @@ public final class FileScannerUtil {
           ".svn",
           ".hg",
           ".archlens",
-          ".uml-viewer",
           ".idea",
           ".vscode",
           ".cache");
@@ -83,6 +86,12 @@ public final class FileScannerUtil {
    * @return list of matching paths
    */
   public static List<Path> findFiles(Path startDir, int maxDepth, Predicate<Path> filePredicate) {
+    return findFiles(startDir, maxDepth, filePredicate, null);
+  }
+
+  /** Finds matching regular files up to {@code maxDepth}, logging and counting unreadable paths. */
+  public static List<Path> findFiles(
+      Path startDir, int maxDepth, Predicate<Path> filePredicate, AtomicInteger skippedCounter) {
     if (startDir == null || !Files.exists(startDir) || !Files.isDirectory(startDir)) {
       return List.of();
     }
@@ -111,11 +120,18 @@ public final class FileScannerUtil {
 
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) {
-              // Gracefully skip unreadable files, sockets, or broken symlinks
+              LOG.warnf("Skipping unreadable path %s: %s", file, exc.getMessage());
+              if (skippedCounter != null
+                  && (filePredicate == null
+                      || filePredicate.test(file)
+                      || Files.isDirectory(file, LinkOption.NOFOLLOW_LINKS))) {
+                skippedCounter.incrementAndGet();
+              }
               return FileVisitResult.CONTINUE;
             }
           });
     } catch (IOException | SecurityException e) {
+      LOG.warnf("Directory traversal failed under %s: %s", startDir, e.getMessage());
       return matchedFiles;
     }
     return matchedFiles;
@@ -129,7 +145,13 @@ public final class FileScannerUtil {
    * @return list of matching paths
    */
   public static List<Path> findFiles(Path startDir, Predicate<Path> filePredicate) {
-    return findFiles(startDir, Integer.MAX_VALUE, filePredicate);
+    return findFiles(startDir, Integer.MAX_VALUE, filePredicate, null);
+  }
+
+  /** Finds matching regular files with unbounded depth, logging and counting unreadable paths. */
+  public static List<Path> findFiles(
+      Path startDir, Predicate<Path> filePredicate, AtomicInteger skippedCounter) {
+    return findFiles(startDir, Integer.MAX_VALUE, filePredicate, skippedCounter);
   }
 
   /**
@@ -173,10 +195,12 @@ public final class FileScannerUtil {
 
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) {
+              LOG.warnf("Skipping unreadable directory entry %s: %s", file, exc.getMessage());
               return FileVisitResult.CONTINUE;
             }
           });
     } catch (IOException | SecurityException e) {
+      LOG.warnf("Directory discovery failed under %s: %s", startDir, e.getMessage());
       return matchedDirs;
     }
     return matchedDirs;
@@ -234,7 +258,8 @@ public final class FileScannerUtil {
               }
             }
           }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+          LOG.warnf("Skipping unreadable Gradle settings %s: %s", settingsFile, e.getMessage());
         }
       }
     }
@@ -254,7 +279,8 @@ public final class FileScannerUtil {
             }
           }
         }
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable Cargo manifest %s: %s", cargoToml, e.getMessage());
       }
     }
 
@@ -272,7 +298,8 @@ public final class FileScannerUtil {
             }
           }
         }
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable pnpm workspace %s: %s", pnpmWorkspace, e.getMessage());
       }
     }
 
@@ -295,7 +322,8 @@ public final class FileScannerUtil {
             }
           }
         }
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable package.json %s: %s", packageJson, e.getMessage());
       }
     }
 
@@ -317,7 +345,8 @@ public final class FileScannerUtil {
               outModules.add(child.normalize());
             }
           }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+          LOG.warnf("Skipping unreadable workspace directory %s: %s", parentDir, e.getMessage());
         }
       }
       return;
@@ -338,6 +367,12 @@ public final class FileScannerUtil {
    * @return map of normalized API route prefix (e.g. {@code /api/graph}) to backend class/module ID
    */
   public static Map<String, String> indexBackendRestRoutes(Path rootDir) {
+    return indexBackendRestRoutes(rootDir, null);
+  }
+
+  /** Indexes backend REST/HTTP endpoints, logging and optionally counting unreadable files. */
+  public static Map<String, String> indexBackendRestRoutes(
+      Path rootDir, AtomicInteger skippedCounter) {
     if (rootDir == null || !Files.exists(rootDir) || !Files.isDirectory(rootDir)) {
       return Map.of();
     }
@@ -352,7 +387,8 @@ public final class FileScannerUtil {
               String fnStr = fn != null ? fn.toString() : "";
               return (s.endsWith(".java") && !s.endsWith("Test.java"))
                   || (s.endsWith(".py") && !s.endsWith("_test.py") && !fnStr.startsWith("test_"));
-            });
+            },
+            skippedCounter);
 
     for (Path file : backendFiles) {
       try {
@@ -393,7 +429,11 @@ public final class FileScannerUtil {
             }
           }
         }
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable backend route file %s: %s", file, e.getMessage());
+        if (skippedCounter != null) {
+          skippedCounter.incrementAndGet();
+        }
       }
     }
     return routeToBackendId;

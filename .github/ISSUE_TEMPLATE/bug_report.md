@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Target codebase language / layout:
-2. Policy configuration (`.uml-viewer/policy.json`):
+2. Policy configuration (`.archlens/policy.json`):
 3. Action performed (e.g. scanning project, zooming canvas, clicking Regen):
 4. Observed error or stack trace:
 

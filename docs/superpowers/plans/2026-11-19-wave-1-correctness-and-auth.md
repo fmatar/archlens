@@ -110,7 +110,7 @@ git commit -m "fix(mcp): await async architecture check in archlens://fitness re
   - `ArchlensMcpService.getOpenedProjects() -> OpenedProjectRegistry`
   - `ArchlensMcpService.syncDipAdr(...)` throws `IllegalArgumentException` when `projectRoot` is neither the canonical launch workspace (`.`) nor registered in `OpenedProjectRegistry`.
   - `SyncAdrUseCase.recordDipInversion(...)` / `recordPackageReorganization(...)` throws `IOException` if `projectRoot` is invalid or any segment along `docs/adr/<filename>` is a symlink.
-  - `FileMailboxService.readMailbox(String projectRoot, boolean isToAgent)` never creates `.archlens` or `.uml-viewer` directories on disk.
+  - `FileMailboxService.readMailbox(String projectRoot, boolean isToAgent)` never creates `.archlens` directories on disk.
 
 - [ ] **Step 1: Write failing tests in `FileMailboxServiceTest.java`, `SyncAdrUseCaseTest.java`, and `ArchlensMcpServiceTest.java`**
 
@@ -355,7 +355,7 @@ Document the 5 Wave 1 fixes in `CHANGELOG.md` and run `node .agent/scripts/sdlc-
 Run:
 ```bash
 mvn -f backend/pom.xml -B -ntp clean spotless:check verify
-python3 /Users/fady/.gemini/antigravity/brain/da71bbc4-c414-410a-ba26-8ff583e2836e/scratch/check_diff_cov.py
+python3 scripts/check_diff_cov.py
 npm --prefix frontend run check
 npm --prefix frontend exec vitest run --coverage
 npm test

@@ -10,8 +10,8 @@ test('updateLocalPolicy detects and integrates new packages', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-update-test-'));
 
   try {
-    const umlDir = path.join(tmpDir, '.uml-viewer');
-    fs.mkdirSync(umlDir, { recursive: true });
+    const archlensDir = path.join(tmpDir, '.archlens');
+    fs.mkdirSync(archlensDir, { recursive: true });
 
     const srcDir = path.join(tmpDir, 'src');
     fs.mkdirSync(path.join(srcDir, 'domain'), { recursive: true });
@@ -27,7 +27,7 @@ test('updateLocalPolicy detects and integrates new packages', () => {
       foreign: ['custom.library.'],
       omit: ['target']
     };
-    fs.writeFileSync(path.join(umlDir, 'policy.json'), JSON.stringify(initialPolicy, null, 2));
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(initialPolicy, null, 2));
 
     // Developer adds infrastructure and controller
     fs.mkdirSync(path.join(srcDir, 'controller'), { recursive: true });
@@ -39,7 +39,7 @@ test('updateLocalPolicy detects and integrates new packages', () => {
     assert.ok(result.newPackages.includes('controller'));
     assert.ok(result.newPackages.includes('infrastructure'));
 
-    const updated = JSON.parse(fs.readFileSync(path.join(umlDir, 'policy.json'), 'utf8'));
+    const updated = JSON.parse(fs.readFileSync(path.join(archlensDir, 'policy.json'), 'utf8'));
 
     // Custom properties are preserved
     assert.equal(updated.title, 'Custom Service Title');
@@ -77,8 +77,8 @@ test('updateLocalPolicy respects dryRun mode', () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-update-dryrun-test-'));
 
   try {
-    const umlDir = path.join(tmpDir, '.uml-viewer');
-    fs.mkdirSync(umlDir, { recursive: true });
+    const archlensDir = path.join(tmpDir, '.archlens');
+    fs.mkdirSync(archlensDir, { recursive: true });
     const srcDir = path.join(tmpDir, 'src');
     fs.mkdirSync(path.join(srcDir, 'domain'), { recursive: true });
 
@@ -89,7 +89,7 @@ test('updateLocalPolicy respects dryRun mode', () => {
       order: ['domain'],
       levels: [['domain'], [], []]
     };
-    fs.writeFileSync(path.join(umlDir, 'policy.json'), JSON.stringify(initialPolicy));
+    fs.writeFileSync(path.join(archlensDir, 'policy.json'), JSON.stringify(initialPolicy));
 
     fs.mkdirSync(path.join(srcDir, 'infrastructure'), { recursive: true });
 
@@ -98,7 +98,7 @@ test('updateLocalPolicy respects dryRun mode', () => {
     assert.ok(result.newPackages.includes('infrastructure'));
 
     // Policy on disk was not modified
-    const onDisk = JSON.parse(fs.readFileSync(path.join(umlDir, 'policy.json'), 'utf8'));
+    const onDisk = JSON.parse(fs.readFileSync(path.join(archlensDir, 'policy.json'), 'utf8'));
     assert.deepEqual(onDisk.order, ['domain']);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });

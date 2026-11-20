@@ -263,9 +263,9 @@ class DiagramResourceTest {
     Files.createDirectories(frontend);
     Files.writeString(frontend.resolve("package.json"), "{}");
 
-    Path unclebob = labs.resolve("unclebob-design");
-    Files.createDirectories(unclebob);
-    Files.writeString(unclebob.resolve("package.json"), "{}");
+    Path designSystem = labs.resolve("design-system");
+    Files.createDirectories(designSystem);
+    Files.writeString(designSystem.resolve("package.json"), "{}");
 
     // Create ignored folder with target/pom.xml and hidden directory
     Path ignored = workspaceDir.resolve("ignored_dir");
@@ -293,8 +293,7 @@ class DiagramResourceTest {
       assertTrue(
           names.contains("labs / archlens / frontend"), "Should discover submodule frontend");
       assertTrue(
-          names.contains("labs / unclebob-design"),
-          "Should discover nested labs / unclebob-design");
+          names.contains("labs / design-system"), "Should discover nested labs / design-system");
 
       assertFalse(
           names.stream().anyMatch(n -> n.contains(".hidden")), "Should ignore hidden directories");

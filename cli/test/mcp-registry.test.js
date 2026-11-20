@@ -162,7 +162,7 @@ test('installMcpConfigs respects dryRun option', () => {
 test('getMcpManifestEntry builds ephemeral docker run -i --rm mcp-stdio config when preferDocker is true', () => {
   const entry = getMcpManifestEntry('http://localhost:8088', {
     preferDocker: true,
-    hostWorkspace: '/Users/fady/workspace'
+    hostWorkspace: '/Users/dev/workspace'
   });
 
   assert.equal(entry.command, 'docker');
@@ -175,12 +175,12 @@ test('getMcpManifestEntry builds ephemeral docker run -i --rm mcp-stdio config w
     '-e',
     'ARCHLENS_HOST_WORKSPACE',
     '-v',
-    '/Users/fady/workspace:/workspace',
+    '/Users/dev/workspace:/workspace',
     'ghcr.io/fmatar/archlens:latest'
   ]);
   assert.deepEqual(entry.env, {
     QUARKUS_PROFILE: 'mcp-stdio',
-    ARCHLENS_HOST_WORKSPACE: '/Users/fady/workspace'
+    ARCHLENS_HOST_WORKSPACE: '/Users/dev/workspace'
   });
 });
 

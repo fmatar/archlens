@@ -32,10 +32,9 @@ class WorkspacePathResolverTest {
   }
 
   @Test
-  void testNormalizeRootLegacyAliases() {
-    assertEquals("foo/archlens/bar", WorkspacePathResolver.normalizeRoot("foo/agentlens/bar"));
-    assertEquals(
-        "foo/archlens/bar", WorkspacePathResolver.normalizeRoot("foo/unclebob-design/bar"));
+  void testNormalizeRootPreservesNeutralPaths() {
+    assertEquals("foo/archlens/bar", WorkspacePathResolver.normalizeRoot("foo/archlens/bar"));
+    assertEquals("foo/custom-app/bar", WorkspacePathResolver.normalizeRoot("foo/custom-app/bar"));
   }
 
   @Test

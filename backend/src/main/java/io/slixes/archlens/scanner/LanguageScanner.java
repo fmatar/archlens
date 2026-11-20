@@ -53,10 +53,17 @@ public interface LanguageScanner {
     return false;
   }
 
-  record ScanResult(List<ClassNode> classes, List<DependencyEdge> edges) {
+  record ScanResult(List<ClassNode> classes, List<DependencyEdge> edges, int skippedFiles) {
+    public ScanResult(List<ClassNode> classes, List<DependencyEdge> edges) {
+      this(classes, edges, 0);
+    }
+
     public ScanResult {
       classes = classes != null ? List.copyOf(classes) : List.of();
       edges = edges != null ? List.copyOf(edges) : List.of();
+      if (skippedFiles < 0) {
+        skippedFiles = 0;
+      }
     }
   }
 

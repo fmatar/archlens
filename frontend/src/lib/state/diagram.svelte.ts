@@ -112,8 +112,9 @@ class DiagramState {
   packageCycles = $derived.by<PackageCycle[]>(() => this.graph?.cycles || []);
   hasCycles = $derived(this.packageCycles.length > 0);
   violatingEdgesCount = $derived.by<number>(() => (this.graph?.edges || []).filter((e) => e.isViolating).length);
+  skippedFilesCount = $derived.by<number>(() => this.graph?.skippedFiles ?? 0);
 
-  // Screaming Architecture Metric (Uncle Bob Ch. 21)
+  // Screaming Architecture Metric
   screamingMetric = $derived.by<ScreamingMetric | null>(() => this.graph?.screamingMetric || null);
 
   // Policy Designer & Ring Editor Modal State

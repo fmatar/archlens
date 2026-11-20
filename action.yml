@@ -1,5 +1,5 @@
 name: 'Archlens Clean Architecture Gate'
-description: 'Enforce Clean Architecture rules, Uncle Bob ADP cycle detection, and Screaming Architecture in GitHub Actions'
+description: 'Enforce Clean Architecture rules, Acyclic Dependencies Principle (ADP) cycle detection, and Screaming Architecture in GitHub Actions'
 author: 'Fady Matar'
 branding:
   icon: 'shield'

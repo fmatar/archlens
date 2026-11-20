@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
@@ -184,23 +185,26 @@ public class JavaAstScanner implements LanguageScanner {
     List<DependencyEdge> rawEdges = new ArrayList<>();
     Map<String, String> simpleToFullyQualified = new HashMap<>();
 
+    AtomicInteger skippedFiles = new AtomicInteger();
     List<Path> javaFiles = new ArrayList<>();
     for (File sDir : sourceDirs) {
       javaFiles.addAll(
-          FileScannerUtil.findFiles(sDir.toPath(), p -> p.toString().endsWith(".java")));
+          FileScannerUtil.findFiles(
+              sDir.toPath(), p -> p.toString().endsWith(".java"), skippedFiles));
     }
 
     if (javaFiles.isEmpty()) {
-      return new ScanResult(List.of(), List.of());
+      return new ScanResult(List.of(), List.of(), skippedFiles.get());
     }
 
     List<ParsedJavaFile> parsedFiles = new ArrayList<>(javaFiles.size());
     for (Path path : javaFiles) {
-      parseCompilationUnit(path).ifPresent(cu -> parsedFiles.add(new ParsedJavaFile(path, cu)));
+      parseCompilationUnit(path, skippedFiles)
+          .ifPresent(cu -> parsedFiles.add(new ParsedJavaFile(path, cu)));
     }
 
     if (parsedFiles.isEmpty()) {
-      return new ScanResult(List.of(), List.of());
+      return new ScanResult(List.of(), List.of(), skippedFiles.get());
     }
 
     // First pass: collect all classes and map simple name -> fully qualified name
@@ -379,11 +383,12 @@ public class JavaAstScanner implements LanguageScanner {
       }
     }
 
-    return new ScanResult(classes, normalizedEdges);
+    return new ScanResult(classes, normalizedEdges, skippedFiles.get());
   }
 
-  private Optional<CompilationUnit> parseCompilationUnit(Path path) {
+  private Optional<CompilationUnit> parseCompilationUnit(Path path, AtomicInteger skippedFiles) {
     if (fileParser == null) {
+      skippedFiles.incrementAndGet();
       return Optional.empty();
     }
     try {
@@ -393,12 +398,13 @@ public class JavaAstScanner implements LanguageScanner {
           && parseResult.getResult().isPresent()) {
         return parseResult.getResult();
       }
-      if (parseResult != null && !parseResult.isSuccessful()) {
-        LOG.debugf("JavaParser reported problems parsing %s: %s", path, parseResult.getProblems());
-      }
+      LOG.warnf(
+          "Skipping unparseable Java file %s: %s",
+          path, parseResult != null ? parseResult.getProblems() : "empty result");
     } catch (Throwable t) {
-      LOG.warnf("Failed to parse Java AST for %s: %s", path, t.getMessage());
+      LOG.warnf("Skipping unreadable or unparseable Java file %s: %s", path, t.getMessage());
     }
+    skippedFiles.incrementAndGet();
     return Optional.empty();
   }
 

@@ -76,18 +76,14 @@ class FileMailboxServiceTest {
   }
 
   @Test
-  void testLegacyUmlViewerMailboxFallback(@TempDir Path tempDir) throws IOException {
+  void testAppendCommandAlwaysTargetsArchlensDirectory(@TempDir Path tempDir) throws IOException {
     String root = tempDir.toString();
-    File legacyDir = new File(root, ".uml-viewer");
-    java.nio.file.Files.createDirectories(legacyDir.toPath());
-
-    // When .uml-viewer exists, operations should target .uml-viewer
     MailboxEnvelope.MailboxCommand cmd =
         service.appendCommand(root, true, "REGEN", Map.of(), Map.of());
     assertEquals(1, cmd.id());
 
-    File legacyFile = new File(legacyDir, "to-agent.json");
-    assertTrue(legacyFile.exists());
+    File archlensFile = new File(new File(root, ".archlens"), "to-agent.json");
+    assertTrue(archlensFile.exists());
 
     MailboxEnvelope envelope = service.readMailbox(root, true);
     assertEquals(2, envelope.nextId());

@@ -94,7 +94,7 @@ Archlens is an architectural engineering workstation designed for developers, ar
   1. **Top Header Bar**: 48px fixed height housing workbench title, project switcher, build badges, and Quick Find (`Cmd+K`).
   2. **Infinite 2D SVG Canvas**: Primary viewport supporting smooth GSAP camera pans, zoom levels from 20% to 300%, and Sugiyama-style layered concentric tier lanes.
   3. **Right Inspector Panel**: 320px collapsible sidebar containing architectural views, proposal triggers, display controls, and Clean Architecture rule legends.
-  4. **Bottom Telemetry Dock**: Collapsible telemetry drawer displaying real-time `.uml-viewer/` IPC mailbox activity.
+  4. **Bottom Telemetry Dock**: Collapsible telemetry drawer displaying real-time `.archlens/` IPC mailbox activity.
 
 ## Elevation & Depth
 

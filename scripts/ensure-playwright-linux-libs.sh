@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ensures shared libraries required by Playwright's Chromium headless shell are available
-# on Linux CI runners, including rootless Actions Runner Controller (ARC) containers where
-# sudo/root dpkg writes are unavailable.
+# on Linux CI runners — including unprivileged / user-namespaced Actions Runner Controller (ARC)
+# containers where sudo/apt cannot chown or rename inside /var/cache/apt/archives.
 set -euo pipefail
 
 if [ "$(uname -s)" != "Linux" ]; then
@@ -47,7 +47,7 @@ CACHE_BASE="${ARCHLENS_PLAYWRIGHT_LIBS_DIR:-$HOME/.cache/archlens-playwright-lib
 SYSROOT="${CACHE_BASE}/sysroot"
 APT_DIR="${CACHE_BASE}/apt"
 
-# Fast-path: check if a cached rootless sysroot already satisfies ldd.
+# Fast-path: check if a cached user-space sysroot already satisfies ldd.
 if [ -d "$SYSROOT" ]; then
   export_sysroot_ld_path "$SYSROOT"
   if ! has_missing_libs; then
@@ -56,16 +56,10 @@ if [ -d "$SYSROOT" ]; then
   fi
 fi
 
-# Privileged runner path when passwordless sudo or root is available.
-if [ "$(id -u)" = "0" ]; then
-  DEBIAN_FRONTEND=noninteractive pnpm --dir frontend exec playwright install-deps chromium
-  exit 0
-elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-  sudo -n DEBIAN_FRONTEND=noninteractive pnpm --dir frontend exec playwright install-deps chromium
-  exit 0
-fi
-
-# Rootless Ubuntu/Debian path: resolve & download .deb packages into user cache and extract to SYSROOT.
+# Always resolve & extract .deb packages in user space under $CACHE_BASE so unprivileged
+# user-namespaced containers (where sudo exists without CAP_CHOWN / writable /var/cache/apt)
+# never fail on _apt sandbox chown/rename errors.
+rm -rf "$APT_DIR"
 mkdir -p \
   "$SYSROOT" \
   "$APT_DIR/state/lists/partial" \
@@ -80,10 +74,10 @@ APT_OPTS=(
   -o "Dir::Cache::Archives=$APT_DIR/cache/archives"
   -o "Dir::Log=$APT_DIR/log"
   -o "Debug::NoLocking=1"
-  -o "APT::Sandbox::User="
+  -o "APT::Sandbox::User=root"
 )
 
-echo "Updating rootless apt package metadata for Playwright Chromium runtime libraries..."
+echo "Updating user-space apt metadata for Playwright Chromium runtime libraries..."
 apt-get "${APT_OPTS[@]}" update -qq
 
 CANDIDATE_PKGS=(
@@ -121,7 +115,7 @@ for pkg in "${CANDIDATE_PKGS[@]}"; do
 done
 
 if [ "${#AVAILABLE_PKGS[@]}" -eq 0 ]; then
-  echo "::error::No Playwright runtime library packages could be resolved via rootless apt-cache."
+  echo "::error::No Playwright runtime library packages could be resolved via user-space apt-cache."
   exit 1
 fi
 
@@ -137,7 +131,7 @@ rm -rf "$APT_DIR"
 export_sysroot_ld_path "$SYSROOT"
 
 if has_missing_libs; then
-  echo "::error::Playwright Chromium still has unresolved shared libraries after rootless sysroot extraction:"
+  echo "::error::Playwright Chromium still has unresolved shared libraries after sysroot extraction:"
   ldd "$SHELL_BIN" | grep "=> not found" || true
   exit 1
 fi

@@ -44,8 +44,8 @@ describe('ensure-playwright-linux-libs.sh (#245 rootless CI)', { skip }, () => {
     fs.writeFileSync(ghEnv, '', 'utf8');
 
     stubBin(bin, 'uname', 'echo Linux');
-    // Simulate rootless ARC container: sudo -n fails
-    stubBin(bin, 'sudo', 'exit 1');
+    // Simulate user-namespaced ARC container where sudo exists without CAP_CHOWN: sudo must never be called
+    stubBin(bin, 'sudo', 'echo "unexpected sudo invocation" >&2; exit 99');
     // ldd reports libnspr4.so missing until LD_LIBRARY_PATH contains libnspr4.so
     stubBin(
       bin,

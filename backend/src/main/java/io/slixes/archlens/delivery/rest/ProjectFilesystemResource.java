@@ -24,37 +24,23 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProjectFilesystemResource {
 
-  @Inject ResolveFilesystemUseCase filesystemUseCase;
-  @Inject OpenedProjectRegistry openedProjects;
-  @Inject ProjectFileWatcher fileWatcher;
+  private ResolveFilesystemUseCase filesystemUseCase;
+  private OpenedProjectRegistry openedProjects;
+  private ProjectFileWatcher fileWatcher;
 
-  public ProjectFilesystemResource() {
-    this.filesystemUseCase = new ResolveFilesystemUseCase();
-  }
+  ProjectFilesystemResource() {}
 
-  public ProjectFilesystemResource(ResolveFilesystemUseCase filesystemUseCase) {
-    this(filesystemUseCase, new OpenedProjectRegistry(), null);
-  }
-
-  public ProjectFilesystemResource(
-      ResolveFilesystemUseCase filesystemUseCase, OpenedProjectRegistry openedProjects) {
-    this(filesystemUseCase, openedProjects, null);
-  }
-
+  @Inject
   public ProjectFilesystemResource(
       ResolveFilesystemUseCase filesystemUseCase,
       OpenedProjectRegistry openedProjects,
       ProjectFileWatcher fileWatcher) {
-    this.filesystemUseCase =
-        filesystemUseCase != null ? filesystemUseCase : new ResolveFilesystemUseCase();
-    this.openedProjects = openedProjects != null ? openedProjects : new OpenedProjectRegistry();
+    this.filesystemUseCase = filesystemUseCase;
+    this.openedProjects = openedProjects;
     this.fileWatcher = fileWatcher;
   }
 
-  OpenedProjectRegistry getOpenedProjects() {
-    if (openedProjects == null) {
-      openedProjects = new OpenedProjectRegistry();
-    }
+  public OpenedProjectRegistry getOpenedProjects() {
     return openedProjects;
   }
 
@@ -76,7 +62,7 @@ public class ProjectFilesystemResource {
     }
     String normalized =
         WorkspacePathResolver.normalizeRoot(rawRoot == null || rawRoot.isBlank() ? "." : rawRoot);
-    return getOpenedProjects()
+    return openedProjects
         .markOpened(normalized)
         .<Map<String, Object>>map(canonical -> {
           if (fileWatcher != null) {
@@ -110,7 +96,7 @@ public class ProjectFilesystemResource {
   }
 
   public Map<String, Object> getSourceCode(String filePath, int line) {
-    return filesystemUseCase.getSourceCode(filePath, line, null);
+    return getSourceCode(filePath, line, null);
   }
 
   @GET

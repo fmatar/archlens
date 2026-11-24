@@ -193,14 +193,14 @@ function runSkillsCliInstall(options = {}) {
 }
 
 function listBundledSkillNames(bundledSkillsDir) {
-  if (!fs.existsSync(bundledSkillsDir)) return ['archlens', 'archlens-install-policy', 'uml-workbench-companion'];
+  if (!fs.existsSync(bundledSkillsDir)) return ['archlens'];
   try {
     return fs
       .readdirSync(bundledSkillsDir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
       .map((d) => d.name);
   } catch {
-    return ['archlens-install-policy'];
+    return ['archlens'];
   }
 }
 

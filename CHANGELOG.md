@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Historical Git tag Release Comparator & Fitness History (`#265`)**: `ManageSnapshotsUseCase` and `GetFitnessHistoryUseCase` now list Git tags with creation dates via `git for-each-ref`, materialize uncached tags into ephemeral directories via isolated `GIT_INDEX_FILE` (`git read-tree` + `git checkout-index`) without mutating `.git/HEAD` or `.git/index`, and persist compiled graphs to `.archlens/cache/<tag>.json` instead of substituting the live working tree.
 - **Live `ProjectFileWatcher` project switching & duplicate `loadFitness()` scan (`#265`)**: `ProjectFileWatcher` now restarts cleanly when `projectRoot` changes across opened projects, and `diagramStore.setProjectRoot` awaits `loadFitness()` once inside `loadGraph()` instead of triggering two full-repo AST scans.
 
+### Changed
+- **Clean Architecture I/O ports, canonical `CrapScoreCalculator` & constructor DI (`#246`, `ADR-018`)**: Relocated `CrapScoreCalculator` to Ring 0 `domain.graph` (retiring `metrics` and deprecated `delivery.rest.WorkspacePathResolver`), extracted `FilesystemGateway` (`LocalFilesystemGateway`) and `TestRunnerGateway` (`ProcessTestRunnerGateway`) ports for `ResolveFilesystemUseCase` and `VerifyAndRollbackRefactorUseCase`, and standardized `@Inject` constructor injection across all REST resources/filters and `ArchlensMcpService` (enforced by `ResourceDiGovernanceTest`).
+- **Frontend coverage floor & bundled-Chromium Playwright E2E in CI (`#245`, `ADR-018`)**: Raised Vitest coverage thresholds (`lines: 60, statements: 58, functions: 60, branches: 45`), updated `playwright.config.ts` / `workbench.spec.ts` to run bundled Chromium with `ARCHLENS_TOKEN` against the packaged Quarkus server, and added both Vitest coverage and Playwright E2E steps to `.github/workflows/ci.yml`.
+- **Repository hygiene & `<= 5 MB` non-LFS blob guard (`#242`, `ADR-018`)**: Removed duplicate `@typescript/native` compiler from `frontend/package.json`, consolidated tracked skills to the unified `archlens` skill (`skills/archlens` & `cli/skills/archlens`), untracked vendored dev skill binaries and oversized media assets (`~48 MB`), and enforced lockfile/compiler/blob-size invariants in `scripts/test/repo-hygiene.test.js`.
+
 ## [1.1.6] - 2026-11-18
 
 ### Security

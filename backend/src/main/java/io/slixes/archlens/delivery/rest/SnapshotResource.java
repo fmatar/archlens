@@ -1,8 +1,6 @@
 package io.slixes.archlens.delivery.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
-import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -25,16 +23,13 @@ public class SnapshotResource {
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  @Inject ManageSnapshotsUseCase manageSnapshotsUseCase;
+  private ManageSnapshotsUseCase manageSnapshotsUseCase;
 
-  public SnapshotResource() {}
+  SnapshotResource() {}
 
+  @Inject
   public SnapshotResource(ManageSnapshotsUseCase manageSnapshotsUseCase) {
     this.manageSnapshotsUseCase = manageSnapshotsUseCase;
-  }
-
-  public SnapshotResource(ArchitectureCompiler graphCompiler, ObjectMapper mapper) {
-    this.manageSnapshotsUseCase = new ManageSnapshotsUseCase(graphCompiler, mapper);
   }
 
   @GET

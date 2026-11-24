@@ -77,7 +77,7 @@ node ./cli/bin/index.js
   - **Level 1 (Application)**: `usecase`, `application`, `service`, `port`, `interactor`
   - **Level 2 (Adapters)**: `adapter`, `controller`, `gateway`, `presenter`, `repository`, `dto`, `api`
   - **Level 3 (Infrastructure)**: `infrastructure`, `config`, `db`, `web`, `server`, `client`
-- **Multi-Agent Skill Deployment**: Installs the `archlens-install-policy` skill globally into Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
+- **Multi-Agent Skill Deployment**: Installs the unified `archlens` skill globally into Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
 - **Safe Incremental Updates**: Re-scans codebases for newly introduced packages, updating `order` and `levels` while preserving user custom rules and configurations.
 - **Model Context Protocol (MCP) Client Auto-Configuration**: Detects and configures host AI client manifests (Claude Desktop, Google Antigravity, Claude Code, Cursor, VS Code) in a single command (`--mcp`).
 - **On-Demand Container Orchestration & Stdio Bridge**: Automatically spins up the Archlens container when needed, bridges MCP over stdio (`mcp` command), and provides an instant offline AST fallback if Docker is unavailable.

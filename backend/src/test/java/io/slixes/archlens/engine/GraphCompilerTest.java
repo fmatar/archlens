@@ -3,8 +3,8 @@ package io.slixes.archlens.engine;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
+import io.slixes.archlens.domain.graph.CrapScoreCalculator;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
-import io.slixes.archlens.metrics.CrapScoreCalculator;
 import io.slixes.archlens.scanner.JavaAstScanner;
 import java.io.IOException;
 import java.nio.file.Files;

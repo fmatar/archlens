@@ -45,6 +45,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --sha "$GITHUB_SHA" \
             --check "Verify & Quality Gates" \
+            --check "Playwright E2E Browser Suite" \
             --check "GitHub Action Self-Test (uses ./)"
 
   dev-docker:
@@ -123,15 +124,15 @@ jobs:
           npm pack ./cli --pack-destination cli
           TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
           TARBALL_FILES=$(tar -tzf "$TARBALL_PATH")
-          for SKILL_MD in \
-            package/skills/archlens/SKILL.md \
-            package/skills/archlens-install-policy/SKILL.md \
-            package/skills/uml-workbench-companion/SKILL.md; do
-            if ! echo "$TARBALL_FILES" | grep -qx "$SKILL_MD"; then
-              echo "::error::Missing bundled skill $SKILL_MD in $TARBALL_PATH"
-              exit 1
-            fi
-          done
+          if ! echo "$TARBALL_FILES" | grep -qx "package/skills/archlens/SKILL.md"; then
+            echo "::error::Missing bundled skill package/skills/archlens/SKILL.md in $TARBALL_PATH"
+            exit 1
+          fi
+          SKILL_COUNT=$(echo "$TARBALL_FILES" | grep -c '^package/skills/[^/]\+/SKILL\.md$' || true)
+          if [ "$SKILL_COUNT" -ne 1 ]; then
+            echo "::error::Expected exactly 1 bundled skill in $TARBALL_PATH, found $SKILL_COUNT"
+            exit 1
+          fi
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
       # npm rejects --provenance (and Trusted Publishing/OIDC) from self-hosted runners,

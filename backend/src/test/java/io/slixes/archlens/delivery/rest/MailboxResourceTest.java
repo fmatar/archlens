@@ -2,23 +2,49 @@ package io.slixes.archlens.delivery.rest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
 import io.slixes.archlens.domain.mailbox.MailboxGateway;
+import io.slixes.archlens.domain.mailbox.RefactorVerificationResult;
+import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.mailbox.fs.FileMailboxService;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.SyncAdrUseCase;
+import io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase;
+import io.slixes.archlens.verification.runner.ProcessTestRunnerGateway;
+import io.slixes.archlens.workspace.fs.LocalFilesystemGateway;
 import jakarta.ws.rs.WebApplicationException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class MailboxResourceTest {
 
+  private static VerifyAndRollbackRefactorUseCase newVerifyUseCase(MailboxGateway gateway) {
+    ArchitectureCompiler dummyCompiler =
+        (root, proposal) ->
+            new ArchitectureGraph("Test", false, null, List.of(), List.of(), List.of());
+    return new VerifyAndRollbackRefactorUseCase(
+        dummyCompiler, gateway, new LocalFilesystemGateway(), new ProcessTestRunnerGateway());
+  }
+
+  private static MailboxResource verifyResource() {
+    MailboxGateway gateway = new FileMailboxService();
+    return new MailboxResource(
+        gateway,
+        newVerifyUseCase(gateway),
+        new SyncAdrUseCase(),
+        new OpenedProjectRegistry(),
+        new SessionTokenService(true, "test-session-token-1234567890", "127.0.0.1", 8088));
+  }
+
   @Test
   void testMailboxEndpoints(@TempDir Path tempDir) throws IOException {
-    MailboxGateway gateway = new FileMailboxService();
-    MailboxResource resource = new MailboxResource(gateway);
+    MailboxResource resource = verifyResource();
     resource.getOpenedProjects().markOpened(tempDir.toString());
 
     MailboxEnvelope envelope = resource.getToAgentMailbox(tempDir.toString());
@@ -30,56 +56,52 @@ class MailboxResourceTest {
             tempDir.toString(),
             Map.of(
                 "op",
-                "REGEN",
+                "APPLY_PROPOSAL",
                 "target",
                 Map.of("path", "src"),
                 "payload",
                 Map.of("key", "val", "origin", "spoofed")));
     assertEquals("workbench-session", cmd.payload().get("origin"));
-
-    assertNotNull(cmd);
-    assertEquals("REGEN", cmd.op());
+    assertNotNull(cmd.payload().get("sessionFingerprint"));
+    assertNotNull(cmd.payload().get("snapshotId"));
+    assertEquals("APPLY_PROPOSAL", cmd.op());
     assertEquals(1, cmd.id());
 
+    MailboxEnvelope.MailboxCommand defaultCmd = resource.sendToAgent(tempDir.toString(), Map.of());
+    assertEquals(2, defaultCmd.id());
+    assertEquals("COMMAND", defaultCmd.op());
+
     MailboxEnvelope updated = resource.getToAgentMailbox(tempDir.toString());
-    assertEquals(1, updated.queue().size());
-    assertEquals("REGEN", updated.queue().get(0).op());
+    assertEquals(2, updated.queue().size());
   }
 
   @Test
   void testVerifyAndRollbackEndpoints(@TempDir Path tempDir) throws IOException {
     MailboxGateway gateway = new FileMailboxService();
-    io.slixes.archlens.engine.ArchitectureCompiler dummyCompiler =
-        (root, proposal) ->
-            new io.slixes.archlens.domain.graph.ArchitectureGraph(
-                "Test", false, null, java.util.List.of(), java.util.List.of(), java.util.List.of());
-    io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase verifyUseCase =
-        new io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase(dummyCompiler, gateway);
+    VerifyAndRollbackRefactorUseCase verifyUseCase = newVerifyUseCase(gateway);
 
-    MailboxResource resource = new MailboxResource(gateway, verifyUseCase);
+    MailboxResource resource =
+        new MailboxResource(gateway, verifyUseCase, null, new OpenedProjectRegistry(), null);
     resource.getOpenedProjects().markOpened(tempDir.toString());
 
-    // Initial verify call with empty baseline
-    io.slixes.archlens.domain.mailbox.RefactorVerificationResult res =
+    RefactorVerificationResult res =
         resource.verifyRefactoring(
-            tempDir.toString(), Map.of("baselineViolations", 0, "snapshotId", "snap-test"));
+            tempDir.toString(),
+            Map.of("baselineViolations", 0, "baselineCycles", 0, "snapshotId", "snap-test"));
     assertNotNull(res);
     assertTrue(res.passed());
 
-    // Rollback null request / missing snapshotId and non-existent snapshot
     Map<String, Object> nullReqRes = resource.rollbackRefactoring(tempDir.toString(), null);
     assertEquals(false, nullReqRes.get("success"));
     assertEquals("", nullReqRes.get("snapshotId"));
 
-    // Rollback non-existent snapshot
     Map<String, Object> rollbackRes =
         resource.rollbackRefactoring(
             tempDir.toString(), Map.of("snapshotId", "snap-1700000000000-deadbeef"));
     assertNotNull(rollbackRes);
     assertEquals(false, rollbackRes.get("success"));
-    assertEquals(java.util.List.of(), rollbackRes.get("trashedFiles"));
+    assertEquals(List.of(), rollbackRes.get("trashedFiles"));
 
-    // Snapshot + post-snapshot file -> rollback reports recoverable trash (#228)
     Path srcDir = Files.createDirectories(tempDir.resolve("src"));
     Files.writeString(srcDir.resolve("Base.java"), "class Base {}");
     String snapId = verifyUseCase.createPreRefactorSnapshot(tempDir.toString());
@@ -89,22 +111,15 @@ class MailboxResourceTest {
         resource.rollbackRefactoring(tempDir.toString(), Map.of("snapshotId", snapId));
     assertEquals(true, restoredRes.get("success"));
     assertEquals(".archlens/trash/" + snapId, restoredRes.get("trashDir"));
-    assertEquals(java.util.List.of("src/Draft.java"), restoredRes.get("trashedFiles"));
+    assertEquals(List.of("src/Draft.java"), restoredRes.get("trashedFiles"));
     assertFalse(Files.exists(extra));
     assertEquals(
         "class Draft {}",
         Files.readString(tempDir.resolve(".archlens/trash/" + snapId + "/src/Draft.java")));
-  }
 
-  private static MailboxResource verifyResource() {
-    MailboxGateway gateway = new FileMailboxService();
-    io.slixes.archlens.engine.ArchitectureCompiler dummyCompiler =
-        (root, proposal) ->
-            new io.slixes.archlens.domain.graph.ArchitectureGraph(
-                "Test", false, null, java.util.List.of(), java.util.List.of(), java.util.List.of());
-    return new MailboxResource(
-        gateway,
-        new io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase(dummyCompiler, gateway));
+    Map<String, Object> unconfiguredAdr =
+        resource.syncAdr(tempDir.toString(), Map.of("type", "DIP_INVERSION"));
+    assertEquals(false, unconfiguredAdr.get("success"));
   }
 
   private static int statusOf(WebApplicationException e) {
@@ -170,17 +185,7 @@ class MailboxResourceTest {
 
   @Test
   void testSyncAdrEndpoint(@TempDir Path tempDir) throws IOException {
-    MailboxGateway gateway = new FileMailboxService();
-    io.slixes.archlens.engine.ArchitectureCompiler dummyCompiler =
-        (root, proposal) ->
-            new io.slixes.archlens.domain.graph.ArchitectureGraph(
-                "Test", false, null, java.util.List.of(), java.util.List.of(), java.util.List.of());
-    io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase verifyUseCase =
-        new io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase(dummyCompiler, gateway);
-    io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase =
-        new io.slixes.archlens.usecase.SyncAdrUseCase();
-
-    MailboxResource resource = new MailboxResource(gateway, verifyUseCase, syncAdrUseCase);
+    MailboxResource resource = verifyResource();
     resource.getOpenedProjects().markOpened(tempDir.toString());
 
     Map<String, Object> adrRes =
@@ -200,10 +205,15 @@ class MailboxResourceTest {
     assertEquals(true, adrRes.get("success"));
     assertEquals(1, adrRes.get("index"));
     assertNotNull(adrRes.get("filename"));
+
+    Map<String, Object> reorgRes =
+        resource.syncAdr(tempDir.toString(), Map.of("type", "PACKAGE_REORGANIZATION"));
+    assertEquals(true, reorgRes.get("success"));
+    assertEquals(2, reorgRes.get("index"));
   }
 
   @Test
-  void rejectsUnopenedCommandAndUnconfirmedRunTests(@TempDir Path tempDir) throws IOException {
+  void rejectsUnopenedCommandAndUnconfirmedRunTests(@TempDir Path tempDir) {
     MailboxResource resource = verifyResource();
 
     WebApplicationException unopenedSend =

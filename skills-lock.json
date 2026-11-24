@@ -12,6 +12,42 @@
       "sourceType": "github",
       "skillPath": "skills/quarkus-update/SKILL.md",
       "computedHash": "d8ece887dde1dc31d9a455ba0770bb70434e4c5f513597fa361cf32e08568539"
+    },
+    "sdlc": {
+      "source": "fmatar/agentic-sdlc-framework",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/sdlc/SKILL.md",
+      "computedHash": "d924661fe887545992fd9a05879765ae9721edd584ddaa9c2488a67645864c96"
+    },
+    "sdlc-adr": {
+      "source": "fmatar/agentic-sdlc-framework",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/sdlc-adr/SKILL.md",
+      "computedHash": "6a7d63aa4bd4a99cd9c3f252fafbc5718f8b0681e2c706e1b0193a0ce414e410"
+    },
+    "sdlc-flow": {
+      "source": "fmatar/agentic-sdlc-framework",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/sdlc-flow/SKILL.md",
+      "computedHash": "bb9a6740461ef88cd2e82a0c707bc5d5c0b4cb607a2e4aa41c50d3173e2deedd"
+    },
+    "sdlc-gate": {
+      "source": "fmatar/agentic-sdlc-framework",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/sdlc-gate/SKILL.md",
+      "computedHash": "a05d28c3f0caa8a2dddaef16e00aae4a597f85d006c6cad0db4e6d68aeb11abf"
+    },
+    "sdlc-spec": {
+      "source": "fmatar/agentic-sdlc-framework",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/sdlc-spec/SKILL.md",
+      "computedHash": "6ce97fee48417227116b3169f7bf17f08be2cbc71d3f25a6a7424f2b48d13539"
+    },
+    "sdlc-tdd": {
+      "source": "fmatar/agentic-sdlc-framework",
+      "sourceType": "github",
+      "skillPath": ".agent/skills/sdlc-tdd/SKILL.md",
+      "computedHash": "7c8e389d165b606824dc21cdbcbbdb007e97b13c4fa5a7f4ddec6d5ac07a1a18"
     }
   }
 }

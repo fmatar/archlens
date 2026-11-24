@@ -129,14 +129,13 @@ test('installGlobalSkills installs all bundled skills into global agent director
     });
 
     assert.ok(Array.isArray(res.installed));
-    assert.ok(res.installed.length >= 3);
+    assert.equal(res.installed.length, 3);
     const skillsInstalled = res.installed.map((item) => item.skill);
-    assert.ok(skillsInstalled.includes('archlens'));
-    assert.ok(skillsInstalled.includes('archlens-install-policy'));
-    assert.ok(skillsInstalled.includes('uml-workbench-companion'));
+    assert.deepEqual(skillsInstalled, ['archlens', 'archlens', 'archlens']);
 
     for (const item of res.installed) {
       assert.ok(fs.existsSync(path.join(item.path, 'SKILL.md')));
+      assert.ok(fs.existsSync(path.join(item.path, 'scripts', 'init_policy.py')));
     }
   } finally {
     fs.rmSync(tmpHome, { recursive: true, force: true });
@@ -258,12 +257,12 @@ test('installer handles edge cases: missing root, existing companions, array opt
   const symlinkArgs = buildSkillsCliArgs({
     sourceDir: '/pkg/cli',
     agents: ['claude-code', 'gemini-cli'],
-    skillsList: ['archlens', 'uml-workbench-companion'],
+    skillsList: ['archlens'],
     symlink: true
   });
   assert.ok(!symlinkArgs.includes('--copy'));
   assert.ok(symlinkArgs.includes('gemini-cli'));
-  assert.ok(symlinkArgs.includes('uml-workbench-companion'));
+  assert.ok(symlinkArgs.includes('archlens'));
 
   const nonStringArgs = buildSkillsCliArgs({
     sourceDir: '/pkg/cli',
@@ -295,7 +294,7 @@ test('installer handles edge cases: missing root, existing companions, array opt
       spawnSync: () => { throw new Error('ENOENT npx'); }
     });
     assert.equal(globalFallback.method, 'direct-copy');
-    assert.equal(globalFallback.installed.length, 3);
+    assert.equal(globalFallback.installed.length, 1);
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     fs.rmSync(tmpHome, { recursive: true, force: true });

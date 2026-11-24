@@ -12,11 +12,21 @@
     "maxAfferentCoupling": 50,
     "maxEfferentCoupling": 30
   },
-  "order": ["domain", "scanner", "engine", "metrics", "usecase", "mailbox.fs", "delivery.rest", "mcp"],
+  "order": [
+    "domain",
+    "scanner",
+    "engine",
+    "usecase",
+    "mailbox.fs",
+    "workspace.fs",
+    "verification.runner",
+    "delivery.rest",
+    "mcp"
+  ],
   "levels": [
     ["domain"],
-    ["scanner", "engine", "metrics", "usecase"],
-    ["mailbox.fs"],
+    ["scanner", "engine", "usecase"],
+    ["mailbox.fs", "workspace.fs", "verification.runner"],
     ["delivery.rest", "mcp"]
   ],
   "proposals": [
@@ -25,8 +35,8 @@
       "name": "Clean Architecture Standard",
       "layers": [
         { "id": "domain", "label": "Level 0: Domain Entities & Rules", "packages": ["domain"] },
-        { "id": "application", "label": "Level 1: Scanners & Graph Engine", "packages": ["scanner", "engine", "metrics", "usecase"] },
-        { "id": "infrastructure", "label": "Level 2: REST Delivery & Mailbox Gateway", "packages": ["mailbox.fs", "delivery.rest", "mcp"] }
+        { "id": "application", "label": "Level 1: Scanners & Graph Engine", "packages": ["scanner", "engine", "usecase"] },
+        { "id": "infrastructure", "label": "Level 2: Gateways & Delivery Adapters", "packages": ["mailbox.fs", "workspace.fs", "verification.runner", "delivery.rest", "mcp"] }
       ],
       "omit": []
     }

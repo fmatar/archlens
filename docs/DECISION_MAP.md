@@ -54,6 +54,8 @@ flowchart TD
   _265["Ticket #265 (feature/issue-#265-wave-1-correctness-and-auth)"]
   ADR_017["ADR-017: Phase 2 Skipped-File Telemetry Clojure Removal and Provenance Cleanup"]
   _238["Ticket #238 (feature/issue-#238-phase-2-trust-hygiene-and-skipped-files)"]
+  ADR_018["ADR-018: Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI"]
+  _246["Ticket #246 (feature/issue-#246-phase-3-hygiene-di-ports-and-e2e-ci)"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -122,6 +124,8 @@ flowchart TD
   ADR_015 -.->|ADR Drift| ADR_016
   _238 -->|triggered_drift_adr| ADR_017
   ADR_016 -.->|ADR Drift| ADR_017
+  _246 -->|triggered_drift_adr| ADR_018
+  ADR_017 -.->|ADR Drift| ADR_018
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -155,6 +159,7 @@ flowchart TD
 | **ADR-015** | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
 | **ADR-016** | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
 | **ADR-017** | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
+| **ADR-018** | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
 
 ---
 

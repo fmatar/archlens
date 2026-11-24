@@ -25,6 +25,8 @@ reports/
 .agents/
 .agent/
 .claude/
+.github/skills/
+.impeccable/
 .junie/
 .quarkus/
 .env
@@ -38,6 +40,8 @@ reports/
 .agent/.sdlc-session.json
 .agent/.receipt-key
 .agent/skills/*/scripts/bin/
+**/skills/*/scripts/bin/
+frontend/package-lock.json
 .agent/workbench/index.html
 .agent/arch-trace.jsonl
 docs/ARCH_TRACE.md

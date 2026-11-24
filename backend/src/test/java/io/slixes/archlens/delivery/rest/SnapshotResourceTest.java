@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.engine.GraphCompiler;
+import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
 import jakarta.ws.rs.BadRequestException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,14 +28,13 @@ class SnapshotResourceTest {
           }
         };
 
-    SnapshotResource resource = new SnapshotResource(compiler, new ObjectMapper());
+    SnapshotResource resource =
+        new SnapshotResource(new ManageSnapshotsUseCase(compiler, new ObjectMapper()));
 
-    // Empty snapshots initially
     Map<String, Object> initial = resource.listSnapshots(tempDir.toString());
     assertNotNull(initial);
     assertTrue(initial.containsKey("snapshots"));
 
-    // Create a snapshot file
     Path snapshotsDir = tempDir.resolve(".archlens/snapshots");
     Files.createDirectories(snapshotsDir);
     Files.writeString(
@@ -47,19 +47,16 @@ class SnapshotResourceTest {
     assertEquals(1, list.size());
     assertEquals("snap-01", list.get(0).get("id"));
 
-    // Read snapshot
     ArchitectureGraph graph = resource.getSnapshot("snap-01", tempDir.toString());
     assertNotNull(graph);
     assertEquals("SnapshotApp", graph.title());
 
-    // Path traversal rejection
     assertThrows(
         BadRequestException.class, () -> resource.getSnapshot("../evil", tempDir.toString()));
     assertThrows(
         BadRequestException.class, () -> resource.getSnapshot("sub/dir", tempDir.toString()));
     assertThrows(BadRequestException.class, () -> resource.getSnapshot("  ", tempDir.toString()));
 
-    // Fallback compilation
     ArchitectureGraph fallback = resource.getSnapshot("nonexistent", tempDir.toString());
     assertEquals("CompiledRoot", fallback.title());
   }

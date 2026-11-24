@@ -33,6 +33,8 @@ runs:
           ~/.local/apache-maven-*
           ~/.cache/archlens-node
           ~/.local/share/pnpm/store
+          ~/.cache/ms-playwright
+          ~/.cache/archlens-playwright-libs/sysroot
         key: ${{ runner.os }}-archlens-toolchain-${{ hashFiles('pom.xml', 'frontend/pom.xml', 'cli/pom.xml', 'frontend/pnpm-lock.yaml') }}
         restore-keys: |
           ${{ runner.os }}-archlens-toolchain-

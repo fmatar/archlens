@@ -54,10 +54,13 @@ jobs:
           pnpm --dir frontend run check
           pnpm --dir frontend run test:coverage
 
-      - name: Run Frontend Playwright E2E Browser Suite
+      - name: Install Playwright Headless Chromium & Linux Runtime Libraries
         run: |
-          pnpm --dir frontend exec playwright install chromium
-          pnpm --dir frontend run test:e2e
+          pnpm --dir frontend exec playwright install --only-shell chromium
+          bash scripts/ensure-playwright-linux-libs.sh
+
+      - name: Run Frontend Playwright E2E Browser Suite
+        run: pnpm --dir frontend run test:e2e
 
       - name: Verify Agent Skills Sync & npx skills Manifest Parity
         run: npm run skills:check

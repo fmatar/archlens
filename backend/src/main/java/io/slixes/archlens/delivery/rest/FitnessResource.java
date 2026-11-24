@@ -24,11 +24,12 @@ public class FitnessResource {
 
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  @Inject EvaluateFitnessUseCase evaluateFitnessUseCase;
-  @Inject GetFitnessHistoryUseCase getFitnessHistoryUseCase;
+  private EvaluateFitnessUseCase evaluateFitnessUseCase;
+  private GetFitnessHistoryUseCase getFitnessHistoryUseCase;
 
-  public FitnessResource() {}
+  FitnessResource() {}
 
+  @Inject
   public FitnessResource(
       EvaluateFitnessUseCase evaluateFitnessUseCase,
       GetFitnessHistoryUseCase getFitnessHistoryUseCase) {

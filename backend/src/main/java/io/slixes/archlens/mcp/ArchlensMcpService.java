@@ -9,16 +9,11 @@ import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.TextResourceContents;
 import io.quarkiverse.mcp.server.Tool;
 import io.quarkiverse.mcp.server.ToolArg;
-import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
-import io.slixes.archlens.domain.dossier.DipInversionSynthesizer;
-import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
-import io.slixes.archlens.domain.fitness.ArchitectureFitnessCalculator;
 import io.slixes.archlens.domain.fitness.FitnessEvaluation;
 import io.slixes.archlens.domain.fitness.FitnessHistoryTrend;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
-import io.slixes.archlens.domain.screaming.ScreamingMigrationAssistant;
 import io.slixes.archlens.domain.screaming.ScreamingMigrationProposal;
 import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.usecase.EvaluateFitnessUseCase;
@@ -26,6 +21,8 @@ import io.slixes.archlens.usecase.ExportDiagramUseCase;
 import io.slixes.archlens.usecase.ExportDossierUseCase;
 import io.slixes.archlens.usecase.GetFitnessHistoryUseCase;
 import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.ProjectPathGuard;
 import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SyncAdrUseCase;
 import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
@@ -35,6 +32,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 
 /**
@@ -46,56 +44,59 @@ import java.util.Map;
 @RunOnVirtualThread
 public class ArchlensMcpService {
 
-  @Inject ArchitectureCompiler architectureCompiler;
+  private ArchitectureCompiler architectureCompiler;
+  private ExportDossierUseCase exportDossierUseCase;
+  private ExportDiagramUseCase exportDiagramUseCase;
+  private ManageSnapshotsUseCase manageSnapshotsUseCase;
+  private SynthesizeDipInversionUseCase synthesizeDipUseCase;
+  private EvaluateFitnessUseCase evaluateFitnessUseCase;
+  private GetFitnessHistoryUseCase getFitnessHistoryUseCase;
+  private ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase;
+  private SyncAdrUseCase syncAdrUseCase;
+  private OpenedProjectRegistry openedProjects;
+  private ObjectMapper objectMapper;
 
-  @Inject ExportDossierUseCase exportDossierUseCase;
+  ArchlensMcpService() {}
 
-  @Inject ExportDiagramUseCase exportDiagramUseCase;
-
-  @Inject ManageSnapshotsUseCase manageSnapshotsUseCase;
-
-  @Inject SynthesizeDipInversionUseCase synthesizeDipUseCase;
-
-  @Inject EvaluateFitnessUseCase evaluateFitnessUseCase;
-
-  @Inject GetFitnessHistoryUseCase getFitnessHistoryUseCase;
-
-  @Inject ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase;
-
-  @Inject SyncAdrUseCase syncAdrUseCase;
-
-  @Inject ObjectMapper objectMapper;
-
-  public ArchlensMcpService() {}
-
-  public ArchlensMcpService(ArchitectureCompiler architectureCompiler) {
+  @Inject
+  public ArchlensMcpService(
+      ArchitectureCompiler architectureCompiler,
+      ExportDossierUseCase exportDossierUseCase,
+      ExportDiagramUseCase exportDiagramUseCase,
+      ManageSnapshotsUseCase manageSnapshotsUseCase,
+      SynthesizeDipInversionUseCase synthesizeDipUseCase,
+      EvaluateFitnessUseCase evaluateFitnessUseCase,
+      GetFitnessHistoryUseCase getFitnessHistoryUseCase,
+      ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase,
+      SyncAdrUseCase syncAdrUseCase,
+      OpenedProjectRegistry openedProjects,
+      ObjectMapper objectMapper) {
     this.architectureCompiler = architectureCompiler;
-    this.objectMapper = new ObjectMapper();
-    this.exportDossierUseCase =
-        new ExportDossierUseCase(architectureCompiler, new ArchitecturalDossierGenerator());
-    this.exportDiagramUseCase =
-        new ExportDiagramUseCase(architectureCompiler, new MermaidDiagramGenerator());
-    this.manageSnapshotsUseCase =
-        new ManageSnapshotsUseCase(architectureCompiler, this.objectMapper);
-    this.synthesizeDipUseCase =
-        new SynthesizeDipInversionUseCase(architectureCompiler, new DipInversionSynthesizer());
-    ArchitectureFitnessCalculator fitnessCalculator = new ArchitectureFitnessCalculator();
-    this.evaluateFitnessUseCase =
-        new EvaluateFitnessUseCase(architectureCompiler, fitnessCalculator);
-    this.getFitnessHistoryUseCase =
-        new GetFitnessHistoryUseCase(
-            this.manageSnapshotsUseCase, architectureCompiler, fitnessCalculator);
-    this.proposeScreamingMigrationUseCase =
-        new ProposeScreamingMigrationUseCase(
-            architectureCompiler, new ScreamingMigrationAssistant());
-    this.syncAdrUseCase = new SyncAdrUseCase();
+    this.exportDossierUseCase = exportDossierUseCase;
+    this.exportDiagramUseCase = exportDiagramUseCase;
+    this.manageSnapshotsUseCase = manageSnapshotsUseCase;
+    this.synthesizeDipUseCase = synthesizeDipUseCase;
+    this.evaluateFitnessUseCase = evaluateFitnessUseCase;
+    this.getFitnessHistoryUseCase = getFitnessHistoryUseCase;
+    this.proposeScreamingMigrationUseCase = proposeScreamingMigrationUseCase;
+    this.syncAdrUseCase = syncAdrUseCase;
+    this.openedProjects = openedProjects;
+    this.objectMapper = objectMapper;
   }
 
-  private ObjectMapper mapper() {
-    if (objectMapper == null) {
-      objectMapper = new ObjectMapper();
+  public OpenedProjectRegistry getOpenedProjects() {
+    return openedProjects;
+  }
+
+  String requireAuthorizedWriteRoot(String projectRoot) throws IOException {
+    String normalized = WorkspacePathResolver.normalizeRoot(projectRoot);
+    Path target = ProjectPathGuard.canonicalRoot(normalized);
+    Path activeWorkspace = ProjectPathGuard.canonicalRoot(WorkspacePathResolver.normalizeRoot("."));
+    if (!target.equals(activeWorkspace) && !openedProjects.isOpened(target.toString())) {
+      throw new IllegalArgumentException(
+          "Project root is not opened in this session: " + projectRoot);
     }
-    return objectMapper;
+    return target.toString();
   }
 
   @Tool(
@@ -132,14 +133,32 @@ public class ArchlensMcpService {
         WorkspacePathResolver.normalizeRoot(projectRoot), normalizedProposal);
   }
 
+  @Tool(
+      description =
+          "Export a deterministic Mermaid architecture diagram (COMPONENT_RINGS, CLASS_UML, or DIP_REFACTOR) for the target project.")
   public String exportArchitectureDiagram(
-      String projectRoot, String diagramType, String proposalId, boolean violationsOnly)
+      @ToolArg(
+              description =
+                  "Absolute or relative path to the target project directory. Defaults to current directory.",
+              defaultValue = ".")
+          String projectRoot,
+      @ToolArg(
+              description =
+                  "Diagram export type: COMPONENT_RINGS, CLASS_UML, or DIP_REFACTOR. Defaults to COMPONENT_RINGS.",
+              defaultValue = "COMPONENT_RINGS")
+          String diagramType,
+      @ToolArg(
+              description =
+                  "Optional structural proposal ID. Defaults to empty for active architecture.",
+              defaultValue = "")
+          String proposalId,
+      @ToolArg(
+              description =
+                  "When true, restrict exported nodes and edges to outward Clean Architecture violations.",
+              defaultValue = "false")
+          boolean violationsOnly)
       throws IOException {
     String normalizedProposal = proposalId == null || proposalId.isBlank() ? null : proposalId;
-    if (exportDiagramUseCase == null) {
-      exportDiagramUseCase =
-          new ExportDiagramUseCase(architectureCompiler, new MermaidDiagramGenerator());
-    }
     return exportDiagramUseCase.execute(
         WorkspacePathResolver.normalizeRoot(projectRoot),
         normalizedProposal,
@@ -288,12 +307,9 @@ public class ArchlensMcpService {
               defaultValue = "Invert outward Clean Architecture dependency")
           String reason)
       throws IOException {
+    String authorizedRoot = requireAuthorizedWriteRoot(projectRoot);
     return syncAdrUseCase.recordDipInversion(
-        WorkspacePathResolver.normalizeRoot(projectRoot),
-        sourceClass,
-        targetClass,
-        interfacePortName,
-        reason);
+        authorizedRoot, sourceClass, targetClass, interfacePortName, reason);
   }
 
   @Resource(
@@ -316,7 +332,7 @@ public class ArchlensMcpService {
       mimeType = "application/json")
   public TextResourceContents readPolicyResource() throws IOException {
     ArchitecturePolicy policy = getPolicy(".");
-    String json = mapper().writerWithDefaultPrettyPrinter().writeValueAsString(policy);
+    String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(policy);
     return new TextResourceContents("archlens://policy", json, "application/json");
   }
 
@@ -329,7 +345,7 @@ public class ArchlensMcpService {
       mimeType = "application/json")
   public TextResourceContents readFitnessResource() throws IOException {
     FitnessEvaluation evaluation = evaluateFitness(".", "");
-    String json = mapper().writerWithDefaultPrettyPrinter().writeValueAsString(evaluation);
+    String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(evaluation);
     return new TextResourceContents("archlens://fitness", json, "application/json");
   }
 

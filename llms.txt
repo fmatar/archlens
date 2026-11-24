@@ -8,7 +8,7 @@ Archlens models software systems as concentric Clean Architecture rings, continu
 
 ## 🏛️ Clean Architecture Concentric Hierarchy
 
-Source code dependencies must point strictly inward toward higher-level policies (Uncle Bob's Dependency Rule):
+Source code dependencies must point strictly inward toward higher-level policies (the Clean Architecture Dependency Rule):
 
 ```
 [Level 3: Infrastructure / Web / DB / CLI / Frameworks]
@@ -45,7 +45,7 @@ Archlens continuously evaluates five foundational architectural invariants:
    - **Invariant**: The component/package dependency structure must be a Directed Acyclic Graph (DAG) with zero cycles.
    - **Remediation**: Break cycles using interface extraction or merging interdependent feature packages.
 3. **Screaming Architecture Invariant (SAS)**:
-   - **Invariant**: Systems should scream business domain use cases rather than framework technology (Uncle Bob Ch. 21).
+   - **Invariant**: Systems should scream business domain use cases rather than framework technology.
    - **Metric**: Screaming Architecture Score (SAS) from 0.0 to 1.0 (Feature vs Technical packaging). Minimum threshold: $\ge 0.70$.
 4. **Main Sequence Balance Invariant ($A, I, D$)**:
    - **Invariant**: Components must remain in the balanced corridor avoiding the **Zone of Pain** (brittle, highly concrete, widely depended upon) and the **Zone of Uselessness** (abstract with no dependents).
@@ -91,10 +91,11 @@ npx @fmatar/archlens-skill mcp                 # Launch MCP stdio bridge server
 
 When Archlens is registered as an MCP server, AI assistants can query it using standard MCP primitives:
 
-### MCP Tools (10):
+### MCP Tools (11):
 | Tool Name | Parameters | Purpose |
 | :--- | :--- | :--- |
 | `exportLlmDossier` | `projectRoot` (default: `.`), `proposalId` | Diagnoses outward dependency breaches and outputs a Markdown refactoring prompt with concrete DIP interface port prescriptions. |
+| `exportArchitectureDiagram` | `projectRoot`, `diagramType` (`COMPONENT_RINGS` \| `CLASS_UML` \| `DIP_REFACTOR`), `proposalId`, `violationsOnly` | Exports deterministic Mermaid architecture diagrams for concentric rings, class UML, or DIP port inversions. |
 | `inspectArchitecture` | `projectRoot` (default: `.`) | Returns full JSON graph model: concentric rings, dependency edges, cycle paths, and screaming metrics. |
 | `synthesizeDipInversion` | `fromClass` (required), `toClass` (required), `projectRoot` | Synthesizes a complete Dependency Inversion Principle (DIP) interface port (`Java`, `Python`, `TypeScript`, `Go`, `Rust`), adapter/caller diffs, and surgical prompt. |
 | `evaluateFitness` | `projectRoot` (default: `.`) | Evaluates the Composite Architecture Fitness Index (AFI score `0`–`100`, grade `A`–`F`, rule breakdowns). |

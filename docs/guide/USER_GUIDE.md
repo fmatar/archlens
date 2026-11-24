@@ -1,6 +1,6 @@
 # Archlens — Dynamic Clean Architecture Workbench: User Guide
 
-Welcome to **Archlens**. This workbench bridges high-level Clean Architecture governance with physical source code across **Java 25, Python, TypeScript/JS/Svelte 5, Rust, Go, and Clojure**, enabling architects and developers to visually inspect, simulate, and direct autonomous AI coding agents.
+Welcome to **Archlens**. This workbench bridges high-level Clean Architecture governance with physical source code across **Java 25, Python, TypeScript/JS/Svelte 5, Rust, and Go**, enabling architects and developers to visually inspect, simulate, and direct autonomous AI coding agents.
 
 ---
 
@@ -12,19 +12,19 @@ flowchart TD
     UI <-->|REST & SSE Streams (/api/events)| Backend["Quarkus 3.40 Backend (Java 25 Virtual Threads)"]
     
     subgraph Engine ["Polyglot AST & Governance Engine"]
-        Backend --> AST["Polyglot AST Scanners (Java, Python, TS/Svelte, Rust, Go, Clojure)"]
+        Backend --> AST["Polyglot Scanners (Java, Python, TS/Svelte, Rust, Go)"]
         Backend --> RuleEngine["Concentric Ring & ADP Cycle Engine (.archlens/policy.json)"]
-        Backend --> MetricsEngine["Martin Metrics (Ca, Ce, I, A, D), Screaming Score (SAS) & Fitness (AFI)"]
+        Backend --> MetricsEngine["Coupling Metrics (Ca, Ce, I, A, D), Screaming Score (SAS) & Fitness (AFI)"]
     end
 
     subgraph Protocols ["Dual AI Agent Protocols"]
         UI -->|Writes APPLY_PROPOSAL / INVERT_DEPENDENCY| Outbox[".archlens/to-agent.json"]
         Inbox[".archlens/to-viewer.json"] -->|SSE Hot Reload| Backend
-        MCP["Quarkus MCP 2.0 Server (/mcp, /mcp/sse) & CLI Stdio Bridge"] <--> Backend
+        MCP["Quarkus MCP 2.0 Server (/mcp, /mcp/sse, mcp-stdio) & CLI Stdio Bridge"] <--> Backend
     end
 
     Agent["Autonomous AI Agent\n(Antigravity / Gemini / Claude / Grok / Cursor)"] <--> Outbox
-    Agent <-->|10 Tools, 3 Resources, 2 Prompts| MCP
+    Agent <-->|11 Tools, 3 Resources, 2 Prompts| MCP
     Agent -->|Synthesizes DIP Ports, Moves Classes & Runs Tests| Disk["Source Code & Test Suites"]
     Agent -->|Writes Completion ACK| Inbox
 ```

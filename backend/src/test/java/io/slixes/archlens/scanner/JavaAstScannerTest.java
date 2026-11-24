@@ -3,8 +3,8 @@ package io.slixes.archlens.scanner;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javaparser.JavaParser;
+import io.slixes.archlens.domain.graph.CrapScoreCalculator;
 import io.slixes.archlens.domain.graph.DependencyEdge;
-import io.slixes.archlens.metrics.CrapScoreCalculator;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

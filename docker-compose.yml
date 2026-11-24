@@ -13,8 +13,8 @@ services:
       - PROJECT_ROOT=${PROJECT_ROOT:-/workspace}
       - JAVA_OPTS=-Xms128m -Xmx512m
     volumes:
-      # Mount your workspace root so sibling projects can be analyzed dynamically
-      - ${WORKSPACE_ROOT:-..}:/workspace:ro
+      # Mount your project or workspace root so repositories can be analyzed dynamically
+      - ${WORKSPACE_ROOT:-./}:/workspace:ro
       # Optional read-write mount for active project cache & mailbox queues
       - ${ACTIVE_PROJECT_CACHE:-./.archlens}:/workspace/.archlens:rw
     restart: unless-stopped

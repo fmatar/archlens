@@ -1,28 +1,30 @@
 ---
 name: archlens
 description: >-
-  Polyglot Clean Architecture governance, dynamic visual workbench companion,
-  policy scaffolding, mailbox refactoring protocols, LLM prompt dossiers,
-  and Model Context Protocol (MCP) diagnostics for Archlens. Use when auditing
-  layer boundaries, inverting outward dependencies (DIP), or running Archlens.
+  Polyglot Clean Architecture governance, .archlens/policy.json scaffolding,
+  dynamic visual workbench companion, mailbox refactoring protocols, LLM prompt
+  dossiers, and Model Context Protocol (MCP) diagnostics for Archlens. Use when
+  setting up or updating Archlens, initializing .archlens/policy.json, auditing
+  layer boundaries, inverting outward dependencies (DIP), or processing workbench
+  mailbox commands.
 license: Apache-2.0
-compatibility: "Node.js >= 18"
-version: 1.1.6
+compatibility: "Node.js >= 22"
+version: 1.2.0
 metadata:
   author: fmatar
-  version: "1.1.6"
+  version: "1.2.0"
 ---
 
-# Archlens — Clean Architecture Governance & Workbench Companion
+# Archlens — Clean Architecture Governance, Policy Installer & Workbench Companion
 
-Use this skill when analyzing, governing, or refactoring codebases using **Archlens (Dynamic Clean Architecture Workbench)**.
+Use this unified skill when setting up, analyzing, governing, or refactoring codebases using **Archlens (Dynamic Clean Architecture Workbench)**.
 
-This skill equips agents (Antigravity, Gemini CLI, Claude Code) to:
-1. Enforce Uncle Bob's **Dependency Rule** (dependencies strictly point inward).
-2. Scaffold and maintain `.archlens/policy.json` architectural layer policies.
+This skill equips agents (Antigravity, Gemini CLI, Claude Code, Cursor, Windsurf) to:
+1. Enforce the **Clean Architecture Dependency Rule** (dependencies strictly point inward).
+2. Inspect any polyglot repository and scaffold or update `.archlens/policy.json` concentric ring policies, `.archlens/workbench.config.json`, and `AGENTS.md` / `CLAUDE.md` companion guidelines.
 3. Act as the autonomous refactoring companion to the visual workbench via mailbox queues (`.archlens/to-agent.json` and `.archlens/to-viewer.json`).
 4. Export LLM Refactoring Prompt Dossiers prescribing concrete Dependency Inversion Principle (DIP) interface ports.
-5. Invoke Archlens MCP tools (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`, `listSnapshots`, `getSnapshot`), resources (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`), and prompts (`architectural-review`, `dip-refactoring-guide`).
+5. Invoke Archlens MCP tools (`inspectArchitecture`, `exportLlmDossier`, `exportArchitectureDiagram`, `synthesizeDipInversion`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`, `listSnapshots`, `getSnapshot`), resources (`archlens://llms.txt`, `archlens://policy`, `archlens://fitness`), and prompts (`architectural-review`, `dip-refactoring-guide`).
 
 ---
 
@@ -53,49 +55,54 @@ Archlens models codebases as concentric circular rings. Source code dependencies
 
 ---
 
-## ⚡ CLI & Quickstart Commands
+## ⚡ CLI, Policy Scaffolding & Quickstart Commands
 
-Install Archlens across 15+ coding agents (Antigravity, Claude Code, Cursor, Gemini CLI) via `skills.sh`:
+Install the unified `archlens` skill across 15+ coding agents (Antigravity, Claude Code, Cursor, Gemini CLI) via `skills.sh`:
 ```bash
-# Add Archlens skills to your active agent skills library:
-npx skills add fmatar/archlens --all -y
+# Add the Archlens skill to your active agent skills library:
+npx skills add fmatar/archlens -y
 
-# Equip global skills AND global MCP manifests in one command (add --docker for ephemeral container mode):
+# Equip global skill AND global MCP manifests in one command (add --docker for ephemeral container mode):
 npx @fmatar/archlens-skill global
 ```
 
 > [!TIP]
 > **First-Run MCP Auto-Bootstrap (for `npx skills` installs)**: Because `npx skills add` only copies `SKILL.md` files without executing scripts, check whether the `archlens` MCP tools (`inspectArchitecture`, `exportLlmDossier`, `evaluateFitness`) are registered in your active session. If missing, run `npx @fmatar/archlens-skill --path . --yes --mcp` (portable NPX bridge) or `npx @fmatar/archlens-skill global --docker` (ephemeral `mcp-stdio` Docker container when Docker is running).
 
-Or execute directly on demand via NPX:
+### Scaffolding & Updating `.archlens/policy.json`
+
+When the user asks to *"Setup Archlens"*, *"Initialize `.archlens/policy.json`"*, or *"Configure Clean Architecture policy"*:
 
 ```bash
-# Initialize Clean Architecture policy in target project:
-npx @fmatar/archlens-skill --path . --yes
+# Initialize policy (.archlens/policy.json + .archlens/workbench.config.json + AGENTS.md/CLAUDE.md) and register portable MCP manifests:
+npx @fmatar/archlens-skill --path . --yes --mcp
 
-# Launch Workbench container (auto-resurrects on demand if stopped or killed):
+# Or register MCP as an ephemeral Docker STDIO container:
+npx @fmatar/archlens-skill --path . --yes --mcp --docker
+
+# Initialize policy only (skip MCP client configuration):
+npx @fmatar/archlens-skill --path . --yes --no-mcp
+
+# Offline Python fallback if Node/npx is unavailable (run from this skill's directory):
+python3 scripts/init_policy.py --path .
+```
+
+*Key installer flags:* `--path <DIR>`, `--title <NAME>`, `--prefix <PKG>`, `--server-url <URL>` (default `http://127.0.0.1:8088`), `--mcp` / `--no-mcp`, `--docker`, `--update` (incremental rescan), `--force` (overwrite existing policy). After scaffolding, inspect `.archlens/policy.json` and align `levels` with custom domain terminology if needed.
+
+### Headless CI Gates, Prompts & Workbench Commands
+
+```bash
+# Launch Workbench server (opens authenticated ?token=... browser URL; auto-resurrects if offline):
 npx @fmatar/archlens-skill start --open
 
 # Execute Headless Clean Architecture CI Quality Gate (ADP cycles, Screaming score, Fitness index, SARIF):
 npx @fmatar/archlens-skill check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85 --format sarif -O archlens-results.sarif
 
-# Export Clean Architecture LLM Refactoring Prompt Dossier:
+# Export Clean Architecture LLM Refactoring Prompt Dossier (add --copy for system clipboard):
 npx @fmatar/archlens-skill prompt --path .
-
-# Copy LLM refactoring prompt directly to system clipboard:
-npx @fmatar/archlens-skill prompt --path . --copy
 
 # Synchronize policy with newly added packages:
 npx @fmatar/archlens-skill update --path .
-
-# Migrate legacy .uml-viewer configuration to modern .archlens layout:
-npx @fmatar/archlens-skill upgrade --path .
-
-# Auto-configure MCP manifests for AI assistants (Antigravity, Claude, Cursor):
-npx @fmatar/archlens-skill --mcp
-
-# Auto-configure pure ephemeral Docker MCP container (docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio):
-npx @fmatar/archlens-skill --mcp --docker
 
 # Launch Model Context Protocol (MCP) stdio server:
 npx @fmatar/archlens-skill mcp
@@ -116,8 +123,8 @@ When the user asks to start Archlens, launch the studio, or open the visual work
 
 Archlens provides a real-time visual canvas (`http://localhost:8088`). When human architects interact with the UI, tasks are dispatched through a bidirectional mailbox IPC protocol:
 
-- **Inbound queue (UI $\rightarrow$ Agent)**: `.archlens/to-agent.json` (or `.uml-viewer/to-agent.json`)
-- **Outbound events (Agent $\rightarrow$ UI)**: `.archlens/to-viewer.json` (or `.uml-viewer/to-viewer.json`)
+- **Inbound queue (UI $\rightarrow$ Agent)**: `.archlens/to-agent.json`
+- **Outbound events (Agent $\rightarrow$ UI)**: `.archlens/to-viewer.json`
 
 ### Mailbox Format (`to-agent.json`)
 ```json
@@ -139,7 +146,7 @@ Archlens provides a real-time visual canvas (`http://localhost:8088`). When huma
 2. **`APPLY_PROPOSAL`**: Read requested layers from `.archlens/policy.json`. Physically restructure packages to match proposed layers. Where inner layers import outer layers, apply DIP by introducing interface ports. Run test suite to verify zero regressions.
 3. **`REFRESH_CRAP`**: Run tests with code coverage (`mvn test` / `npm test`) and update metric snapshots.
 4. **`REFRESH_MUTATION`**: Run mutation testing on target classes.
-5. **`OMIT`**: Add specified package or class to the `:omit` list in policy.
+5. **`OMIT`**: Add specified package or class to the `omit` list in `.archlens/policy.json`.
 
 ### Completing Tasks (`to-viewer.json`):
 Write completion acknowledgment to `.archlens/to-viewer.json`. The backend file watcher pushes an SSE event to hot-reload the canvas:
@@ -161,6 +168,7 @@ When Archlens is registered as an MCP server, use the following tools:
 | :--- | :--- | :--- |
 | `inspectArchitecture` | Inspect concentric rings, outward violations, and instability metrics | `projectRoot` (default: `.`) |
 | `exportLlmDossier` | Generate copy-ready LLM refactoring prompt with DIP prescriptions | `projectRoot`, `proposalId` |
+| `exportArchitectureDiagram` | Export Mermaid architecture diagram (`COMPONENT_RINGS`, `CLASS_UML`, `DIP_REFACTOR`) | `projectRoot`, `diagramType`, `proposalId`, `violationsOnly` |
 | `synthesizeDipInversion` | Synthesize polyglot DIP interface port, adapter/caller diffs, and surgical prompt | `fromClass`, `toClass`, `projectRoot` |
 | `evaluateFitness` | Compute Composite Architecture Fitness Index (AFI score, grade, rule breakdown) | `projectRoot` |
 | `getFitnessHistory` | Retrieve historical fitness snapshots across Git tags and regression trend | `projectRoot` |

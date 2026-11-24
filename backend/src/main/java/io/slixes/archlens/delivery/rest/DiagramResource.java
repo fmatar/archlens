@@ -1,23 +1,17 @@
 package io.slixes.archlens.delivery.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
-import io.slixes.archlens.domain.dossier.DipInversionSynthesizer;
-import io.slixes.archlens.domain.dossier.DossierGenerator;
-import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.domain.graph.PackageCycle;
 import io.slixes.archlens.domain.graph.ScreamingMetric;
-import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
-import io.slixes.archlens.domain.mailbox.MailboxGateway;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
-import io.slixes.archlens.domain.screaming.ScreamingMigrationAssistant;
 import io.slixes.archlens.domain.screaming.ScreamingMigrationProposal;
 import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.engine.ProjectFileWatcher;
 import io.slixes.archlens.usecase.ExportDiagramUseCase;
 import io.slixes.archlens.usecase.ExportDossierUseCase;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.ProjectPathGuard;
 import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SavePolicyUseCase;
 import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
@@ -29,6 +23,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -50,174 +45,42 @@ public class DiagramResource {
   private static final Logger LOG = Logger.getLogger(DiagramResource.class);
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  @Inject ArchitectureCompiler graphCompiler;
-
-  @Inject MailboxGateway mailboxService;
-
-  @Inject DossierGenerator dossierGenerator;
-
-  @Inject DipInversionSynthesizer dipSynthesizer;
-
-  @Inject ScreamingMigrationAssistant screamingMigrationAssistant;
-
-  @Inject ExportDossierUseCase exportDossierUseCase;
-
-  @Inject ExportDiagramUseCase exportDiagramUseCase;
-
-  @Inject SynthesizeDipInversionUseCase synthesizeDipUseCase;
-
-  @Inject ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase;
-
-  @Inject ObjectMapper mapper;
-
-  @Inject ProjectFilesystemResource filesystemResource;
-
-  @Inject SnapshotResource snapshotResource;
-
-  @Inject MailboxResource mailboxResource;
-
-  @Inject ProjectFileWatcher fileWatcher;
-
-  @Inject SavePolicyUseCase savePolicyUseCase;
+  private ArchitectureCompiler graphCompiler;
+  private ExportDossierUseCase exportDossierUseCase;
+  private ExportDiagramUseCase exportDiagramUseCase;
+  private SynthesizeDipInversionUseCase synthesizeDipUseCase;
+  private ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase;
+  private SavePolicyUseCase savePolicyUseCase;
+  private OpenedProjectRegistry openedProjects;
+  private ProjectFileWatcher fileWatcher;
 
   private final BroadcastProcessor<Map<String, Object>> eventProcessor =
       BroadcastProcessor.create();
 
-  public DiagramResource() {}
+  DiagramResource() {}
 
+  @Inject
   public DiagramResource(
       ArchitectureCompiler graphCompiler,
-      MailboxGateway mailboxService,
-      DossierGenerator dossierGenerator,
-      ObjectMapper mapper,
-      DipInversionSynthesizer dipSynthesizer) {
-    this(
-        graphCompiler,
-        mailboxService,
-        dossierGenerator,
-        mapper,
-        dipSynthesizer,
-        new ScreamingMigrationAssistant());
-  }
-
-  public DiagramResource(
-      ArchitectureCompiler graphCompiler,
-      MailboxGateway mailboxService,
-      DossierGenerator dossierGenerator,
-      ObjectMapper mapper,
-      DipInversionSynthesizer dipSynthesizer,
-      ScreamingMigrationAssistant screamingMigrationAssistant) {
+      ExportDossierUseCase exportDossierUseCase,
+      ExportDiagramUseCase exportDiagramUseCase,
+      SynthesizeDipInversionUseCase synthesizeDipUseCase,
+      ProposeScreamingMigrationUseCase proposeScreamingMigrationUseCase,
+      SavePolicyUseCase savePolicyUseCase,
+      OpenedProjectRegistry openedProjects,
+      ProjectFileWatcher fileWatcher) {
     this.graphCompiler = graphCompiler;
-    this.mailboxService = mailboxService;
-    this.dossierGenerator =
-        dossierGenerator != null ? dossierGenerator : new ArchitecturalDossierGenerator();
-    this.mapper = mapper != null ? mapper : new ObjectMapper();
-    this.dipSynthesizer = dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer();
-    this.screamingMigrationAssistant =
-        screamingMigrationAssistant != null
-            ? screamingMigrationAssistant
-            : new ScreamingMigrationAssistant();
-    this.exportDossierUseCase = new ExportDossierUseCase(this.graphCompiler, this.dossierGenerator);
-    this.synthesizeDipUseCase =
-        new SynthesizeDipInversionUseCase(this.graphCompiler, this.dipSynthesizer);
-    this.proposeScreamingMigrationUseCase =
-        new ProposeScreamingMigrationUseCase(this.graphCompiler, this.screamingMigrationAssistant);
-    io.slixes.archlens.usecase.OpenedProjectRegistry sharedRegistry =
-        new io.slixes.archlens.usecase.OpenedProjectRegistry();
-    this.filesystemResource =
-        new ProjectFilesystemResource(
-            new io.slixes.archlens.usecase.ResolveFilesystemUseCase(), sharedRegistry);
-    this.snapshotResource = new SnapshotResource(graphCompiler, this.mapper);
-    this.mailboxResource = new MailboxResource(mailboxService);
-    this.mailboxResource.openedProjects = sharedRegistry;
-    this.savePolicyUseCase = new SavePolicyUseCase(this.graphCompiler, this.mapper);
-    this.fileWatcher = new ProjectFileWatcher();
-  }
-
-  public DiagramResource(
-      ArchitectureCompiler graphCompiler,
-      MailboxGateway mailboxService,
-      DossierGenerator dossierGenerator,
-      ObjectMapper mapper) {
-    this(graphCompiler, mailboxService, dossierGenerator, mapper, new DipInversionSynthesizer());
+    this.exportDossierUseCase = exportDossierUseCase;
+    this.exportDiagramUseCase = exportDiagramUseCase;
+    this.synthesizeDipUseCase = synthesizeDipUseCase;
+    this.proposeScreamingMigrationUseCase = proposeScreamingMigrationUseCase;
+    this.savePolicyUseCase = savePolicyUseCase;
+    this.openedProjects = openedProjects;
+    this.fileWatcher = fileWatcher;
   }
 
   String normalizeRoot(String root) {
     return WorkspacePathResolver.normalizeRoot(root);
-  }
-
-  private ObjectMapper getMapper() {
-    if (mapper == null) {
-      mapper = new ObjectMapper();
-    }
-    return mapper;
-  }
-
-  private ProjectFileWatcher getFileWatcher() {
-    if (fileWatcher == null) {
-      fileWatcher = new ProjectFileWatcher();
-    }
-    return fileWatcher;
-  }
-
-  private ProjectFilesystemResource getFilesystemResource() {
-    if (filesystemResource == null) {
-      filesystemResource = new ProjectFilesystemResource();
-    }
-    return filesystemResource;
-  }
-
-  private SnapshotResource getSnapshotResource() {
-    if (snapshotResource == null) {
-      snapshotResource = new SnapshotResource(graphCompiler, getMapper());
-    }
-    return snapshotResource;
-  }
-
-  private MailboxResource getMailboxResource() {
-    if (mailboxResource == null) {
-      mailboxResource = new MailboxResource(mailboxService);
-    }
-    return mailboxResource;
-  }
-
-  private ExportDossierUseCase getExportDossierUseCase() {
-    if (exportDossierUseCase == null) {
-      exportDossierUseCase =
-          new ExportDossierUseCase(
-              graphCompiler,
-              dossierGenerator != null ? dossierGenerator : new ArchitecturalDossierGenerator());
-    }
-    return exportDossierUseCase;
-  }
-
-  private ExportDiagramUseCase getExportDiagramUseCase() {
-    if (exportDiagramUseCase == null) {
-      exportDiagramUseCase = new ExportDiagramUseCase(graphCompiler, new MermaidDiagramGenerator());
-    }
-    return exportDiagramUseCase;
-  }
-
-  private SynthesizeDipInversionUseCase getSynthesizeDipUseCase() {
-    if (synthesizeDipUseCase == null) {
-      synthesizeDipUseCase =
-          new SynthesizeDipInversionUseCase(
-              graphCompiler,
-              dipSynthesizer != null ? dipSynthesizer : new DipInversionSynthesizer());
-    }
-    return synthesizeDipUseCase;
-  }
-
-  private ProposeScreamingMigrationUseCase getProposeScreamingMigrationUseCase() {
-    if (proposeScreamingMigrationUseCase == null) {
-      proposeScreamingMigrationUseCase =
-          new ProposeScreamingMigrationUseCase(
-              graphCompiler,
-              screamingMigrationAssistant != null
-                  ? screamingMigrationAssistant
-                  : new ScreamingMigrationAssistant());
-    }
-    return proposeScreamingMigrationUseCase;
   }
 
   @GET
@@ -249,7 +112,7 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
       throws IOException {
-    return getExportDossierUseCase().execute(normalizeRoot(projectRoot), proposalId);
+    return exportDossierUseCase.execute(normalizeRoot(projectRoot), proposalId);
   }
 
   @GET
@@ -276,15 +139,14 @@ public class DiagramResource {
       @QueryParam("from") String fromClass,
       @QueryParam("to") String toClass)
       throws IOException {
-    return getExportDiagramUseCase()
-        .execute(
-            normalizeRoot(projectRoot),
-            proposalId,
-            diagramType,
-            componentId,
-            violationsOnly,
-            fromClass,
-            toClass);
+    return exportDiagramUseCase.execute(
+        normalizeRoot(projectRoot),
+        proposalId,
+        diagramType,
+        componentId,
+        violationsOnly,
+        fromClass,
+        toClass);
   }
 
   @GET
@@ -316,15 +178,7 @@ public class DiagramResource {
     if (fromClass == null || fromClass.isBlank() || toClass == null || toClass.isBlank()) {
       throw new BadRequestException("Parameters 'from' and 'to' must not be blank.");
     }
-    return getSynthesizeDipUseCase()
-        .execute(normalizeRoot(projectRoot), proposalId, fromClass, toClass);
-  }
-
-  private SavePolicyUseCase getSavePolicyUseCase() {
-    if (savePolicyUseCase == null) {
-      savePolicyUseCase = new SavePolicyUseCase(graphCompiler, getMapper());
-    }
-    return savePolicyUseCase;
+    return synthesizeDipUseCase.execute(normalizeRoot(projectRoot), proposalId, fromClass, toClass);
   }
 
   @GET
@@ -342,8 +196,13 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       ArchitecturePolicy policy)
       throws IOException {
-    String root = getMailboxResource().requireOpenedProject(projectRoot);
-    ArchitectureGraph updated = getSavePolicyUseCase().execute(root, policy);
+    String root = normalizeRoot(projectRoot);
+    if (!openedProjects.isOpened(root)) {
+      throw MailboxResource.jsonError(
+          Response.Status.FORBIDDEN,
+          "Project root is not opened in this workbench session; open it before saving policy");
+    }
+    ArchitectureGraph updated = savePolicyUseCase.execute(root, policy);
     eventProcessor.onNext(
         Map.of("event", "graph-update", "type", "policy", "timestamp", System.currentTimeMillis()));
     return updated;
@@ -378,7 +237,7 @@ public class DiagramResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       @QueryParam("proposalId") String proposalId)
       throws IOException {
-    return getProposeScreamingMigrationUseCase().execute(normalizeRoot(projectRoot), proposalId);
+    return proposeScreamingMigrationUseCase.execute(normalizeRoot(projectRoot), proposalId);
   }
 
   @GET
@@ -402,71 +261,40 @@ public class DiagramResource {
   }
 
   public void ensureWatcherRunning(String projectRoot) {
-    ProjectFileWatcher watcher = getFileWatcher();
-    if (!watcher.isRunning()) {
-      Thread.ofVirtual()
-          .name("archlens-watcher-starter")
-          .start(() -> {
-            try {
-              watcher.start(
-                  Paths.get(projectRoot),
-                  path ->
-                      eventProcessor.onNext(
-                          Map.of(
-                              "event", "graph-update",
-                              "path", path.toString(),
-                              "timestamp", System.currentTimeMillis())));
-            } catch (Exception e) {
-              LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
-            }
-          });
+    String normalized = WorkspacePathResolver.normalizeRoot(projectRoot);
+    if (!isAuthorizedWatchRoot(normalized)) {
+      return;
     }
+    java.nio.file.Path desiredRoot = Paths.get(normalized);
+    Thread.ofVirtual()
+        .name("archlens-watcher-starter")
+        .start(() -> {
+          try {
+            fileWatcher.start(
+                desiredRoot,
+                path ->
+                    eventProcessor.onNext(
+                        Map.of(
+                            "event", "graph-update",
+                            "path", path.toString(),
+                            "timestamp", System.currentTimeMillis())));
+          } catch (Exception e) {
+            LOG.debugf(e, "Error starting file watcher for root: %s", projectRoot);
+          }
+        });
+  }
+
+  private boolean isAuthorizedWatchRoot(String normalizedRoot) {
+    return ProjectPathGuard.tryCanonicalRoot(normalizedRoot)
+        .map(target ->
+            openedProjects.isOpened(target.toString())
+                || ProjectPathGuard.tryCanonicalRoot(WorkspacePathResolver.normalizeRoot("."))
+                    .map(target::equals)
+                    .orElse(false))
+        .orElse(false);
   }
 
   public void notifyGraphUpdate(Map<String, Object> payload) {
     eventProcessor.onNext(payload);
-  }
-
-  // --- Backwards-compatible delegates for Java consumers and unit tests ---
-
-  public Map<String, Object> listProjects() {
-    return getFilesystemResource().listProjects();
-  }
-
-  public Map<String, Object> openProject(String projectRoot) {
-    return getFilesystemResource().openProject(projectRoot, null);
-  }
-
-  public Map<String, Object> listDirectories(String rawPath) {
-    return getFilesystemResource().listDirectories(rawPath);
-  }
-
-  public Map<String, Object> pickDirectory() {
-    return getFilesystemResource().pickDirectory();
-  }
-
-  public Map<String, Object> getSourceCode(String filePath, int line) {
-    return getFilesystemResource().getSourceCode(filePath, line);
-  }
-
-  public Map<String, Object> getSourceCode(String filePath, int line, String projectRoot) {
-    return getFilesystemResource().getSourceCode(filePath, line, projectRoot);
-  }
-
-  public Map<String, Object> listSnapshots(String projectRoot) {
-    return getSnapshotResource().listSnapshots(projectRoot);
-  }
-
-  public ArchitectureGraph getSnapshot(String snapshotId, String projectRoot) throws IOException {
-    return getSnapshotResource().getSnapshot(snapshotId, projectRoot);
-  }
-
-  public MailboxEnvelope getToAgentMailbox(String projectRoot) {
-    return getMailboxResource().getToAgentMailbox(projectRoot);
-  }
-
-  public MailboxEnvelope.MailboxCommand sendToAgent(String projectRoot, Map<String, Object> request)
-      throws IOException {
-    return getMailboxResource().sendToAgent(projectRoot, request);
   }
 }

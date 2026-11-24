@@ -73,13 +73,16 @@ Extracts the complete Clean Architecture model of the target project.
 
 ---
 
-### 3. `exportLlmDossier`
-Generates a markdown refactoring prompt dossier diagnosing all concentric ring breaches and prescribing concrete interface ports.
+### 3. `exportLlmDossier` & `exportArchitectureDiagram`
+Generates a markdown refactoring prompt dossier diagnosing all concentric ring breaches and prescribing concrete interface ports, or exports deterministic Mermaid architecture diagrams.
 
-- **Parameters**:
+- `exportLlmDossier`:
   - `projectRoot` *(string, optional, default: `.`)*: Path to target project.
   - `proposalId` *(string, optional)*: Optional structural proposal ID.
-- **Returns**: Formatted Markdown string containing architecture overview, breach tables, and refactoring instructions.
+  - **Returns**: Formatted Markdown string containing architecture overview, breach tables, and refactoring instructions.
+- `exportArchitectureDiagram`:
+  - `projectRoot` *(string, optional, default: `.`)*, `diagramType` *(`COMPONENT_RINGS` | `CLASS_UML` | `DIP_REFACTOR`)*, `proposalId` *(string, optional)*, `violationsOnly` *(boolean, default: `false`)*.
+  - **Returns**: Deterministic Mermaid diagram source.
 
 ---
 

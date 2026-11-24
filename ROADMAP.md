@@ -38,7 +38,7 @@ flowchart LR
 - **Deliverables**:
   1. **Archlens Headless GitHub Action (`fmatar/archlens@v1`)**:
      - [x] Official composite GitHub Action ([`action.yml`](action.yml)) executing headless architectural audits (`npx @fmatar/archlens-skill check`) in CI workflows.
-     - [x] Enforces Uncle Bob's ADP (`--detect-cycles`), maximum outward breach limits (`--max-violations`), minimum Screaming Architecture Score (`--screaming-threshold`), and Composite Architecture Fitness Index (`--fitness-threshold`).
+     - [x] Enforces Acyclic Dependencies Principle (`--detect-cycles`), maximum outward breach limits (`--max-violations`), minimum Screaming Architecture Score (`--screaming-threshold`), and Composite Architecture Fitness Index (`--fitness-threshold`).
   2. **First-Class Pull Request Annotations (SARIF v2.1.0)**:
      - [x] SARIF v2.1.0 report generation (`--format sarif -O archlens-results.sarif`) with automatic upload via `github/codeql-action/upload-sarif@v3` for inline PR annotations (`ARCH001`–`ARCH004`).
   3. **Quarkus MCP 2.0 & Multi-Agent Stdio Parity (`ADR-001`–`ADR-003`)**:
@@ -81,7 +81,7 @@ flowchart LR
   2. **Cross-Language Boundary Tracing (`#3001`)**:
      - [x] Bridge frontend API client calls (Svelte 5 / TS `fetch('/api/...')` / `axios('/api/...')`) to backend entrypoints (Quarkus/Spring REST `@Path` / `@RequestMapping` and FastAPI/Flask `@app.get` / `@router.post` via `FileScannerUtil.indexBackendRestRoutes`) within a unified cross-language dependency graph (`HTTP /api/...` edges).
   3. **AST Parser Resiliency & Polyglot Dialect Parity (`CAP-01`, `CAP-03`, `#3001`)**:
-     - [x] Graceful partial AST degradation: per-file exception isolation in `JavaAstScanner` (`ParserConfiguration.LanguageLevel.JAVA_25`), `TypeScriptAstScanner`, `PythonAstScanner` (`CAP-01`), `GoAstScanner`, `RustAstScanner`, and `ClojureAstScanner`.
+     - [x] Graceful partial AST degradation & explicit `skippedFiles` telemetry: per-file exception isolation across `JavaAstScanner` (`ParserConfiguration.LanguageLevel.RAW`), `TypeScriptAstScanner`, `PythonAstScanner` (`CAP-01`), `GoAstScanner`, and `RustAstScanner`.
      - [x] Modern Java 25 syntax idioms (records, sealed classes, pattern matching), Svelte 5 runes (`$state`, `$derived`, `$props`), and polyglot DIP port synthesis (`DipInversionSynthesizer` for Java, Python, TypeScript, Go, and Rust — `CAP-03`).
      - [x] Go 1.23 iterator idioms (`iter.Seq[T]` / `iter.Seq2[K, V]` signatures and functional iterator contracts in `GoAstScanner`) and Python 3.12 (`PEP 695`) `type <Alias>[T] = ...` statement aliases and generic classes/functions in `PythonAstScanner`.
 - **Exit Criteria for `v0.2.0`**: Multi-module Gradle/Cargo/pnpm workspace auto-discovery and cross-language REST boundary linking verified with fixture integration tests.
@@ -99,7 +99,7 @@ flowchart LR
      - [x] Automated GraalVM native binary builds (`linux-amd64`; macOS/Windows targets dropped in 1.1.0 because releases build only on the self-hosted `local-archlens` Linux runners) attached to GitHub Releases, optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry publishing in [`.github/workflows/release.yml`](.github/workflows/release.yml), and native binary auto-discovery (`findNativeBinary` / `startNativeBinary`) in [`cli/src/docker-runner.js`](cli/src/docker-runner.js).
   2. **Canvas Performance & Virtualization at Scale (`100k+ LoC`, `#4001`)**:
      - [x] Viewport frustum culling (`visiblePackages` with `400px` margin), 6-class card pagination, and semantic Level-of-Detail (LoD) zooming (`compactLod` automatically collapsing class details below `0.55` zoom).
-     - [x] Hybrid HTML5 `<canvas>` / WebGL rendering fallback (`isWebGlRendererActive` in [`diagram.svelte.ts`](frontend/src/lib/state/diagram.svelte.ts) and [`Canvas.svelte`](frontend/src/lib/components/Canvas.svelte)) automatically activating at `>= 500` visible classes (with manual `W` HUD toggle).
+     - [x] Hybrid HTML5 2D `<canvas>` rendering fallback (`isWebGlRendererActive` in [`diagram.svelte.ts`](frontend/src/lib/state/diagram.svelte.ts) and [`Canvas.svelte`](frontend/src/lib/components/Canvas.svelte)) automatically activating at `>= 500` visible classes (with manual `W` HUD toggle).
   3. **Public Interactive Showcase (`#4001`)**:
      - [x] Curated interactive reference architecture showcase presets (`SHOWCASE_PRESETS` in [`demoData.ts`](frontend/src/lib/data/demoData.ts) and project switcher in [`App.svelte`](frontend/src/App.svelte)) pre-loaded with **Spring PetClinic (Java 25)**, **Quarkus Reactive Microservice**, and **RealWorld Conduit (Full-Stack TS + FastAPI)**.
 - **Exit Criteria for `v1.0.0 GA`**: 60fps canvas rendering at 500+ visible classes, automated native binary release artifacts, and live `archlens.io` reference playground.

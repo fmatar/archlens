@@ -5,6 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -84,13 +85,12 @@ public class SyncAdrUseCase {
   private AdrDocument createAdr(
       String projectRoot, String title, String context, String decision, String consequences)
       throws IOException {
-    File root = new File(projectRoot != null && !projectRoot.isBlank() ? projectRoot : ".");
-    File adrDirectory = new File(root, ADR_DIR);
-    if (!adrDirectory.exists()) {
-      Files.createDirectories(adrDirectory.toPath());
-    }
+    Path canonicalRoot = ProjectPathGuard.canonicalRoot(projectRoot);
+    Path adrDirPath = canonicalRoot.resolve(ADR_DIR);
+    ensureNoSymlinkOnPath(canonicalRoot, adrDirPath);
+    Files.createDirectories(adrDirPath);
 
-    int nextIndex = determineNextAdrIndex(adrDirectory);
+    int nextIndex = determineNextAdrIndex(adrDirPath.toFile());
     String slug =
         title
             .toLowerCase(java.util.Locale.ROOT)
@@ -123,11 +123,16 @@ public class SyncAdrUseCase {
             + consequences
             + "\n";
 
-    File targetFile = new File(adrDirectory, filename);
-    Files.writeString(targetFile.toPath(), markdown);
+    Path targetFile = adrDirPath.resolve(filename);
+    ensureNoSymlinkOnPath(canonicalRoot, targetFile);
+    Files.writeString(targetFile, markdown);
 
     return new AdrDocument(
         nextIndex, filename, title, "Accepted", date, context, decision, consequences);
+  }
+
+  static void ensureNoSymlinkOnPath(Path canonicalRoot, Path candidate) throws IOException {
+    ProjectPathGuard.ensureNoSymlinkOnPath(canonicalRoot, candidate);
   }
 
   private int determineNextAdrIndex(File adrDirectory) {

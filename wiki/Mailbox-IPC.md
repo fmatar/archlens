@@ -136,7 +136,7 @@ Dispatched when requesting refreshed code complexity and mutation metrics.
 
 When `INVERT_DEPENDENCY` or `APPLY_PROPOSAL` is dispatched via `POST /api/mailbox/to-agent`, `VerifyAndRollbackRefactorUseCase` automatically captures a transactional pre-refactor snapshot (`snap-<timestamp>`) under `.archlens/snapshots/<snapshotId>/`:
 - `policy.json`: Full backup of `.archlens/policy.json`.
-- `manifest.txt` & `files/`: Complete copy of all scanned project source files (`.java`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.svelte`, `.go`, `.rs`, `.clj`, `.cljs`, `.cljc`, `.edn`, `.kt`).
+- `manifest.txt` & `files/`: Complete copy of all scanned project source files (`.java`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.svelte`, `.go`, `.rs`, `.kt`).
 - Optional `architecturalIntent` notes entered in `InvertDipModal.svelte` or `SandboxToolbar.svelte` are embedded directly in the `.archlens/to-agent.json` command payload.
 
 In addition to `.archlens/to-agent.json` and `.archlens/to-viewer.json`, `MailboxResource.java` exposes three closed-loop governance endpoints wired directly into the **`AgentDrawer.svelte`** telemetry bar (`Verify Refactor`, `Record ADR`, and `Revert Snapshot` buttons):
@@ -144,5 +144,5 @@ In addition to `.archlens/to-agent.json` and `.archlens/to-viewer.json`, `Mailbo
 | Endpoint | Use Case Class | Behavior |
 | :--- | :--- | :--- |
 | `POST /api/mailbox/verify` | `VerifyAndRollbackRefactorUseCase` | Re-compiles the live AST graph, verifies `currentViolations <= baselineViolations` and `currentCycles <= baselineCycles`, optionally runs the project's automated test suite (`runTests: true` across Maven, Gradle, npm, Cargo, Go, and pytest), and records a `VERIFY_COMPLETE` telemetry event in `.archlens/to-viewer.json`. |
-| `POST /api/mailbox/rollback` | `VerifyAndRollbackRefactorUseCase` | Restores `.archlens/policy.json`, restores all snapshotted source files from `.archlens/snapshots/<snapshotId>/files/`, deletes any newly created source files not present in `manifest.txt`, and triggers an SSE `reload`. |
+| `POST /api/mailbox/rollback` | `VerifyAndRollbackRefactorUseCase` | Restores `.archlens/policy.json`, restores all snapshotted source files from `.archlens/snapshots/<snapshotId>/files/`, moves any newly created post-snapshot source files into recoverable `.archlens/trash/<snapshotId>/` (reporting `trashDir` and `trashedFiles`), and triggers an SSE `reload`. |
 | `POST /api/mailbox/sync-adr` | `SyncAdrUseCase` | Mints a numbered Markdown ADR in `docs/adr/` (also exposed via the `syncDipAdr` MCP tool and the **`Record ADR`** UI button). |

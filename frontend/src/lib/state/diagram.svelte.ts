@@ -112,8 +112,9 @@ class DiagramState {
   packageCycles = $derived.by<PackageCycle[]>(() => this.graph?.cycles || []);
   hasCycles = $derived(this.packageCycles.length > 0);
   violatingEdgesCount = $derived.by<number>(() => (this.graph?.edges || []).filter((e) => e.isViolating).length);
+  skippedFilesCount = $derived.by<number>(() => this.graph?.skippedFiles ?? 0);
 
-  // Screaming Architecture Metric (Uncle Bob Ch. 21)
+  // Screaming Architecture Metric
   screamingMetric = $derived.by<ScreamingMetric | null>(() => this.graph?.screamingMetric || null);
 
   // Policy Designer & Ring Editor Modal State
@@ -1127,7 +1128,6 @@ class DiagramState {
     await this.loadPolicy();
     await this.loadGraph();
     await this.loadSnapshots();
-    await this.loadFitness();
   }
 
   async loadGraph(proposalId?: string | null) {
@@ -1142,7 +1142,8 @@ class DiagramState {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       this.graph = await res.json();
       this.activeProposalId = proposalId || null;
-      this.loadFitness();
+      this.isLoading = false;
+      await this.loadFitness();
     } catch (e: any) {
       // Graceful fallback to embedded demo dataset
       if (proposalId === 'clean-core') {

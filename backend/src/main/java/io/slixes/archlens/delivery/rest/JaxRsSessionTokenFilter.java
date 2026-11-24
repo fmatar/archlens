@@ -23,10 +23,11 @@ import jakarta.ws.rs.ext.Provider;
 @ApplicationScoped
 public class JaxRsSessionTokenFilter implements ContainerRequestFilter {
 
-  @Inject SessionTokenService sessionTokens;
+  private SessionTokenService sessionTokens;
 
-  public JaxRsSessionTokenFilter() {}
+  JaxRsSessionTokenFilter() {}
 
+  @Inject
   public JaxRsSessionTokenFilter(SessionTokenService sessionTokens) {
     this.sessionTokens = sessionTokens;
   }

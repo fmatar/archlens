@@ -2,7 +2,9 @@ package io.slixes.archlens.delivery.rest;
 
 import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
 import io.slixes.archlens.domain.mailbox.MailboxGateway;
+import io.slixes.archlens.domain.mailbox.RefactorVerificationResult;
 import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.SyncAdrUseCase;
 import io.slixes.archlens.usecase.VerifyAndRollbackRefactorUseCase;
 import io.slixes.archlens.usecase.WorkspacePathResolver;
 import io.smallrye.common.annotation.RunOnVirtualThread;
@@ -12,7 +14,9 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
+import org.jboss.logging.Logger;
 
 /**
  * REST endpoint managing the bidirectional mailbox queue between workbench UI and companion agents.
@@ -24,40 +28,33 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class MailboxResource {
 
+  private static final Logger LOG = Logger.getLogger(MailboxResource.class);
   private static final String DEFAULT_PROJECT_ROOT = ".";
 
-  @Inject MailboxGateway mailboxService;
+  private MailboxGateway mailboxService;
+  private VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase;
+  private SyncAdrUseCase syncAdrUseCase;
+  private OpenedProjectRegistry openedProjects;
+  private SessionTokenService sessionTokens;
 
-  @Inject VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase;
+  MailboxResource() {}
 
-  @Inject io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase;
-
-  @Inject OpenedProjectRegistry openedProjects;
-
-  @Inject SessionTokenService sessionTokens;
-
-  public MailboxResource() {}
-
-  public MailboxResource(MailboxGateway mailboxService) {
-    this.mailboxService = mailboxService;
-    this.verifyAndRollbackUseCase = null;
-    this.syncAdrUseCase = null;
-  }
-
-  public MailboxResource(
-      MailboxGateway mailboxService, VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase) {
-    this.mailboxService = mailboxService;
-    this.verifyAndRollbackUseCase = verifyAndRollbackUseCase;
-    this.syncAdrUseCase = null;
-  }
-
+  @Inject
   public MailboxResource(
       MailboxGateway mailboxService,
       VerifyAndRollbackRefactorUseCase verifyAndRollbackUseCase,
-      io.slixes.archlens.usecase.SyncAdrUseCase syncAdrUseCase) {
+      SyncAdrUseCase syncAdrUseCase,
+      OpenedProjectRegistry openedProjects,
+      SessionTokenService sessionTokens) {
     this.mailboxService = mailboxService;
     this.verifyAndRollbackUseCase = verifyAndRollbackUseCase;
     this.syncAdrUseCase = syncAdrUseCase;
+    this.openedProjects = openedProjects;
+    this.sessionTokens = sessionTokens;
+  }
+
+  public OpenedProjectRegistry getOpenedProjects() {
+    return openedProjects;
   }
 
   @GET
@@ -80,20 +77,19 @@ public class MailboxResource {
     Map<String, Object> target = (Map<String, Object>) safeRequest.get("target");
     @SuppressWarnings("unchecked")
     Map<String, Object> payload = (Map<String, Object>) safeRequest.get("payload");
-    Map<String, Object> mutablePayload =
-        payload != null ? new java.util.HashMap<>(payload) : new java.util.HashMap<>();
+    Map<String, Object> mutablePayload = payload != null ? new HashMap<>(payload) : new HashMap<>();
     mutablePayload.put("origin", "workbench-session");
     if (sessionTokens != null) {
       mutablePayload.put("sessionFingerprint", sessionTokens.tokenFingerprint());
     }
 
-    // Capture pre-refactor snapshot if starting an apply or invert proposal
     if (("APPLY_PROPOSAL".equalsIgnoreCase(op) || "INVERT_DEPENDENCY".equalsIgnoreCase(op))
         && verifyAndRollbackUseCase != null) {
       try {
         String snapshotId = verifyAndRollbackUseCase.createPreRefactorSnapshot(root);
         mutablePayload.putIfAbsent("snapshotId", snapshotId);
-      } catch (IOException ignored) {
+      } catch (IOException e) {
+        LOG.warnf("Failed to capture pre-refactor snapshot for %s: %s", root, e.getMessage());
       }
     }
 
@@ -102,7 +98,7 @@ public class MailboxResource {
 
   @POST
   @Path("/verify")
-  public io.slixes.archlens.domain.mailbox.RefactorVerificationResult verifyRefactoring(
+  public RefactorVerificationResult verifyRefactoring(
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       Map<String, Object> request) {
     String root = requireOpenedProject(projectRoot);
@@ -130,23 +126,24 @@ public class MailboxResource {
       @QueryParam("projectRoot") @DefaultValue(DEFAULT_PROJECT_ROOT) String projectRoot,
       Map<String, Object> request)
       throws IOException {
-    String snapshotId = (String) request.get("snapshotId");
+    Map<String, Object> safeRequest = request != null ? request : Map.of();
+    String snapshotId = (String) safeRequest.get("snapshotId");
     String root = requireOpenedProject(projectRoot);
-    boolean success;
+    VerifyAndRollbackRefactorUseCase.RollbackResult result;
     try {
-      success = verifyAndRollbackUseCase.rollbackToSnapshot(root, snapshotId);
+      result = verifyAndRollbackUseCase.rollback(root, snapshotId);
     } catch (IllegalArgumentException e) {
       throw jsonError(Response.Status.BAD_REQUEST, e.getMessage());
     }
-    return Map.of("success", success, "snapshotId", snapshotId != null ? snapshotId : "");
-  }
-
-  /** Registry of projects opened in this session; lazily created outside of CDI (unit tests). */
-  public OpenedProjectRegistry getOpenedProjects() {
-    if (openedProjects == null) {
-      openedProjects = new OpenedProjectRegistry();
-    }
-    return openedProjects;
+    return Map.of(
+        "success",
+        result.restored(),
+        "snapshotId",
+        snapshotId != null ? snapshotId : "",
+        "trashDir",
+        result.trashDir(),
+        "trashedFiles",
+        result.trashedFiles());
   }
 
   /**
@@ -156,7 +153,7 @@ public class MailboxResource {
    */
   String requireOpenedProject(String projectRoot) {
     String root = WorkspacePathResolver.normalizeRoot(projectRoot);
-    if (!getOpenedProjects().isOpened(root)) {
+    if (!openedProjects.isOpened(root)) {
       throw jsonError(
           Response.Status.FORBIDDEN,
           "Project root is not opened in this workbench session; open it before verifying or"
@@ -165,7 +162,7 @@ public class MailboxResource {
     return root;
   }
 
-  private static WebApplicationException jsonError(Response.Status status, String message) {
+  static WebApplicationException jsonError(Response.Status status, String message) {
     return new WebApplicationException(
         Response.status(status)
             .type(MediaType.APPLICATION_JSON)

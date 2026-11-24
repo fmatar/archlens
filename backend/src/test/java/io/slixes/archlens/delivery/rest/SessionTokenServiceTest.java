@@ -4,15 +4,42 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.quarkus.runtime.ShutdownEvent;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class SessionTokenServiceTest {
+
+  @Test
+  void avoidsBuildTimeRandomFieldsInNativeImageHeap() {
+    boolean hasStaticRandom =
+        Arrays.stream(SessionTokenService.class.getDeclaredFields())
+            .anyMatch((Field f) ->
+                Modifier.isStatic(f.getModifiers()) && Random.class.isAssignableFrom(f.getType()));
+    assertFalse(
+        hasStaticRandom,
+        "SessionTokenService must not hold a static Random/SecureRandom in the GraalVM image heap");
+
+    SessionTokenService service =
+        new SessionTokenService(true, Optional.empty(), "127.0.0.1", 8088);
+    String first = service.generateToken();
+    String second = service.generateToken();
+    assertNotEquals(first, second, "repeated generateToken calls reuse lazy CSPRNG safely");
+    assertTrue(second.length() >= 43);
+
+    SessionTokenService nullOptService =
+        new SessionTokenService(true, (Optional<String>) null, "127.0.0.1", 8088);
+    assertTrue(nullOptService.getToken().length() >= 43);
+  }
 
   @Test
   void usesConfiguredTokenAndComparesExactly() {
@@ -29,7 +56,7 @@ class SessionTokenServiceTest {
 
   @Test
   void generatesStrongRandomTokenWhenNotConfigured() {
-    SessionTokenService a = new SessionTokenService(true, null, "127.0.0.1", 8088);
+    SessionTokenService a = new SessionTokenService(true, (String) null, "127.0.0.1", 8088);
     SessionTokenService b = new SessionTokenService(true, "  ", "127.0.0.1", 8088);
     assertTrue(a.getToken().length() >= 43, "32 random bytes, base64url");
     assertEquals(a.getToken(), a.getToken(), "token is stable for the process lifetime");

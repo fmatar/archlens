@@ -4,7 +4,7 @@
  * Zero external dependencies.
  */
 
-import { spawn, spawnSync, execSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -37,10 +37,10 @@ export async function checkServerHealth(serverUrl = DEFAULT_SERVER_URL, timeoutM
   }
 }
 
-export function isJavaAvailable(customExec = execSync) {
+export function isJavaAvailable(customSpawn = spawnSync) {
   try {
-    customExec('java -version', { stdio: 'pipe', timeout: 3000 });
-    return true;
+    const res = customSpawn('java', ['-version'], { stdio: 'pipe', timeout: 3000 });
+    return Boolean(res && !res.error && res.status === 0);
   } catch {
     return false;
   }
@@ -213,37 +213,57 @@ export function startNativeJar(jarPath, options = {}, deps = {}) {
   };
 }
 
-export function isDockerAvailable(customExec = execSync) {
+export function isDockerAvailable(customSpawn = spawnSync) {
   try {
-    customExec('docker info', { stdio: 'pipe', timeout: 3000 });
-    return true;
+    const res = customSpawn('docker', ['info'], { stdio: 'pipe', timeout: 3000 });
+    return Boolean(res && !res.error && res.status === 0);
   } catch {
     return false;
   }
 }
 
-export function isContainerRunning(containerName = DEFAULT_CONTAINER_NAME, customExec = execSync) {
+export function isContainerRunning(containerName = DEFAULT_CONTAINER_NAME, customSpawn = spawnSync) {
   try {
-    const out = customExec(
-      `docker ps --filter name=^/${containerName}$ --format "{{.Names}}"`,
+    const res = customSpawn(
+      'docker',
+      ['ps', '--filter', `name=^/${containerName}$`, '--format', '{{.Names}}'],
       { encoding: 'utf8', stdio: 'pipe', timeout: 3000 }
-    ).trim();
-    return out === containerName;
+    );
+    if (!res || res.error || res.status !== 0) {
+      return false;
+    }
+    return String(res.stdout || '').trim() === containerName;
   } catch {
     return false;
   }
 }
 
-export function isContainerExisting(containerName = DEFAULT_CONTAINER_NAME, customExec = execSync) {
+export function isContainerExisting(containerName = DEFAULT_CONTAINER_NAME, customSpawn = spawnSync) {
   try {
-    const out = customExec(
-      `docker ps -a --filter name=^/${containerName}$ --format "{{.Names}}"`,
+    const res = customSpawn(
+      'docker',
+      ['ps', '-a', '--filter', `name=^/${containerName}$`, '--format', '{{.Names}}'],
       { encoding: 'utf8', stdio: 'pipe', timeout: 3000 }
-    ).trim();
-    return out === containerName;
+    );
+    if (!res || res.error || res.status !== 0) {
+      return false;
+    }
+    return String(res.stdout || '').trim() === containerName;
   } catch {
     return false;
   }
+}
+
+function runDockerChecked(customSpawn, args, opts) {
+  const res = customSpawn('docker', args, opts);
+  if (res && res.error) {
+    throw res.error;
+  }
+  if (res && typeof res.status === 'number' && res.status !== 0) {
+    const stderr = (res.stderr ? String(res.stderr) : '').trim();
+    throw new Error(stderr || `docker ${args[0]} exited with status ${res.status}`);
+  }
+  return res;
 }
 
 /** Host-side port publish spec: loopback only unless a wider bind host was explicitly requested. */
@@ -257,19 +277,14 @@ export function startContainer(options = {}, deps = {}) {
   const image = options.image || DEFAULT_DOCKER_IMAGE;
   const workspace = path.resolve(options.workspace || '.');
   const port = options.port || '8088';
-  const customExec = deps.execSync || execSync;
   const customSpawn = deps.spawnSync || spawnSync;
 
   const exists = deps.isContainerExisting
     ? deps.isContainerExisting(containerName)
-    : isContainerExisting(containerName, customExec);
+    : isContainerExisting(containerName, customSpawn);
 
   if (exists) {
-    if (deps.execSync && !deps.spawnSync) {
-      customExec(`docker start ${containerName}`, { stdio: 'pipe', timeout: 10000 });
-    } else {
-      customSpawn('docker', ['start', containerName], { stdio: 'pipe', timeout: 10000 });
-    }
+    runDockerChecked(customSpawn, ['start', containerName], { stdio: 'pipe', timeout: 10000 });
     return { action: 'started', containerName };
   }
 
@@ -290,14 +305,7 @@ export function startContainer(options = {}, deps = {}) {
   ];
   const env = serverLaunchEnv({ token: options.token });
 
-  if (deps.execSync && !deps.spawnSync) {
-    customExec(
-      `docker run -d --name ${containerName} -p ${publish}${options.token ? ' -e ARCHLENS_TOKEN' : ''} -v "${workspace}:/workspace" ${image}`,
-      { stdio: 'pipe', timeout: 15000, env }
-    );
-  } else {
-    customSpawn('docker', runArgs, { stdio: 'pipe', timeout: 15000, env });
-  }
+  runDockerChecked(customSpawn, runArgs, { stdio: 'pipe', timeout: 15000, env });
 
   return { action: 'created', containerName, mode: 'docker' };
 }
@@ -359,7 +367,7 @@ export async function ensureServerRunning(options = {}, deps = {}) {
   }
 
   // 2b. Try native JAR if preferNative is true and no native binary launched
-  if (!launchedMode && preferNative && javaChecker(deps.execSync || execSync)) {
+  if (!launchedMode && preferNative && javaChecker(deps.spawnSync || spawnSync)) {
     const jarPath = jarFinder(options, deps);
     if (jarPath) {
       try {
@@ -374,7 +382,7 @@ export async function ensureServerRunning(options = {}, deps = {}) {
 
   // 3. Fallback to Docker if native binary/JAR was not launched
   if (!launchedMode) {
-    const dockerAvailable = spawnDocker && dockerChecker(deps.execSync || execSync);
+    const dockerAvailable = spawnDocker && dockerChecker(deps.spawnSync || spawnSync);
     if (dockerAvailable) {
       try {
         const started = starter(options, deps);

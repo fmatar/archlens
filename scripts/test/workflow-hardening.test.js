@@ -169,6 +169,7 @@ describe('CI, release, and toolchain security hardening', () => {
       assert.match(wf, /verify-ci-gate:[\s\S]*?runs-on:\s*ubuntu-latest[\s\S]*?checks:\s*read/);
       assert.match(wf, /node scripts\/wait-for-ci-checks\.js/);
       assert.match(wf, /Verify & Quality Gates/);
+      assert.match(wf, /Playwright E2E Browser Suite/);
       assert.match(wf, /GitHub Action Self-Test/);
       assert.match(wf, /Enforce Safe Dispatch Ref/);
     }

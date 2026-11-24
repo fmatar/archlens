@@ -1,6 +1,6 @@
 {
-  "serviceUrl": "http://localhost:8088",
-  "uiUrl": "http://localhost:8088",
-  "mailboxDir": ".uml-viewer",
+  "serviceUrl": "http://127.0.0.1:8088",
+  "uiUrl": "http://127.0.0.1:8088",
+  "mailboxDir": ".archlens",
   "autoReloadOnAck": true
 }

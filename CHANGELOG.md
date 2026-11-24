@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-23
+
+### Added
+- **Explicit `skippedFiles` scan telemetry (`#240`, `ADR-017`)**: `FileScannerUtil`, all 5 language scanners, REST/MCP graph responses, CLI `archlens check` / SARIF output, and the Svelte 5 `SkippedFilesBanner` now log and report unreadable or unparseable source files instead of dropping them silently.
+- **Recoverable rollback trash (`#228`, `#247`, `ADR-015`)**: `VerifyAndRollbackRefactorUseCase.rollback` (`POST /api/mailbox/rollback` and `ROLLBACK_COMPLETE` mailbox telemetry) now moves post-snapshot source files into `.archlens/trash/<snapshotId>/` instead of deleting them permanently, reporting `trashDir` and `trashedFiles`.
+- **`exportArchitectureDiagram` MCP `@Tool` parity (`#247`, `ADR-015`)**: Added `@Tool` / `@ToolArg` annotations on `ArchlensMcpService.exportArchitectureDiagram` and wired online (`/api/diagram/export`) + offline Mermaid fallback parity across `cli/src/mcp-registry.js` and `cli/src/mcp-server.js` (11 MCP tools).
+
+### Security
+- **Argument-array-only Docker execution (`#241`, `ADR-017`)**: Removed `execSync` shell-string branches in `cli/src/docker-runner.js`, standardizing container checks and launches on `spawnSync(binary, argsArray)`.
+- **MCP `syncDipAdr` confinement, ADR symlink guard & read-only mailbox `GET` (`#265`, `ADR-016`)**:
+  - Restricted `ArchlensMcpService.syncDipAdr` to the canonical active launch workspace (`.`) or roots explicitly opened in `OpenedProjectRegistry`.
+  - Rejected symlink segments and outside-root paths when writing `docs/adr/*.md` in `SyncAdrUseCase` and `.archlens/cache/*.json` in `ManageSnapshotsUseCase`.
+  - Stopped `FileMailboxService.readMailbox` (`GET /api/mailbox/to-agent` and `GET /api/mailbox/to-viewer`) from creating `.archlens/` directories on disk during read-only polls.
+
+### Fixed
+- **GraalVM Native Image `SecureRandom` build failure (`#263`, `ADR-015`)**: Replaced the static `SecureRandom` field in `SessionTokenService` with lazy runtime instantiation inside `generateToken()` so `quarkus-maven-plugin -Pnative` no longer rejects a `Random` instance in the image heap.
+- **CLI MCP `archlens://fitness` resource (`#265`)**: Made `readMcpResource` `async` and awaited `checkArchitecture` so `resources/read` returns evaluated fitness JSON instead of `"{}"`.
+- **Historical Git tag Release Comparator & Fitness History (`#265`)**: `ManageSnapshotsUseCase` and `GetFitnessHistoryUseCase` now list Git tags with creation dates via `git for-each-ref`, materialize uncached tags into ephemeral directories via isolated `GIT_INDEX_FILE` (`git read-tree` + `git checkout-index`) without mutating `.git/HEAD` or `.git/index`, and persist compiled graphs to `.archlens/cache/<tag>.json` instead of substituting the live working tree.
+- **Live `ProjectFileWatcher` project switching & duplicate `loadFitness()` scan (`#265`)**: `ProjectFileWatcher` now restarts cleanly when `projectRoot` changes across opened projects, and `diagramStore.setProjectRoot` awaits `loadFitness()` once inside `loadGraph()` instead of triggering two full-repo AST scans.
+
+### Changed
+- **Clean Architecture I/O ports, canonical `CrapScoreCalculator` & constructor DI (`#246`, `ADR-018`)**: Relocated `CrapScoreCalculator` to Ring 0 `domain.graph` (retiring `metrics` and deprecated `delivery.rest.WorkspacePathResolver`), extracted `FilesystemGateway` (`LocalFilesystemGateway`) and `TestRunnerGateway` (`ProcessTestRunnerGateway`) ports for `ResolveFilesystemUseCase` and `VerifyAndRollbackRefactorUseCase`, and standardized `@Inject` constructor injection across all REST resources/filters and `ArchlensMcpService` (enforced by `ResourceDiGovernanceTest`).
+- **Frontend coverage floor & bundled-Chromium Playwright E2E in CI (`#245`, `ADR-018`)**: Raised Vitest coverage thresholds (`lines: 60, statements: 58, functions: 60, branches: 45`), updated `playwright.config.ts` / `workbench.spec.ts` to run bundled Chromium with `ARCHLENS_TOKEN` against the packaged Quarkus server, and added both Vitest coverage and `ubuntu-latest` Playwright E2E jobs to `.github/workflows/ci.yml` (gated in `release.yml` and `dev-release.yml`).
+- **Repository, provenance & Node `>=22.0.0` hygiene (`#237`, `#238`, `#239`, `#242`, `ADR-017`, `ADR-018`)**: Standardized `engines.node` to `>=22.0.0` across all manifests, removed retired `ClojureAstScanner` and legacy `.uml-viewer` / personal path rewrites, removed duplicate `@typescript/native` compiler from `frontend/package.json`, consolidated tracked skills to the unified `archlens` skill, untracked vendored dev skill binaries and `> 5 MB` media assets (`~48 MB`), and enforced hygiene invariants in `scripts/test/repo-hygiene.test.js`.
+
 ## [1.1.6] - 2026-11-18
 
 ### Security

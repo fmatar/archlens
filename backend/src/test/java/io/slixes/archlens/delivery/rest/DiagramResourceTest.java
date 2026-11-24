@@ -2,14 +2,26 @@ package io.slixes.archlens.delivery.rest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
+import io.slixes.archlens.domain.dossier.DipInversionSynthesizer;
+import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
-import io.slixes.archlens.domain.mailbox.MailboxEnvelope;
-import io.slixes.archlens.domain.mailbox.MailboxGateway;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
+import io.slixes.archlens.domain.screaming.ScreamingMigrationAssistant;
+import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.engine.GraphCompiler;
-import io.slixes.archlens.mailbox.fs.FileMailboxService;
+import io.slixes.archlens.engine.ProjectFileWatcher;
+import io.slixes.archlens.usecase.ExportDiagramUseCase;
+import io.slixes.archlens.usecase.ExportDossierUseCase;
+import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
+import io.slixes.archlens.usecase.ResolveFilesystemUseCase;
+import io.slixes.archlens.usecase.SavePolicyUseCase;
+import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
+import io.slixes.archlens.workspace.fs.LocalFilesystemGateway;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.WebApplicationException;
 import java.io.IOException;
@@ -22,12 +34,30 @@ import org.junit.jupiter.api.io.TempDir;
 
 class DiagramResourceTest {
 
+  private static DiagramResource buildDiagramResource(
+      ArchitectureCompiler compiler,
+      OpenedProjectRegistry openedProjects,
+      ProjectFileWatcher watcher) {
+    ObjectMapper mapper = new ObjectMapper();
+    return new DiagramResource(
+        compiler,
+        new ExportDossierUseCase(compiler, new ArchitecturalDossierGenerator()),
+        new ExportDiagramUseCase(compiler, new MermaidDiagramGenerator()),
+        new SynthesizeDipInversionUseCase(compiler, new DipInversionSynthesizer()),
+        new ProposeScreamingMigrationUseCase(compiler, new ScreamingMigrationAssistant()),
+        new SavePolicyUseCase(compiler, mapper),
+        openedProjects,
+        watcher);
+  }
+
+  private static ProjectFilesystemResource buildFilesystemResource(
+      OpenedProjectRegistry openedProjects, ProjectFileWatcher watcher) {
+    return new ProjectFilesystemResource(
+        new ResolveFilesystemUseCase(new LocalFilesystemGateway()), openedProjects, watcher);
+  }
+
   @Test
   void testDiagramResourceEndpoints(@TempDir Path tempDir) throws Exception {
-    MailboxGateway mailboxService = new FileMailboxService();
-    ArchitecturalDossierGenerator dossierGenerator = new ArchitecturalDossierGenerator();
-
-    // Create a mock GraphCompiler
     GraphCompiler compiler =
         new GraphCompiler() {
           @Override
@@ -43,204 +73,109 @@ class DiagramResourceTest {
           }
         };
 
-    DiagramResource resource =
-        new DiagramResource(
-            compiler,
-            mailboxService,
-            dossierGenerator,
-            new com.fasterxml.jackson.databind.ObjectMapper());
+    OpenedProjectRegistry openedProjects = new OpenedProjectRegistry();
+    ProjectFileWatcher watcher = new ProjectFileWatcher();
+    DiagramResource resource = buildDiagramResource(compiler, openedProjects, watcher);
+    ProjectFilesystemResource fsResource = buildFilesystemResource(openedProjects, watcher);
 
-    // Test getGraph and getDiagram alias
-    ArchitectureGraph graph = resource.getGraph(tempDir.toString(), "prop-1");
-    assertEquals("Graph", graph.title());
-    assertEquals("prop-1", graph.activeProposalId());
-
-    ArchitectureGraph diagramAlias = resource.getDiagram(tempDir.toString(), "prop-1");
-    assertEquals("Graph", diagramAlias.title());
-
-    // Test getLlmDossier and alias
-    String dossier = resource.getLlmDossier(tempDir.toString(), "prop-1");
-    assertNotNull(dossier);
-    assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — Graph"));
-    assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
-
-    String dossierAlias = resource.getLlmDossierAlias(tempDir.toString(), "prop-1");
-    assertEquals(dossier, dossierAlias);
-
-    // Test getDiagramExport and alias across diagram types
-    String ringsExport =
-        resource.getDiagramExport(
-            tempDir.toString(), "prop-1", "COMPONENT_RINGS", null, false, null, null);
-    assertNotNull(ringsExport);
-    assertTrue(ringsExport.startsWith("flowchart TB"));
-
-    String umlExport =
-        resource.getDiagramExport(
-            tempDir.toString(), "prop-1", "CLASS_UML", null, true, null, null);
-    assertNotNull(umlExport);
-    assertTrue(umlExport.startsWith("classDiagram"));
-
-    String dipExport =
-        resource.getGraphExportAlias(
-            tempDir.toString(),
-            "prop-1",
-            "DIP_REFACTOR",
-            null,
-            false,
-            "com.example.OrderService",
-            "com.example.PostgresRepo");
-    assertNotNull(dipExport);
-    assertTrue(dipExport.contains("subgraph Before"));
-    assertTrue(dipExport.contains("subgraph After"));
-
-    // Test getInvertPlan
-    DipInversionPlan plan =
-        resource.getInvertPlan(
-            "com.example.OrderService", "com.example.PostgresRepo", tempDir.toString(), "prop-1");
-    assertNotNull(plan);
-    assertEquals("com.example.OrderService", plan.fromClass());
-    assertEquals("com.example.PostgresRepo", plan.toClass());
-
-    // Test getInvertPlan validation errors
-    assertThrows(
-        BadRequestException.class,
-        () -> resource.getInvertPlan("", "com.example.PostgresRepo", tempDir.toString(), null));
-    assertThrows(
-        BadRequestException.class,
-        () -> resource.getInvertPlan("com.example.OrderService", null, tempDir.toString(), null));
-
-    // Test getPolicy
-    ArchitecturePolicy policy = resource.getPolicy(tempDir.toString());
-    assertEquals("Test", policy.title());
-
-    // Saving policy on an unopened project must be rejected (403)
-    ArchitecturePolicy validPolicy =
-        new ArchitecturePolicy(
-            "Saved Policy",
-            "src/main/java",
-            "com.test",
-            true,
-            List.of("domain", "application"),
-            List.of(List.of("domain"), List.of("application")),
-            List.of(),
-            List.of(),
-            List.of(),
-            "java");
-    WebApplicationException unopenedSave =
-        assertThrows(
-            WebApplicationException.class,
-            () -> resource.savePolicy(tempDir.toString(), validPolicy));
-    assertEquals(403, unopenedSave.getResponse().getStatus());
-
-    // Open project explicitly before mailbox write and savePolicy
-    Map<String, Object> openRes = resource.openProject(tempDir.toString());
-    assertEquals(Boolean.TRUE, openRes.get("opened"));
-
-    // Test mailbox endpoints
-    MailboxEnvelope initialBox = resource.getToAgentMailbox(tempDir.toString());
-    assertTrue(initialBox.queue().isEmpty());
-
-    MailboxEnvelope.MailboxCommand sent =
-        resource.sendToAgent(
-            tempDir.toString(),
-            Map.of("op", "REFRESH", "target", Map.of("id", "c1"), "payload", Map.of()));
-    assertEquals(1, sent.id());
-    assertEquals("REFRESH", sent.op());
-
-    // Test sendToAgent with default op and missing fields
-    MailboxEnvelope.MailboxCommand defaultSent = resource.sendToAgent(tempDir.toString(), Map.of());
-    assertEquals(2, defaultSent.id());
-    assertEquals("COMMAND", defaultSent.op());
-
-    // Test getSource (file not found)
-    Map<String, Object> notFound = resource.getSourceCode("/invalid/path/Test.java", 10);
-    assertTrue(notFound.containsKey("error"));
-
-    // Test getSource (existing file)
-    Path testFile = tempDir.resolve("Test.java");
-    Files.writeString(testFile, "line 1\nline 2\nline 3\n");
-    Map<String, Object> source = resource.getSourceCode(testFile.toString(), 2, tempDir.toString());
-    assertEquals("Test.java", source.get("fileName"));
-    assertEquals(2, source.get("targetLine"));
-    assertTrue(((String) source.get("content")).contains("line 2"));
-
-    // Test getSource (relative path resolved against projectRoot)
-    Map<String, Object> relativeSource = resource.getSourceCode("Test.java", 2, tempDir.toString());
-    assertEquals("Test.java", relativeSource.get("fileName"));
-    assertEquals(2, relativeSource.get("targetLine"));
-    assertTrue(((String) relativeSource.get("content")).contains("line 2"));
-
-    // Test events stream
-    assertNotNull(resource.streamEvents());
-    assertNotNull(resource.streamEvents(tempDir.toString()));
-
-    // Test getCycles
-    assertNotNull(resource.getCycles(tempDir.toString(), null));
-
-    // Test getScreamingMetric
-    assertNotNull(resource.getScreamingMetric(tempDir.toString(), null));
-
-    // Test getScreamingMigrationProposal
-    assertNotNull(resource.getScreamingMigrationProposal(tempDir.toString(), null));
-
-    // Test savePolicy on opened project
-    ArchitecturePolicy policyToSave =
-        new ArchitecturePolicy(
-            "Saved Policy",
-            "src/main/java",
-            "com.test",
-            true,
-            List.of("domain", "application"),
-            List.of(List.of("domain"), List.of("application")),
-            List.of(),
-            List.of(),
-            List.of(),
-            "java");
-    ArchitectureGraph savedGraph = resource.savePolicy(tempDir.toString(), policyToSave);
-    assertNotNull(savedGraph);
-
-    // Test listProjects
-    Map<String, Object> projects = resource.listProjects();
-    assertNotNull(projects);
-    assertTrue(projects.containsKey("current"));
-    assertTrue(projects.containsKey("discovered"));
-    @SuppressWarnings("unchecked")
-    List<Map<String, String>> discovered = (List<Map<String, String>>) projects.get("discovered");
-    assertFalse(discovered.isEmpty());
-
-    // Test listDirectories includes container and native picker capability flags
-    System.setProperty("archlens.allowed.roots", tempDir.toString());
     try {
-      Map<String, Object> dirs = resource.listDirectories(tempDir.toString());
-      assertNotNull(dirs);
-      assertTrue(dirs.containsKey("isContainer"));
-      assertTrue(dirs.containsKey("nativePickerSupported"));
-      assertTrue(dirs.get("isContainer") instanceof Boolean);
-      assertTrue(dirs.get("nativePickerSupported") instanceof Boolean);
-    } finally {
-      System.clearProperty("archlens.allowed.roots");
-    }
+      ArchitectureGraph graph = resource.getGraph(tempDir.toString(), "prop-1");
+      assertEquals("Graph", graph.title());
+      assertEquals("prop-1", graph.activeProposalId());
 
-    // Test pickDirectory in headless mode
-    System.setProperty("test.headless", "true");
-    try {
-      Map<String, Object> picked = resource.pickDirectory();
-      assertNotNull(picked);
-      assertEquals(false, picked.get("supported"));
-      assertEquals("headless", picked.get("reason"));
+      ArchitectureGraph diagramAlias = resource.getDiagram(tempDir.toString(), "prop-1");
+      assertEquals("Graph", diagramAlias.title());
+
+      String dossier = resource.getLlmDossier(tempDir.toString(), "prop-1");
+      assertNotNull(dossier);
+      assertTrue(dossier.contains("# Clean Architecture Optimization Dossier — Graph"));
+      assertTrue(dossier.contains("Actionable LLM Refactoring Instructions"));
+
+      String dossierAlias = resource.getLlmDossierAlias(tempDir.toString(), "prop-1");
+      assertEquals(dossier, dossierAlias);
+
+      String ringsExport =
+          resource.getDiagramExport(
+              tempDir.toString(), "prop-1", "COMPONENT_RINGS", null, false, null, null);
+      assertTrue(ringsExport.startsWith("flowchart TB"));
+
+      String umlExport =
+          resource.getDiagramExport(
+              tempDir.toString(), "prop-1", "CLASS_UML", null, true, null, null);
+      assertTrue(umlExport.startsWith("classDiagram"));
+
+      String dipExport =
+          resource.getGraphExportAlias(
+              tempDir.toString(),
+              "prop-1",
+              "DIP_REFACTOR",
+              null,
+              false,
+              "com.example.OrderService",
+              "com.example.PostgresRepo");
+      assertTrue(dipExport.contains("subgraph Before"));
+      assertTrue(dipExport.contains("subgraph After"));
+
+      DipInversionPlan plan =
+          resource.getInvertPlan(
+              "com.example.OrderService", "com.example.PostgresRepo", tempDir.toString(), "prop-1");
+      assertEquals("com.example.OrderService", plan.fromClass());
+      assertEquals("com.example.PostgresRepo", plan.toClass());
+
+      assertThrows(
+          BadRequestException.class,
+          () -> resource.getInvertPlan("", "com.example.PostgresRepo", tempDir.toString(), null));
+      assertThrows(
+          BadRequestException.class,
+          () -> resource.getInvertPlan("com.example.OrderService", null, tempDir.toString(), null));
+
+      ArchitecturePolicy policy = resource.getPolicy(tempDir.toString());
+      assertEquals("Test", policy.title());
+
+      ArchitecturePolicy validPolicy =
+          new ArchitecturePolicy(
+              "Saved Policy",
+              "src/main/java",
+              "com.test",
+              true,
+              List.of("domain", "application"),
+              List.of(List.of("domain"), List.of("application")),
+              List.of(),
+              List.of(),
+              List.of(),
+              "java");
+      WebApplicationException unopenedSave =
+          assertThrows(
+              WebApplicationException.class,
+              () -> resource.savePolicy(tempDir.toString(), validPolicy));
+      assertEquals(403, unopenedSave.getResponse().getStatus());
+
+      Map<String, Object> openRes = fsResource.openProject(tempDir.toString(), null);
+      assertEquals(Boolean.TRUE, openRes.get("opened"));
+
+      assertNotNull(resource.streamEvents());
+      assertNotNull(resource.streamEvents(tempDir.toString()));
+      resource.notifyGraphUpdate(Map.of("event", "graph-update"));
+
+      assertNotNull(resource.getCycles(tempDir.toString(), null));
+      assertNotNull(resource.getScreamingMetric(tempDir.toString(), null));
+      assertNotNull(resource.getScreamingMigrationProposal(tempDir.toString(), null));
+
+      ArchitectureGraph savedGraph = resource.savePolicy(tempDir.toString(), validPolicy);
+      assertNotNull(savedGraph);
     } finally {
-      System.clearProperty("test.headless");
+      watcher.stop();
     }
   }
 
   @Test
   void testContainerWorkspaceMultiProjectDiscovery(@TempDir Path tempDir) throws IOException {
-    DiagramResource resource = new DiagramResource();
+    ProjectFilesystemResource fsResource =
+        buildFilesystemResource(new OpenedProjectRegistry(), new ProjectFileWatcher());
 
     Path workspaceDir = tempDir.resolve("workspace");
     Files.createDirectories(workspaceDir);
 
-    // Create root-level projects
     Path fluo = workspaceDir.resolve("fluo");
     Files.createDirectories(fluo);
     Files.writeString(fluo.resolve("pom.xml"), "<project></project>");
@@ -249,7 +184,6 @@ class DiagramResourceTest {
     Files.createDirectories(datarobot);
     Files.writeString(datarobot.resolve("go.mod"), "module datarobot\n");
 
-    // Create nested projects inside labs/
     Path labs = workspaceDir.resolve("labs");
     Path archlens = labs.resolve("archlens");
     Files.createDirectories(archlens);
@@ -263,11 +197,10 @@ class DiagramResourceTest {
     Files.createDirectories(frontend);
     Files.writeString(frontend.resolve("package.json"), "{}");
 
-    Path unclebob = labs.resolve("unclebob-design");
-    Files.createDirectories(unclebob);
-    Files.writeString(unclebob.resolve("package.json"), "{}");
+    Path designSystem = labs.resolve("design-system");
+    Files.createDirectories(designSystem);
+    Files.writeString(designSystem.resolve("package.json"), "{}");
 
-    // Create ignored folder with target/pom.xml and hidden directory
     Path ignored = workspaceDir.resolve("ignored_dir");
     Path target = ignored.resolve("target");
     Files.createDirectories(target);
@@ -279,28 +212,18 @@ class DiagramResourceTest {
 
     System.setProperty("archlens.container.workspace", workspaceDir.toString());
     try {
-      Map<String, Object> result = resource.listProjects();
-      assertNotNull(result);
+      Map<String, Object> result = fsResource.listProjects();
       @SuppressWarnings("unchecked")
       List<Map<String, String>> discovered = (List<Map<String, String>>) result.get("discovered");
-      assertNotNull(discovered);
-
       List<String> names = discovered.stream().map(m -> m.get("name")).toList();
-      assertTrue(names.contains("fluo"), "Should discover fluo");
-      assertTrue(names.contains("datarobot"), "Should discover datarobot");
-      assertTrue(names.contains("labs / archlens"), "Should discover nested labs / archlens");
-      assertTrue(names.contains("labs / archlens / backend"), "Should discover submodule backend");
-      assertTrue(
-          names.contains("labs / archlens / frontend"), "Should discover submodule frontend");
-      assertTrue(
-          names.contains("labs / unclebob-design"),
-          "Should discover nested labs / unclebob-design");
-
-      assertFalse(
-          names.stream().anyMatch(n -> n.contains(".hidden")), "Should ignore hidden directories");
-      assertFalse(
-          names.stream().anyMatch(n -> n.contains("ignored_dir / target")),
-          "Should ignore build targets");
+      assertTrue(names.contains("fluo"));
+      assertTrue(names.contains("datarobot"));
+      assertTrue(names.contains("labs / archlens"));
+      assertTrue(names.contains("labs / archlens / backend"));
+      assertTrue(names.contains("labs / archlens / frontend"));
+      assertTrue(names.contains("labs / design-system"));
+      assertFalse(names.stream().anyMatch(n -> n.contains(".hidden")));
+      assertFalse(names.stream().anyMatch(n -> n.contains("ignored_dir / target")));
     } finally {
       System.clearProperty("archlens.container.workspace");
     }
@@ -308,7 +231,8 @@ class DiagramResourceTest {
 
   @Test
   void testSingleRepoMountedContainerWorkspace(@TempDir Path tempDir) throws IOException {
-    DiagramResource resource = new DiagramResource();
+    ProjectFilesystemResource fsResource =
+        buildFilesystemResource(new OpenedProjectRegistry(), new ProjectFileWatcher());
 
     Path repoDir = tempDir.resolve("my-app");
     Files.createDirectories(repoDir);
@@ -320,30 +244,21 @@ class DiagramResourceTest {
 
     System.setProperty("archlens.container.workspace", repoDir.toString());
     try {
-      Map<String, Object> result = resource.listProjects();
-      assertNotNull(result);
+      Map<String, Object> result = fsResource.listProjects();
       @SuppressWarnings("unchecked")
       List<Map<String, String>> discovered = (List<Map<String, String>>) result.get("discovered");
-      assertNotNull(discovered);
-
       List<String> names = discovered.stream().map(m -> m.get("name")).toList();
-      assertTrue(names.contains("my-app"), "Should discover single repo root");
-      assertTrue(names.contains("my-app / core"), "Should discover submodule in single repo");
+      assertTrue(names.contains("my-app"));
+      assertTrue(names.contains("my-app / core"));
     } finally {
       System.clearProperty("archlens.container.workspace");
     }
   }
 
   @Test
-  void testSnapshotsEndpoints(@TempDir Path tempDir) throws Exception {
+  void testSnapshotsEndpointsWithGitTags(@TempDir Path tempDir) throws Exception {
     GraphCompiler compiler =
         new GraphCompiler() {
-          @Override
-          public ArchitecturePolicy loadPolicy(String root) {
-            return new ArchitecturePolicy(
-                "Test", "src", "com", true, List.of(), List.of(), List.of(), List.of(), List.of());
-          }
-
           @Override
           public ArchitectureGraph compileGraph(String root, String proposalId) {
             return new ArchitectureGraph(
@@ -351,65 +266,9 @@ class DiagramResourceTest {
           }
         };
 
-    DiagramResource resource =
-        new DiagramResource(
-            compiler, null, null, new com.fasterxml.jackson.databind.ObjectMapper());
+    SnapshotResource snapshotResource =
+        new SnapshotResource(new ManageSnapshotsUseCase(compiler, new ObjectMapper()));
 
-    // 1. When no snapshots dir, listSnapshots returns empty or git tags
-    Map<String, Object> emptyResult = resource.listSnapshots(tempDir.toString());
-    assertNotNull(emptyResult);
-    assertTrue(emptyResult.containsKey("snapshots"));
-
-    // 2. Create snapshot files in .archlens/snapshots
-    Path snapshotsDir = tempDir.resolve(".archlens/snapshots");
-    Files.createDirectories(snapshotsDir);
-    Files.writeString(
-        snapshotsDir.resolve("v1.0.0.json"),
-        "{\"title\":\"TestApp\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
-
-    Map<String, Object> populatedResult = resource.listSnapshots(tempDir.toString());
-    assertNotNull(populatedResult);
-    @SuppressWarnings("unchecked")
-    List<Map<String, Object>> snapshots =
-        (List<Map<String, Object>>) populatedResult.get("snapshots");
-    assertEquals(1, snapshots.size());
-    assertEquals("v1.0.0", snapshots.get(0).get("id"));
-
-    // 3. Test getSnapshot reading from .archlens/snapshots/v1.0.0.json
-    ArchitectureGraph snapshot = resource.getSnapshot("v1.0.0", tempDir.toString());
-    assertNotNull(snapshot);
-    assertEquals("TestApp", snapshot.title());
-
-    // 4. Test getSnapshot reading from .archlens/cache/{id}.json
-    Path cacheDir = tempDir.resolve(".archlens/cache");
-    Files.createDirectories(cacheDir);
-    Files.writeString(
-        cacheDir.resolve("cached-v1.json"),
-        "{\"title\":\"CachedApp\",\"isProposal\":false,\"activeProposalId\":null,\"components\":[],\"edges\":[],\"unassigned\":[]}");
-    ArchitectureGraph cachedSnapshot = resource.getSnapshot("cached-v1", tempDir.toString());
-    assertNotNull(cachedSnapshot);
-    assertEquals("CachedApp", cachedSnapshot.title());
-
-    // 5. Test path traversal rejection
-    assertThrows(
-        jakarta.ws.rs.BadRequestException.class,
-        () -> resource.getSnapshot("../secret", tempDir.toString()));
-    assertThrows(
-        jakarta.ws.rs.BadRequestException.class,
-        () -> resource.getSnapshot("sub/dir", tempDir.toString()));
-    assertThrows(
-        jakarta.ws.rs.BadRequestException.class,
-        () -> resource.getSnapshot("sub\\dir", tempDir.toString()));
-    assertThrows(
-        jakarta.ws.rs.BadRequestException.class,
-        () -> resource.getSnapshot("   ", tempDir.toString()));
-
-    // 6. Test getSnapshot fallback when snapshot does not exist
-    ArchitectureGraph fallback = resource.getSnapshot("non-existent", tempDir.toString());
-    assertNotNull(fallback);
-    assertEquals("Graph", fallback.title());
-
-    // 7. Test listSnapshots with git directory fallback
     Path gitRepoDir = tempDir.resolve("gitrepo");
     Files.createDirectories(gitRepoDir);
     new ProcessBuilder("git", "init").directory(gitRepoDir.toFile()).start().waitFor();
@@ -427,9 +286,7 @@ class DiagramResourceTest {
         .waitFor();
     new ProcessBuilder("git", "tag", "v1.0.0").directory(gitRepoDir.toFile()).start().waitFor();
 
-    Map<String, Object> gitRepoSnapshots = resource.listSnapshots(gitRepoDir.toString());
-    assertNotNull(gitRepoSnapshots);
-    assertTrue(gitRepoSnapshots.containsKey("snapshots"));
+    Map<String, Object> gitRepoSnapshots = snapshotResource.listSnapshots(gitRepoDir.toString());
     @SuppressWarnings("unchecked")
     List<Map<String, String>> snapshotList =
         (List<Map<String, String>>) gitRepoSnapshots.get("snapshots");
@@ -445,5 +302,35 @@ class DiagramResourceTest {
     assertTrue(
         source.contains("import io.slixes.archlens.usecase.WorkspacePathResolver;"),
         "DiagramResource must explicitly import Ring 1 io.slixes.archlens.usecase.WorkspacePathResolver");
+  }
+
+  @Test
+  void testEnsureWatcherRunningRejectsUnopenedRootAndSwitchesOnOpenProject(@TempDir Path tempDir)
+      throws Exception {
+    Path unopened = Files.createDirectories(tempDir.resolve("unopened-watch"));
+    Path second = Files.createDirectories(tempDir.resolve("opened-watch-b"));
+    OpenedProjectRegistry openedProjects = new OpenedProjectRegistry();
+    ProjectFileWatcher watcher = new ProjectFileWatcher();
+    DiagramResource resource = buildDiagramResource(new GraphCompiler(), openedProjects, watcher);
+    ProjectFilesystemResource fsResource = buildFilesystemResource(openedProjects, watcher);
+    try {
+      resource.ensureWatcherRunning(unopened.toString());
+      Thread.sleep(150);
+      assertFalse(
+          watcher.isRunning(),
+          "ensureWatcherRunning must not watch an unopened external directory");
+
+      fsResource.openProject(unopened.toString(), null);
+      resource.ensureWatcherRunning(unopened.toString());
+      for (int i = 0; i < 20 && watcher.getWatchedRoot() == null; i++) {
+        Thread.sleep(50);
+      }
+      assertEquals(unopened.toRealPath(), watcher.getWatchedRoot());
+
+      fsResource.openProject(second.toString(), null);
+      assertEquals(second.toRealPath(), watcher.getWatchedRoot());
+    } finally {
+      watcher.stop();
+    }
   }
 }

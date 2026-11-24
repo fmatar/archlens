@@ -39,7 +39,6 @@ public final class WorkspacePathResolver {
     }
     String normalized = root.trim();
     String userHome = System.getProperty("user.home", "");
-    String labsPath = userHome + "/workspace/labs";
     String containerPath = System.getProperty("archlens.container.workspace", "/workspace");
     File containerWorkspace = new File(containerPath);
     if (normalized.equals(".")
@@ -55,19 +54,13 @@ public final class WorkspacePathResolver {
         }
       }
     }
-    if (normalized.equals(".")) {
-      if (!new File(".", ".archlens/policy.json").exists()
-          && !new File(".", ".uml-viewer/policy.json").exists()
-          && (new File("..", ".archlens/policy.json").exists()
-              || new File("..", ".uml-viewer/policy.json").exists())) {
-        try {
-          return new File("..").getCanonicalPath();
-        } catch (IOException e) {
-          return new File("..").getAbsolutePath();
-        }
-      }
-      if (!new File(".", "pom.xml").exists() && new File(labsPath, "archlens/pom.xml").exists()) {
-        return labsPath + "/archlens";
+    if (normalized.equals(".")
+        && !new File(".", ".archlens/policy.json").exists()
+        && new File("..", ".archlens/policy.json").exists()) {
+      try {
+        return new File("..").getCanonicalPath();
+      } catch (IOException e) {
+        return new File("..").getAbsolutePath();
       }
     }
     // Expand home directory shorthand ~
@@ -79,20 +72,6 @@ public final class WorkspacePathResolver {
         && containerWorkspace.exists()
         && containerWorkspace.isDirectory()) {
       normalized = mapHostWorkspaceToContainer(normalized, userHome, containerPath);
-    }
-    // Map /workspace/labs/ to host userHome/workspace/labs/ if present on host
-    if (!isContainerEnvironment() && normalized.startsWith("/workspace/labs/")) {
-      File hostLabs = new File(labsPath);
-      if (hostLabs.exists() && hostLabs.isDirectory()) {
-        normalized = normalized.replace("/workspace/labs", labsPath);
-      }
-    }
-    // Transparently map agentlens or unclebob-design to archlens
-    if (normalized.contains("agentlens")) {
-      normalized = normalized.replace("agentlens", "archlens");
-    }
-    if (normalized.contains("unclebob-design")) {
-      normalized = normalized.replace("unclebob-design", "archlens");
     }
     return normalized;
   }
@@ -179,7 +158,6 @@ public final class WorkspacePathResolver {
         || new File(dir, "package.json").exists()
         || new File(dir, "go.mod").exists()
         || new File(dir, "Cargo.toml").exists()
-        || new File(dir, "deps.edn").exists()
         || new File(dir, "build.gradle").exists()
         || new File(dir, "build.gradle.kts").exists()
         || new File(dir, "pyproject.toml").exists()
@@ -223,7 +201,6 @@ public final class WorkspacePathResolver {
         || new File(dir, "package.json").exists()
         || new File(dir, "go.mod").exists()
         || new File(dir, "Cargo.toml").exists()
-        || new File(dir, "deps.edn").exists()
         || new File(dir, "build.gradle").exists()
         || new File(dir, "build.gradle.kts").exists()
         || new File(dir, "src/main/java").exists()

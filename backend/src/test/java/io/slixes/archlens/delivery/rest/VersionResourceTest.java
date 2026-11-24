@@ -9,7 +9,7 @@ class VersionResourceTest {
 
   @Test
   void testGetVersion() {
-    VersionResource resource = new VersionResource();
+    VersionResource resource = new VersionResource("1.1.6");
     resource.init();
 
     Map<String, String> info = resource.getVersion();
@@ -21,5 +21,13 @@ class VersionResourceTest {
     assertFalse(info.get("version").isBlank());
     assertNotEquals("0.0.1-Alpha-03", info.get("version"));
     assertThrows(UnsupportedOperationException.class, () -> info.put("test", "test"));
+
+    VersionResource fallbackResource = new VersionResource("");
+    fallbackResource.init();
+    assertFalse(fallbackResource.getVersion().get("version").isBlank());
+
+    VersionResource nullResource = new VersionResource(null);
+    nullResource.init();
+    assertFalse(nullResource.getVersion().get("version").isBlank());
   }
 }

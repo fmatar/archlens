@@ -209,5 +209,81 @@ describe('diagramStore extended coverage tests', () => {
 
     globalThis.fetch = originalFetch;
   });
+
+  it('setProjectRoot fetches /api/fitness once instead of duplicating full-repo scan', async () => {
+    const originalFetch = globalThis.fetch;
+    const seenUrls: string[] = [];
+    globalThis.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      seenUrls.push(url);
+      if (url.startsWith('/api/graph')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ title: 'ProjB', components: [], edges: [], unassigned: [] })
+        };
+      }
+      if (url.startsWith('/api/snapshots')) {
+        return { ok: true, status: 200, json: async () => ({ snapshots: [] }) };
+      }
+      if (url.startsWith('/api/fitness/history')) {
+        return { ok: true, status: 200, json: async () => ({ trendDirection: 'STABLE', scoreDelta: 0, history: [] }) };
+      }
+      if (url.startsWith('/api/fitness')) {
+        return { ok: true, status: 200, json: async () => ({ fitnessScore: 0.95, grade: 'A', rules: [] }) };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    });
+
+    try {
+      await diagramStore.setProjectRoot('/workspace/proj-b', false);
+      const fitnessCalls = seenUrls.filter(
+        (u) => u.startsWith('/api/fitness') && !u.startsWith('/api/fitness/history')
+      );
+      expect(fitnessCalls.length).toBe(1);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('loadGraph clears isLoading immediately after /api/graph before slow /api/fitness completes', async () => {
+    const originalFetch = globalThis.fetch;
+    let releaseFitness!: () => void;
+    let markFitnessStarted!: () => void;
+    const fitnessGate = new Promise<void>((resolve) => {
+      releaseFitness = resolve;
+    });
+    const fitnessStarted = new Promise<void>((resolve) => {
+      markFitnessStarted = resolve;
+    });
+
+    globalThis.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.startsWith('/api/graph')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ title: 'FastGraph', components: [], edges: [], unassigned: [] })
+        };
+      }
+      if (url.startsWith('/api/fitness')) {
+        markFitnessStarted();
+        await fitnessGate;
+        return { ok: true, status: 200, json: async () => ({ fitnessScore: 0.9, grade: 'A', rules: [] }) };
+      }
+      return { ok: true, status: 200, json: async () => ({}) };
+    });
+
+    try {
+      const pendingLoad = diagramStore.loadGraph();
+      await fitnessStarted;
+      expect(diagramStore.graph?.title).toBe('FastGraph');
+      expect(diagramStore.isLoading).toBe(false);
+      releaseFitness();
+      await pendingLoad;
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
 

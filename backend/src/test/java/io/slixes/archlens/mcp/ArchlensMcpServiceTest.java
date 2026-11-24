@@ -2,16 +2,32 @@ package io.slixes.archlens.mcp;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.PromptMessage;
 import io.quarkiverse.mcp.server.TextResourceContents;
+import io.quarkiverse.mcp.server.Tool;
+import io.quarkiverse.mcp.server.ToolArg;
+import io.slixes.archlens.domain.dossier.ArchitecturalDossierGenerator;
 import io.slixes.archlens.domain.dossier.DipInversionPlan;
+import io.slixes.archlens.domain.dossier.DipInversionSynthesizer;
+import io.slixes.archlens.domain.dossier.MermaidDiagramGenerator;
+import io.slixes.archlens.domain.fitness.ArchitectureFitnessCalculator;
 import io.slixes.archlens.domain.fitness.FitnessEvaluation;
 import io.slixes.archlens.domain.fitness.FitnessHistoryTrend;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
+import io.slixes.archlens.domain.screaming.ScreamingMigrationAssistant;
 import io.slixes.archlens.domain.screaming.ScreamingMigrationProposal;
 import io.slixes.archlens.engine.GraphCompiler;
+import io.slixes.archlens.usecase.EvaluateFitnessUseCase;
+import io.slixes.archlens.usecase.ExportDiagramUseCase;
+import io.slixes.archlens.usecase.ExportDossierUseCase;
+import io.slixes.archlens.usecase.GetFitnessHistoryUseCase;
+import io.slixes.archlens.usecase.ManageSnapshotsUseCase;
+import io.slixes.archlens.usecase.OpenedProjectRegistry;
+import io.slixes.archlens.usecase.ProposeScreamingMigrationUseCase;
 import io.slixes.archlens.usecase.SyncAdrUseCase;
+import io.slixes.archlens.usecase.SynthesizeDipInversionUseCase;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.validation.constraints.NotBlank;
 import java.io.IOException;
@@ -48,7 +64,22 @@ class ArchlensMcpServiceTest {
           }
         };
 
-    mcpService = new ArchlensMcpService(compiler);
+    ObjectMapper mapper = new ObjectMapper();
+    ManageSnapshotsUseCase snapshots = new ManageSnapshotsUseCase(compiler, mapper);
+    ArchitectureFitnessCalculator fitnessCalculator = new ArchitectureFitnessCalculator();
+    mcpService =
+        new ArchlensMcpService(
+            compiler,
+            new ExportDossierUseCase(compiler, new ArchitecturalDossierGenerator()),
+            new ExportDiagramUseCase(compiler, new MermaidDiagramGenerator()),
+            snapshots,
+            new SynthesizeDipInversionUseCase(compiler, new DipInversionSynthesizer()),
+            new EvaluateFitnessUseCase(compiler, fitnessCalculator),
+            new GetFitnessHistoryUseCase(snapshots, compiler, fitnessCalculator),
+            new ProposeScreamingMigrationUseCase(compiler, new ScreamingMigrationAssistant()),
+            new SyncAdrUseCase(),
+            new OpenedProjectRegistry(),
+            mapper);
   }
 
   @Test
@@ -80,12 +111,10 @@ class ArchlensMcpServiceTest {
 
     String mermaidRings =
         mcpService.exportArchitectureDiagram(tempDir.toString(), "COMPONENT_RINGS", "", false);
-    assertNotNull(mermaidRings);
     assertTrue(mermaidRings.startsWith("flowchart TB"));
 
     String mermaidUml =
         mcpService.exportArchitectureDiagram(tempDir.toString(), "CLASS_UML", "", true);
-    assertNotNull(mermaidUml);
     assertTrue(mermaidUml.startsWith("classDiagram"));
   }
 
@@ -139,7 +168,22 @@ class ArchlensMcpServiceTest {
   }
 
   @Test
-  void testSyncDipAdrTool(@TempDir Path tempDir) throws IOException {
+  void testSyncDipAdrRequiresActiveWorkspaceOrOpenedProject(@TempDir Path tempDir)
+      throws IOException {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            mcpService.syncDipAdr(
+                tempDir.toString(),
+                "com.example.OrderService",
+                "com.example.PaymentGateway",
+                "PaymentGatewayPort",
+                "Eliminate outward adapter coupling"));
+
+    assertNotNull(mcpService.requireAuthorizedWriteRoot("."));
+    assertNotNull(mcpService.getOpenedProjects());
+
+    mcpService.getOpenedProjects().markOpened(tempDir.toString());
     SyncAdrUseCase.AdrDocument adr =
         mcpService.syncDipAdr(
             tempDir.toString(),
@@ -154,28 +198,23 @@ class ArchlensMcpServiceTest {
   @Test
   void testMcpResourcesAndPrompts(@TempDir Path tempDir) throws IOException {
     TextResourceContents llmsResource = mcpService.readLlmsDossierResource();
-    assertNotNull(llmsResource);
     assertEquals("archlens://llms.txt", llmsResource.uri());
     assertTrue(llmsResource.text().contains("Clean Architecture Optimization Dossier"));
 
     TextResourceContents policyResource = mcpService.readPolicyResource();
-    assertNotNull(policyResource);
     assertEquals("archlens://policy", policyResource.uri());
     assertTrue(policyResource.text().contains("McpApp"));
 
     TextResourceContents fitnessResource = mcpService.readFitnessResource();
-    assertNotNull(fitnessResource);
     assertEquals("archlens://fitness", fitnessResource.uri());
     assertTrue(fitnessResource.text().contains("fitnessScore"));
 
     PromptMessage reviewPrompt = mcpService.architecturalReviewPrompt(tempDir.toString());
-    assertNotNull(reviewPrompt);
     assertNotNull(reviewPrompt.content());
 
     PromptMessage dipPrompt =
         mcpService.dipRefactoringPrompt(
             "com.example.OrderService", "com.example.PaymentGateway", tempDir.toString());
-    assertNotNull(dipPrompt);
     assertNotNull(dipPrompt.content());
   }
 
@@ -183,41 +222,39 @@ class ArchlensMcpServiceTest {
   void testDeclarativeBeanValidationAnnotationsOnMcpToolAndPromptParameters() throws Exception {
     Method getSnapshot =
         ArchlensMcpService.class.getMethod("getSnapshot", String.class, String.class);
-    assertTrue(
-        getSnapshot.getParameters()[0].isAnnotationPresent(NotBlank.class),
-        "getSnapshot.snapshotId must be annotated with @NotBlank");
+    assertTrue(getSnapshot.getParameters()[0].isAnnotationPresent(NotBlank.class));
 
     Method synthesizeDip =
         ArchlensMcpService.class.getMethod(
             "synthesizeDipInversion", String.class, String.class, String.class);
-    assertTrue(
-        synthesizeDip.getParameters()[0].isAnnotationPresent(NotBlank.class),
-        "synthesizeDipInversion.fromClass must be annotated with @NotBlank");
-    assertTrue(
-        synthesizeDip.getParameters()[1].isAnnotationPresent(NotBlank.class),
-        "synthesizeDipInversion.toClass must be annotated with @NotBlank");
+    assertTrue(synthesizeDip.getParameters()[0].isAnnotationPresent(NotBlank.class));
+    assertTrue(synthesizeDip.getParameters()[1].isAnnotationPresent(NotBlank.class));
 
     Method dipPrompt =
         ArchlensMcpService.class.getMethod(
             "dipRefactoringPrompt", String.class, String.class, String.class);
+    assertTrue(dipPrompt.getParameters()[0].isAnnotationPresent(NotBlank.class));
+    assertTrue(dipPrompt.getParameters()[1].isAnnotationPresent(NotBlank.class));
+
+    Method exportDiagram =
+        ArchlensMcpService.class.getMethod(
+            "exportArchitectureDiagram", String.class, String.class, String.class, boolean.class);
+    assertTrue(exportDiagram.isAnnotationPresent(Tool.class));
     assertTrue(
-        dipPrompt.getParameters()[0].isAnnotationPresent(NotBlank.class),
-        "dipRefactoringPrompt.fromClass must be annotated with @NotBlank");
-    assertTrue(
-        dipPrompt.getParameters()[1].isAnnotationPresent(NotBlank.class),
-        "dipRefactoringPrompt.toClass must be annotated with @NotBlank");
+        Arrays.stream(exportDiagram.getParameters())
+            .allMatch(p -> p.isAnnotationPresent(ToolArg.class)));
   }
 
   @Test
   void testDualTransportMcpStdioExtensionAndProfileConfiguration() throws Exception {
     Class<?> stdioHandler =
         Class.forName("io.quarkiverse.mcp.server.stdio.runtime.StdioMcpMessageHandler");
-    assertNotNull(stdioHandler, "quarkus-mcp-server-stdio must be present on runtime classpath");
+    assertNotNull(stdioHandler);
 
     Properties props = new Properties();
     try (InputStream in =
         ArchlensMcpService.class.getClassLoader().getResourceAsStream("application.properties")) {
-      assertNotNull(in, "application.properties must exist on classpath");
+      assertNotNull(in);
       props.load(in);
     }
 

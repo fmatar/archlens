@@ -18,11 +18,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TypeScriptAstScanner implements LanguageScanner {
+
+  private static final Logger LOG = Logger.getLogger(TypeScriptAstScanner.class);
 
   private static final Pattern IMPORT_FROM_PATTERN =
       Pattern.compile(
@@ -131,22 +135,24 @@ public class TypeScriptAstScanner implements LanguageScanner {
   public ScanResult scanProject(
       String projectRoot, String srcRelativePath, String basePrefix, ArchitecturePolicy policy)
       throws IOException {
+    AtomicInteger skippedFiles = new AtomicInteger();
     File scanDir = LanguageScanner.resolveScanDirectory(projectRoot, srcRelativePath, "src");
     Path rootPath = new File(projectRoot != null ? projectRoot : ".").toPath();
     Set<String> omitPatterns = LanguageScanner.extractOmitPatterns(policy);
     List<Path> tsFiles = new ArrayList<>();
     if (scanDir.exists()) {
-      tsFiles.addAll(discoverTypeScriptFiles(scanDir.toPath(), rootPath, omitPatterns));
+      tsFiles.addAll(
+          discoverTypeScriptFiles(scanDir.toPath(), rootPath, omitPatterns, skippedFiles));
     }
     if (tsFiles.isEmpty() && Files.exists(rootPath)) {
       for (Path wsMod : FileScannerUtil.discoverWorkspaceModules(rootPath)) {
         Path modSrc = wsMod.resolve("src");
         Path targetScan = Files.isDirectory(modSrc) ? modSrc : wsMod;
-        tsFiles.addAll(discoverTypeScriptFiles(targetScan, rootPath, omitPatterns));
+        tsFiles.addAll(discoverTypeScriptFiles(targetScan, rootPath, omitPatterns, skippedFiles));
       }
     }
     if (tsFiles.isEmpty()) {
-      return new ScanResult(List.of(), List.of());
+      return new ScanResult(List.of(), List.of(), skippedFiles.get());
     }
     Map<String, String> pathAliases = loadTsConfigPathAliases(rootPath, srcRelativePath);
 
@@ -156,12 +162,19 @@ public class TypeScriptAstScanner implements LanguageScanner {
     Map<String, List<String>> barrelWildcardsByModule = new LinkedHashMap<>();
 
     for (Path tsFile : tsFiles) {
+      List<String> rawLines;
+      try {
+        rawLines = Files.readAllLines(tsFile, StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable TypeScript/JS file %s: %s", tsFile, e.getMessage());
+        skippedFiles.incrementAndGet();
+        continue;
+      }
       String rel = rootPath.relativize(tsFile).toString().replace('\\', '/');
       String currentModule = toTsModuleId(rel);
       String directoryModule = getDirectoryModule(rel, currentModule);
       String packageName = getPackageName(currentModule);
 
-      List<String> rawLines = Files.readAllLines(tsFile, StandardCharsets.UTF_8);
       List<String> statements = extractLogicalTsStatements(rawLines);
 
       List<TypeDeclaration> types = new ArrayList<>();
@@ -369,7 +382,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
 
     boolean hasAnyApiCalls = parsedFiles.stream().anyMatch(p -> !p.apiCalls().isEmpty());
     Map<String, String> backendRoutes =
-        hasAnyApiCalls ? FileScannerUtil.indexBackendRestRoutes(rootPath) : Map.of();
+        hasAnyApiCalls ? FileScannerUtil.indexBackendRestRoutes(rootPath, skippedFiles) : Map.of();
 
     List<ClassNode> classes = new ArrayList<>();
     List<DependencyEdge> edges = new ArrayList<>();
@@ -505,7 +518,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
       }
     }
 
-    return new ScanResult(classes, edges);
+    return new ScanResult(classes, edges, skippedFiles.get());
   }
 
   private List<String> resolveTargetNodeIds(
@@ -898,8 +911,8 @@ public class TypeScriptAstScanner implements LanguageScanner {
             aliases.put(key, target);
           }
         }
-      } catch (IOException ignored) {
-        // Ignore unreadable tsconfig
+      } catch (IOException e) {
+        LOG.warnf("Skipping unreadable config %s: %s", cfgPath, e.getMessage());
       }
     }
     return aliases;
@@ -985,7 +998,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
   }
 
   private List<Path> discoverTypeScriptFiles(
-      Path scanPath, Path rootPath, Set<String> omitPatterns) {
+      Path scanPath, Path rootPath, Set<String> omitPatterns, AtomicInteger skippedFiles) {
     return FileScannerUtil.findFiles(
         scanPath,
         p -> {
@@ -1001,6 +1014,7 @@ public class TypeScriptAstScanner implements LanguageScanner {
               || s.endsWith(".js")
               || s.endsWith(".jsx")
               || s.endsWith(".svelte");
-        });
+        },
+        skippedFiles);
   }
 }

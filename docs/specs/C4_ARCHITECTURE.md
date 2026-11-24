@@ -7,18 +7,18 @@ flowchart TD
     User["Software Architect / Engineer"]
     Agent["Autonomous AI Coding Agent\n(Antigravity, Gemini CLI, Claude Code, Grok, Cursor, Windsurf)"]
     
-    subgraph System ["Archlens Governance & Refactoring Workbench (v0.1.1)"]
-        App["Archlens Dynamic Workbench\n(Quarkus 3.40.1.1 on Java 25 + Svelte 5 + @fmatar/archlens-skill CLI)"]
+    subgraph System ["Archlens Governance & Refactoring Workbench (v1.2.0)"]
+        App["Archlens Dynamic Workbench\n(Quarkus 3.40.1.2 on Java 25 + Svelte 5 + @fmatar/archlens-skill CLI)"]
     end
     
-    TargetCode["Polyglot Target Codebase\n(Java 25, Python, TS/JS/Svelte 5, Rust, Go, Clojure)"]
-    PolicyAndMailbox[".archlens/ Governance & IPC\n(policy.json, to-agent.json, to-viewer.json, snapshots/)"]
+    TargetCode["Polyglot Target Codebase\n(Java 25, Python, TS/JS/Svelte 5, Rust, Go)"]
+    PolicyAndMailbox[".archlens/ Governance & IPC\n(policy.json, to-agent.json, to-viewer.json, snapshots/, cache/, trash/)"]
     AdrDocs["Living Architectural Lineage\n(docs/adr/ADR-*.md & SARIF Reports)"]
 
     User -->|Inspects Rings, Simulates in Sandbox, Dispatches Directives| App
-    App -->|Scans Polyglot ASTs & Evaluates Concentric Invariants| TargetCode
+    App -->|Scans Polyglot Sources & Evaluates Concentric Invariants| TargetCode
     App <-->|Reads/Persists Policy, Snapshots & Mailbox IPC| PolicyAndMailbox
-    Agent <-->|Queries 10 MCP Tools, 3 Resources & 2 Prompts (/mcp, /mcp/sse, stdio)| App
+    Agent <-->|Queries 11 MCP Tools, 3 Resources & 2 Prompts (/mcp, /mcp/sse, stdio)| App
     Agent <-->|Dequeues Directives & Posts Verification ACKs| PolicyAndMailbox
     Agent -->|Synthesizes DIP Ports, Reorganizes Packages & Runs Tests| TargetCode
     App -->|Mints Living ADRs & Exports SARIF 2.1.0| AdrDocs
@@ -41,12 +41,12 @@ flowchart TD
         McpStdio["JSON-RPC 2.0 Stdio MCP Bridge & Multi-Client Registry\n(mcp-server.js, mcp-registry.js)"]
     end
 
-    subgraph BackendContainer ["Backend Engine (Quarkus 3.40.1.1 on Java 25 Virtual Threads)"]
-        RestDelivery["Ring 3: REST & SSE Adapters (delivery.rest)\n(DiagramResource, FitnessResource, MailboxResource, SnapshotResource)"]
+    subgraph BackendContainer ["Backend Engine (Quarkus 3.40.1.2 on Java 25 Virtual Threads)"]
+        RestDelivery["Ring 3: REST & SSE Adapters (delivery.rest)\n(DiagramResource, FitnessResource, MailboxResource, ProjectFilesystemResource, SnapshotResource, VersionResource)"]
         McpDelivery["Ring 3: Native MCP 2.0 Server (mcp)\n(ArchlensMcpService + Hibernate Validator @NotBlank)"]
-        MailboxAdapter["Ring 2: Filesystem Mailbox Gateway (mailbox.fs)\n(FileMailboxService)"]
-        UseCases["Ring 1: Application Use Cases & Engine (usecase, engine, scanner, metrics)\n(ArchitectureCompiler, EvaluateFitnessUseCase, SynthesizeDipInversionUseCase,\nVerifyAndRollbackRefactorUseCase, SyncAdrUseCase, Polyglot AST Scanners)"]
-        DomainCore["Ring 0: Pure Domain Core (domain)\n(ArchitectureGraph, ArchitecturePolicy, DependencyRuleValidator,\nPackageCycleDetector, DipInversionSynthesizer, ArchitectureFitnessCalculator)"]
+        DrivenAdapters["Ring 2: Driven Gateways (mailbox.fs, workspace.fs, verification.runner)\n(FileMailboxService, LocalFilesystemGateway, ProcessTestRunnerGateway)"]
+        UseCases["Ring 1: Application Use Cases & Engine (usecase, engine, scanner)\n(ArchitectureCompiler, EvaluateFitnessUseCase, SynthesizeDipInversionUseCase,\nVerifyAndRollbackRefactorUseCase, SyncAdrUseCase, FilesystemGateway, TestRunnerGateway, Polyglot Scanners)"]
+        DomainCore["Ring 0: Pure Domain Core (domain)\n(ArchitectureGraph, CrapScoreCalculator, ArchitecturePolicy, DependencyRuleValidator,\nPackageCycleDetector, DipInversionSynthesizer, ArchitectureFitnessCalculator)"]
     end
 
     UI --> State
@@ -56,7 +56,8 @@ flowchart TD
     McpStdio <-->|HTTP / Offline Fallback| RestDelivery
     RestDelivery --> UseCases
     McpDelivery --> UseCases
-    MailboxAdapter --> DomainCore
+    DrivenAdapters --> UseCases
+    DrivenAdapters --> DomainCore
     UseCases --> DomainCore
 ```
 
@@ -68,7 +69,7 @@ Archlens strictly enforces its own Clean Architecture policy ([`.archlens/policy
 
 | Concentric Ring | Packages (`io.slixes.archlens.*`) | Key Components & Responsibilities |
 | :--- | :--- | :--- |
-| **Ring 0: Domain Core** | `domain.graph`, `domain.policy`, `domain.fitness`, `domain.screaming`, `domain.dossier`, `domain.mailbox` | Pure immutable records (`ArchitectureGraph`, `ComponentNode`, `ClassNode`, `DependencyEdge`, `FitnessEvaluation`, `DipInversionPlan`) and pure domain services (`DependencyRuleValidator`, `PackageCycleDetector`, `ArchitectureFitnessCalculator`, `ScreamingArchitectureAnalyzer`, `DipInversionSynthesizer`, `ArchitecturalDossierGenerator`, `MailboxGateway`). Zero framework or I/O imports. |
-| **Ring 1: Application & Engine** | `usecase`, `engine`, `scanner`, `metrics` | Application interactors (`EvaluateFitnessUseCase`, `GetFitnessHistoryUseCase`, `ExportDossierUseCase`, `SynthesizeDipInversionUseCase`, `ProposeScreamingMigrationUseCase`, `ManageSnapshotsUseCase`, `VerifyAndRollbackRefactorUseCase`, `SyncAdrUseCase`, `SavePolicyUseCase`, `ResolveFilesystemUseCase`, `WorkspacePathResolver`), `ArchitectureCompiler` (`GraphCompiler`), `ProjectFileWatcher`, `CrapScoreCalculator`, and the 6-language `LanguageScanner` SPI (`JavaAstScanner`, `PythonAstScanner`, `TypeScriptAstScanner`, `RustAstScanner`, `GoAstScanner`, `ClojureAstScanner`). |
-| **Ring 2: Driven Adapters** | `mailbox.fs` | `FileMailboxService` implementing the Ring 0 `MailboxGateway` port over `.archlens/to-agent.json` and `.archlens/to-viewer.json`. |
-| **Ring 3: Driving Delivery & MCP** | `delivery.rest`, `mcp` | `@RunOnVirtualThread` REST resources (`DiagramResource`, `FitnessResource`, `MailboxResource`, `ProjectFilesystemResource`, `SnapshotResource`, `VersionResource`) and `ArchlensMcpService` exposing 10 `@Tool`s, 3 `@Resource`s, and 2 `@Prompt`s with `@NotBlank` Bean Validation constraints. |
+| **Ring 0: Domain Core** | `domain.graph`, `domain.policy`, `domain.fitness`, `domain.screaming`, `domain.dossier`, `domain.mailbox` | Pure immutable records (`ArchitectureGraph`, `ComponentNode`, `ClassNode`, `DependencyEdge`, `FitnessEvaluation`, `DipInversionPlan`) and pure domain services (`CrapScoreCalculator`, `DependencyRuleValidator`, `PackageCycleDetector`, `ArchitectureFitnessCalculator`, `ScreamingArchitectureAnalyzer`, `DipInversionSynthesizer`, `ArchitecturalDossierGenerator`, `MailboxGateway`). Zero framework or I/O imports. |
+| **Ring 1: Application & Engine** | `usecase`, `engine`, `scanner` | Application interactors (`EvaluateFitnessUseCase`, `GetFitnessHistoryUseCase`, `ExportDossierUseCase`, `ExportDiagramUseCase`, `SynthesizeDipInversionUseCase`, `ProposeScreamingMigrationUseCase`, `ManageSnapshotsUseCase`, `VerifyAndRollbackRefactorUseCase`, `SyncAdrUseCase`, `SavePolicyUseCase`, `ResolveFilesystemUseCase`, `WorkspacePathResolver`, `ProjectPathGuard`, `OpenedProjectRegistry`), ports (`FilesystemGateway`, `TestRunnerGateway`), `ArchitectureCompiler` (`GraphCompiler`), `ProjectFileWatcher`, and the 5-language `LanguageScanner` SPI (`JavaAstScanner`, `PythonAstScanner`, `TypeScriptAstScanner`, `RustAstScanner`, `GoAstScanner`). |
+| **Ring 2: Driven Adapters** | `mailbox.fs`, `workspace.fs`, `verification.runner` | `FileMailboxService` (`MailboxGateway`), `LocalFilesystemGateway` (`FilesystemGateway`), and `ProcessTestRunnerGateway` (`TestRunnerGateway`) isolating filesystem discovery, snapshot backup/restore, and bounded test-runner process trees. |
+| **Ring 3: Driving Delivery & MCP** | `delivery.rest`, `mcp` | Constructor-injected `@RunOnVirtualThread` REST resources (`DiagramResource`, `FitnessResource`, `MailboxResource`, `ProjectFilesystemResource`, `SnapshotResource`, `VersionResource`) and `ArchlensMcpService` exposing 11 `@Tool`s, 3 `@Resource`s, and 2 `@Prompt`s with `@NotBlank` Bean Validation constraints. |

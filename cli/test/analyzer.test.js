@@ -44,9 +44,9 @@ test('detectProjectLanguage identifies languages based on build manifests', () =
     assert.equal(detectProjectLanguage(tmpDir), 'go');
     fs.unlinkSync(path.join(tmpDir, 'go.mod'));
 
-    // Clojure
+    // Unrecognized / removed Clojure manifest falls back to default java
     fs.writeFileSync(path.join(tmpDir, 'deps.edn'), '{}');
-    assert.equal(detectProjectLanguage(tmpDir), 'clojure');
+    assert.equal(detectProjectLanguage(tmpDir), 'java');
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

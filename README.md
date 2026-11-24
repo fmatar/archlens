@@ -11,7 +11,7 @@
 **Real-time polyglot Clean Architecture workbench, AST governance engine, and autonomous AI refactoring studio for modern software teams.**
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
-[![Release v1.1.6](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
+[![Release v1.2.0](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
 [![NPM Package](https://img.shields.io/badge/npm-@fmatar%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fmatar/archlens-skill)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -23,8 +23,8 @@
 
 ![Archlens Clean Architecture Dynamic Workbench](media/archlens-canvas.png)
 
-> *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."* — **Robert C. Martin (Uncle Bob)**  
-> 🎬 **Watch**: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) · [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) · [`media/archlens-teaser.gif`](media/archlens-teaser.gif)
+> *"Source code dependencies must point only inward, toward higher-level policies."*  
+> 🎬 **Watch**: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) · [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4)
 
 ---
 
@@ -32,10 +32,10 @@
 
 Autonomous AI coding agents generate functional features at unprecedented speed—yet without continuous structural guardrails, they silently introduce outward dependency leaks, package cycles, and architectural erosion. Static UML diagrams rot the moment code is committed, while text-only linters dump disconnected logs without showing how to invert the breach.
 
-**Archlens turns Uncle Bob's Clean Architecture Dependency Rule into a live, closed-loop visual feedback and refactoring engine:**
+**Inspired by Clean Architecture principles, Archlens turns the concentric Dependency Rule into a live, closed-loop visual feedback and refactoring engine:**
 
-- ⚡ **Polyglot AST Governance Across 6 Languages**: Native scanners for **Java 25**, **Python**, **TypeScript / JS / Svelte 5**, **Rust**, **Go**, and **Clojure** map every class, interface, and import onto concentric tiers (`Domain Core` $\leftarrow$ `Application` $\leftarrow$ `Adapters` $\leftarrow$ `Infrastructure`) in milliseconds.
-- 🔒 **Zero-Disk "What-If" Sandbox & Surgical DIP Synthesis**: Simulate moving classes across rings in memory to preview violation deltas ($\Delta \pm N$) and Robert C. Martin metrics ($C_a, C_e, I, A, D$), or synthesize Dependency Inversion Principle (DIP) interface ports in one click.
+- ⚡ **Polyglot Architecture Governance Across 5 Languages**: Dedicated scanners for **Java 25**, **Python**, **TypeScript / JS / Svelte 5**, **Rust**, and **Go** map every class, interface, and import onto concentric tiers (`Domain Core` $\leftarrow$ `Application` $\leftarrow$ `Adapters` $\leftarrow$ `Infrastructure`) in milliseconds, reporting any skipped unreadable files explicitly.
+- 🔒 **Zero-Disk "What-If" Sandbox & Surgical DIP Synthesis**: Simulate moving classes across rings in memory to preview violation deltas ($\Delta \pm N$) and component coupling & stability metrics ($C_a, C_e, I, A, D$), or synthesize Dependency Inversion Principle (DIP) interface ports in one click.
 - 🧩 **Closed-Loop Autonomous AI Refactoring (MCP 2.0 + Mailbox IPC)**: Dispatch verified refactoring plans directly to **Google Antigravity**, **Claude Code**, **Cursor**, **Windsurf**, or **Gemini CLI** via native Model Context Protocol (MCP) tools and `.archlens/` Mailbox IPC.
 
 ---
@@ -54,7 +54,7 @@ npx @fmatar/archlens-skill --yes --skills --mcp
 npx @fmatar/archlens-skill --yes --skills --mcp --docker
 ```
 
-This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the 3 Archlens skills via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fmatar/archlens-skill global [--docker]` equips global skills + global MCP manifests across your machine).
+This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the unified `archlens` skill via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fmatar/archlens-skill global [--docker]` equips the global skill + global MCP manifests across your machine).
 
 ### 2. Run in Autonomous AI Mode, Visual Browser Studio, or CI
 
@@ -75,9 +75,9 @@ npx @fmatar/archlens-skill check --format mermaid --output docs/architecture.mmd
 
 #### Open Skills Ecosystem (`npx skills`)
 ```bash
-npx skills add fmatar/archlens --all -y
+npx skills add fmatar/archlens -y
 # Or target a specific agent globally:
-npx skills add fmatar/archlens --all -g --agent claude-code -y
+npx skills add fmatar/archlens -g --agent claude-code -y
 ```
 
 #### Always-On Docker Daemon (`http://127.0.0.1:8088`)
@@ -105,7 +105,7 @@ Publish the port on `127.0.0.1` only; see [Workbench security](#workbench-securi
     fitness-threshold: 0.85
 ```
 The Action runs the CLI bundled with the Action revision you pin (`@v1` follows the latest
-`v1.x.y` release; pin `@v1.1.6` for an exact version), not whatever is newest on npm. Threshold
+`v1.x.y` release; pin `@v1.2.0` for an exact version), not whatever is newest on npm. Threshold
 inputs must be plain numbers; anything else fails with a usage error (exit 2).
 
 #### Global CLI or Canary (`@dev`) Track
@@ -151,9 +151,9 @@ sequenceDiagram
 ### Core Architectural Capabilities
 
 - **Concentric Ring Visualization & Violation X-Ray (`V`)**: Isolates outward dependency breaches in crimson, routes dense graphs with **Hierarchical Edge Bundling (`B`)**, and isolates component neighborhoods with **1-Hop Focus (`F`)**.
-- **"What-If" Architectural Sandbox (`S`)**: Reassign classes across rings in memory, inspect live violation deltas ($\Delta \pm N$) and Martin stability shifts, and click **`Dispatch to Agent`** (`APPLY_PROPOSAL`) to apply verified package moves on disk.
+- **"What-If" Architectural Sandbox (`S`)**: Reassign classes across rings in memory, inspect live violation deltas ($\Delta \pm N$) and component stability shifts, and click **`Dispatch to Agent`** (`APPLY_PROPOSAL`) to apply verified package moves on disk.
 - **Surgical DIP Inverter (`INVERT_DEPENDENCY`)**: Click any violating edge to synthesize a language-native `<Target>Port` interface, preview side-by-side caller/adapter diffs, mint a living ADR (`docs/adr/`), and dispatch to your AI agent.
-- **Robert C. Martin Main Sequence Scatter Plot (`M`)**: Computes Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I = \frac{C_e}{C_a + C_e}$), Abstractness ($A = \frac{N_a}{N_c}$), and Distance from the Main Sequence ($D = |A + I - 1|$), highlighting components in the *Zone of Pain* or *Zone of Uselessness*.
+- **Main Sequence & Component Stability Scatter Plot (`M`)**: Computes Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I = \frac{C_e}{C_a + C_e}$), Abstractness ($A = \frac{N_a}{N_c}$), and Distance from the Main Sequence ($D = |A + I - 1|$), highlighting components in the *Zone of Pain* or *Zone of Uselessness*.
 - **Screaming Architecture (`SAS`) & Fitness Functions (`AFI`)**: Quantifies domain-vs-framework package ratios, proposes vertical feature slice migrations, and tracks historical Architecture Fitness Index (`AFI`) trends across Git releases (`G`).
 - **Multi-Format Diagram Export (`E`)**: Export **Concentric Rings (`COMPONENT_RINGS`)**, **Class & Interface UML (`CLASS_UML`)**, or **Before/After DIP Inversion (`DIP_REFACTOR`)** views as **Mermaid (`.mmd`)**, **Standalone Vector SVG (`.svg`)**, or **`2x` Retina PNG (`.png`)**.
 
@@ -163,7 +163,7 @@ sequenceDiagram
 #### 1. "What-If" Architectural Sandbox & 1-Click Dispatch
 1. Press **`S`** or click **`Sandbox`** in the top toolbar to enter simulation mode.
 2. Drag or reassign any class to a target concentric ring (e.g., moving a domain policy out of `adapters` into `domain`).
-3. Inspect real-time **Violation Deltas** (`⚡ -3 Violations`) and Martin coupling impact in the bottom Sandbox toolbar.
+3. Inspect real-time **Violation Deltas** (`⚡ -3 Violations`) and coupling impact in the bottom Sandbox toolbar.
 4. Click **`Dispatch to Agent`** to write an `APPLY_PROPOSAL` envelope to `.archlens/to-agent.json` for automated refactoring and test verification.
 
 #### 2. Surgical DIP Inverter & Living ADR Synchronization
@@ -173,7 +173,7 @@ sequenceDiagram
 
 #### 3. Multi-Format Architecture Diagram Export (`E`)
 Press **`E`** (or run `npx @fmatar/archlens-skill check --format mermaid`) to export:
-- **Concentric Ring Component Topology (`COMPONENT_RINGS`)**: Nested `flowchart TB` subgraphs (`L0`–`L3`) with Martin metrics ($I, A, D$) and crimson `linkStyle` violation arrows.
+- **Concentric Ring Component Topology (`COMPONENT_RINGS`)**: Nested `flowchart TB` subgraphs (`L0`–`L3`) with coupling metrics ($I, A, D$) and crimson `linkStyle` violation arrows.
 - **Class & Interface UML (`CLASS_UML`)**: Native Mermaid `classDiagram` with `<<interface>>` and `<<abstract>>` stereotypes, visibility-prefixed members, and active `V` / `F` filter state.
 - **Before vs. After DIP Port Inversion (`DIP_REFACTOR`)**: Side-by-side subgraph comparison showing how the synthesized `<Target>Port` inverts the outward dependency.
 
@@ -202,7 +202,7 @@ flowchart TD
 ```
 
 <details>
-<summary><strong>🧰 Available MCP Tools (10), Resources (3), Prompts (2) & Per-Agent Setup Manifests</strong></summary>
+<summary><strong>🧰 Available MCP Tools (11), Resources (3), Prompts (2) & Per-Agent Setup Manifests</strong></summary>
 
 #### MCP 2.0 Surface (`quarkus-mcp-server` + `@fmatar/archlens-skill mcp`)
 
@@ -210,6 +210,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **`@Tool`** | `inspectArchitecture` | Extracts the full Clean Architecture graph: concentric rings, classes, edges (`isViolating`), and ADP cycles. |
 | **`@Tool`** | `exportLlmDossier` | Generates a Markdown refactoring dossier diagnosing outward breaches and prescribing concrete DIP ports. |
+| **`@Tool`** | `exportArchitectureDiagram` | Exports deterministic Mermaid architecture diagrams (`COMPONENT_RINGS`, `CLASS_UML`, or `DIP_REFACTOR`) with optional `violationsOnly` filtering. |
 | **`@Tool`** | `synthesizeDipInversion` | Synthesizes a polyglot Dependency Inversion port (Java/Python/TS/Go/Rust) with caller & adapter diff previews. |
 | **`@Tool`** | `evaluateFitness` | Computes the Architecture Fitness Index (`AFI` 0–100%, Grade `A`–`F`), Main Sequence ($I, A, D$), and Screaming Score (`SAS`). |
 | **`@Tool`** | `getFitnessHistory` | Retrieves historical fitness snapshots and regression trajectory (`IMPROVING`, `STABLE`, `DEGRADING`). |
@@ -232,7 +233,7 @@ flowchart TD
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill@1.1.6", "mcp"],
+      "args": ["-y", "@fmatar/archlens-skill@1.2.0", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -304,16 +305,15 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>🌐 Polyglot AST Scanner Matrix (Java 25, Python, TypeScript/Svelte 5, Rust, Go, Clojure)</strong></summary>
+<summary><strong>🌐 Polyglot Scanner Matrix (Java 25, Python, TypeScript/Svelte 5, Rust, Go)</strong></summary>
 
-| Language | Ecosystem & AST Engine | File Extensions | Capabilities |
+| Language | Scanner Engine | File Extensions | Capabilities |
 | :--- | :--- | :--- | :--- |
-| **Java 25** | JavaParser 3.28 (`ThreadLocal`) | `.java` | Records, Sealed Types, Interfaces, Method Signatures, Multi-Module Monorepos, Inward Rules |
-| **Python** | Statement-Normalizing AST Lexer | `.py` | Class-First Edges, `Protocol`/`ABC`/`Enum` Stereotypes, Method Signatures, Multi-Line & Nested Imports, `__init__.py` Barrel Re-exports |
-| **TypeScript / JS / Svelte** | Statement-Normalizing AST Scanner | `.ts`, `.tsx`, `.js`, `.jsx`, `.svelte`, `.svelte.ts` | Classes, Svelte 5 Runes, `interface`/`abstract class`/`enum` Stereotypes, Multi-Line ESM, Barrel Re-exports, `tsconfig.json` & Turborepo Aliases |
-| **Rust** | Syn / Cargo AST Extractor | `.rs` | Structs, Traits, Impls, Module `use` Paths, Trait DIP Synthesis |
-| **Go** | Go AST Tree Walker | `.go` | Structs, Interfaces, Package Imports, Type Definitions, Package-level Functions, Interface DIP Synthesis |
-| **Clojure** | EDN & Regex AST Scanner | `.clj`, `.cljs`, `.edn` | Namespaces (`ns`), `(:require ...)`, `def`, `defn`, Protocols |
+| **Java 25** | JavaParser 3.28 AST (`ThreadLocal`) | `.java` | Records, Sealed Types, Interfaces, Method Signatures, Multi-Module Monorepos, Inward Rules |
+| **Python** | Statement-Normalizing Lexical Scanner | `.py` | Class-First Edges, `Protocol`/`ABC`/`Enum` Stereotypes, Method Signatures, Multi-Line & Nested Imports, `__init__.py` Barrel Re-exports |
+| **TypeScript / JS / Svelte** | Statement-Normalizing Lexical Scanner | `.ts`, `.tsx`, `.js`, `.jsx`, `.svelte`, `.svelte.ts` | Classes, Svelte 5 Runes, `interface`/`abstract class`/`enum` Stereotypes, Multi-Line ESM, Barrel Re-exports, `tsconfig.json` & Turborepo Aliases |
+| **Rust** | Lexical Module & Trait Scanner | `.rs` | Structs, Traits, Impls, Module `use` Paths, Cargo Workspaces, Trait DIP Synthesis |
+| **Go** | Lexical Package & Interface Scanner | `.go` | Structs, Interfaces, Package Imports, Type Definitions, Package-level Functions, Interface DIP Synthesis |
 
 </details>
 
@@ -338,7 +338,7 @@ flowchart TD
 | `--max-violations <N>` | | Maximum allowable outward dependency violations during `check` | `0` |
 | `--max-files <N>` | | Stop scanning after `N` source files; a truncated scan fails the gate and is flagged in SARIF/JSON | no limit |
 | `--allow-partial` | | Let a scan truncated by `--max-files` pass the gate (prints a warning) | `false` |
-| `--detect-cycles` | | Enforce Robert C. Martin Acyclic Dependencies Principle (ADP) | `false` |
+| `--detect-cycles` | | Enforce Acyclic Dependencies Principle (ADP) | `false` |
 | `--screaming-threshold <N>` | | Enforce minimum Screaming Architecture score (`0.0`–`1.0`) | `0.60` |
 | `--fitness-threshold <N>` | | Enforce minimum Architectural Fitness Index (`0.0`–`1.0`) | `0.80` |
 | `--format <FMT>` | | Audit output format (`pretty`, `json`, `sarif`, `mermaid` / `mmd`) | `pretty` |
@@ -351,15 +351,15 @@ flowchart TD
 Requires **Java 25 (OpenJDK / GraalVM)**, **Apache Maven 3.9+**, and **Node.js 22+ / pnpm**:
 ```bash
 # 1. Start the Quarkus Backend (:8088)
-cd backend && mvn clean quarkus:dev
+mvn -f backend/pom.xml clean quarkus:dev
 
 # 2. Start the Svelte 5 Frontend (:5173). Use the same token for both processes, e.g.
 #    export ARCHLENS_TOKEN=dev-token   (or ARCHLENS_AUTH_ENABLED=false on the backend for local hacking)
 cd frontend && pnpm install && pnpm dev
 
 # 3. Run Full-Stack Quality Verification
-mvn clean spotless:check verify
-npm test && npm --prefix frontend run check && npm --prefix frontend test
+mvn -f backend/pom.xml clean spotless:check verify pmd:check spotbugs:check
+npm test && pnpm --dir frontend run check && pnpm --dir frontend test
 ```
 
 </details>

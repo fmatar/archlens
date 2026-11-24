@@ -39,7 +39,6 @@ test('parseArgs parses all CLI commands and flags accurately', () => {
     '--agent', 'claude-code,cursor',
     '-g',
     '-u',
-    '--upgrade',
     '--prompt',
     '--detect-cycles',
     '--screaming-threshold', '0.5',
@@ -70,7 +69,6 @@ test('parseArgs parses all CLI commands and flags accurately', () => {
   assert.equal(full.agent, 'claude-code,cursor');
   assert.equal(full.global, true);
   assert.equal(full.update, true);
-  assert.equal(full.upgrade, true);
   assert.equal(full.prompt, true);
   assert.equal(full.detectCycles, true);
   assert.equal(full.screamingThreshold, 0.5);
@@ -87,7 +85,7 @@ test('parseArgs parses all CLI commands and flags accurately', () => {
   assert.equal(full.preferNative, true);
   assert.equal(full.jarPath, '/tmp/app.jar');
 
-  for (const cmd of ['help', 'version', 'start', 'update', 'upgrade', 'skills', 'global', 'prompt', 'mcp']) {
+  for (const cmd of ['help', 'version', 'start', 'update', 'skills', 'global', 'prompt', 'mcp']) {
     const res = parseArgs([cmd]);
     assert.equal(res.command, cmd);
   }
@@ -152,7 +150,7 @@ test('main executes init --yes --skills --mcp once per integration without dupli
   }
 });
 
-test('main routes skills, skills -g, global, update, and upgrade commands cleanly', async () => {
+test('main routes skills, skills -g, global, and update commands cleanly', async () => {
   const tmpDir = createSampleProject('archlens-bin-routes-');
   const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-bin-routes-home-'));
   const spawnCalls = [];
@@ -213,20 +211,7 @@ test('main routes skills, skills -g, global, update, and upgrade commands cleanl
       options: { homedir: tmpHome, preferVercelSkills: false }
     });
 
-    // 6. `upgrade` command (already aligned, then legacy .uml-viewer migration)
-    await main(['upgrade', '-p', tmpDir], {});
-    const legacyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-bin-legacy-'));
-    try {
-      fs.mkdirSync(path.join(legacyDir, '.uml-viewer'), { recursive: true });
-      fs.writeFileSync(path.join(legacyDir, '.uml-viewer', 'policy.json'), JSON.stringify({ title: 'Legacy' }));
-      fs.writeFileSync(path.join(legacyDir, 'AGENTS.md'), 'Queue: .uml-viewer/to-agent.json\n');
-      await main(['upgrade', '-p', legacyDir], {});
-      assert.ok(fs.existsSync(path.join(legacyDir, '.archlens', 'policy.json')));
-    } finally {
-      fs.rmSync(legacyDir, { recursive: true, force: true });
-    }
-
-    // 7. Error handling on non-existent target directory
+    // 6. Error handling on non-existent target directory
     let errExit = null;
     await main(['--yes', '-p', path.join(tmpDir, 'does-not-exist')], {
       exit: (c) => { errExit = c; }
@@ -353,7 +338,7 @@ test('main executes prompt, check (pretty/json/sarif/mermaid/fail), mcp, start, 
     const missingParentRoot = path.join(tmpInteractiveHome, 'isolated-ws');
     fs.mkdirSync(missingParentRoot, { recursive: true });
     try {
-      for (const choice of ['init_local', 'install_global', 'mcp', 'both', 'update', 'upgrade']) {
+      for (const choice of ['init_local', 'install_global', 'mcp', 'both', 'update']) {
         await main(['-p', tmpDir], {
           isTTY: true,
           askChoice: async () => choice,

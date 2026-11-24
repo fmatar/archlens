@@ -12,34 +12,34 @@ Software architects, engineering leaders, and software engineers working extensi
 
 ## Product Purpose
 
-Archlens transforms Robert C. Martin's Clean Architecture Dependency Rule into a living, real-time visual feedback loop. It solves a critical vulnerability in modern agentic software development: while frontier AI models generate functional code rapidly, without continuous architectural boundaries they silently introduce outward dependency violations, cross-layer leakage, circular dependencies, and design erosion. Success means architects and developers can instantly identify breaches, prototype structural refactorings in a zero-disk sandbox, and dispatch targeted directives to autonomous AI agents to refactor code back into 100% architectural conformance.
+Archlens transforms the Clean Architecture Dependency Rule into a living, real-time visual feedback loop. It solves a critical vulnerability in modern agentic software development: while frontier AI models generate functional code rapidly, without continuous architectural boundaries they silently introduce outward dependency violations, cross-layer leakage, circular dependencies, and design erosion. Success means architects and developers can instantly identify breaches, prototype structural refactorings in a zero-disk sandbox, and dispatch targeted directives to autonomous AI agents to refactor code back into 100% architectural conformance.
 
 ## Positioning
 
-Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall out of sync with code, and unlike text-heavy static analysis linters (ArchUnit, SonarQube) that output disconnected error logs, Archlens is an interactive, real-time visual workbench. It couples polyglot AST parsing directly with dynamic concentric ring visualization, "What-If" architectural simulation, Robert C. Martin coupling/stability metrics, and closed-loop AI agent refactoring via both a local mailbox IPC (`.archlens/`) and a native Model Context Protocol (MCP) server.
+Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall out of sync with code, and unlike text-heavy static analysis linters (ArchUnit, SonarQube) that output disconnected error logs, Archlens is an interactive, real-time visual workbench. It couples polyglot code scanning directly with dynamic concentric ring visualization, "What-If" architectural simulation, component coupling/stability metrics, and closed-loop AI agent refactoring via both a local mailbox IPC (`.archlens/`) and a native Model Context Protocol (MCP) server.
 
 ## Operating Context
 
-- **Local Workstation & Container**: Runs either via a zero-dependency standalone container (`ghcr.io/fmatar/archlens:latest` on port 8088), an auto-launching native JVM runner (`quarkus-run.jar` in ~0.5s), or bare-metal dev mode (`mvn quarkus:dev` + `npm run dev`).
+- **Local Workstation & Container**: Runs either via a zero-dependency standalone container (`ghcr.io/fmatar/archlens:latest` on `127.0.0.1:8088`), an auto-launching native binary / JVM runner (`quarkus-run.jar` in ~0.5s), or bare-metal dev mode (`mvn -f backend/pom.xml quarkus:dev` + `pnpm --dir frontend dev`).
 - **AI Agent Pairing (Dual Protocol)**:
   - **Mailbox IPC Companion Protocol**: Asynchronous, file-based IPC in `.archlens/` (`to-agent.json` and `to-viewer.json`) for local paired refactoring tasks (`APPLY_PROPOSAL`, `INVERT_DEPENDENCY`, `REGEN`, `REFRESH_CRAP`).
-  - **Model Context Protocol (MCP)**: Native HTTP/SSE (`/mcp`, `/mcp/sse`) and CLI stdio bridge exposing tools (`inspectArchitecture`, `synthesizeDipInversion`, `exportLlmDossier`, `listSnapshots`, `getSnapshot`).
+  - **Model Context Protocol (MCP)**: Native HTTP/SSE/STDIO (`/mcp`, `/mcp/sse`, `mcp-stdio`) and CLI stdio bridge exposing 11 tools (`inspectArchitecture`, `synthesizeDipInversion`, `exportLlmDossier`, `exportArchitectureDiagram`, `evaluateFitness`, `getFitnessHistory`, `proposeScreamingMigration`, `getPolicy`, `syncDipAdr`, `listSnapshots`, `getSnapshot`).
 - **Architectural Policy**: Version-controlled `.archlens/policy.json` placed directly inside target repositories, defining concentric tiers (Domain Core, Application, Adapters, Infrastructure), package order, and structural proposals.
 
 ## Capabilities and Constraints
 
-- **Polyglot AST Scanners (SPI)**: Native AST parsing and dependency extraction across 6 languages: Java 25 (JavaParser 3.28), TypeScript/JavaScript/Svelte 5 (including runes and `#lib/*` subpath aliases), Python (AST visitor), Rust (Syn / Cargo extractor), Go (AST tree walker), and Clojure (EDN & Regex scanner).
-- **Concentric Architecture Rings**: Dynamic 2D SVG canvas rendering components and classes in tiered levels, automatically flagging inward (valid) vs outward (violating) dependencies in real time.
+- **Polyglot Scanners (SPI)**: Dependency extraction across 5 languages: Java 25 (JavaParser 3.28 AST), TypeScript/JavaScript/Svelte 5 (statement-normalizing lexical scanner with runes and `#lib/*` subpath aliases), Python (statement-normalizing lexical scanner), Rust (lexical module & trait scanner), and Go (lexical package & interface scanner), with explicit `skippedFiles` telemetry for unreadable or malformed files.
+- **Concentric Architecture Rings**: Dynamic SVG + high-scale 2D `<canvas>` workbench rendering components and classes in tiered levels, automatically flagging inward (valid) vs outward (violating) dependencies in real time.
 - **Surgical DIP Inverter**: 1-click synthesis of Dependency Inversion Principle interface ports and injection refactoring previews.
-- **"What-If" Architectural Sandbox**: Interactive in-memory class reassignment simulator displaying live violation deltas ($\Delta \pm N$) and Martin metrics before writing changes to disk.
-- **Robert C. Martin Coupling & Main Sequence**: Automated calculation of Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I$), Abstractness ($A$), and Distance from Main Sequence ($D$) with an interactive 2D Cartesian scatter plot.
+- **"What-If" Architectural Sandbox**: Interactive in-memory class reassignment simulator displaying live violation deltas ($\Delta \pm N$) and coupling metrics before writing changes to disk.
+- **Component Coupling & Main Sequence**: Automated calculation of Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I$), Abstractness ($A$), and Distance from Main Sequence ($D$) with an interactive 2D Cartesian scatter plot.
 - **Screaming Architecture & Feature Clustering**: Calculation of Screaming Architecture Score (SAS) with automated feature clustering and 1-click domain verticalization proposals.
 - **Architectural Fitness Functions**: Quality invariants checking zero cyclic dependencies (ADP), breach thresholds, and release snapshot comparisons.
 
 ## Brand Commitments
 
 - **Name**: Archlens (Dynamic Clean Architecture Workbench).
-- **Philosophical Root**: Robert C. Martin's (Uncle Bob) Clean Architecture principles and his experimental `unclebob/uml-viewer` prototype.
+- **Philosophical Root**: Inspired by Clean Architecture concentric layer and Dependency Inversion principles.
 - **License**: Apache 2.0 with full open-source community standards (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `NOTICE`).
 - **Aesthetic Tone**: Developer-focused, dark-mode first, precise, high-contrast, technical, non-gimmicky workbench aesthetic.
 
@@ -48,7 +48,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 - **Working Codebase**: Java 25 + Quarkus 3.40.1 backend, Svelte 5 + Tailwind CSS v4 + GSAP 3.15 frontend, and Node.js CLI (`@fmatar/archlens-skill`).
 - **Living Self-Analysis**: Self-governing policy (`.archlens/policy.json`) achieving 1.00 (100%) Screaming Architecture Score with 0 violations and 0 cycles.
 - **Media Artifacts**:
-  - `media/archlens-teaser.mp4` & `.gif`: 9-second high-definition overview highlighting concentric ring reorganization and source code inspection.
+  - `media/archlens-teaser.mp4` & `media/archlens-canvas.png`: 9-second high-definition overview and workbench screenshot highlighting concentric ring reorganization and source code inspection.
   - `media/archlens-user-journey.mp4`: Full interactive walkthrough video.
   - `media/archlens-canvas.png`: High-resolution canvas snapshot.
 - **Documentation**: C4 Architecture specification, User Guide, Inspiration & Vision, and SDLC Compliance reports in `docs/`.
@@ -72,7 +72,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 - **INV-01**: Zero direct commits, merges, or pushes to `main` or `develop` (enforced by 4-Layer Git Guard & Stage 7 Merkle Gate Receipts).
 - **INV-02**: 100% of code changes require an active SDLC ticket session and Dual-Gate verification ($\ge 85\%$ diff coverage, $\ge 80\%$ mutation score).
 - **INV-03**: Core Domain entities (Ring 0) must remain pure with zero imports from outer Web, DB, or framework layers (Clean Architecture Dependency Rule).
-- **INV-04**: Polyglot AST Scanners must emit class/interface-level `DependencyEdge` endpoints when symbols or classes exist (falling back to module `ClassNode` IDs for function-only modules) and classify abstract/interface stereotypes (`INTERFACE`, `ABSTRACT`) accurately for Robert C. Martin metrics ($C_a, C_e, I, A, D$).
+- **INV-04**: Polyglot Scanners must emit class/interface-level `DependencyEdge` endpoints when symbols or classes exist (falling back to module `ClassNode` IDs for function-only modules) and classify abstract/interface stereotypes (`INTERFACE`, `ABSTRACT`) accurately for component coupling metrics ($C_a, C_e, I, A, D$).
 - **INV-05**: All architectural or contract deviations from this constitution require a linked ADR (`docs/adr/ADR-00X.md`) synchronized with `PRODUCT.md` and `docs/DECISION_MAP.md`.
 
 ---
@@ -106,5 +106,10 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-012 | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | #224 | ADR-011 |
 | ADR-013 | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | #247 | ADR-012 |
 | ADR-014 | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | #247 | ADR-013 |
+| ADR-015 | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
+| ADR-016 | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
+| ADR-017 | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
+| ADR-018 | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
+| ADR-019 | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | #247 | ADR-018 |
 <!-- ADR_INDEX_END -->
 

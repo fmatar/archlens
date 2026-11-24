@@ -11,11 +11,8 @@ frontend/dist/
 .vscode/
 *.iml
 .DS_Store
-.uml-viewer/
 coverage/
 **/coverage/
-.grok/
-.metrics/
 test-results/
 **/test-results/
 playwright-report/
@@ -28,16 +25,23 @@ reports/
 .agents/
 .agent/
 .claude/
+.github/skills/
+.impeccable/
 .junie/
 .quarkus/
 .env
 .envrc
 
 # Agentic SDLC Ephemeral Cache, Binaries & Snapshots
+.archlens/cache/
+.archlens/trash/
+.superpowers/
 .agent/.cache/
 .agent/.sdlc-session.json
 .agent/.receipt-key
 .agent/skills/*/scripts/bin/
+**/skills/*/scripts/bin/
+frontend/package-lock.json
 .agent/workbench/index.html
 .agent/arch-trace.jsonl
 docs/ARCH_TRACE.md

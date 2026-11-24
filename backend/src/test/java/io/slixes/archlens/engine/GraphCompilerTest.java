@@ -3,8 +3,8 @@ package io.slixes.archlens.engine;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
+import io.slixes.archlens.domain.graph.CrapScoreCalculator;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
-import io.slixes.archlens.metrics.CrapScoreCalculator;
 import io.slixes.archlens.scanner.JavaAstScanner;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -39,8 +39,8 @@ class GraphCompilerTest {
     assertEquals(tempDir.toFile().getName(), defaultPolicy.title());
 
     // 2. Write custom policy
-    Path umlDir = tempDir.resolve(".uml-viewer");
-    Files.createDirectories(umlDir);
+    Path archlensDir = tempDir.resolve(".archlens");
+    Files.createDirectories(archlensDir);
     String policyJson =
         """
         {
@@ -61,7 +61,7 @@ class GraphCompilerTest {
           ]
         }
         """;
-    Files.writeString(umlDir.resolve("policy.json"), policyJson);
+    Files.writeString(archlensDir.resolve("policy.json"), policyJson);
 
     ArchitecturePolicy loadedPolicy = compiler.loadPolicy(tempDir.toString());
     assertEquals("My Custom Architecture", loadedPolicy.title());
@@ -79,6 +79,7 @@ class GraphCompilerTest {
     assertEquals("My Custom Architecture", graph.title());
     assertFalse(graph.isProposal());
     assertFalse(graph.components().isEmpty());
+    assertEquals(0, graph.skippedFiles());
 
     // 5. Compile proposal graph with both package and class matches
     String proposalWithClasses =
@@ -101,7 +102,7 @@ class GraphCompilerTest {
           ]
         }
         """;
-    Files.writeString(umlDir.resolve("policy.json"), proposalWithClasses);
+    Files.writeString(archlensDir.resolve("policy.json"), proposalWithClasses);
     ArchitectureGraph propGraph = compiler.compileGraph(tempDir.toString(), "prop1");
     assertNotNull(propGraph);
     assertTrue(propGraph.isProposal());
@@ -109,7 +110,7 @@ class GraphCompilerTest {
     assertEquals(1, propGraph.components().size());
 
     // 6. Test corrupt policy.json fallback
-    Files.writeString(umlDir.resolve("policy.json"), "invalid-json-content");
+    Files.writeString(archlensDir.resolve("policy.json"), "invalid-json-content");
     ArchitecturePolicy fallbackPolicy = compiler.loadPolicy(tempDir.toString());
     assertEquals(tempDir.toFile().getName(), fallbackPolicy.title());
 
@@ -172,8 +173,8 @@ class GraphCompilerTest {
       throw new RuntimeException(e);
     }
 
-    Path umlDir = tempDir.resolve(".uml-viewer");
-    Files.createDirectories(umlDir);
+    Path archlensDir = tempDir.resolve(".archlens");
+    Files.createDirectories(archlensDir);
     String policyJson =
         """
         {
@@ -186,7 +187,7 @@ class GraphCompilerTest {
           "omit": ["omitted_pkg"]
         }
         """;
-    Files.writeString(umlDir.resolve("policy.json"), policyJson);
+    Files.writeString(archlensDir.resolve("policy.json"), policyJson);
 
     Path srcDomain = tempDir.resolve("src/com/example/domain");
     Path srcService = tempDir.resolve("src/com/example/service");
@@ -216,28 +217,41 @@ class GraphCompilerTest {
   }
 
   @Test
-  void testArchlensPolicyPriorityOverLegacyUmlViewer(@TempDir Path tempDir) throws IOException {
-    Path legacyDir = tempDir.resolve(".uml-viewer");
+  void testCompileGraphPropagatesSkippedFilesCount(@TempDir Path tempDir) throws IOException {
     Path primaryDir = tempDir.resolve(".archlens");
-    Files.createDirectories(legacyDir);
     Files.createDirectories(primaryDir);
-
-    Files.writeString(
-        legacyDir.resolve("policy.json"),
-        """
-        {"title": "Legacy Policy", "src": "src", "prefix": "com.test", "hierarchical": true, "levels": []}
-        """);
-
     Files.writeString(
         primaryDir.resolve("policy.json"),
         """
-        {"title": "Primary Archlens Policy", "src": "src", "prefix": "com.test", "hierarchical": true, "levels": []}
+        {"title": "Primary Archlens Policy", "src": "src", "prefix": "com.test", "hierarchical": true, "levels": [["domain"]]}
         """);
 
+    Path srcDir = tempDir.resolve("src/com/test/domain");
+    Files.createDirectories(srcDir);
+    Files.writeString(
+        srcDir.resolve("Valid.java"), "package com.test.domain; public class Valid {}");
+    Files.writeString(srcDir.resolve("Broken.java"), "package com.test.domain; public class {{{");
+
     GraphCompiler compiler = new GraphCompiler();
-    ArchitecturePolicy policy = compiler.loadPolicy(tempDir.toString());
-    assertNotNull(policy);
-    assertEquals("Primary Archlens Policy", policy.title());
+    JavaAstScanner scanner = new JavaAstScanner();
+    try {
+      java.lang.reflect.Field field1 = JavaAstScanner.class.getDeclaredField("crapCalculator");
+      field1.setAccessible(true);
+      field1.set(scanner, new CrapScoreCalculator());
+
+      io.slixes.archlens.scanner.LanguageScannerRegistry registry =
+          new io.slixes.archlens.scanner.LanguageScannerRegistry(java.util.List.of(scanner));
+      java.lang.reflect.Field field2 = GraphCompiler.class.getDeclaredField("scannerRegistry");
+      field2.setAccessible(true);
+      field2.set(compiler, registry);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    ArchitectureGraph graph = compiler.compileGraph(tempDir.toString(), null);
+    assertEquals("Primary Archlens Policy", graph.title());
+    assertEquals(1, graph.components().size());
+    assertEquals(1, graph.skippedFiles());
   }
 
   @Test

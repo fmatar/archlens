@@ -6,13 +6,11 @@ Archlens ships a dual skill ecosystem: **end-user architectural governance skill
 
 ---
 
-## 🏛️ 1. End-User Architectural Governance Skills (`skills/`)
+## 🏛️ 1. End-User Architectural Governance Skill (`skills/`)
 
 | Skill ID | Path | Purpose |
 | :--- | :--- | :--- |
-| `archlens` | `skills/archlens/SKILL.md` | Full-stack Clean Architecture auditor, headless CI fitness gate (`check`), polyglot Surgical DIP Inverter (`synthesizeDipInversion`), and MCP companion (`npx @fmatar/archlens-skill`). |
-| `archlens-install-policy` | `skills/archlens-install-policy/SKILL.md` | Bootstraps `.archlens/policy.json` concentric rings and updates `AGENTS.md` / `CLAUDE.md` with Clean Architecture companion protocols. |
-| `uml-workbench-companion` | `skills/uml-workbench-companion/SKILL.md` | Monitors `.archlens/to-agent.json` and `.archlens/to-viewer.json` mailbox queues to execute `REGEN`, `APPLY_PROPOSAL`, `INVERT_DEPENDENCY`, and `REFRESH_CRAP` directives. |
+| `archlens` | `skills/archlens/SKILL.md` | Unified Clean Architecture auditor, `.archlens/policy.json` scaffolder (`scripts/init_policy.py`), headless CI fitness gate (`check`), polyglot Surgical DIP Inverter (`synthesizeDipInversion`), workbench mailbox companion (`to-agent.json` / `to-viewer.json`), and MCP 2.0 companion (`npx @fmatar/archlens-skill`). |
 
 ---
 
@@ -36,8 +34,8 @@ Archlens ships a dual skill ecosystem: **end-user architectural governance skill
 ## 💻 3. CLI Reference (`npx @fmatar/archlens-skill`)
 
 ```bash
-# Install all 3 Archlens skills directly via open Skills CLI (skills.sh)
-npx skills add fmatar/archlens --all -y
+# Install the unified Archlens skill directly via open Skills CLI (skills.sh)
+npx skills add fmatar/archlens -y
 
 # Or scaffold policy + install skills + register MCP in one command
 npx @fmatar/archlens-skill --yes --skills --mcp

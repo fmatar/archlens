@@ -25,6 +25,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Enforce Branch Flow Policy
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
@@ -48,8 +51,8 @@ jobs:
 
       - name: Run Frontend Type Check & Vitest Coverage Suite
         run: |
-          npm --prefix frontend run check
-          npm --prefix frontend run test:coverage
+          pnpm --dir frontend run check
+          pnpm --dir frontend run test:coverage
 
       - name: Verify Agent Skills Sync & npx skills Manifest Parity
         run: npm run skills:check
@@ -59,6 +62,14 @@ jobs:
 
       - name: End-to-End Packaged Workbench & MCP Smoke Test
         run: npm run smoke
+
+      - name: Upload Packaged Quarkus App for E2E
+        uses: actions/upload-artifact@v7
+        with:
+          name: quarkus-e2e-app
+          path: backend/target/quarkus-app/
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Archlens Clean Architecture Conformance Gate
         run: node cli/bin/index.js check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --fitness-threshold 0.85 --format sarif --output archlens-results.sarif
@@ -116,6 +127,41 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  playwright-e2e:
+    name: Playwright E2E Browser Suite
+    needs: [verify]
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Java 25 & Node Toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          setup-maven: 'false'
+          cache-pnpm: 'true'
+
+      - name: Download Packaged Quarkus App
+        uses: actions/download-artifact@v8
+        with:
+          name: quarkus-e2e-app
+          path: backend/target/quarkus-app
+
+      - name: Install Frontend Dependencies & Playwright Chromium
+        run: |
+          test -f backend/target/quarkus-app/quarkus-run.jar
+          pnpm --dir frontend install --frozen-lockfile
+          pnpm --dir frontend exec playwright install --with-deps --only-shell chromium
+
+      - name: Run Frontend Playwright E2E Browser Suite
+        run: pnpm --dir frontend run test:e2e
+
   action-self-test:
     name: GitHub Action Self-Test (uses ./)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
@@ -125,6 +171,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       # Paths contain spaces on purpose: inputs must reach the CLI verbatim (#230).
       - name: Action passes on a conforming fixture

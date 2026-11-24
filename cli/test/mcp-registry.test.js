@@ -15,11 +15,12 @@ import {
   backupFile
 } from '../src/mcp-registry.js';
 
-test('ARCHLENS_TOOL_SCHEMAS defines 10 Clean Architecture tools', () => {
+test('ARCHLENS_TOOL_SCHEMAS defines 11 Clean Architecture tools', () => {
   const tools = Object.keys(ARCHLENS_TOOL_SCHEMAS);
-  assert.equal(tools.length, 10);
+  assert.equal(tools.length, 11);
   assert.ok(tools.includes('inspectArchitecture'));
   assert.ok(tools.includes('exportLlmDossier'));
+  assert.ok(tools.includes('exportArchitectureDiagram'));
   assert.ok(tools.includes('listSnapshots'));
   assert.ok(tools.includes('getSnapshot'));
   assert.ok(tools.includes('synthesizeDipInversion'));
@@ -35,11 +36,12 @@ test('ARCHLENS_TOOL_SCHEMAS defines 10 Clean Architecture tools', () => {
   assert.equal(typeof ARCHLENS_TOOL_SCHEMAS.inspectArchitecture.description, 'string');
 });
 
-test('getAntigravityInstructions produces markdown instructions listing all 10 tools', () => {
+test('getAntigravityInstructions produces markdown instructions listing all 11 tools', () => {
   const instructions = getAntigravityInstructions();
   assert.ok(instructions.includes('Archlens Clean Architecture MCP Server Instructions'));
   assert.ok(instructions.includes('Domain Core (L0)'));
   assert.ok(instructions.includes('Dependency Inversion Principle'));
+  assert.ok(instructions.includes('exportArchitectureDiagram'));
   assert.ok(instructions.includes('synthesizeDipInversion'));
   assert.ok(instructions.includes('evaluateFitness'));
   assert.ok(instructions.includes('getFitnessHistory'));
@@ -160,7 +162,7 @@ test('installMcpConfigs respects dryRun option', () => {
 test('getMcpManifestEntry builds ephemeral docker run -i --rm mcp-stdio config when preferDocker is true', () => {
   const entry = getMcpManifestEntry('http://localhost:8088', {
     preferDocker: true,
-    hostWorkspace: '/Users/fady/workspace'
+    hostWorkspace: '/Users/dev/workspace'
   });
 
   assert.equal(entry.command, 'docker');
@@ -173,12 +175,12 @@ test('getMcpManifestEntry builds ephemeral docker run -i --rm mcp-stdio config w
     '-e',
     'ARCHLENS_HOST_WORKSPACE',
     '-v',
-    '/Users/fady/workspace:/workspace',
+    '/Users/dev/workspace:/workspace',
     'ghcr.io/fmatar/archlens:latest'
   ]);
   assert.deepEqual(entry.env, {
     QUARKUS_PROFILE: 'mcp-stdio',
-    ARCHLENS_HOST_WORKSPACE: '/Users/fady/workspace'
+    ARCHLENS_HOST_WORKSPACE: '/Users/dev/workspace'
   });
 });
 

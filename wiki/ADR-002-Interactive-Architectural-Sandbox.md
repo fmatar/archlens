@@ -1,4 +1,4 @@
-# ADR-002: Interactive Architectural Sandbox & Robert C. Martin Metrics Engine
+# ADR-002: Interactive Architectural Sandbox & Component Coupling Metrics Engine
 
 ## Status
 **Accepted & Merged** (PR #113)
@@ -11,13 +11,13 @@ Refactoring monolithic or layered architectures into Clean Architecture concentr
 Previously, the only way to test package reorganizations was to physically modify files, update imports, and re-scan the codebase. This high barrier discouraged exploratory architectural prototyping.
 
 ## Decision
-We implemented an in-memory **Architectural Sandbox** and **Robert C. Martin Coupling & Stability Metrics Engine**:
+We implemented an in-memory **Architectural Sandbox** and **Component Coupling & Stability Metrics Engine**:
 
 1. **In-Memory Simulation State (`diagram.svelte.ts`)**:
    - Implemented reactive Svelte 5 runes (`isSandboxActive`, `stagedClassMoves`).
    - Built a dynamic graph simulator in `martinMetrics.ts` that clones the active architecture graph, relocates classes to candidate tiers, and recalculates edge validity and violation deltas in sub-millisecond time.
 
-2. **Robert C. Martin Metrics Suite**:
+2. **Component Coupling Metrics Suite**:
    - Implemented exact mathematical calculations for Afferent Coupling ($C_a$), Efferent Coupling ($C_e$), Instability ($I = \frac{C_e}{C_a + C_e}$), Abstractness ($A = \frac{N_a}{N_c}$), and Distance from the Main Sequence ($D = |A + I - 1|$).
    - Classified components into architectural health zones: *Zone of Pain*, *Zone of Uselessness*, and *Balanced*.
 

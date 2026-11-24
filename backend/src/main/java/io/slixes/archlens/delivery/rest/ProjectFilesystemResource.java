@@ -1,5 +1,6 @@
 package io.slixes.archlens.delivery.rest;
 
+import io.slixes.archlens.engine.ProjectFileWatcher;
 import io.slixes.archlens.usecase.OpenedProjectRegistry;
 import io.slixes.archlens.usecase.ResolveFilesystemUseCase;
 import io.slixes.archlens.usecase.WorkspacePathResolver;
@@ -23,28 +24,23 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProjectFilesystemResource {
 
-  @Inject ResolveFilesystemUseCase filesystemUseCase;
-  @Inject OpenedProjectRegistry openedProjects;
+  private ResolveFilesystemUseCase filesystemUseCase;
+  private OpenedProjectRegistry openedProjects;
+  private ProjectFileWatcher fileWatcher;
 
-  public ProjectFilesystemResource() {
-    this.filesystemUseCase = new ResolveFilesystemUseCase();
-  }
+  ProjectFilesystemResource() {}
 
-  public ProjectFilesystemResource(ResolveFilesystemUseCase filesystemUseCase) {
-    this(filesystemUseCase, new OpenedProjectRegistry());
-  }
-
+  @Inject
   public ProjectFilesystemResource(
-      ResolveFilesystemUseCase filesystemUseCase, OpenedProjectRegistry openedProjects) {
-    this.filesystemUseCase =
-        filesystemUseCase != null ? filesystemUseCase : new ResolveFilesystemUseCase();
-    this.openedProjects = openedProjects != null ? openedProjects : new OpenedProjectRegistry();
+      ResolveFilesystemUseCase filesystemUseCase,
+      OpenedProjectRegistry openedProjects,
+      ProjectFileWatcher fileWatcher) {
+    this.filesystemUseCase = filesystemUseCase;
+    this.openedProjects = openedProjects;
+    this.fileWatcher = fileWatcher;
   }
 
-  OpenedProjectRegistry getOpenedProjects() {
-    if (openedProjects == null) {
-      openedProjects = new OpenedProjectRegistry();
-    }
+  public OpenedProjectRegistry getOpenedProjects() {
     return openedProjects;
   }
 
@@ -66,10 +62,14 @@ public class ProjectFilesystemResource {
     }
     String normalized =
         WorkspacePathResolver.normalizeRoot(rawRoot == null || rawRoot.isBlank() ? "." : rawRoot);
-    return getOpenedProjects()
+    return openedProjects
         .markOpened(normalized)
-        .<Map<String, Object>>map(
-            canonical -> Map.of("opened", true, "projectRoot", canonical.toString()))
+        .<Map<String, Object>>map(canonical -> {
+          if (fileWatcher != null) {
+            fileWatcher.switchRootIfRunning(canonical);
+          }
+          return Map.of("opened", true, "projectRoot", canonical.toString());
+        })
         .orElseThrow(() ->
             new WebApplicationException(
                 Response.status(Response.Status.BAD_REQUEST)
@@ -96,7 +96,7 @@ public class ProjectFilesystemResource {
   }
 
   public Map<String, Object> getSourceCode(String filePath, int line) {
-    return filesystemUseCase.getSourceCode(filePath, line, null);
+    return getSourceCode(filePath, line, null);
   }
 
   @GET

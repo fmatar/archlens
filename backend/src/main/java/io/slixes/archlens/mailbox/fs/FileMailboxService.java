@@ -12,6 +12,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.jboss.logging.Logger;
 
 /**
  * Concrete filesystem mailbox adapter implementing the domain MailboxGateway port. Handles atomic
@@ -20,40 +21,29 @@ import java.util.Map;
 @ApplicationScoped
 public class FileMailboxService implements MailboxGateway {
 
+  private static final Logger LOG = Logger.getLogger(FileMailboxService.class);
+
   private final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
   private static final String PRIMARY_MAILBOX_DIR = ".archlens";
-  private static final String LEGACY_MAILBOX_DIR = ".uml-viewer";
   private static final String TO_AGENT = "to-agent.json";
   private static final String TO_VIEWER = "to-viewer.json";
 
-  private File getFile(String projectRoot, String fileName) {
+  private File getFile(String projectRoot, String fileName, boolean createDir) {
     File dir;
     if (projectRoot != null && !projectRoot.isBlank()) {
-      File primary = new File(projectRoot, PRIMARY_MAILBOX_DIR);
-      File legacy = new File(projectRoot, LEGACY_MAILBOX_DIR);
-      if (primary.exists()) {
-        dir = primary;
-      } else if (legacy.exists()) {
-        dir = legacy;
-      } else {
-        dir = primary;
-      }
+      dir = new File(projectRoot, PRIMARY_MAILBOX_DIR);
     } else if (new File(PRIMARY_MAILBOX_DIR).exists()) {
       dir = new File(PRIMARY_MAILBOX_DIR);
-    } else if (new File(LEGACY_MAILBOX_DIR).exists()) {
-      dir = new File(LEGACY_MAILBOX_DIR);
     } else if (new File("../" + PRIMARY_MAILBOX_DIR).exists()) {
       dir = new File("../" + PRIMARY_MAILBOX_DIR);
-    } else if (new File("../" + LEGACY_MAILBOX_DIR).exists()) {
-      dir = new File("../" + LEGACY_MAILBOX_DIR);
     } else {
       dir = new File(PRIMARY_MAILBOX_DIR);
     }
-    if (!dir.exists()) {
+    if (createDir && !dir.exists()) {
       try {
         Files.createDirectories(dir.toPath());
-      } catch (IOException ignored) {
-        // ignore if concurrently created
+      } catch (IOException e) {
+        LOG.warnf("Failed to create mailbox directory %s: %s", dir, e.getMessage());
       }
     }
     return new File(dir, fileName);
@@ -61,13 +51,14 @@ public class FileMailboxService implements MailboxGateway {
 
   @Override
   public synchronized MailboxEnvelope readMailbox(String projectRoot, boolean isToAgent) {
-    File file = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
+    File file = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, false);
     if (!file.exists()) {
       return new MailboxEnvelope(1, List.of());
     }
     try {
       return mapper.readValue(file, MailboxEnvelope.class);
     } catch (IOException e) {
+      LOG.warnf("Failed to read mailbox file %s: %s", file, e.getMessage());
       return new MailboxEnvelope(1, List.of());
     }
   }
@@ -80,7 +71,7 @@ public class FileMailboxService implements MailboxGateway {
       Map<String, Object> target,
       Map<String, Object> payload)
       throws IOException {
-    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
+    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, true);
     MailboxEnvelope current = readMailbox(projectRoot, isToAgent);
 
     long newId = current.nextId();
@@ -97,11 +88,11 @@ public class FileMailboxService implements MailboxGateway {
   @Override
   public synchronized MailboxEnvelope.MailboxCommand popOldest(
       String projectRoot, boolean isToAgent) throws IOException {
-    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER);
     MailboxEnvelope current = readMailbox(projectRoot, isToAgent);
     if (current.queue().isEmpty()) {
       return null;
     }
+    File targetFile = getFile(projectRoot, isToAgent ? TO_AGENT : TO_VIEWER, true);
 
     MailboxEnvelope.MailboxCommand oldest = current.queue().get(0);
     List<MailboxEnvelope.MailboxCommand> remaining =

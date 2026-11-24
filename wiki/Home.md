@@ -1,11 +1,10 @@
 # Welcome to the Archlens Wiki
 
-> *"The Dependency Rule: Source code dependencies must point only inward, toward higher-level policies."*  
-> — **Robert C. Martin (Uncle Bob)**
+> *"Source code dependencies must point only inward, toward higher-level policies."*
 
 **Archlens** is an interactive, real-time architectural visualization workbench, polyglot Clean Architecture governance engine, and autonomous AI refactoring platform for modern software systems.
 
-Inspired by Robert C. Martin's [unclebob/uml-viewer](https://github.com/unclebob/uml-viewer), Archlens transforms the abstract Dependency Rule into a living, tactile feedback loop right in your browser, backed by rich AST analysis across Java 25, Python, TypeScript/Svelte 5, Rust, Go, and Clojure.
+Inspired by Clean Architecture principles, Archlens transforms the concentric Dependency Rule into a living, tactile feedback loop right in your browser, backed by polyglot source analysis across Java 25, Python, TypeScript/Svelte 5, Rust, and Go.
 
 ---
 
@@ -19,10 +18,10 @@ Inspired by Robert C. Martin's [unclebob/uml-viewer](https://github.com/unclebob
 ### Features & Capabilities
 - **[Surgical DIP Inverter](Surgical-DIP-Inverter)**: 1-click violation remediation, polyglot interface port synthesis (`Java`, `Python`, `TypeScript`, `Go`, `Rust`), caller/adapter diffs, and surgical AI directives.
 - **[Architectural Sandbox & Prototyping](Architectural-Sandbox)**: "What-If" simulation, staged class moves, real-time violation deltas, and proposal management.
-- **[Robert C. Martin Metrics Engine](Robert-C-Martin-Metrics)**: Coupling and stability metrics ($C_a, C_e, I, A, D$), Zone of Pain vs. Zone of Uselessness, and Main Sequence balance.
+- **[Component Coupling & Stability Metrics](Robert-C-Martin-Metrics)**: Coupling and stability metrics ($C_a, C_e, I, A, D$), Zone of Pain vs. Zone of Uselessness, and Main Sequence balance.
 
 ### AI Companions, Skills & Governance
-- **[Model Context Protocol (MCP) Integration](MCP-Integration)**: Native Quarkus MCP server endpoints (`/mcp` and `/mcp/sse`) and CLI stdio bridge (`npx -y @fmatar/archlens-skill mcp`), 10 MCP tools, 3 resources, and 2 prompts.
+- **[Model Context Protocol (MCP) Integration](MCP-Integration)**: Native Quarkus MCP server endpoints (`/mcp` and `/mcp/sse`) and CLI stdio bridge (`npx -y @fmatar/archlens-skill mcp`), 11 MCP tools, 3 resources, and 2 prompts.
 - **[Mailbox IPC Companion Protocol](Mailbox-IPC)**: Asynchronous IPC between the visual workbench and coding assistants via `.archlens/to-agent.json` and `.archlens/to-viewer.json`, plus verification, policy rollback, and living ADR endpoints.
 - **[Skills & CLI Reference](Skills-Reference)**: Reference for `archlens` skills, the 10 canonical `sdlc*` skills, and `npx @fmatar/archlens-skill` CLI commands.
 - **[Traceability & Governance](Traceability)**: End-to-end lineage across `PRODUCT.md` (`INV-01..05`, `CAP-01..04`), `docs/KANBAN.md`, `docs/DECISION_MAP.md`, and `docs/adr/ADR-001..003`.

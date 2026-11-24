@@ -14,7 +14,7 @@ import { ARCHLENS_TOOL_SCHEMAS } from './mcp-registry.js';
 import { ensureServerRunning, DEFAULT_SERVER_URL } from './docker-runner.js';
 import { resolveSessionToken, withAuth } from './session.js';
 import { generateLlmPrompt, generatePolicy } from './analyzer.js';
-import { checkArchitecture } from './checker.js';
+import { checkArchitecture, generateMermaidReport } from './checker.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +29,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '1.1.6';
+  return '1.2.0';
 }
 
 export function getMcpToolsList() {
@@ -96,7 +96,7 @@ export function getMcpPromptsList() {
   ];
 }
 
-export function readMcpResource(uri, options = {}, deps = {}) {
+export async function readMcpResource(uri, options = {}, deps = {}) {
   const projectRoot = path.resolve(options.path || '.');
   const fileReader = deps.readFileSync || fs.readFileSync;
   const fileExists = deps.existsSync || fs.existsSync;
@@ -146,7 +146,7 @@ export function readMcpResource(uri, options = {}, deps = {}) {
 
   if (uri === 'archlens://fitness') {
     const checker = deps.checkArchitecture || checkArchitecture;
-    const report = checker(projectRoot, { detectCycles: true });
+    const report = await checker(projectRoot, { detectCycles: true });
     return {
       contents: [
         {
@@ -212,6 +212,41 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       serverUrl
     });
     return { content: [{ type: 'text', text: dossier }] };
+  }
+
+  if (toolName === 'exportArchitectureDiagram') {
+    const diagramType = args.diagramType || 'COMPONENT_RINGS';
+    const violationsOnly = Boolean(args.violationsOnly);
+    if (isOnline) {
+      try {
+        const query = new URLSearchParams({
+          projectRoot,
+          type: diagramType,
+          violationsOnly: String(violationsOnly)
+        });
+        if (args.proposalId) {
+          query.set('proposalId', args.proposalId);
+        }
+        let res = await apiFetch(`${serverUrl}/api/diagram/export?${query}`);
+        if (!res.ok) {
+          res = await apiFetch(`${serverUrl}/api/graph/export?${query}`);
+        }
+        if (res.ok) {
+          const text = await res.text();
+          return { content: [{ type: 'text', text }] };
+        }
+      } catch (err) {
+        process.stderr.write(
+          `[archlens-mcp] Online diagram export error: ${err.message}. Using offline engine.\n`
+        );
+      }
+    }
+
+    const checker = deps.checkArchitecture || checkArchitecture;
+    const mermaidGen = deps.generateMermaidReport || generateMermaidReport;
+    const report = await checker(projectRoot, { detectCycles: true });
+    const text = mermaidGen(report, { diagramType, violationsOnly });
+    return { content: [{ type: 'text', text }] };
   }
 
   if (toolName === 'inspectArchitecture') {
@@ -466,12 +501,24 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       );
     }
     if (isOnline) {
+      const launchRoot = path.resolve(options.path || '.');
+      const resolveReal = (p) => {
+        try {
+          return fs.realpathSync(p);
+        } catch {
+          return path.resolve(p);
+        }
+      };
+      const isLaunchWorkspace = resolveReal(projectRoot) === resolveReal(launchRoot);
+      let authFailure = null;
       try {
-        await apiFetch(`${serverUrl}/api/projects/open`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectRoot })
-        });
+        if (isLaunchWorkspace) {
+          await apiFetch(`${serverUrl}/api/projects/open`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ projectRoot })
+          });
+        }
         const query = new URLSearchParams({ projectRoot });
         const res = await apiFetch(`${serverUrl}/api/mailbox/sync-adr?${query}`, {
           method: 'POST',
@@ -487,8 +534,16 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
           const json = await res.json();
           return { content: [{ type: 'text', text: JSON.stringify(json, null, 2) }] };
         }
+        if (res.status === 400 || res.status === 401 || res.status === 403) {
+          authFailure = new Error(
+            `syncDipAdr rejected (HTTP ${res.status}): project root is not opened in this session`
+          );
+        }
       } catch (err) {
         process.stderr.write(`[archlens-mcp] Online syncDipAdr error: ${err.message}.\n`);
+      }
+      if (authFailure) {
+        throw authFailure;
       }
     }
     return {
@@ -626,7 +681,7 @@ export async function handleMcpMessage(request, options = {}, deps = {}) {
   if (method === 'resources/read') {
     const uri = params?.uri;
     try {
-      const readResult = readMcpResource(uri, options, deps);
+      const readResult = await readMcpResource(uri, options, deps);
       return {
         jsonrpc: '2.0',
         id,

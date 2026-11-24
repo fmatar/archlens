@@ -2,150 +2,86 @@ package io.slixes.archlens.usecase;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class ResolveFilesystemUseCaseTest {
 
-  @Test
-  void testListDirectoriesAndProjects(@TempDir Path tempDir) throws IOException {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase(List.of(tempDir));
+  private static final FilesystemGateway IN_MEMORY_GATEWAY =
+      new FilesystemGateway() {
+        @Override
+        public Map<String, Object> listProjects() {
+          return Map.of("current", Map.of("name", "stub", "path", "."), "discovered", List.of());
+        }
 
-    // Create a Maven project
-    Path mavenApp = tempDir.resolve("my-maven-app");
-    Files.createDirectories(mavenApp.resolve("src/main/java"));
-    Files.writeString(mavenApp.resolve("pom.xml"), "<project></project>");
+        @Override
+        public Map<String, Object> listDirectories(String rawPath, List<Path> allowedRoots) {
+          if (allowedRoots != null
+              && rawPath != null
+              && allowedRoots.stream().noneMatch(r -> Path.of(rawPath).startsWith(r))) {
+            return Map.of("denied", true, "path", rawPath);
+          }
+          return Map.of("currentPath", rawPath != null ? rawPath : ".", "directories", List.of());
+        }
 
-    // Create a regular folder
-    Path regularFolder = tempDir.resolve("docs-folder");
-    Files.createDirectories(regularFolder);
+        @Override
+        public Map<String, Object> pickDirectory() {
+          return Map.of("success", false, "supported", false, "reason", "headless");
+        }
 
-    Map<String, Object> dirResult = useCase.listDirectories(tempDir.toString());
-    assertNotNull(dirResult);
-    assertTrue(dirResult.containsKey("currentPath"));
-    assertTrue(dirResult.containsKey("directories"));
+        @Override
+        public Map<String, Object> readConfinedSourceCode(
+            String filePath, int line, String projectRoot) {
+          if (filePath.startsWith("../")) {
+            return Map.of("denied", true, "filePath", filePath, "content", "");
+          }
+          return Map.of(
+              "fileName",
+              "Order.java",
+              "filePath",
+              filePath,
+              "content",
+              "public class Order {}",
+              "targetLine",
+              line);
+        }
 
-    @SuppressWarnings("unchecked")
-    List<Map<String, Object>> dirs = (List<Map<String, Object>>) dirResult.get("directories");
-    assertEquals(2, dirs.size());
+        @Override
+        public String createPreRefactorSnapshot(String projectRoot) {
+          return "snap-stub";
+        }
 
-    Map<String, Object> mavenEntry =
-        dirs.stream().filter(d -> "my-maven-app".equals(d.get("name"))).findFirst().orElseThrow();
-    assertEquals(Boolean.TRUE, mavenEntry.get("isProject"));
-    assertEquals("Maven", mavenEntry.get("projectType"));
-
-    Map<String, Object> docsEntry =
-        dirs.stream().filter(d -> "docs-folder".equals(d.get("name"))).findFirst().orElseThrow();
-    assertEquals(Boolean.FALSE, docsEntry.get("isProject"));
-  }
-
-  @Test
-  void testGetSourceCode(@TempDir Path tempDir) throws IOException {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
-
-    Path testFile = tempDir.resolve("TestFile.java");
-    Files.writeString(testFile, "public class TestFile {\n  public void hello() {}\n}\n");
-
-    Map<String, Object> result = useCase.getSourceCode(testFile.toString(), 2, tempDir.toString());
-    assertNotNull(result);
-    assertEquals("TestFile.java", result.get("fileName"));
-    assertEquals(2, result.get("targetLine"));
-    assertTrue(((String) result.get("content")).contains("hello()"));
-
-    // Missing file fallback
-    Map<String, Object> missing = useCase.getSourceCode("missing-file.txt", 1, tempDir.toString());
-    assertNotNull(missing);
-    assertTrue(missing.containsKey("error"));
-  }
-
-  @Test
-  void getSourceCodeRejectsFilesOutsideProjectRoot(@TempDir Path tempDir) throws IOException {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
-    Path project = Files.createDirectories(tempDir.resolve("project"));
-    Path secret = Files.writeString(tempDir.resolve("secret.env"), "TOKEN=abc");
-
-    Map<String, Object> absolute = useCase.getSourceCode(secret.toString(), 1, project.toString());
-    assertEquals(Boolean.TRUE, absolute.get("denied"));
-    assertFalse(((String) absolute.get("content")).contains("TOKEN=abc"));
-
-    Map<String, Object> traversal = useCase.getSourceCode("../secret.env", 1, project.toString());
-    assertEquals(Boolean.TRUE, traversal.get("denied"));
-    assertFalse(((String) traversal.get("content")).contains("TOKEN=abc"));
-  }
+        @Override
+        public VerifyAndRollbackRefactorUseCase.RollbackResult restoreSnapshot(
+            String projectRoot, String snapshotId) {
+          return new VerifyAndRollbackRefactorUseCase.RollbackResult(false, "", List.of());
+        }
+      };
 
   @Test
-  void getSourceCodeRejectsSymlinkEscapes(@TempDir Path tempDir) throws IOException {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
-    Path project = Files.createDirectories(tempDir.resolve("project"));
-    Path secret = Files.writeString(tempDir.resolve("secret.env"), "TOKEN=abc");
-    try {
-      Files.createSymbolicLink(project.resolve("Innocent.java"), secret);
-    } catch (UnsupportedOperationException | IOException e) {
-      return;
-    }
-    Map<String, Object> result = useCase.getSourceCode("Innocent.java", 1, project.toString());
-    assertEquals(Boolean.TRUE, result.get("denied"));
-    assertFalse(((String) result.get("content")).contains("TOKEN=abc"));
-  }
+  void delegatesDiscoveryBrowsingPickerAndSourceReadsThroughInMemoryPort() {
+    Path allowed = Path.of("/virtual/allowed");
+    ResolveFilesystemUseCase useCase =
+        new ResolveFilesystemUseCase(IN_MEMORY_GATEWAY, List.of(allowed));
 
-  @Test
-  void getSourceCodeResolvesRelativePathsAgainstProjectRoot(@TempDir Path tempDir)
-      throws IOException {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
-    Path src = Files.createDirectories(tempDir.resolve("src/main/java"));
-    Files.writeString(src.resolve("A.java"), "class A {}");
-    Map<String, Object> result =
-        useCase.getSourceCode("src/main/java/A.java", 3, tempDir.toString());
-    assertEquals("A.java", result.get("fileName"));
-    assertEquals("class A {}", result.get("content"));
-    assertNull(result.get("denied"));
-  }
+    assertTrue(useCase.listProjects().containsKey("current"));
+    assertEquals("headless", useCase.pickDirectory().get("reason"));
+    assertEquals(Boolean.TRUE, useCase.listDirectories("/virtual/outside").get("denied"));
+    assertNull(useCase.listDirectories("/virtual/allowed/sub").get("denied"));
 
-  @Test
-  void testListProjectsDiscovery() {
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
-    Map<String, Object> projects = useCase.listProjects();
-    assertNotNull(projects);
-    assertTrue(projects.containsKey("current"));
-    assertTrue(projects.containsKey("discovered"));
-  }
+    ResolveFilesystemUseCase defaultUseCase = new ResolveFilesystemUseCase(IN_MEMORY_GATEWAY);
+    assertEquals("", defaultUseCase.getSourceCode(null, 1, ".").get("content"));
+    assertEquals("", defaultUseCase.getSourceCode("   ", 1, ".").get("content"));
 
-  @Test
-  void testPickDirectoryHeadless() {
-    System.setProperty("test.headless", "true");
-    try {
-      ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase();
-      Map<String, Object> response = useCase.pickDirectory();
-      assertNotNull(response);
-      assertFalse((Boolean) response.get("success"));
-      assertEquals("headless", response.get("reason"));
-    } finally {
-      System.clearProperty("test.headless");
-    }
-  }
+    Map<String, Object> ok = defaultUseCase.getSourceCode("src/Order.java", 7, "/virtual/allowed");
+    assertEquals("Order.java", ok.get("fileName"));
+    assertEquals(7, ok.get("targetLine"));
+    assertEquals("public class Order {}", ok.get("content"));
 
-  @Test
-  void listDirectoriesDeniesPathsOutsideAllowedRoots(@TempDir Path tempDir) throws IOException {
-    Path allowed = Files.createDirectories(tempDir.resolve("allowed"));
-    Path sub = Files.createDirectories(allowed.resolve("sub"));
-    Path outside = Files.createDirectories(tempDir.resolve("outside"));
-    ResolveFilesystemUseCase useCase = new ResolveFilesystemUseCase(List.of(allowed));
-
-    Map<String, Object> denied = useCase.listDirectories(outside.toString());
+    Map<String, Object> denied =
+        defaultUseCase.getSourceCode("../secret.env", 1, "/virtual/allowed");
     assertEquals(Boolean.TRUE, denied.get("denied"));
-    assertNull(denied.get("directories"));
-
-    Map<String, Object> atRoot = useCase.listDirectories(allowed.toString());
-    assertNull(atRoot.get("denied"));
-    assertNull(atRoot.get("parentPath"));
-
-    Map<String, Object> nested = useCase.listDirectories(sub.toString());
-    assertNull(nested.get("denied"));
-    assertNotNull(nested.get("parentPath"));
   }
 }

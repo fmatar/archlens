@@ -17,11 +17,12 @@ import {
 
 test('getMcpToolsList formats tools conforming to MCP specification', () => {
   const tools = getMcpToolsList();
-  assert.equal(tools.length, 10);
+  assert.equal(tools.length, 11);
 
   const names = tools.map((t) => t.name);
   assert.ok(names.includes('inspectArchitecture'));
   assert.ok(names.includes('exportLlmDossier'));
+  assert.ok(names.includes('exportArchitectureDiagram'));
   assert.ok(names.includes('listSnapshots'));
   assert.ok(names.includes('getSnapshot'));
   assert.ok(names.includes('synthesizeDipInversion'));
@@ -48,8 +49,8 @@ test('getMcpResourcesList defines canonical llms.txt, policy, and fitness resour
   assert.equal(resources[2].uri, 'archlens://fitness');
 });
 
-test('readMcpResource returns markdown content of llms.txt', () => {
-  const res = readMcpResource('archlens://llms.txt');
+test('readMcpResource returns markdown content of llms.txt', async () => {
+  const res = await readMcpResource('archlens://llms.txt');
   assert.ok(res.contents);
   assert.equal(res.contents.length, 1);
   assert.equal(res.contents[0].uri, 'archlens://llms.txt');
@@ -88,7 +89,7 @@ test('handleMcpMessage responds to tools/list', async () => {
   const req = { jsonrpc: '2.0', id: 3, method: 'tools/list' };
   const resp = await handleMcpMessage(req);
   assert.equal(resp.id, 3);
-  assert.equal(resp.result.tools.length, 10);
+  assert.equal(resp.result.tools.length, 11);
 });
 
 test('handleMcpMessage responds to resources/list and prompts/list', async () => {
@@ -118,6 +119,42 @@ test('handleMcpMessage responds to resources/read', async () => {
   assert.ok(resp.result.contents);
   assert.equal(resp.result.contents[0].uri, 'archlens://llms.txt');
   assert.ok(resp.result.contents[0].text.includes('# Archlens'));
+});
+
+test('handleMcpMessage resources/read awaits async checkArchitecture for archlens://fitness', async () => {
+  const resp = await handleMcpMessage(
+    { jsonrpc: '2.0', id: 51, method: 'resources/read', params: { uri: 'archlens://fitness' } },
+    { path: '/tmp/proj' },
+    {
+      checkArchitecture: async () => ({
+        passed: true,
+        fitness: { fitnessScore: 94.5, grade: 'A', passed: true }
+      })
+    }
+  );
+  assert.equal(resp.id, 51);
+  const parsed = JSON.parse(resp.result.contents[0].text);
+  assert.equal(parsed.fitnessScore, 94.5);
+  assert.equal(parsed.grade, 'A');
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-fitness-res-'));
+  try {
+    fs.mkdirSync(path.join(tmpDir, '.archlens'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'src'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.archlens', 'policy.json'),
+      JSON.stringify({ title: 'Tmp', src: 'src', levels: [['domain']] })
+    );
+    const realResp = await handleMcpMessage(
+      { jsonrpc: '2.0', id: 52, method: 'resources/read', params: { uri: 'archlens://fitness' } },
+      { path: tmpDir }
+    );
+    const realParsed = JSON.parse(realResp.result.contents[0].text);
+    assert.equal(typeof realParsed.fitnessScore, 'number');
+    assert.equal(typeof realParsed.grade, 'string');
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 });
 
 test('handleMcpMessage returns error for unknown resource uri', async () => {
@@ -351,6 +388,36 @@ test('executeToolCall syncDipAdr sends POST /api/mailbox/sync-adr?projectRoot=..
   );
 });
 
+test('executeToolCall syncDipAdr only auto-opens launch workspace and fails closed on HTTP 403', async () => {
+  const seenUrls = [];
+  await assert.rejects(
+    () =>
+      executeToolCall(
+        'syncDipAdr',
+        {
+          sourceClass: 'OrderUseCase',
+          targetClass: 'JpaOrderRepository',
+          interfacePortName: 'OrderRepositoryPort',
+          projectRoot: '/tmp/unopened-other-repo'
+        },
+        { serverUrl: 'http://127.0.0.1:8088', path: '/tmp/launch-workspace' },
+        {
+          ensureServerRunning: async () => ({ status: 'running', token: 'tok' }),
+          fetch: async (url) => {
+            seenUrls.push(String(url));
+            return { ok: false, status: 403, json: async () => ({ error: 'Forbidden' }) };
+          }
+        }
+      ),
+    /403|not opened|Forbidden/i
+  );
+  assert.equal(
+    seenUrls.some((u) => u.includes('/api/projects/open')),
+    false,
+    'Must not auto-open arbitrary external projectRoot'
+  );
+});
+
 test('executeToolCall covers listSnapshots, getSnapshot, evaluateFitness, getFitnessHistory, proposeScreamingMigration, and getPolicy online and offline', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mcp-all-'));
   try {
@@ -526,4 +593,89 @@ test('executeToolCall sends the session token header on workbench API calls', as
     }
   );
   assert.equal(seen[0].init.headers['X-Archlens-Token'], 'env-token');
+});
+
+test('executeToolCall supports exportArchitectureDiagram online, fallback endpoint, and offline policy/UML', async () => {
+  const seen = [];
+  const online = await executeToolCall(
+    'exportArchitectureDiagram',
+    {
+      projectRoot: '/tmp/proj',
+      diagramType: 'CLASS_UML',
+      proposalId: 'prop-1',
+      violationsOnly: true
+    },
+    { serverUrl: 'http://127.0.0.1:8088' },
+    {
+      ensureServerRunning: async () => ({ status: 'running', token: 'tok-1' }),
+      fetch: async (url, init) => {
+        seen.push({ url, init });
+        // Simulate /api/diagram/export returning 404 so /api/graph/export alias is exercised
+        if (url.includes('/api/diagram/export')) {
+          return { ok: false, status: 404 };
+        }
+        return { ok: true, text: async () => 'classDiagram\n  class OrderService' };
+      }
+    }
+  );
+  assert.ok(online.content[0].text.startsWith('classDiagram'));
+  assert.equal(seen.length, 2);
+  assert.match(seen[0].url, /\/api\/diagram\/export\?/);
+  assert.match(seen[1].url, /\/api\/graph\/export\?/);
+  assert.match(seen[1].url, /proposalId=prop-1/);
+  assert.match(seen[1].url, /type=CLASS_UML/);
+  assert.match(seen[1].url, /violationsOnly=true/);
+  assert.equal(seen[0].init.headers['X-Archlens-Token'], 'tok-1');
+
+  const tmpProj = fs.mkdtempSync(path.join(os.tmpdir(), 'archlens-mmd-'));
+  try {
+    fs.mkdirSync(path.join(tmpProj, '.archlens'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpProj, '.archlens', 'policy.json'),
+      JSON.stringify({
+        title: 'FixtureApp',
+        sourceRoot: 'src',
+        packagePrefix: 'com.fixture',
+        levels: [['core'], ['web']]
+      })
+    );
+    fs.mkdirSync(path.join(tmpProj, 'src', 'com', 'fixture', 'core'), { recursive: true });
+    fs.mkdirSync(path.join(tmpProj, 'src', 'com', 'fixture', 'web'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpProj, 'src', 'com', 'fixture', 'core', 'CoreEntity.java'),
+      'package com.fixture.core;\nimport com.fixture.web.WebCtrl;\npublic class CoreEntity { WebCtrl w; }\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpProj, 'src', 'com', 'fixture', 'web', 'WebCtrl.java'),
+      'package com.fixture.web;\nimport com.fixture.core.CoreEntity;\npublic class WebCtrl { CoreEntity c; }\n'
+    );
+
+    // Online fetch throws -> falls back to awaited offline checkArchitecture + violationsOnly
+    const offlineRings = await executeToolCall(
+      'exportArchitectureDiagram',
+      { projectRoot: tmpProj, violationsOnly: true },
+      { serverUrl: 'http://127.0.0.1:8088' },
+      {
+        ensureServerRunning: async () => ({ status: 'running', token: 'tok-1' }),
+        fetch: async () => {
+          throw new Error('network down');
+        }
+      }
+    );
+    assert.ok(offlineRings.content[0].text.startsWith('flowchart TB'));
+    assert.match(offlineRings.content[0].text, /comp_core/);
+    assert.match(offlineRings.content[0].text, /VIOLATION/);
+    assert.doesNotMatch(offlineRings.content[0].text, /comp_web --> comp_core/);
+
+    const offlineUml = await executeToolCall(
+      'exportArchitectureDiagram',
+      { projectRoot: tmpProj, diagramType: 'CLASS_UML', violationsOnly: true },
+      {},
+      { ensureServerRunning: async () => ({ status: 'offline' }) }
+    );
+    assert.ok(offlineUml.content[0].text.startsWith('classDiagram'));
+    assert.match(offlineUml.content[0].text, /CoreEntity/);
+  } finally {
+    fs.rmSync(tmpProj, { recursive: true, force: true });
+  }
 });

@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-20 00:51:36 UTC`
+> **Last Synced**: `2026-11-24 03:02:03 UTC`
 
 ---
 

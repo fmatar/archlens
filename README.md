@@ -11,7 +11,7 @@
 **Real-time polyglot Clean Architecture workbench, AST governance engine, and autonomous AI refactoring studio for modern software teams.**
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
-[![Release v1.1.6](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
+[![Release v1.2.0](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
 [![NPM Package](https://img.shields.io/badge/npm-@fmatar%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fmatar/archlens-skill)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -105,7 +105,7 @@ Publish the port on `127.0.0.1` only; see [Workbench security](#workbench-securi
     fitness-threshold: 0.85
 ```
 The Action runs the CLI bundled with the Action revision you pin (`@v1` follows the latest
-`v1.x.y` release; pin `@v1.1.6` for an exact version), not whatever is newest on npm. Threshold
+`v1.x.y` release; pin `@v1.2.0` for an exact version), not whatever is newest on npm. Threshold
 inputs must be plain numbers; anything else fails with a usage error (exit 2).
 
 #### Global CLI or Canary (`@dev`) Track
@@ -233,7 +233,7 @@ flowchart TD
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill@1.1.6", "mcp"],
+      "args": ["-y", "@fmatar/archlens-skill@1.2.0", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }

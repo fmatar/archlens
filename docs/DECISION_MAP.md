@@ -56,6 +56,7 @@ flowchart TD
   _238["Ticket #238 (feature/issue-#238-phase-2-trust-hygiene-and-skipped-files)"]
   ADR_018["ADR-018: Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI"]
   _246["Ticket #246 (feature/issue-#246-phase-3-hygiene-di-ports-and-e2e-ci)"]
+  ADR_019["ADR-019: Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -126,6 +127,8 @@ flowchart TD
   ADR_016 -.->|ADR Drift| ADR_017
   _246 -->|triggered_drift_adr| ADR_018
   ADR_017 -.->|ADR Drift| ADR_018
+  _247 -->|triggered_drift_adr| ADR_019
+  ADR_018 -.->|ADR Drift| ADR_019
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -160,6 +163,7 @@ flowchart TD
 | **ADR-016** | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
 | **ADR-017** | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
 | **ADR-018** | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
+| **ADR-019** | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | #247 | ADR-018 |
 
 ---
 

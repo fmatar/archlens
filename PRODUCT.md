@@ -110,5 +110,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-016 | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
 | ADR-017 | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
 | ADR-018 | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
+| ADR-019 | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | #247 | ADR-018 |
 <!-- ADR_INDEX_END -->
 

@@ -1,5 +1,5 @@
 {
-  "name": "@fmatar/archlens-skill",
+  "name": "@fadym/archlens-skill",
   "version": "1.2.0",
   "description": "Cross-platform CLI and installer for Archlens Clean Architecture governance policies and AI assistant skills",
   "main": "src/installer.js",

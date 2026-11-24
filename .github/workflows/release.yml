@@ -255,7 +255,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
       id-token: write
     steps:
       - name: Checkout Code
@@ -282,7 +281,7 @@ jobs:
         id: pack
         run: |
           npm pack ./cli --pack-destination cli
-          TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          TARBALL_PATH=$(ls ./cli/fadym-archlens-skill-*.tgz | head -n 1)
           TARBALL_FILES=$(tar -tzf "$TARBALL_PATH")
           if ! echo "$TARBALL_FILES" | grep -qx "package/skills/archlens/SKILL.md"; then
             echo "::error::Missing bundled skill package/skills/archlens/SKILL.md in $TARBALL_PATH"
@@ -318,7 +317,7 @@ jobs:
         run: |
           echo "Branch push: package packed and tested; the v${PKG_VERSION} tag push publishes it."
 
-      - name: Publish @fmatar/archlens-skill to Public NPM Registry
+      - name: Publish @fadym/archlens-skill to Public NPM Registry
         if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
         env:
           PKG_NAME: ${{ steps.meta.outputs.name }}
@@ -339,22 +338,3 @@ jobs:
           node scripts/wait-for-npm-version.js "$NAME" "$VERSION" \
             --registry https://registry.npmjs.org/ --timeout-seconds 300
           npm view "$NAME" dist-tags --registry=https://registry.npmjs.org/ || true
-
-      - name: Publish to GitHub Packages (Mirror)
-        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-        continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PKG_NAME: ${{ steps.meta.outputs.name }}
-          PKG_VERSION: ${{ steps.meta.outputs.version }}
-          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
-        run: |
-          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
-          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
-          export NPM_CONFIG_USERCONFIG="$NPMRC"
-          SPEC="${PKG_NAME}@${PKG_VERSION}"
-          if npm view "$SPEC" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
-            echo "${SPEC} already on GitHub Packages; skipping."
-            exit 0
-          fi
-          npm publish "${TARBALL_PATH}" --registry=https://npm.pkg.github.com --tag latest

@@ -88,7 +88,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
       id-token: write
 
     steps:
@@ -127,7 +126,7 @@ jobs:
         id: pack
         run: |
           npm pack ./cli --pack-destination cli
-          TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          TARBALL_PATH=$(ls ./cli/fadym-archlens-skill-*.tgz | head -n 1)
           TARBALL_FILES=$(tar -tzf "$TARBALL_PATH")
           if ! echo "$TARBALL_FILES" | grep -qx "package/skills/archlens/SKILL.md"; then
             echo "::error::Missing bundled skill package/skills/archlens/SKILL.md in $TARBALL_PATH"
@@ -148,14 +147,3 @@ jobs:
         run: |
           unset NODE_AUTH_TOKEN NPM_TOKEN NPM_CONFIG_USERCONFIG
           npm publish "${TARBALL_PATH}" --access public --tag dev --provenance --registry=https://registry.npmjs.org/
-
-      - name: Publish Canary to GitHub Packages (Mirror)
-        continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
-        run: |
-          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
-          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
-          export NPM_CONFIG_USERCONFIG="$NPMRC"
-          npm publish "${TARBALL_PATH}" --registry=https://npm.pkg.github.com --tag dev

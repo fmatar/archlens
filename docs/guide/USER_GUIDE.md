@@ -37,15 +37,15 @@ flowchart TD
 Configure your project and all installed AI coding assistants (**Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**) in one command:
 ```bash
 cd /path/to/your-project
-npx @fmatar/archlens-skill --yes --mcp
+npx @fadym/archlens-skill --yes --mcp
 ```
-With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fmatar/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static AST analysis.
+With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fadym/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static AST analysis.
 
 ### Option B: 1-Command Visual Studio Launcher
 To open the interactive browser canvas immediately on `http://127.0.0.1:8088`:
 ```bash
 cd /path/to/your-project
-npx @fmatar/archlens-skill start --open
+npx @fadym/archlens-skill start --open
 ```
 
 ### Option C: Always-On Background Daemon (Auto-Restart on Boot)

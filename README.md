@@ -12,7 +12,7 @@
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
 [![Release v1.2.0](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
-[![NPM Package](https://img.shields.io/badge/npm-@fmatar%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fmatar/archlens-skill)
+[![NPM Package](https://img.shields.io/badge/npm-@fadym%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fadym/archlens-skill)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 [**Quickstart**](#-quickstart) · [**Why Archlens?**](#-why-archlens) · [**How It Works**](#-how-it-works) · [**AI & MCP Studio**](#-autonomous-ai-companion--mcp-integration) · [**Reference**](#-reference--cli) · [**Docs & Wiki**](https://github.com/fmatar/archlens/wiki) · [**`llms.txt`**](llms.txt)
@@ -48,26 +48,26 @@ Get full Clean Architecture governance, visual ring inspection, and autonomous A
 
 ```bash
 # Portable / shared-repo setup (NPX stdio bridge + 4-tier offline AST fallback):
-npx @fmatar/archlens-skill --yes --skills --mcp
+npx @fadym/archlens-skill --yes --skills --mcp
 
 # Personal workstation setup (ephemeral Docker mcp-stdio container — zero host Node/Java needed):
-npx @fmatar/archlens-skill --yes --skills --mcp --docker
+npx @fadym/archlens-skill --yes --skills --mcp --docker
 ```
 
-This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the unified `archlens` skill via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fmatar/archlens-skill global [--docker]` equips the global skill + global MCP manifests across your machine).
+This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the unified `archlens` skill via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fadym/archlens-skill global [--docker]` equips the global skill + global MCP manifests across your machine).
 
 ### 2. Run in Autonomous AI Mode, Visual Browser Studio, or CI
 
 ```bash
 # Launch the interactive Svelte 5 Concentric Ring Workbench on http://127.0.0.1:8088
 # (opens a one-time ?token=… link that signs the browser into this server session):
-npx @fmatar/archlens-skill start --open
+npx @fadym/archlens-skill start --open
 
 # Run a headless Clean Architecture, ADP Cycle & Fitness Gate check in CI/CD:
-npx @fmatar/archlens-skill check --max-violations 0 --detect-cycles --fitness-threshold 0.85
+npx @fadym/archlens-skill check --max-violations 0 --detect-cycles --fitness-threshold 0.85
 
 # Export a publication-ready Mermaid architecture diagram directly from the CLI:
-npx @fmatar/archlens-skill check --format mermaid --output docs/architecture.mmd
+npx @fadym/archlens-skill check --format mermaid --output docs/architecture.mmd
 ```
 
 <details>
@@ -111,10 +111,10 @@ inputs must be plain numbers; anything else fails with a usage error (exit 2).
 #### Global CLI or Canary (`@dev`) Track
 ```bash
 # Global install:
-npm install -g @fmatar/archlens-skill
+npm install -g @fadym/archlens-skill
 
 # Canary preview tracking latest develop branch:
-npx @fmatar/archlens-skill@dev
+npx @fadym/archlens-skill@dev
 ```
 
 </details>
@@ -172,7 +172,7 @@ sequenceDiagram
 3. Click **`Sync ADR`** (`POST /api/mailbox/sync-adr`) to mint a living Architecture Decision Record in `docs/adr/` with embedded Before/After Mermaid diagrams, or click **`Dispatch to AI Agent`** to execute the refactoring.
 
 #### 3. Multi-Format Architecture Diagram Export (`E`)
-Press **`E`** (or run `npx @fmatar/archlens-skill check --format mermaid`) to export:
+Press **`E`** (or run `npx @fadym/archlens-skill check --format mermaid`) to export:
 - **Concentric Ring Component Topology (`COMPONENT_RINGS`)**: Nested `flowchart TB` subgraphs (`L0`–`L3`) with coupling metrics ($I, A, D$) and crimson `linkStyle` violation arrows.
 - **Class & Interface UML (`CLASS_UML`)**: Native Mermaid `classDiagram` with `<<interface>>` and `<<abstract>>` stereotypes, visibility-prefixed members, and active `V` / `F` filter state.
 - **Before vs. After DIP Port Inversion (`DIP_REFACTOR`)**: Side-by-side subgraph comparison showing how the synthesized `<Target>Port` inverts the outward dependency.
@@ -183,7 +183,7 @@ Press **`E`** (or run `npx @fmatar/archlens-skill check --format mermaid`) to ex
 
 ## 🤖 Autonomous AI Companion & MCP Integration
 
-When registered via `npx @fmatar/archlens-skill --mcp`, your AI assistant (**Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**) connects to `npx -y @fmatar/archlens-skill mcp` over stdio. Every MCP tool call traverses a **4-Tier Auto-Resurrection Waterfall** so you never have to manually boot a server beforehand:
+When registered via `npx @fadym/archlens-skill --mcp`, your AI assistant (**Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**) connects to `npx -y @fadym/archlens-skill mcp` over stdio. Every MCP tool call traverses a **4-Tier Auto-Resurrection Waterfall** so you never have to manually boot a server beforehand:
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -204,7 +204,7 @@ flowchart TD
 <details>
 <summary><strong>🧰 Available MCP Tools (11), Resources (3), Prompts (2) & Per-Agent Setup Manifests</strong></summary>
 
-#### MCP 2.0 Surface (`quarkus-mcp-server` + `@fmatar/archlens-skill mcp`)
+#### MCP 2.0 Surface (`quarkus-mcp-server` + `@fadym/archlens-skill mcp`)
 
 | Capability | Name | Description |
 | :--- | :--- | :--- |
@@ -233,7 +233,7 @@ flowchart TD
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill@1.2.0", "mcp"],
+      "args": ["-y", "@fadym/archlens-skill@1.2.0", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -242,7 +242,7 @@ flowchart TD
 }
 ```
 
-**Option B — Pure Ephemeral Docker Container (`npx @fmatar/archlens-skill --mcp --docker`, Zero Host Node/Java Needed):**
+**Option B — Pure Ephemeral Docker Container (`npx @fadym/archlens-skill --mcp --docker`, Zero Host Node/Java Needed):**
 ```json
 {
   "mcpServers": {
@@ -268,8 +268,8 @@ flowchart TD
   }
 }
 ```
-- **Claude Code CLI**: `claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp` (or Streamable HTTP: `claude mcp add --transport http archlens http://127.0.0.1:8088/mcp --header "X-Archlens-Token: $ARCHLENS_TOKEN"`)
-- **Gemini CLI**: `gemini mcp add archlens -- npx -y @fmatar/archlens-skill mcp`
+- **Claude Code CLI**: `claude mcp add archlens -- npx -y @fadym/archlens-skill mcp` (or Streamable HTTP: `claude mcp add --transport http archlens http://127.0.0.1:8088/mcp --header "X-Archlens-Token: $ARCHLENS_TOKEN"`)
+- **Gemini CLI**: `gemini mcp add archlens -- npx -y @fadym/archlens-skill mcp`
 
 #### Mailbox IPC Companion Queue (`.archlens/`)
 - **`.archlens/to-agent.json`** (`Workbench -> Agent`): Inbound refactoring directives (`APPLY_PROPOSAL`, `INVERT_DEPENDENCY`, `REGEN`, `REFRESH_CRAP`).
@@ -318,7 +318,7 @@ flowchart TD
 </details>
 
 <details>
-<summary><strong>🛠️ Complete CLI Reference (`@fmatar/archlens-skill`) & Local Source Build</strong></summary>
+<summary><strong>🛠️ Complete CLI Reference (`@fadym/archlens-skill`) & Local Source Build</strong></summary>
 
 | Command / Flag | Shorthand | Description | Default |
 | :--- | :--- | :--- | :--- |

@@ -180,6 +180,7 @@ describe('CI, release, and toolchain security hardening', () => {
     assert.match(release, /npm-release:[\s\S]*?runs-on:\s*ubuntu-latest/);
     assert.match(release, /npm-release:[\s\S]*?id-token:\s*write/);
     assert.match(release, /npm-release:[\s\S]*?run:\s*npm test\b/);
+    assert.match(release, /fadym-archlens-skill-\*\.tgz/);
     assert.match(release, /npm publish "\$\{TARBALL_PATH\}" --access public --tag latest --provenance/);
     assert.doesNotMatch(release, /secrets\.NPM_TOKEN/);
 
@@ -188,6 +189,7 @@ describe('CI, release, and toolchain security hardening', () => {
     assert.match(devRelease, /dev-npm:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
     assert.match(devRelease, /dev-npm:[\s\S]*?runs-on:\s*ubuntu-latest/);
     assert.match(devRelease, /dev-npm:[\s\S]*?id-token:\s*write/);
+    assert.match(devRelease, /fadym-archlens-skill-\*\.tgz/);
     assert.match(devRelease, /npm publish "\$\{TARBALL_PATH\}" --access public --tag dev --provenance/);
     assert.doesNotMatch(devRelease, /secrets\.NPM_TOKEN/);
   });

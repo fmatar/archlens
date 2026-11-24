@@ -7,18 +7,18 @@ Archlens natively implements an embedded **Model Context Protocol (MCP)** server
 ## 🔌 Connection Endpoints
 
 The Archlens container and native server expose four MCP transports:
-- **Zero-Dependency CLI Stdio Bridge (Recommended for shared repos)**: `npx -y @fmatar/archlens-skill mcp`
+- **Zero-Dependency CLI Stdio Bridge (Recommended for shared repos)**: `npx -y @fadym/archlens-skill mcp`
 - **Pure Ephemeral Docker STDIO Container (`mcp-stdio`, Zero Host Node/Java)**: `docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio -e ARCHLENS_HOST_WORKSPACE=/path/to/workspace -v /path/to/workspace:/workspace ghcr.io/fmatar/archlens:latest`
 - **Streamable HTTP (`MCP 2.0`)**: `http://127.0.0.1:8088/mcp` *(requires `X-Archlens-Token: <token>` or `Authorization: Bearer <token>`)*
 - **Server-Sent Events (`SSE`)**: `http://127.0.0.1:8088/mcp/sse` *(requires `X-Archlens-Token: <token>` or `Authorization: Bearer <token>`)*
 
-> **Session Token Note:** All `/api/*` and `/mcp*` HTTP endpoints require the per-launch session token from `~/.archlens/session-8088.json` (or `ARCHLENS_TOKEN` if pinned). The `@fmatar/archlens-skill mcp` stdio bridge injects this header automatically; direct HTTP MCP clients must include `-H "X-Archlens-Token: <token>"`.
+> **Session Token Note:** All `/api/*` and `/mcp*` HTTP endpoints require the per-launch session token from `~/.archlens/session-8088.json` (or `ARCHLENS_TOKEN` if pinned). The `@fadym/archlens-skill mcp` stdio bridge injects this header automatically; direct HTTP MCP clients must include `-H "X-Archlens-Token: <token>"`.
 
 ---
 
 ## 🔄 Zero-Touch Startup: The 4-Tier Auto-Resurrection Waterfall
 
-When configured via the CLI stdio bridge (`npx -y @fmatar/archlens-skill mcp`), you never need to start the Archlens server manually before prompting **Google Antigravity**, **Claude Code**, **Claude Desktop**, or **Cursor**. Every MCP tool call traverses a deterministic 4-tier resolution waterfall (`ensureServerRunning` in `cli/src/docker-runner.js`):
+When configured via the CLI stdio bridge (`npx -y @fadym/archlens-skill mcp`), you never need to start the Archlens server manually before prompting **Google Antigravity**, **Claude Code**, **Claude Desktop**, or **Cursor**. Every MCP tool call traverses a deterministic 4-tier resolution waterfall (`ensureServerRunning` in `cli/src/docker-runner.js`):
 
 ```mermaid
 flowchart TD
@@ -117,17 +117,17 @@ Computes the Composite Architecture Fitness Index (AFI, `0`–`100`, Grade `A`�
 ### ⚡ Automated 1-Command Setup (All Detected Clients)
 ```bash
 # Portable NPX bridge (repo + global clients):
-npx @fmatar/archlens-skill --mcp
+npx @fadym/archlens-skill --mcp
 
 # Ephemeral Docker mcp-stdio container (zero host Node/Java):
-npx @fmatar/archlens-skill --mcp --docker
+npx @fadym/archlens-skill --mcp --docker
 
 # Global skills + global MCP manifests only:
-npx @fmatar/archlens-skill global [--docker]
+npx @fadym/archlens-skill global [--docker]
 ```
 
 ### 1. Google Antigravity (`~/.gemini/antigravity/mcp_config.json`)
-`npx @fmatar/archlens-skill --mcp` automatically populates `~/.gemini/antigravity/mcp/archlens/*.json` and `instructions.md` as well as `~/.gemini/antigravity/mcp_config.json` (pass `--docker` to generate the ephemeral Docker `mcp-stdio` entry):
+`npx @fadym/archlens-skill --mcp` automatically populates `~/.gemini/antigravity/mcp/archlens/*.json` and `instructions.md` as well as `~/.gemini/antigravity/mcp_config.json` (pass `--docker` to generate the ephemeral Docker `mcp-stdio` entry):
 ```json
 {
   "mcpServers": {
@@ -159,7 +159,7 @@ Or portable NPX stdio bridge:
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "args": ["-y", "@fadym/archlens-skill", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -170,7 +170,7 @@ Or portable NPX stdio bridge:
 
 ### 2. Gemini CLI (`@google/gemini-cli`)
 ```bash
-gemini mcp add archlens -- npx -y @fmatar/archlens-skill mcp
+gemini mcp add archlens -- npx -y @fadym/archlens-skill mcp
 ```
 Or in `~/.gemini/settings.json` / `.gemini/settings.json`:
 ```json
@@ -178,7 +178,7 @@ Or in `~/.gemini/settings.json` / `.gemini/settings.json`:
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "args": ["-y", "@fadym/archlens-skill", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -190,7 +190,7 @@ Or in `~/.gemini/settings.json` / `.gemini/settings.json`:
 ### 3. Claude Code (CLI) & Claude Desktop
 ```bash
 # Stdio bridge (online + offline static fallback; reads ~/.archlens/session-8088.json automatically):
-claude mcp add archlens -- npx -y @fmatar/archlens-skill mcp
+claude mcp add archlens -- npx -y @fadym/archlens-skill mcp
 
 # Direct Streamable HTTP / SSE (pin ARCHLENS_TOKEN or read token from ~/.archlens/session-8088.json):
 TOKEN=$(node -p "JSON.parse(require('fs').readFileSync(require('os').homedir()+'/.archlens/session-8088.json','utf8')).token")
@@ -202,7 +202,7 @@ Or in `.mcp.json` / `~/Library/Application Support/Claude/claude_desktop_config.
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "args": ["-y", "@fadym/archlens-skill", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -218,7 +218,7 @@ Configure in `.grok/mcp.json` or `~/.grok/mcp.json`:
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill", "mcp"],
+      "args": ["-y", "@fadym/archlens-skill", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -234,7 +234,7 @@ Configure in `.cursor/mcp.json` or `~/.codeium/windsurf/mcp_config.json`:
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+      "args": ["-y", "@fadym/archlens-skill", "mcp"]
     }
   }
 }
@@ -246,7 +246,7 @@ And in `.vscode/mcp.json`:
     "archlens": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@fmatar/archlens-skill", "mcp"]
+      "args": ["-y", "@fadym/archlens-skill", "mcp"]
     }
   }
 }

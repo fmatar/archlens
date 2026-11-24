@@ -10,7 +10,7 @@ Thank you to the architects and engineers who have shaped **Archlens — Dynamic
   * Polyglot AST Scanner SPI (Java 25, Python, TypeScript/JS/Svelte 5, Rust, Go)
   * Concentric Clean Architecture Engine, Acyclic Dependencies Principle (ADP) Cycle Detector, Screaming Architecture Score (SAS), and Architecture Fitness Index (AFI)
   * Surgical Dependency Inversion Principle (DIP) Port Synthesizer & "What-If" Architectural Sandbox
-  * Quarkus 3.40 MCP 2.0 Server (Streamable HTTP, SSE, STDIO & Virtual Threads) & Zero-Dependency CLI (`@fmatar/archlens-skill`)
+  * Quarkus 3.40 MCP 2.0 Server (Streamable HTTP, SSE, STDIO & Virtual Threads) & Zero-Dependency CLI (`@fadym/archlens-skill`)
   * Interactive Svelte 5 + Tailwind CSS v4 Concentric Ring Canvas & CI/CD SARIF Quality Gates
 
 ---

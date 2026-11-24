@@ -47,7 +47,7 @@ archlens/
 │   ├── src/lib/utils/        # Martin coupling metrics (Ca, Ce, I, A, D), cubic Bézier edge routing
 │   ├── package.json          # Frontend dependencies and Vite scripts
 │   └── vitest.config.ts      # Vitest component and store testing configuration
-├── cli/                      # Zero-Dependency Multi-Agent Skill & MCP Stdio Bridge (@fmatar/archlens-skill)
+├── cli/                      # Zero-Dependency Multi-Agent Skill & MCP Stdio Bridge (@fadym/archlens-skill)
 │   ├── bin/index.js          # CLI entrypoint (archlens, archlens-skill, archlens-init)
 │   ├── src/analyzer.js       # Polyglot offline AST classifier & LLM dossier generator
 │   ├── src/checker.js        # Headless CI conformance, ADP cycle, Screaming & Fitness gate engine
@@ -141,7 +141,7 @@ java -jar backend/target/quarkus-app/quarkus-run.jar
 
 ---
 
-### Workflow C: CLI Development (`@fmatar/archlens-skill`)
+### Workflow C: CLI Development (`@fadym/archlens-skill`)
 
 The CLI is engineered with zero external production dependencies using pure Node.js standard libraries:
 

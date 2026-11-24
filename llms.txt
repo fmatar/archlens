@@ -62,27 +62,27 @@ Archlens CLI requires zero external dependencies and runs cross-platform via Nod
 
 ```bash
 # 1. Audit Codebase Conformance & Detect All Architectural Drifts:
-npx @fmatar/archlens-skill check
-npx @fmatar/archlens-skill check --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85
-npx @fmatar/archlens-skill check --format json
-npx @fmatar/archlens-skill check --format sarif -O arch-drift.sarif
+npx @fadym/archlens-skill check
+npx @fadym/archlens-skill check --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85
+npx @fadym/archlens-skill check --format json
+npx @fadym/archlens-skill check --format sarif -O arch-drift.sarif
 
 # 2. Export Actionable LLM Refactoring Prompt Dossier (with DIP Interface Prescriptions):
-npx @fmatar/archlens-skill prompt
-npx @fmatar/archlens-skill prompt --copy
+npx @fadym/archlens-skill prompt
+npx @fadym/archlens-skill prompt --copy
 
 # 3. Launch Dynamic Visual Workbench (Auto-resurrects Docker container on demand):
-npx @fmatar/archlens-skill start --open
+npx @fadym/archlens-skill start --open
 
 # 4. Initialize or Synchronize Policy:
-npx @fmatar/archlens-skill init --yes
-npx @fmatar/archlens-skill update
+npx @fadym/archlens-skill init --yes
+npx @fadym/archlens-skill update
 
 # 5. Model Context Protocol (MCP) Integration:
-npx @fmatar/archlens-skill --mcp               # Auto-configure portable NPX bridge manifests
-npx @fmatar/archlens-skill --mcp --docker      # Auto-configure ephemeral Docker mcp-stdio manifests
-npx @fmatar/archlens-skill global [--docker]   # Install global skills + global MCP manifests
-npx @fmatar/archlens-skill mcp                 # Launch MCP stdio bridge server
+npx @fadym/archlens-skill --mcp               # Auto-configure portable NPX bridge manifests
+npx @fadym/archlens-skill --mcp --docker      # Auto-configure ephemeral Docker mcp-stdio manifests
+npx @fadym/archlens-skill global [--docker]   # Install global skills + global MCP manifests
+npx @fadym/archlens-skill mcp                 # Launch MCP stdio bridge server
 ```
 
 ---
@@ -134,7 +134,7 @@ When Archlens reports an illegal outward dependency breach (e.g. `domain/Order.j
 4. **Invert Injection**:
    - Inject `OrderRepositoryPort` into the inner class using constructor injection or framework dependency injection (`@Inject` / `@Autowired`).
 5. **Verify**:
-   - Run `npx @fmatar/archlens-skill check --detect-cycles` to confirm zero violations.
+   - Run `npx @fadym/archlens-skill check --detect-cycles` to confirm zero violations.
    - Run the project test suite to verify zero functional regressions.
 
 ---

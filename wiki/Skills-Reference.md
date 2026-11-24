@@ -2,7 +2,7 @@
 
 Canonical skills: `sdlc`, `sdlc-adr`, `sdlc-doctor`, `sdlc-flow`, `sdlc-gate`, `sdlc-product`, `sdlc-release`, `sdlc-status`, `sdlc-tdd`, `sdlc-wiki`.
 
-Archlens ships a dual skill ecosystem: **end-user architectural governance skills** distributed via `npx @fmatar/archlens-skill` (and `npx skills add fmatar/archlens`) and **autonomous SDLC orchestration skills** housed in `.agent/skills/` and driven by `.agent/scripts/sdlc-engine.mjs`.
+Archlens ships a dual skill ecosystem: **end-user architectural governance skills** distributed via `npx @fadym/archlens-skill` (and `npx skills add fmatar/archlens`) and **autonomous SDLC orchestration skills** housed in `.agent/skills/` and driven by `.agent/scripts/sdlc-engine.mjs`.
 
 ---
 
@@ -10,7 +10,7 @@ Archlens ships a dual skill ecosystem: **end-user architectural governance skill
 
 | Skill ID | Path | Purpose |
 | :--- | :--- | :--- |
-| `archlens` | `skills/archlens/SKILL.md` | Unified Clean Architecture auditor, `.archlens/policy.json` scaffolder (`scripts/init_policy.py`), headless CI fitness gate (`check`), polyglot Surgical DIP Inverter (`synthesizeDipInversion`), workbench mailbox companion (`to-agent.json` / `to-viewer.json`), and MCP 2.0 companion (`npx @fmatar/archlens-skill`). |
+| `archlens` | `skills/archlens/SKILL.md` | Unified Clean Architecture auditor, `.archlens/policy.json` scaffolder (`scripts/init_policy.py`), headless CI fitness gate (`check`), polyglot Surgical DIP Inverter (`synthesizeDipInversion`), workbench mailbox companion (`to-agent.json` / `to-viewer.json`), and MCP 2.0 companion (`npx @fadym/archlens-skill`). |
 
 ---
 
@@ -31,18 +31,18 @@ Archlens ships a dual skill ecosystem: **end-user architectural governance skill
 
 ---
 
-## 💻 3. CLI Reference (`npx @fmatar/archlens-skill`)
+## 💻 3. CLI Reference (`npx @fadym/archlens-skill`)
 
 ```bash
 # Install the unified Archlens skill directly via open Skills CLI (skills.sh)
 npx skills add fmatar/archlens -y
 
 # Or scaffold policy + install skills + register MCP in one command
-npx @fmatar/archlens-skill --yes --skills --mcp
-npx @fmatar/archlens-skill skills [-g] [--agent claude-code,cursor]
+npx @fadym/archlens-skill --yes --skills --mcp
+npx @fadym/archlens-skill skills [-g] [--agent claude-code,cursor]
 
 # Headless Clean Architecture CI Quality Gate
-npx @fmatar/archlens-skill check [dir] \
+npx @fadym/archlens-skill check [dir] \
   --max-violations 0 \
   --detect-cycles \
   --screaming-threshold 60 \
@@ -51,10 +51,10 @@ npx @fmatar/archlens-skill check [dir] \
   --format sarif -O archlens-results.sarif
 
 # Launch the Interactive Workbench (Native Binary -> Runner JAR -> Docker Fallback)
-npx @fmatar/archlens-skill start [dir] [-p 8088]
+npx @fadym/archlens-skill start [dir] [-p 8088]
 
 # Run the MCP Server over Stdio (4-Tier Auto-Resurrection Waterfall)
-npx @fmatar/archlens-skill mcp [dir]
+npx @fadym/archlens-skill mcp [dir]
 ```
 
 ---

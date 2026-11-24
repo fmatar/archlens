@@ -24,7 +24,7 @@ flowchart LR
 
 | Invariant ID | Name | Enforcement Mechanism |
 | :--- | :--- | :--- |
-| `INV-01` | Concentric Dependency Rule | Every source dependency must point strictly inward (`Level 3 -> Level 2 -> Level 1 -> Level 0`). Verified by `GraphCompiler.java` and `npx @fmatar/archlens-skill check --max-violations 0`. |
+| `INV-01` | Concentric Dependency Rule | Every source dependency must point strictly inward (`Level 3 -> Level 2 -> Level 1 -> Level 0`). Verified by `GraphCompiler.java` and `npx @fadym/archlens-skill check --max-violations 0`. |
 | `INV-02` | Acyclic Dependencies Principle (ADP) | Package dependency graphs must remain a Directed Acyclic Graph (DAG). Verified by Tarjan's SCC (`PackageCycleDetector.java`) and `--detect-cycles`. |
 | `INV-03` | Spec-Driven Traceability | Every capability (`CAP-XX`) maps to a specification in `docs/specs/` and an approved ADR in `docs/adr/`. Enforced by `node .agent/scripts/sdlc-engine.mjs drift check`. |
 | `INV-04` | Dual-Gate Verification | Automated test suites enforce $\ge 85\%$ line coverage (JaCoCo / Vitest) and zero static analysis regressions (SpotBugs, PMD, Checkstyle). |

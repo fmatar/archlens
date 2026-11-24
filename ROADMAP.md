@@ -37,7 +37,7 @@ flowchart LR
 - **Linked Epics & Issues**: [#165 Epic: Archlens Headless GitHub Action, SARIF PR Annotations & Living ADR Sync](https://github.com/fmatar/archlens/issues/165), [#200 Multi-Agent Local MCP Setup & 10-Tool Registry Parity](https://github.com/fmatar/archlens/issues/200)
 - **Deliverables**:
   1. **Archlens Headless GitHub Action (`fmatar/archlens@v1`)**:
-     - [x] Official composite GitHub Action ([`action.yml`](action.yml)) executing headless architectural audits (`npx @fmatar/archlens-skill check`) in CI workflows.
+     - [x] Official composite GitHub Action ([`action.yml`](action.yml)) executing headless architectural audits (`npx @fadym/archlens-skill check`) in CI workflows.
      - [x] Enforces Acyclic Dependencies Principle (`--detect-cycles`), maximum outward breach limits (`--max-violations`), minimum Screaming Architecture Score (`--screaming-threshold`), and Composite Architecture Fitness Index (`--fitness-threshold`).
   2. **First-Class Pull Request Annotations (SARIF v2.1.0)**:
      - [x] SARIF v2.1.0 report generation (`--format sarif -O archlens-results.sarif`) with automatic upload via `github/codeql-action/upload-sarif@v3` for inline PR annotations (`ARCH001`–`ARCH004`).
@@ -94,7 +94,7 @@ flowchart LR
 - **Linked Epic**: [#166 Epic: v1.0.0 GA Production Hardening, skills.sh Ecosystem & 100k LoC Virtualization](https://github.com/fmatar/archlens/issues/166), `#4001`
 - **Deliverables**:
   1. **Ecosystem & Distribution (`#4001`)**:
-     - [x] Official multi-agent skill (`skills/archlens/SKILL.md`) for **[skills.sh](https://skills.sh)** (`npx skills add fmatar/archlens`) and zero-install CLI (`npx @fmatar/archlens-skill`).
+     - [x] Official multi-agent skill (`skills/archlens/SKILL.md`) for **[skills.sh](https://skills.sh)** (`npx skills add fmatar/archlens`) and zero-install CLI (`npx @fadym/archlens-skill`).
      - [x] Daemonless Jib multi-arch OCI container images (`linux/amd64`, `linux/arm64`) published to GHCR (`ghcr.io/fmatar/archlens`) with CycloneDX SBOM attestation, plus `-Pnative` Maven profile for GraalVM builds.
      - [x] Automated GraalVM native binary builds (`linux-amd64`; macOS/Windows targets dropped in 1.1.0 because releases build only on the self-hosted `local-archlens` Linux runners) attached to GitHub Releases, optional Docker Hub (`docker.io/fmatar/archlens`) dual-registry publishing in [`.github/workflows/release.yml`](.github/workflows/release.yml), and native binary auto-discovery (`findNativeBinary` / `startNativeBinary`) in [`cli/src/docker-runner.js`](cli/src/docker-runner.js).
   2. **Canvas Performance & Virtualization at Scale (`100k+ LoC`, `#4001`)**:

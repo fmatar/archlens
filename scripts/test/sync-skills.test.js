@@ -24,11 +24,11 @@ function createFixtureRepo(version = '1.1.1') {
 
   fs.writeFileSync(
     path.join(tmp, 'package.json'),
-    JSON.stringify({ name: '@fmatar/archlens', version }, null, 2)
+    JSON.stringify({ name: '@fadym/archlens', version }, null, 2)
   );
   fs.writeFileSync(
     path.join(tmp, 'cli', 'package.json'),
-    JSON.stringify({ name: '@fmatar/archlens-skill', version, files: ['bin', 'src', 'skills'] }, null, 2)
+    JSON.stringify({ name: '@fadym/archlens-skill', version, files: ['bin', 'src', 'skills'] }, null, 2)
   );
   fs.writeFileSync(
     path.join(tmp, 'skills', 'archlens', 'SKILL.md'),
@@ -237,7 +237,7 @@ metadata:
 
       fs.writeFileSync(
         path.join(tmp, '.mcp.json'),
-        JSON.stringify({ mcpServers: { archlens: { args: ['-y', '@fmatar/archlens-skill@1.1.1', 'mcp'] } } }, null, 2)
+        JSON.stringify({ mcpServers: { archlens: { args: ['-y', '@fadym/archlens-skill@1.1.1', 'mcp'] } } }, null, 2)
       );
 
       const bumped = setVersion({ newVersion: '1.3.0', rootDir: tmp });
@@ -246,7 +246,7 @@ metadata:
 
       const checkAfterBump = checkSkillsSync({ repoRoot: tmp });
       assert.equal(checkAfterBump.ok, true, checkAfterBump.errors.join('\n'));
-      assert.match(fs.readFileSync(path.join(tmp, '.mcp.json'), 'utf8'), /@fmatar\/archlens-skill@1\.3\.0/);
+      assert.match(fs.readFileSync(path.join(tmp, '.mcp.json'), 'utf8'), /@fadym\/archlens-skill@1\.3\.0/);
     } finally {
       fs.rmSync(tmp, { recursive: true, force: true });
     }

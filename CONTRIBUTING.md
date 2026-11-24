@@ -28,7 +28,7 @@ Archlens has adopted the [Contributor Covenant](CODE_OF_CONDUCT.md). By particip
 archlens/
 ├── backend/            # Quarkus 3.x REST, SSE & native MCP server, Polyglot AST Scanners, Rule Engine
 ├── frontend/           # Svelte 5 + Tailwind CSS v4 dynamic visualization canvas
-├── cli/                # Zero-dependency CLI (@fmatar/archlens-skill), MCP registry, stdio runner
+├── cli/                # Zero-dependency CLI (@fadym/archlens-skill), MCP registry, stdio runner
 ├── docs/               # Architecture specs (C4), User Guide, Developer Guide, Vision
 ├── .archlens/          # Active architectural policy and mailbox IPC queue
 └── pom.xml             # Root reactor POM (com.slixes:archlens)
@@ -56,7 +56,7 @@ pnpm dev
 ```
 Open **`http://localhost:5173`** in your browser. The Vite development server proxies API and MCP requests to port `8088`.
 
-### 3. Running the CLI (`@fmatar/archlens-skill`)
+### 3. Running the CLI (`@fadym/archlens-skill`)
 
 ```bash
 cd cli

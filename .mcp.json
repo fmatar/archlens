@@ -4,7 +4,7 @@
       "command": "npx",
       "args": [
         "-y",
-        "@fmatar/archlens-skill@1.2.0",
+        "@fadym/archlens-skill@1.2.0",
         "mcp"
       ],
       "env": {

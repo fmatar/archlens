@@ -63,11 +63,11 @@ Install the unified `archlens` skill across 15+ coding agents (Antigravity, Clau
 npx skills add fmatar/archlens -y
 
 # Equip global skill AND global MCP manifests in one command (add --docker for ephemeral container mode):
-npx @fmatar/archlens-skill global
+npx @fadym/archlens-skill global
 ```
 
 > [!TIP]
-> **First-Run MCP Auto-Bootstrap (for `npx skills` installs)**: Because `npx skills add` only copies `SKILL.md` files without executing scripts, check whether the `archlens` MCP tools (`inspectArchitecture`, `exportLlmDossier`, `evaluateFitness`) are registered in your active session. If missing, run `npx @fmatar/archlens-skill --path . --yes --mcp` (portable NPX bridge) or `npx @fmatar/archlens-skill global --docker` (ephemeral `mcp-stdio` Docker container when Docker is running).
+> **First-Run MCP Auto-Bootstrap (for `npx skills` installs)**: Because `npx skills add` only copies `SKILL.md` files without executing scripts, check whether the `archlens` MCP tools (`inspectArchitecture`, `exportLlmDossier`, `evaluateFitness`) are registered in your active session. If missing, run `npx @fadym/archlens-skill --path . --yes --mcp` (portable NPX bridge) or `npx @fadym/archlens-skill global --docker` (ephemeral `mcp-stdio` Docker container when Docker is running).
 
 ### Scaffolding & Updating `.archlens/policy.json`
 
@@ -75,13 +75,13 @@ When the user asks to *"Setup Archlens"*, *"Initialize `.archlens/policy.json`"*
 
 ```bash
 # Initialize policy (.archlens/policy.json + .archlens/workbench.config.json + AGENTS.md/CLAUDE.md) and register portable MCP manifests:
-npx @fmatar/archlens-skill --path . --yes --mcp
+npx @fadym/archlens-skill --path . --yes --mcp
 
 # Or register MCP as an ephemeral Docker STDIO container:
-npx @fmatar/archlens-skill --path . --yes --mcp --docker
+npx @fadym/archlens-skill --path . --yes --mcp --docker
 
 # Initialize policy only (skip MCP client configuration):
-npx @fmatar/archlens-skill --path . --yes --no-mcp
+npx @fadym/archlens-skill --path . --yes --no-mcp
 
 # Offline Python fallback if Node/npx is unavailable (run from this skill's directory):
 python3 scripts/init_policy.py --path .
@@ -93,24 +93,24 @@ python3 scripts/init_policy.py --path .
 
 ```bash
 # Launch Workbench server (opens authenticated ?token=... browser URL; auto-resurrects if offline):
-npx @fmatar/archlens-skill start --open
+npx @fadym/archlens-skill start --open
 
 # Execute Headless Clean Architecture CI Quality Gate (ADP cycles, Screaming score, Fitness index, SARIF):
-npx @fmatar/archlens-skill check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85 --format sarif -O archlens-results.sarif
+npx @fadym/archlens-skill check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85 --format sarif -O archlens-results.sarif
 
 # Export Clean Architecture LLM Refactoring Prompt Dossier (add --copy for system clipboard):
-npx @fmatar/archlens-skill prompt --path .
+npx @fadym/archlens-skill prompt --path .
 
 # Synchronize policy with newly added packages:
-npx @fmatar/archlens-skill update --path .
+npx @fadym/archlens-skill update --path .
 
 # Launch Model Context Protocol (MCP) stdio server:
-npx @fmatar/archlens-skill mcp
+npx @fadym/archlens-skill mcp
 ```
 
 ### Launching the Workbench & Auto-Resurrection
 When the user asks to start Archlens, launch the studio, or open the visual workbench:
-1. Run `npx @fmatar/archlens-skill start --open` (or `archlens-skill start`).
+1. Run `npx @fadym/archlens-skill start --open` (or `archlens-skill start`).
 2. The CLI inspects whether the server is active on `http://localhost:8088`. If offline, it automatically auto-resurrects:
    - **Native Java Runner (Default)**: If Java 21+ and a runner JAR (`quarkus-run.jar` in `~/.archlens/`, project `target/`, or via `--jar <PATH>`) are detected, it launches the native JVM server in ~0.5s with bare-metal filesystem speed.
    - **Docker Container (Fallback)**: If Java or a local runner is absent, it automatically starts or creates the `archlens-server` Docker container.

@@ -58,7 +58,7 @@ export function setVersion({ newVersion, dryRun = false, rootDir = DEFAULT_ROOT_
       path: path.join(rootDir, 'cli/package.json'),
       update: (content) =>
         content.replace(
-          /("name":\s*"@fmatar\/archlens-skill",[\s\S]*?"version":\s*")[^"]+(")/,
+          /("name":\s*"@fadym\/archlens-skill",[\s\S]*?"version":\s*")[^"]+(")/,
           `$1${newVersion}$2`
         )
     },
@@ -66,7 +66,7 @@ export function setVersion({ newVersion, dryRun = false, rootDir = DEFAULT_ROOT_
       path: path.join(rootDir, 'package.json'),
       update: (content) =>
         content.replace(
-          /("name":\s*"@fmatar\/archlens",[\s\S]*?"version":\s*")[^"]+(")/,
+          /("name":\s*"@fadym\/archlens",[\s\S]*?"version":\s*")[^"]+(")/,
           `$1${newVersion}$2`
         )
     },
@@ -106,7 +106,7 @@ export function setVersion({ newVersion, dryRun = false, rootDir = DEFAULT_ROOT_
       path: path.join(rootDir, '.mcp.json'),
       update: (content) =>
         content.replace(
-          /("@fmatar\/archlens-skill@)[^"]+(")/,
+          /("@fadym\/archlens-skill@)[^"]+(")/,
           `$1${newVersion}$2`
         )
     }

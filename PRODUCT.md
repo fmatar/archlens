@@ -45,7 +45,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 
 ## Evidence on Hand
 
-- **Working Codebase**: Java 25 + Quarkus 3.40.1 backend, Svelte 5 + Tailwind CSS v4 + GSAP 3.15 frontend, and Node.js CLI (`@fmatar/archlens-skill`).
+- **Working Codebase**: Java 25 + Quarkus 3.40.1 backend, Svelte 5 + Tailwind CSS v4 + GSAP 3.15 frontend, and Node.js CLI (`@fadym/archlens-skill`).
 - **Living Self-Analysis**: Self-governing policy (`.archlens/policy.json`) achieving 1.00 (100%) Screaming Architecture Score with 0 violations and 0 cycles.
 - **Media Artifacts**:
   - `media/archlens-teaser.mp4` & `media/archlens-canvas.png`: 9-second high-definition overview and workbench screenshot highlighting concentric ring reorganization and source code inspection.
@@ -58,7 +58,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 1. **Code is Truth**: Never require manual diagram drawing. All nodes and dependency edges reflect actual AST parsers scanning actual source code files.
 2. **Inward Dependencies Only**: The Dependency Rule is immutable; violations are high-visibility alerts that must never be hidden or softened.
 3. **Agentic by Design**: Built from day one to treat autonomous AI coding agents as first-class collaborators via clean mailbox and MCP handoffs.
-4. **Zero-Friction Test-Drive**: A developer should be able to run `npx @fmatar/archlens-skill` and visualize their architecture in under two minutes without setup friction.
+4. **Zero-Friction Test-Drive**: A developer should be able to run `npx @fadym/archlens-skill` and visualize their architecture in under two minutes without setup friction.
 
 ## Accessibility & Inclusion
 
@@ -111,5 +111,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-017 | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
 | ADR-018 | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
 | ADR-019 | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | #247 | ADR-018 |
+| ADR-020 | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | #247 | ADR-019 |
 <!-- ADR_INDEX_END -->
 

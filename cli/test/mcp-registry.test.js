@@ -116,7 +116,7 @@ test('installMcpConfigs writes Antigravity schemas and updates client manifests'
     assert.ok(updatedClaudeConfig.mcpServers.existingServer);
     assert.ok(updatedClaudeConfig.mcpServers.archlens);
     assert.equal(updatedClaudeConfig.mcpServers.archlens.command, 'npx');
-    assert.deepEqual(updatedClaudeConfig.mcpServers.archlens.args, ['-y', '@fmatar/archlens-skill', 'mcp']);
+    assert.deepEqual(updatedClaudeConfig.mcpServers.archlens.args, ['-y', '@fadym/archlens-skill', 'mcp']);
 
     // Verify Cursor config
     const cursorFile = path.join(tmpProject, '.cursor', 'mcp.json');

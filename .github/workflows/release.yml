@@ -252,10 +252,10 @@ jobs:
   npm-release:
     name: Test and Publish NPM CLI Package
     needs: [verify-ci-gate]
-    runs-on: local-archlens
+    runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      id-token: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -265,7 +265,11 @@ jobs:
         with:
           setup-java: 'false'
           setup-maven: 'false'
-          registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm >= 11.5.1 for OIDC Trusted Publishing
+        run: |
+          npm install -g npm@latest
+          echo "Using npm $(npm --version)"
 
       - name: Verify Agent Skills Sync & Manifest Parity
         run: node scripts/sync-skills.js --check
@@ -277,7 +281,7 @@ jobs:
         id: pack
         run: |
           npm pack ./cli --pack-destination cli
-          TARBALL_PATH=$(ls ./cli/fmatar-archlens-skill-*.tgz | head -n 1)
+          TARBALL_PATH=$(ls ./cli/fadym-archlens-skill-*.tgz | head -n 1)
           TARBALL_FILES=$(tar -tzf "$TARBALL_PATH")
           if ! echo "$TARBALL_FILES" | grep -qx "package/skills/archlens/SKILL.md"; then
             echo "::error::Missing bundled skill package/skills/archlens/SKILL.md in $TARBALL_PATH"
@@ -302,62 +306,35 @@ jobs:
             exit 1
           fi
 
-      # NOTE: --provenance and npm Trusted Publishing (OIDC) are only accepted by npm from
-      # GitHub-hosted runners. This job runs on the self-hosted local-archlens ARC runners,
-      # so publishing authenticates with the NPM_TOKEN secret and omits --provenance
-      # (npm rejects self-hosted provenance with E422).
+      # Uses npm OIDC Trusted Publishing (GitHub-hosted ubuntu-latest + id-token: write + npm >= 11.5.1)
+      # with SLSA --provenance attestation; zero long-lived NPM_TOKEN secrets required.
       # Only tag pushes (and manual dispatches) publish, so exactly one run publishes each
       # version (#233). Branch pushes to main run the same checks as a dry run.
       - name: Skip npm publish (branch push)
         if: ${{ !startsWith(github.ref, 'refs/tags/') && github.event_name != 'workflow_dispatch' }}
+        env:
+          PKG_VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          echo "Branch push: package packed and tested; the v${{ steps.meta.outputs.version }} tag push publishes it."
+          echo "Branch push: package packed and tested; the v${PKG_VERSION} tag push publishes it."
 
-      - name: Publish @fmatar/archlens-skill to Public NPM Registry
+      - name: Publish @fadym/archlens-skill to Public NPM Registry
         if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PKG_NAME: ${{ steps.meta.outputs.name }}
           PKG_VERSION: ${{ steps.meta.outputs.version }}
           TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
         run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::NPM_TOKEN secret is not set; cannot publish to registry.npmjs.org from self-hosted runners."
-            exit 1
-          fi
-          NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
-          printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
-          export NPM_CONFIG_USERCONFIG="$NPMRC"
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_CONFIG_USERCONFIG
           NAME="${PKG_NAME}"
           VERSION="${PKG_VERSION}"
           SPEC="${NAME}@${VERSION}"
           if npm view "$SPEC" version --registry=https://registry.npmjs.org/ >/dev/null 2>&1; then
-            echo "${SPEC} already on npmjs.org; ensuring the latest dist-tag points at it."
-            npm dist-tag add "$SPEC" latest --registry=https://registry.npmjs.org/
+            echo "${SPEC} already published on npmjs.org; skipping duplicate publish."
           else
-            npm publish "${TARBALL_PATH}" --access public --tag latest --registry=https://registry.npmjs.org/
+            npm publish "${TARBALL_PATH}" --access public --tag latest --provenance --registry=https://registry.npmjs.org/
           fi
           # The registry takes a while to serve a fresh version; poll with backoff instead of
           # failing on the first E404 (#233).
           node scripts/wait-for-npm-version.js "$NAME" "$VERSION" \
             --registry https://registry.npmjs.org/ --timeout-seconds 300
           npm view "$NAME" dist-tags --registry=https://registry.npmjs.org/ || true
-
-      - name: Publish to GitHub Packages (Mirror)
-        if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-        continue-on-error: true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PKG_NAME: ${{ steps.meta.outputs.name }}
-          PKG_VERSION: ${{ steps.meta.outputs.version }}
-          TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
-        run: |
-          NPMRC="${RUNNER_TEMP}/.npmrc-ghpkg"
-          printf '@fmatar:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
-          export NPM_CONFIG_USERCONFIG="$NPMRC"
-          SPEC="${PKG_NAME}@${PKG_VERSION}"
-          if npm view "$SPEC" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
-            echo "${SPEC} already on GitHub Packages; skipping."
-            exit 0
-          fi
-          npm publish "${TARBALL_PATH}" --registry=https://npm.pkg.github.com --tag latest

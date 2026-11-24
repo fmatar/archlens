@@ -29,7 +29,7 @@ else
     echo "::error title=Archlens Action::Cannot determine the bundled CLI version from $ACTION_DIR/cli/package.json"
     exit 1
   fi
-  CMD=(npx -y "@fmatar/archlens-skill@${VERSION}")
+  CMD=(npx -y "@fadym/archlens-skill@${VERSION}")
 fi
 
 printf 'Executing:'

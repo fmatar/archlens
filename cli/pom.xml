@@ -13,5 +13,5 @@
     <artifactId>archlens-cli</artifactId>
     <packaging>pom</packaging>
     <name>Archlens — Clean Architecture Dynamic Workbench :: CLI</name>
-    <description>Zero-dependency Node.js CLI, analyzer, and MCP server (@fmatar/archlens-skill)</description>
+    <description>Zero-dependency Node.js CLI, analyzer, and MCP server (@fadym/archlens-skill)</description>
 </project>

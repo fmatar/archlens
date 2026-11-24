@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Archlens Agent Skills Governance & Synchronization Engine
- * Keeps root `skills/` (npx skills / skills.sh standard), `cli/skills/` (@fmatar/archlens-skill),
+ * Keeps root `skills/` (npx skills / skills.sh standard), `cli/skills/` (@fadym/archlens-skill),
  * and `.claude-plugin/plugin.json` synchronized and version-locked on every pack and release.
  */
 

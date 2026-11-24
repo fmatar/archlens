@@ -298,7 +298,7 @@ Whenever outward breaches are detected from inner layers (Domain Core or Applica
 1. **Declare Port**: Create an interface port inside the inner layer (\`domain/ports/\` or \`application/ports/\`) declaring required operations.
 2. **Implement Port**: Implement the interface inside the outer layer (\`infrastructure/\` or \`adapters/\`).
 3. **Invert Injection**: Inject the outer implementation into the inner layer using constructor or dependency injection.
-4. **Verify**: Run \`npx @fmatar/archlens-skill check --detect-cycles\` to verify zero violations.
+4. **Verify**: Run \`npx @fadym/archlens-skill check --detect-cycles\` to verify zero violations.
 `.trim();
 }
 
@@ -442,7 +442,7 @@ export function getMcpManifestEntry(serverUrl = 'http://localhost:8088', options
 
   return {
     command: 'npx',
-    args: ['-y', '@fmatar/archlens-skill', 'mcp'],
+    args: ['-y', '@fadym/archlens-skill', 'mcp'],
     env: {
       ARCHLENS_SERVER_URL: serverUrl
     }

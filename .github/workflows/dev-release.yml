@@ -85,10 +85,11 @@ jobs:
   dev-npm:
     name: Build & Publish Canary NPM Package (@dev)
     needs: [verify-ci-gate]
-    runs-on: local-archlens
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - name: Checkout Code
@@ -99,7 +100,11 @@ jobs:
         with:
           setup-java: 'false'
           setup-maven: 'false'
-          registry-url: 'https://registry.npmjs.org'
+
+      - name: Ensure npm >= 11.5.1 for OIDC Trusted Publishing
+        run: |
+          npm install -g npm@latest
+          echo "Using npm $(npm --version)"
 
       - name: Verify Agent Skills Sync & Manifest Parity
         run: node scripts/sync-skills.js --check
@@ -135,22 +140,14 @@ jobs:
           fi
           echo "tarball=${TARBALL_PATH}" >> "$GITHUB_OUTPUT"
 
-      # npm rejects --provenance (and Trusted Publishing/OIDC) from self-hosted runners,
-      # and actions/setup-node overrides ~/.npmrc via NPM_CONFIG_USERCONFIG, so each
-      # registry gets an explicit userconfig and failures are no longer swallowed.
+      # Uses npm OIDC Trusted Publishing (GitHub-hosted ubuntu-latest + id-token: write + npm >= 11.5.1)
+      # with SLSA --provenance attestation; zero long-lived NPM_TOKEN secrets required.
       - name: Publish Canary to Public NPM Registry
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           TARBALL_PATH: ${{ steps.pack.outputs.tarball }}
         run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::NPM_TOKEN secret is not set; cannot publish canary to registry.npmjs.org."
-            exit 1
-          fi
-          NPMRC="${RUNNER_TEMP}/.npmrc-npmjs"
-          printf '@fmatar:registry=https://registry.npmjs.org/\n//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}\n' > "$NPMRC"
-          export NPM_CONFIG_USERCONFIG="$NPMRC"
-          npm publish "${TARBALL_PATH}" --access public --tag dev --registry=https://registry.npmjs.org/
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_CONFIG_USERCONFIG
+          npm publish "${TARBALL_PATH}" --access public --tag dev --provenance --registry=https://registry.npmjs.org/
 
       - name: Publish Canary to GitHub Packages (Mirror)
         continue-on-error: true

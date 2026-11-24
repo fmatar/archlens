@@ -177,11 +177,19 @@ describe('CI, release, and toolchain security hardening', () => {
     const release = read('.github/workflows/release.yml');
     assert.doesNotMatch(release, /inputs:\s*\n\s+tag:/, 'unused inputs.tag must be removed');
     assert.match(release, /npm-release:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
+    assert.match(release, /npm-release:[\s\S]*?runs-on:\s*ubuntu-latest/);
+    assert.match(release, /npm-release:[\s\S]*?id-token:\s*write/);
     assert.match(release, /npm-release:[\s\S]*?run:\s*npm test\b/);
+    assert.match(release, /npm publish "\$\{TARBALL_PATH\}" --access public --tag latest --provenance/);
+    assert.doesNotMatch(release, /secrets\.NPM_TOKEN/);
 
     const devRelease = read('.github/workflows/dev-release.yml');
     assert.match(devRelease, /dev-docker:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
     assert.match(devRelease, /dev-npm:[\s\S]*?needs:\s*\[verify-ci-gate\]/);
+    assert.match(devRelease, /dev-npm:[\s\S]*?runs-on:\s*ubuntu-latest/);
+    assert.match(devRelease, /dev-npm:[\s\S]*?id-token:\s*write/);
+    assert.match(devRelease, /npm publish "\$\{TARBALL_PATH\}" --access public --tag dev --provenance/);
+    assert.doesNotMatch(devRelease, /secrets\.NPM_TOKEN/);
   });
 
   it('setup-toolchain verifies Apache Maven SHA-512 checksum before extracting (M-4)', () => {

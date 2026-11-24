@@ -68,11 +68,12 @@ mkdir -p \
 
 APT_OPTS=(
   -o "Dir::State=$APT_DIR/state"
-  -o "Dir::State::Lists=$APT_DIR/state/lists"
+  -o "Dir::State::lists=$APT_DIR/state/lists"
   -o "Dir::State::status=/var/lib/dpkg/status"
   -o "Dir::Cache=$APT_DIR/cache"
-  -o "Dir::Cache::Archives=$APT_DIR/cache/archives"
+  -o "Dir::Cache::archives=$APT_DIR/cache/archives"
   -o "Dir::Log=$APT_DIR/log"
+  -o "APT::Update::Post-Invoke::="
   -o "Debug::NoLocking=1"
   -o "APT::Sandbox::User=root"
 )
@@ -107,33 +108,54 @@ CANDIDATE_PKGS=(
   libxshmfence1
 )
 
-AVAILABLE_PKGS=()
-for pkg in "${CANDIDATE_PKGS[@]}"; do
-  if apt-cache "${APT_OPTS[@]}" show "$pkg" >/dev/null 2>&1; then
-    AVAILABLE_PKGS+=("$pkg")
+# Single apt-cache policy pass: filters out virtual packages with "Candidate: (none)"
+# (such as libasound2 on Ubuntu 24.04 Noble) and already-installed packages.
+MISSING_PKGS=()
+while IFS= read -r pkg; do
+  if [ -n "$pkg" ]; then
+    MISSING_PKGS+=("$pkg")
   fi
-done
+done < <(
+  apt-cache "${APT_OPTS[@]}" policy "${CANDIDATE_PKGS[@]}" 2>/dev/null | awk '
+    /^[^[:space:]].*:$/ { pkg = $1; sub(/:$/, "", pkg); inst = ""; cand = "" }
+    /^[[:space:]]+Installed:/ { inst = $2 }
+    /^[[:space:]]+Candidate:/ {
+      cand = $2
+      if (pkg != "" && inst == "(none)" && cand != "" && cand != "(none)") {
+        print pkg
+      }
+    }
+  '
+)
 
-if [ "${#AVAILABLE_PKGS[@]}" -eq 0 ]; then
-  echo "::error::No Playwright runtime library packages could be resolved via user-space apt-cache."
+if [ "${#MISSING_PKGS[@]}" -eq 0 ]; then
+  echo "::error::No installable Playwright runtime library packages found via apt-cache policy."
   exit 1
 fi
 
-apt-get "${APT_OPTS[@]}" install -y -qq --download-only --no-install-recommends "${AVAILABLE_PKGS[@]}"
+echo "Downloading ${#MISSING_PKGS[@]} Playwright runtime package(s): ${MISSING_PKGS[*]}"
+apt-get "${APT_OPTS[@]}" install -y -qq --download-only --no-install-recommends "${MISSING_PKGS[@]}"
 
-shopt -s nullglob
-for deb in "$APT_DIR/cache/archives/"*.deb; do
-  dpkg-deb -x "$deb" "$SYSROOT"
-done
-shopt -u nullglob
+DEB_COUNT=0
+while IFS= read -r deb; do
+  if [ -n "$deb" ]; then
+    dpkg-deb -x "$deb" "$SYSROOT"
+    DEB_COUNT=$((DEB_COUNT + 1))
+  fi
+done < <(find "$APT_DIR" -type f -name "*.deb" 2>/dev/null)
+
+if [ "$DEB_COUNT" -eq 0 ]; then
+  echo "::error::Zero .deb archives were downloaded into ${APT_DIR}."
+  exit 1
+fi
 
 rm -rf "$APT_DIR"
 export_sysroot_ld_path "$SYSROOT"
 
 if has_missing_libs; then
-  echo "::error::Playwright Chromium still has unresolved shared libraries after sysroot extraction:"
+  echo "::error::Playwright Chromium still has unresolved shared libraries after extracting ${DEB_COUNT} package(s):"
   ldd "$SHELL_BIN" | grep "=> not found" || true
   exit 1
 fi
 
-echo "Playwright Linux runtime libraries extracted cleanly to ${SYSROOT}."
+echo "Playwright Linux runtime libraries (${DEB_COUNT} .deb archives) extracted cleanly to ${SYSROOT}."

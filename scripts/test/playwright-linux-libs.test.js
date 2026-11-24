@@ -31,7 +31,7 @@ describe('ensure-playwright-linux-libs.sh (#245 rootless CI)', { skip }, () => {
     assert.equal(res.status, 0, res.stderr);
   });
 
-  it('extracts missing shared libraries via rootless apt-get and exports LD_LIBRARY_PATH to GITHUB_ENV', () => {
+  it('skips virtual packages (Candidate: (none)) & installed packages via apt-cache policy and exports LD_LIBRARY_PATH', () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pw-libs-linux-'));
     const bin = path.join(tmp, 'bin');
     const browsers = path.join(tmp, 'ms-playwright', 'chromium_headless_shell-1254', 'chrome-headless-shell-linux64');
@@ -46,7 +46,6 @@ describe('ensure-playwright-linux-libs.sh (#245 rootless CI)', { skip }, () => {
     stubBin(bin, 'uname', 'echo Linux');
     // Simulate user-namespaced ARC container where sudo exists without CAP_CHOWN: sudo must never be called
     stubBin(bin, 'sudo', 'echo "unexpected sudo invocation" >&2; exit 99');
-    // ldd reports libnspr4.so missing until LD_LIBRARY_PATH contains libnspr4.so
     stubBin(
       bin,
       'ldd',
@@ -63,12 +62,20 @@ echo "  libnspr4.so => not found"`
       bin,
       'apt-cache',
       `echo "apt-cache $*" >> "${aptLog}"
-for arg in "$@"; do last="$arg"; done
-case "$last" in
-  *t64) exit 0 ;;
-  libasound2|libatk-bridge2.0-0|libatk1.0-0|libatspi2.0-0|libcups2|libglib2.0-0) exit 1 ;;
-  *) exit 0 ;;
-esac`
+cat <<'EOF'
+libasound2t64:
+  Installed: (none)
+  Candidate: 1.2.11-1build2
+libasound2:
+  Installed: (none)
+  Candidate: (none)
+libdbus-1-3:
+  Installed: 1.14.10-4ubuntu4.1
+  Candidate: 1.14.10-4ubuntu4.1
+libnspr4:
+  Installed: (none)
+  Candidate: 2:4.35-1.1build1
+EOF`
     );
     stubBin(
       bin,
@@ -77,7 +84,8 @@ esac`
 ARCHIVES=""
 for arg in "$@"; do
   case "$arg" in
-    Dir::Cache::Archives=*) ARCHIVES="\${arg#Dir::Cache::Archives=}" ;;
+    Dir::Cache::archives=*) ARCHIVES="\${arg#Dir::Cache::archives=}" ;;
+    libasound2|libdbus-1-3) echo "virtual or installed pkg $arg should have been filtered!" >&2; exit 100 ;;
   esac
 done
 if [[ "$*" == *"install"* ]] && [ -n "$ARCHIVES" ]; then
@@ -108,8 +116,9 @@ touch "$DEST/usr/lib/x86_64-linux-gnu/libnspr4.so"`
     assert.match(envContent, /^LD_LIBRARY_PATH=.*\/usr\/lib\/x86_64-linux-gnu/m);
     const logContent = fs.readFileSync(aptLog, 'utf8');
     assert.match(logContent, /Dir::State=/);
+    assert.match(logContent, /APT::Update::Post-Invoke::=/);
     assert.match(logContent, /Debug::NoLocking=1/);
-    assert.match(logContent, /libasound2t64/);
+    assert.match(logContent, /install .* libasound2t64 libnspr4$/m);
   });
 
   it('ci.yml runs ensure-playwright-linux-libs.sh before playwright test', () => {

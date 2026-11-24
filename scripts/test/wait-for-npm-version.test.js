@@ -37,7 +37,7 @@ describe('wait-for-npm-version (#233)', () => {
     const clock = fakeClock();
     const exec = flakyExec(3, '1.1.5');
     const res = await waitForNpmVersion(
-      { name: '@fmatar/archlens-skill', version: '1.1.5', registry: 'r', timeoutSeconds: 120, initialDelaySeconds: 5, maxDelaySeconds: 30 },
+      { name: '@fadym/archlens-skill', version: '1.1.5', registry: 'r', timeoutSeconds: 120, initialDelaySeconds: 5, maxDelaySeconds: 30 },
       { execFileSync: exec, ...clock, log: () => {} }
     );
     assert.equal(res.ok, true);
@@ -111,8 +111,9 @@ describe('wait-for-npm-version (#233)', () => {
 
   it('release workflow publishes only from tags and waits for propagation', () => {
     const wf = fs.readFileSync(path.join(REPO_ROOT, '.github', 'workflows', 'release.yml'), 'utf8');
-    const publish = wf.slice(wf.indexOf('- name: Publish @fmatar/archlens-skill to Public NPM Registry'));
-    const step = publish.slice(0, publish.indexOf('\n      - name:', 10));
+    const publish = wf.slice(wf.indexOf('- name: Publish @fadym/archlens-skill to Public NPM Registry'));
+    const nextStep = publish.indexOf('\n      - name:', 10);
+    const step = nextStep === -1 ? publish : publish.slice(0, nextStep);
     assert.match(step, /if: \$\{\{ startsWith\(github\.ref, 'refs\/tags\/'\)/);
     assert.match(step, /node scripts\/wait-for-npm-version\.js/);
     assert.doesNotMatch(step, /PUBLISHED_VER=\$\(npm view/, 'single-shot verification must be gone');

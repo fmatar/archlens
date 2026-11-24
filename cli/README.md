@@ -1,6 +1,6 @@
-# @fmatar/archlens-skill
+# @fadym/archlens-skill
 
-[![npm version](https://img.shields.io/npm/v/@fmatar/archlens-skill.svg)](https://www.npmjs.com/package/@fmatar/archlens-skill)
+[![npm version](https://img.shields.io/npm/v/@fadym/archlens-skill.svg)](https://www.npmjs.com/package/@fadym/archlens-skill)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Node](https://img.shields.io/badge/Node-%3E%3D22.0.0-brightgreen.svg)](https://nodejs.org/)
 
@@ -16,14 +16,14 @@ Analyzes any project repository, detects programming languages and package hiera
 Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Choose the portable NPX stdio bridge (with 4-tier offline AST fallback) or an ephemeral Docker `mcp-stdio` container:
 ```bash
 # Portable / shared-repo setup (.archlens/policy.json + AGENTS.md + skills + NPX MCP bridge):
-npx @fmatar/archlens-skill --yes --skills --mcp
+npx @fadym/archlens-skill --yes --skills --mcp
 
 # Personal workstation setup (ephemeral docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio container):
-npx @fmatar/archlens-skill --yes --skills --mcp --docker
+npx @fadym/archlens-skill --yes --skills --mcp --docker
 
 # Equip global skills AND global MCP manifests across all detected coding agents:
-npx @fmatar/archlens-skill global
-npx @fmatar/archlens-skill global --docker
+npx @fadym/archlens-skill global
+npx @fadym/archlens-skill global --docker
 ```
 
 ### Option B: Install AI Assistant Skills Directly via `npx skills`
@@ -40,10 +40,10 @@ npx skills add fmatar/archlens --all --agent claude-code -y
 
 ```bash
 # Production Stable (recommended)
-npx @fmatar/archlens-skill
+npx @fadym/archlens-skill
 
 # Canary / Development Preview (tracks latest develop branch)
-npx @fmatar/archlens-skill@dev
+npx @fadym/archlens-skill@dev
 
 # Direct GitHub Execution (zero registry dependencies)
 npx github:fmatar/archlens
@@ -51,7 +51,7 @@ npx github:fmatar/archlens
 
 ### Option D: Install Globally via NPM
 ```bash
-npm install -g @fmatar/archlens-skill
+npm install -g @fadym/archlens-skill
 archlens-skill
 ```
 
@@ -92,67 +92,67 @@ node ./cli/bin/index.js
 #### 1. Interactive Setup Wizard
 Guides you through repository inspection and option selection:
 ```bash
-npx @fmatar/archlens-skill
+npx @fadym/archlens-skill
 ```
 
 #### 2. Headless Local Initialization
 Initializes Clean Architecture governance in the current repository with default settings:
 ```bash
-npx @fmatar/archlens-skill --yes
+npx @fadym/archlens-skill --yes
 ```
 
 Target a specific repository directory:
 ```bash
-npx @fmatar/archlens-skill --path /path/to/project --yes
+npx @fadym/archlens-skill --path /path/to/project --yes
 ```
 
 #### 3. Global AI Agent Skill & MCP Installation
 Deploys skills and global MCP manifests so Claude Code, Gemini CLI, and Antigravity are equipped across all workspaces (pass `--docker` for ephemeral container mode or `--no-mcp` to skip MCP setup):
 ```bash
-npx @fmatar/archlens-skill global
-npx @fmatar/archlens-skill global --docker
+npx @fadym/archlens-skill global
+npx @fadym/archlens-skill global --docker
 ```
 
 #### 4. Synchronize Existing Policy
 Re-scans code after adding new modules or packages to incorporate them into `.archlens/policy.json`:
 ```bash
-npx @fmatar/archlens-skill update
+npx @fadym/archlens-skill update
 ```
 
 #### 5. Export LLM Refactoring Prompt Dossier
 Generates copy-ready architectural diagnostics and concrete Dependency Inversion Principle (DIP) instructions for Claude Code, Gemini, ChatGPT, or Antigravity:
 ```bash
 # Print dossier to stdout
-npx @fmatar/archlens-skill prompt
+npx @fadym/archlens-skill prompt
 
 # Or copy directly to system clipboard
-npx @fmatar/archlens-skill prompt --copy
+npx @fadym/archlens-skill prompt --copy
 ```
 
 #### 7. Model Context Protocol (MCP) Setup & Stdio Bridge
 Configures detected AI client manifests or launches an interactive stdio bridge:
 ```bash
 # Auto-configure Claude Desktop, Google Antigravity, Claude Code, Cursor, and VS Code
-npx @fmatar/archlens-skill --mcp
+npx @fadym/archlens-skill --mcp
 
 # Auto-configure pure ephemeral Docker MCP container (docker run -i --rm -e QUARKUS_PROFILE=mcp-stdio)
-npx @fmatar/archlens-skill --mcp --docker
+npx @fadym/archlens-skill --mcp --docker
 
 # Launch MCP stdio transport bridge (spins up Docker container automatically when needed)
-npx @fmatar/archlens-skill mcp
+npx @fadym/archlens-skill mcp
 ```
 
 #### 8. Start Workbench Container & Auto-Resurrection
 Starts the Archlens container, mounts the workspace, verifies readiness, and optionally opens your browser. **If the container is killed or stopped, running `start` (or calling an MCP tool) automatically starts it again:**
 ```bash
 # Start container and automatically open workbench in browser:
-npx @fmatar/archlens-skill start --open
+npx @fadym/archlens-skill start --open
 
 # Start container in background on default port 8088:
-npx @fmatar/archlens-skill start
+npx @fadym/archlens-skill start
 
 # Specify a custom port or target workspace directory:
-npx @fmatar/archlens-skill start --path /path/to/project --port 8088 --open
+npx @fadym/archlens-skill start --path /path/to/project --port 8088 --open
 ```
 
 ---

@@ -55,7 +55,7 @@ function printHelp() {
 ${ui.colors.brightCyan}${ui.colors.bold}Archlens Skill & Policy Installer${ui.colors.reset} ${ui.colors.dim}v${version}${ui.colors.reset}
 
 ${ui.colors.bold}USAGE:${ui.colors.reset}
-  npx @fmatar/archlens-skill [command] [options]
+  npx @fadym/archlens-skill [command] [options]
   archlens-skill [command] [options]
   archlens-init [command] [options]
 
@@ -106,33 +106,33 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
 
 ${ui.colors.bold}EXAMPLES:${ui.colors.reset}
   ${ui.colors.dim}# Start Archlens workbench container and open in browser:${ui.colors.reset}
-  npx @fmatar/archlens-skill start --open
+  npx @fadym/archlens-skill start --open
   ${ui.colors.dim}# Configure MCP manifests across Claude, Antigravity, and Cursor:${ui.colors.reset}
-  npx @fmatar/archlens-skill --mcp
+  npx @fadym/archlens-skill --mcp
 
   ${ui.colors.dim}# Configure ephemeral Docker MCP container (docker run -i --rm):${ui.colors.reset}
-  npx @fmatar/archlens-skill --mcp --docker
+  npx @fadym/archlens-skill --mcp --docker
 
   ${ui.colors.dim}# Launch MCP stdio bridge server for AI coding assistants:${ui.colors.reset}
-  npx @fmatar/archlens-skill mcp
+  npx @fadym/archlens-skill mcp
 
   ${ui.colors.dim}# Export Clean Architecture LLM Refactoring Prompt to stdout:${ui.colors.reset}
-  npx @fmatar/archlens-skill prompt
+  npx @fadym/archlens-skill prompt
 
   ${ui.colors.dim}# Copy prompt directly to system clipboard:${ui.colors.reset}
-  npx @fmatar/archlens-skill prompt --copy
+  npx @fadym/archlens-skill prompt --copy
 
   ${ui.colors.dim}# Interactive setup wizard:${ui.colors.reset}
-  npx @fmatar/archlens-skill
+  npx @fadym/archlens-skill
 
   ${ui.colors.dim}# Initialize policy in current directory with default settings:${ui.colors.reset}
-  npx @fmatar/archlens-skill --yes
+  npx @fadym/archlens-skill --yes
 
   ${ui.colors.dim}# Install Archlens skill globally for Claude Code and Gemini CLI:${ui.colors.reset}
-  npx @fmatar/archlens-skill global
+  npx @fadym/archlens-skill global
 
   ${ui.colors.dim}# Update existing policy after adding new modules:${ui.colors.reset}
-  npx @fmatar/archlens-skill update
+  npx @fadym/archlens-skill update
 `);
 }
 
@@ -352,7 +352,7 @@ async function runInteractive(options, deps = {}) {
       {
         value: 'npx',
         label: `${ui.colors.bold}NPX Stdio Bridge (Recommended for shared repos)${ui.colors.reset}`,
-        description: 'Path-agnostic npx -y @fmatar/archlens-skill mcp with 4-tier offline AST fallback'
+        description: 'Path-agnostic npx -y @fadym/archlens-skill mcp with 4-tier offline AST fallback'
       },
       {
         value: 'docker',
@@ -754,7 +754,7 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
       } else if (status.status === 'offline') {
         ui.warn(status.message || 'Archlens server is offline and neither native runner JAR nor Docker is available.');
         console.log(`\n  ${ui.colors.dim}To run offline architecture analysis:${ui.colors.reset}`);
-        console.log(`  npx @fmatar/archlens-skill prompt\n`);
+        console.log(`  npx @fadym/archlens-skill prompt\n`);
       } else {
         ui.error(status.message || 'Failed to start Archlens server.');
         return exit(1);

@@ -8,7 +8,7 @@ flowchart TD
     Agent["Autonomous AI Coding Agent\n(Antigravity, Gemini CLI, Claude Code, Grok, Cursor, Windsurf)"]
     
     subgraph System ["Archlens Governance & Refactoring Workbench (v1.2.0)"]
-        App["Archlens Dynamic Workbench\n(Quarkus 3.40.1.2 on Java 25 + Svelte 5 + @fmatar/archlens-skill CLI)"]
+        App["Archlens Dynamic Workbench\n(Quarkus 3.40.1.2 on Java 25 + Svelte 5 + @fadym/archlens-skill CLI)"]
     end
     
     TargetCode["Polyglot Target Codebase\n(Java 25, Python, TS/JS/Svelte 5, Rust, Go)"]
@@ -36,7 +36,7 @@ flowchart TD
         SSEListener["EventSource Client (/api/events)\n(Debounced Live AST & Mailbox Sync)"]
     end
 
-    subgraph CliContainer ["Zero-Dependency Node.js CLI (@fmatar/archlens-skill)"]
+    subgraph CliContainer ["Zero-Dependency Node.js CLI (@fadym/archlens-skill)"]
         CliBin["CLI Runner & Policy Scaffolder\n(analyzer.js, checker.js, installer.js)"]
         McpStdio["JSON-RPC 2.0 Stdio MCP Bridge & Multi-Client Registry\n(mcp-server.js, mcp-registry.js)"]
     end

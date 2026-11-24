@@ -857,7 +857,7 @@ export async function checkArchitecture(projectRoot, options = {}) {
       passed: false,
       violationsCount: 0,
       violations: [],
-      error: `No Archlens policy found in ${root}. Run 'npx @fmatar/archlens-skill init' first.`
+      error: `No Archlens policy found in ${root}. Run 'npx @fadym/archlens-skill init' first.`
     };
   }
 

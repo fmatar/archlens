@@ -3,6 +3,7 @@ package io.slixes.archlens.delivery.rest;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -23,10 +24,20 @@ public class VersionResource {
 
   private static final String DEFAULT_VERSION = "1.1.6";
 
-  @ConfigProperty(name = "quarkus.application.version", defaultValue = DEFAULT_VERSION)
-  String configuredVersion = DEFAULT_VERSION;
-
+  private String configuredVersion = DEFAULT_VERSION;
   private final Map<String, String> versionInfo = new HashMap<>();
+
+  VersionResource() {}
+
+  @Inject
+  public VersionResource(
+      @ConfigProperty(name = "quarkus.application.version", defaultValue = DEFAULT_VERSION)
+          String configuredVersion) {
+    this.configuredVersion =
+        configuredVersion != null && !configuredVersion.isBlank()
+            ? configuredVersion
+            : DEFAULT_VERSION;
+  }
 
   @PostConstruct
   void init() {

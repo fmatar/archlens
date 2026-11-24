@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import java.io.ByteArrayOutputStream;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
@@ -31,10 +32,11 @@ public class SessionTokenFilter {
   static final String TOKEN_QUERY_PARAM = "token";
   private static final int FILTER_PRIORITY = 10_000;
 
-  @Inject SessionTokenService sessionTokens;
+  private SessionTokenService sessionTokens;
 
-  public SessionTokenFilter() {}
+  SessionTokenFilter() {}
 
+  @Inject
   public SessionTokenFilter(SessionTokenService sessionTokens) {
     this.sessionTokens = sessionTokens;
   }
@@ -179,7 +181,7 @@ public class SessionTokenFilter {
       }
       String key = pair.contains("=") ? pair.substring(0, pair.indexOf('=')) : pair;
       if (TOKEN_QUERY_PARAM.equals(key)
-          || TOKEN_QUERY_PARAM.equals(java.net.URLDecoder.decode(key, StandardCharsets.UTF_8))) {
+          || TOKEN_QUERY_PARAM.equals(URLDecoder.decode(key, StandardCharsets.UTF_8))) {
         continue;
       }
       if (kept.length() > 0) {

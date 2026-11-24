@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-20 00:35:00 UTC`
+> **Last Synced**: `2026-11-20 00:51:36 UTC`
 
 ---
 
@@ -13,9 +13,9 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
-|  |  |  | #237, #238, #239, #240, #241: Phase 2 Trust, Hygiene & Skipped-File Telemetry |  |
+|  |  |  |  | #237, #238, #239, #240, #241: Phase 2 Trust, Hygiene & Skipped-File Telemetry |
 |  | #244: CLI `check` & backend parity |  |  | #263: Phase 1.5 Native SecureRandom, Trash & Diagram MCP (`PR #264`) |
-|  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |  |
+|  |  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |
 |  |  |  |  | #7896: [FEAT] feat: milestone-3-monorepo-cross-lang-and-ast-idioms |
 |  |  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |
 |  |  |  |  | #1097: [FEAT] feat(mailbox): closed-loop-refactor-verification-and-rollback `[Milestone 2: Closed-Loop Agent Autonomy & Guardrails (v0.1.2)]` |

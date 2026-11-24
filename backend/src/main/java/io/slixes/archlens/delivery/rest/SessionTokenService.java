@@ -6,6 +6,7 @@ import io.quarkus.runtime.StartupEvent;
 import io.slixes.archlens.usecase.WorkspacePathResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -38,16 +39,9 @@ public class SessionTokenService {
   private static final Logger LOG = Logger.getLogger(SessionTokenService.class);
   private static final int TOKEN_BYTES = 32;
 
-  @ConfigProperty(name = "archlens.auth.enabled", defaultValue = "true")
   boolean enabled;
-
-  @ConfigProperty(name = "archlens.auth.token")
   Optional<String> configuredToken;
-
-  @ConfigProperty(name = "quarkus.http.host", defaultValue = "127.0.0.1")
   String httpHost;
-
-  @ConfigProperty(name = "quarkus.http.port", defaultValue = "8088")
   int httpPort;
 
   private volatile String token;
@@ -55,7 +49,19 @@ public class SessionTokenService {
   private Path sessionFile;
   private Path sessionDirOverride;
 
-  public SessionTokenService() {}
+  SessionTokenService() {}
+
+  @Inject
+  public SessionTokenService(
+      @ConfigProperty(name = "archlens.auth.enabled", defaultValue = "true") boolean enabled,
+      @ConfigProperty(name = "archlens.auth.token") Optional<String> configuredToken,
+      @ConfigProperty(name = "quarkus.http.host", defaultValue = "127.0.0.1") String httpHost,
+      @ConfigProperty(name = "quarkus.http.port", defaultValue = "8088") int httpPort) {
+    this.enabled = enabled;
+    this.configuredToken = configuredToken != null ? configuredToken : Optional.empty();
+    this.httpHost = httpHost;
+    this.httpPort = httpPort;
+  }
 
   /** Test/utility constructor with explicit settings. */
   public SessionTokenService(boolean enabled, String token, String httpHost, int httpPort) {

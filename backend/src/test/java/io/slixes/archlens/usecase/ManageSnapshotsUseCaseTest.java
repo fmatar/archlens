@@ -4,10 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.slixes.archlens.domain.graph.ArchitectureGraph;
+import io.slixes.archlens.domain.graph.CrapScoreCalculator;
 import io.slixes.archlens.domain.policy.ArchitecturePolicy;
 import io.slixes.archlens.engine.ArchitectureCompiler;
 import io.slixes.archlens.engine.GraphCompiler;
-import io.slixes.archlens.metrics.CrapScoreCalculator;
 import io.slixes.archlens.scanner.JavaAstScanner;
 import io.slixes.archlens.scanner.LanguageScannerRegistry;
 import java.io.IOException;

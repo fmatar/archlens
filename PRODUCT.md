@@ -48,7 +48,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 - **Working Codebase**: Java 25 + Quarkus 3.40.1 backend, Svelte 5 + Tailwind CSS v4 + GSAP 3.15 frontend, and Node.js CLI (`@fmatar/archlens-skill`).
 - **Living Self-Analysis**: Self-governing policy (`.archlens/policy.json`) achieving 1.00 (100%) Screaming Architecture Score with 0 violations and 0 cycles.
 - **Media Artifacts**:
-  - `media/archlens-teaser.mp4` & `.gif`: 9-second high-definition overview highlighting concentric ring reorganization and source code inspection.
+  - `media/archlens-teaser.mp4` & `media/archlens-canvas.png`: 9-second high-definition overview and workbench screenshot highlighting concentric ring reorganization and source code inspection.
   - `media/archlens-user-journey.mp4`: Full interactive walkthrough video.
   - `media/archlens-canvas.png`: High-resolution canvas snapshot.
 - **Documentation**: C4 Architecture specification, User Guide, Inspiration & Vision, and SDLC Compliance reports in `docs/`.
@@ -109,5 +109,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-015 | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
 | ADR-016 | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
 | ADR-017 | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
+| ADR-018 | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
 <!-- ADR_INDEX_END -->
 

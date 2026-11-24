@@ -24,7 +24,7 @@
 ![Archlens Clean Architecture Dynamic Workbench](media/archlens-canvas.png)
 
 > *"Source code dependencies must point only inward, toward higher-level policies."*  
-> 🎬 **Watch**: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) · [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4) · [`media/archlens-teaser.gif`](media/archlens-teaser.gif)
+> 🎬 **Watch**: [`media/archlens-teaser.mp4`](media/archlens-teaser.mp4) · [`media/archlens-user-journey.mp4`](media/archlens-user-journey.mp4)
 
 ---
 
@@ -54,7 +54,7 @@ npx @fmatar/archlens-skill --yes --skills --mcp
 npx @fmatar/archlens-skill --yes --skills --mcp --docker
 ```
 
-This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the 3 Archlens skills via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fmatar/archlens-skill global [--docker]` equips global skills + global MCP manifests across your machine).
+This single command atomically provisions `.archlens/policy.json` (concentric ring rules), `AGENTS.md` / `CLAUDE.md` companion protocols, installs the unified `archlens` skill via `npx skills`, and registers the `archlens` MCP 2.0 server across **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, **Gemini CLI**, and **VS Code** (`npx @fmatar/archlens-skill global [--docker]` equips the global skill + global MCP manifests across your machine).
 
 ### 2. Run in Autonomous AI Mode, Visual Browser Studio, or CI
 
@@ -75,9 +75,9 @@ npx @fmatar/archlens-skill check --format mermaid --output docs/architecture.mmd
 
 #### Open Skills Ecosystem (`npx skills`)
 ```bash
-npx skills add fmatar/archlens --all -y
+npx skills add fmatar/archlens -y
 # Or target a specific agent globally:
-npx skills add fmatar/archlens --all -g --agent claude-code -y
+npx skills add fmatar/archlens -g --agent claude-code -y
 ```
 
 #### Always-On Docker Daemon (`http://127.0.0.1:8088`)

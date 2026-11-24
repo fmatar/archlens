@@ -101,3 +101,54 @@ test('Phase 2 setup & Node engine consistency (#237): engines.node >=22.0.0 and 
   assert.match(notice, /Copyright 2026 Fady Matar/);
   assert.match(notice, /e05c9bf/);
 });
+
+test('Phase 3 repo hygiene (#242): one lockfile per package, single TypeScript compiler, no vendored binaries, and no non-LFS files > 5 MB', () => {
+  const MAX_BLOB_BYTES = 5 * 1024 * 1024;
+  const files = listCandidateFiles();
+
+  // 1. One lockfile per package
+  for (const pkgDir of ['', 'cli/', 'frontend/']) {
+    const lockNames = ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'bun.lockb', 'bun.lock'];
+    const present = lockNames.filter((name) => files.includes(`${pkgDir}${name}`));
+    assert.ok(
+      present.length <= 1,
+      `Expected at most 1 lockfile in '${pkgDir || '.'}', found: ${present.join(', ')}`
+    );
+  }
+  assert.ok(files.includes('frontend/pnpm-lock.yaml'), 'frontend/pnpm-lock.yaml must exist');
+
+  // 2. Single TypeScript compiler dependency in frontend/package.json
+  const frontendPkg = JSON.parse(
+    fs.readFileSync(path.join(REPO_ROOT, 'frontend/package.json'), 'utf8')
+  );
+  assert.ok(frontendPkg.devDependencies?.typescript, 'frontend must declare typescript');
+  assert.equal(
+    '@typescript/native' in (frontendPkg.devDependencies || {}),
+    false,
+    'frontend/package.json must not declare duplicate @typescript/native compiler'
+  );
+
+  // 3. No vendored skill binaries or non-LFS blobs > 5 MB
+  const oversized = [];
+  const vendoredBins = [];
+  for (const rel of files) {
+    if (/\/skills\/[^/]+\/scripts\/bin\//.test(`/${rel}`)) {
+      vendoredBins.push(rel);
+    }
+    const full = path.join(REPO_ROOT, rel);
+    const stat = fs.statSync(full);
+    if (stat.isFile() && stat.size > MAX_BLOB_BYTES) {
+      oversized.push(`${rel} (${(stat.size / (1024 * 1024)).toFixed(2)} MB)`);
+    }
+  }
+  assert.deepEqual(vendoredBins, [], 'Vendored skill binaries must not be tracked in git');
+  assert.deepEqual(oversized, [], 'Non-LFS tracked files must not exceed 5 MB');
+
+  // 4. Only the single unified 'archlens' skill may be tracked in git (zero leaked dev skills in .agents/, .github/skills/, etc.)
+  const skillMdFiles = files.filter((rel) => /(?:^|\/)SKILL\.md$/.test(rel)).sort();
+  assert.deepEqual(
+    skillMdFiles,
+    ['cli/skills/archlens/SKILL.md', 'skills/archlens/SKILL.md'],
+    'Only the unified archlens skill (skills/archlens & cli/skills/archlens) may be tracked in git so npx skills add fmatar/archlens never leaks dev or legacy skills'
+  );
+});

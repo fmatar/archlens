@@ -48,6 +48,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --sha "$GITHUB_SHA" \
             --check "Verify & Quality Gates" \
+            --check "Playwright E2E Browser Suite" \
             --check "GitHub Action Self-Test (uses ./)"
 
   docker-release:

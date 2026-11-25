@@ -8,7 +8,7 @@
 
 # Archlens — Dynamic Clean Architecture Workbench
 
-**Real-time polyglot Clean Architecture workbench, AST governance engine, and autonomous AI refactoring studio for modern software teams.**
+**Real-time polyglot Clean Architecture workbench, dependency governance engine, and autonomous AI refactoring studio for modern software teams.**
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
 [![Release v1.2.0](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
@@ -47,7 +47,7 @@ Get full Clean Architecture governance, visual ring inspection, and autonomous A
 ### 1. Equip Your Repository & AI Coding Agents (One Command)
 
 ```bash
-# Portable / shared-repo setup (NPX stdio bridge + 4-tier offline AST fallback):
+# Portable / shared-repo setup (NPX stdio bridge + 4-tier offline lexical fallback):
 npx @fadym/archlens-skill --yes --skills --mcp
 
 # Personal workstation setup (ephemeral Docker mcp-stdio container — zero host Node/Java needed):
@@ -131,12 +131,12 @@ sequenceDiagram
     autonumber
     participant Architect as Software Architect
     participant Workbench as Archlens Workbench (:8088)
-    participant Core as Polyglot AST & Governance Engine
+    participant Core as Polyglot Scanner & Governance Engine
     participant Mailbox as .archlens/ Mailbox IPC & MCP
     participant Agent as Autonomous AI Agent (Antigravity / Claude)
     participant Code as Codebase & Tests
 
-    Core->>Code: 1. Polyglot AST Scan (Extract types, imports, calls)
+    Core->>Code: 1. Polyglot Source Scan (Java AST + Python/TS/Rust/Go lexical)
     Core->>Workbench: 2. Render Concentric Rings & Flag Outward Breaches
     Architect->>Workbench: 3. Prototype in Sandbox (S) or Click DIP Invert
     Workbench->>Mailbox: 4. 1-Click "Dispatch to Agent" (to-agent.json / MCP)
@@ -196,7 +196,7 @@ flowchart TD
     T2 -->|"Not Found"| T3{"Tier 3: Docker Daemon\ndocker info running?"}
     T3 -->|"Running"| SpawnDocker["Resurrect or Run Container\nghcr.io/fmatar/archlens:latest (:8088)"]
     SpawnDocker --> Poll
-    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static AST Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
+    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static Lexical Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
     T4 --> Result["Return Concentric Ring Graph, Violations & DIP Ports"]
     Proxy --> Result
 ```

@@ -55,7 +55,7 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 
 ## Product Principles
 
-1. **Code is Truth**: Never require manual diagram drawing. All nodes and dependency edges reflect actual AST parsers scanning actual source code files.
+1. **Code is Truth**: Never require manual diagram drawing. All nodes and dependency edges reflect actual source-code scanners (JavaParser AST for Java 25 and statement-normalizing lexical scanners for TypeScript/JS/Svelte, Python, Rust, and Go) scanning actual source code files.
 2. **Inward Dependencies Only**: The Dependency Rule is immutable; violations are high-visibility alerts that must never be hidden or softened.
 3. **Agentic by Design**: Built from day one to treat autonomous AI coding agents as first-class collaborators via clean mailbox and MCP handoffs.
 4. **Zero-Friction Test-Drive**: A developer should be able to run `npx @fadym/archlens-skill` and visualize their architecture in under two minutes without setup friction.
@@ -81,8 +81,8 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 
 | Capability ID | Capability Title | Functional Spec | Depends On | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| CAP-01 | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `AMENDED (ADR-006)` |
-| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `AMENDED (ADR-006)` |
+| CAP-01 | Python Lexical Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | None | `AMENDED (ADR-022)` |
+| CAP-02 | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | None | `AMENDED (ADR-022)` |
 | CAP-03 | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | CAP-01, CAP-02 | `AMENDED (ADR-006)` |
 | CAP-04 | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | CAP-01, CAP-02 | `AMENDED (ADR-006)` |
 
@@ -113,5 +113,6 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 | ADR-019 | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | 247 | ADR-018 |
 | ADR-020 | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | 247 | ADR-019 |
 | ADR-021 | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | 268 | ADR-020 |
+| ADR-022 | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | 243 | ADR-021 |
 <!-- ADR_INDEX_END -->
 

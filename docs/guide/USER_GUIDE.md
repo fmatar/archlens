@@ -11,8 +11,8 @@ flowchart TD
     User["Software Architect"] <-->|Interacts via Browser Canvas| UI["Svelte 5 UI (Port 8088 / 5173)"]
     UI <-->|REST & SSE Streams (/api/events)| Backend["Quarkus 3.40 Backend (Java 25 Virtual Threads)"]
     
-    subgraph Engine ["Polyglot AST & Governance Engine"]
-        Backend --> AST["Polyglot Scanners (Java, Python, TS/Svelte, Rust, Go)"]
+    subgraph Engine ["Polyglot Scanner & Governance Engine"]
+        Backend --> AST["Polyglot Scanners (Java AST, Python/TS/Svelte/Rust/Go Lexical)"]
         Backend --> RuleEngine["Concentric Ring & ADP Cycle Engine (.archlens/policy.json)"]
         Backend --> MetricsEngine["Coupling Metrics (Ca, Ce, I, A, D), Screaming Score (SAS) & Fitness (AFI)"]
     end
@@ -39,7 +39,7 @@ Configure your project and all installed AI coding assistants (**Google Antigrav
 cd /path/to/your-project
 npx @fadym/archlens-skill --yes --mcp
 ```
-With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fadym/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static AST analysis.
+With MCP registered, you **do not** need to start the server manually. Whenever your AI assistant invokes an Archlens tool (`inspectArchitecture`, `exportLlmDossier`, `synthesizeDipInversion`), the MCP stdio bridge (`@fadym/archlens-skill mcp`) automatically resurrects the native Quarkus runner JAR or Docker container (`ghcr.io/fmatar/archlens:latest`) on port `8088`, or falls back to offline static lexical analysis.
 
 ### Option B: 1-Command Visual Studio Launcher
 To open the interactive browser canvas immediately on `http://127.0.0.1:8088`:

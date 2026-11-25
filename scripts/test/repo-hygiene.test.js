@@ -36,7 +36,11 @@ test('Phase 2 repo hygiene (#237, #238, #239): no personal paths, legacy aliases
     { label: 'legacy alias (agentlens)', pattern: /\bagentlens\b/ },
     { label: 'legacy alias (unclebob-design)', pattern: /\bunclebob-design\b/ },
     { label: 'legacy directory (.uml-viewer)', pattern: /\.uml-viewer\b/ },
-    { label: 'removed Clojure scanner (ClojureAstScanner)', pattern: /\bClojureAstScanner\b/ }
+    { label: 'removed Clojure scanner (ClojureAstScanner)', pattern: /\bClojureAstScanner\b/ },
+    {
+      label: 'renamed non-Java *AstScanner (#243)',
+      pattern: /\b(?:Python|TypeScript|Go|Rust)AstScanner\b/
+    }
   ];
 
   const clojureExtPattern = /\.(?:clj|cljs|cljc)\b/;

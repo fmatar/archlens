@@ -352,7 +352,7 @@ async function runInteractive(options, deps = {}) {
       {
         value: 'npx',
         label: `${ui.colors.bold}NPX Stdio Bridge (Recommended for shared repos)${ui.colors.reset}`,
-        description: 'Path-agnostic npx -y @fadym/archlens-skill mcp with 4-tier offline AST fallback'
+        description: 'Path-agnostic npx -y @fadym/archlens-skill mcp with 4-tier offline lexical fallback'
       },
       {
         value: 'docker',

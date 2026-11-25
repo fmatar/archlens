@@ -11,9 +11,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class RustAstScannerTest {
+class RustLexicalScannerTest {
 
-  private final RustAstScanner scanner = new RustAstScanner();
+  private final RustLexicalScanner scanner = new RustLexicalScanner();
 
   @Test
   void testLanguageMetadataAndSupports(@TempDir Path tempDir) throws IOException {
@@ -87,5 +87,52 @@ class RustAstScannerTest {
                 e.kind() == DependencyEdge.Kind.DEPENDENCY
                     && e.from().equals("adapters.postgres")
                     && e.to().equals("domain.OrderRepository")));
+  }
+
+  @Test
+  void testIgnoresUseStatementsInsideBlockCommentsAndStrings(@TempDir Path tempDir)
+      throws IOException {
+    Files.writeString(tempDir.resolve("Cargo.toml"), "[package]\nname = \"clean\"\n");
+    Path domain = tempDir.resolve("src/domain");
+    Files.createDirectories(domain);
+
+    Files.writeString(
+        domain.resolve("mod.rs"),
+        """
+        pub(crate) use crate::model::{
+            Money,
+            currency::{Currency as Curr, self},
+        };
+        /*
+        use crate::adapters::PostgresRepo;
+        */
+        pub struct OrderService;
+
+        pub fn doc_snippet() -> &'static str {
+            r#"
+        use crate::infra::HttpClient;
+            "#
+        }
+        """
+            + "\nuse a::"
+            + "{".repeat(12_000)
+            + "b"
+            + "}".repeat(12_000)
+            + ";\n");
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "");
+    assertTrue(
+        result.edges().stream().anyMatch(e -> e.to().equals("model.Money")),
+        "Expected grouped pub(crate) use edge to model.Money, got: " + result.edges());
+    assertTrue(
+        result.edges().stream().anyMatch(e -> e.to().equals("model.currency.Currency")),
+        "Expected nested grouped use edge to model.currency.Currency, got: " + result.edges());
+    assertTrue(
+        result.edges().stream().anyMatch(e -> e.to().equals("model.currency")),
+        "Expected self grouped use edge to model.currency, got: " + result.edges());
+    assertFalse(
+        result.edges().stream()
+            .anyMatch(e -> e.to().contains("PostgresRepo") || e.to().contains("HttpClient")),
+        "Expected zero edges from block comments or raw strings, got: " + result.edges());
   }
 }

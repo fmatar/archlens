@@ -13,7 +13,7 @@ Analyzes any project repository, detects programming languages and package hiera
 ## ⚡ Quickstart
 
 ### Option A: Zero-Touch Autonomous AI Setup (`--mcp` — Recommended for Antigravity & Claude)
-Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Choose the portable NPX stdio bridge (with 4-tier offline AST fallback) or an ephemeral Docker `mcp-stdio` container:
+Equip **Google Antigravity**, **Claude Code**, **Claude Desktop**, **Cursor**, **Windsurf**, and **Gemini CLI** in one command. Choose the portable NPX stdio bridge (with 4-tier offline lexical fallback) or an ephemeral Docker `mcp-stdio` container:
 ```bash
 # Portable / shared-repo setup (.archlens/policy.json + AGENTS.md + skills + NPX MCP bridge):
 npx @fadym/archlens-skill --yes --skills --mcp
@@ -80,7 +80,7 @@ node ./cli/bin/index.js
 - **Multi-Agent Skill Deployment**: Installs the unified `archlens` skill globally into Claude Code (`~/.claude/skills/`), Gemini CLI / Antigravity (`~/.gemini/config/skills/`), and custom agent workspaces.
 - **Safe Incremental Updates**: Re-scans codebases for newly introduced packages, updating `order` and `levels` while preserving user custom rules and configurations.
 - **Model Context Protocol (MCP) Client Auto-Configuration**: Detects and configures host AI client manifests (Claude Desktop, Google Antigravity, Claude Code, Cursor, VS Code) in a single command (`--mcp`).
-- **On-Demand Container Orchestration & Stdio Bridge**: Automatically spins up the Archlens container when needed, bridges MCP over stdio (`mcp` command), and provides an instant offline AST fallback if Docker is unavailable.
+- **On-Demand Container Orchestration & Stdio Bridge**: Automatically spins up the Archlens container when needed, bridges MCP over stdio (`mcp` command), and provides an instant offline lexical fallback if Docker is unavailable.
 - **Mailbox Protocol Integration**: Injects the Clean Architecture Companion Protocol into `CLAUDE.md` and `AGENTS.md` for seamless asynchronous mailbox refactoring (`to-agent.json`, `to-viewer.json`).
 
 ---

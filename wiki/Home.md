@@ -11,7 +11,7 @@ Inspired by Clean Architecture principles, Archlens transforms the concentric De
 ## 🧭 Wiki Directory
 
 ### Core Architecture & Foundations
-- **[System Architecture](Architecture)**: The C4 model, Quarkus Java 25 reactive core, Svelte 5 runes, and polyglot AST scanners.
+- **[System Architecture](Architecture)**: The C4 model, Quarkus Java 25 reactive core, Svelte 5 runes, and polyglot scanners (Java AST + Python/TS/Rust/Go lexical).
 - **[Concentric Rings & Governance](Architecture#the-concentric-rings)**: Ring tiers (`Domain Core`, `Application`, `Adapters`, `Frameworks`) and level inversion validation.
 - **[Codebase Map & Module Inventory](Codebase-Map)**: Auto-generated AST module inventory across Rings 0–3 (`backend/`, `frontend/`, `cli/`, `.agent/scripts/`).
 

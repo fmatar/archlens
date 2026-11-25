@@ -12,7 +12,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,9 +26,9 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class TypeScriptAstScanner implements LanguageScanner {
+public class TypeScriptLexicalScanner implements LanguageScanner {
 
-  private static final Logger LOG = Logger.getLogger(TypeScriptAstScanner.class);
+  private static final Logger LOG = Logger.getLogger(TypeScriptLexicalScanner.class);
 
   private static final Pattern IMPORT_FROM_PATTERN =
       Pattern.compile(
@@ -175,7 +177,9 @@ public class TypeScriptAstScanner implements LanguageScanner {
       String directoryModule = getDirectoryModule(rel, currentModule);
       String packageName = getPackageName(currentModule);
 
-      List<String> statements = extractLogicalTsStatements(rawLines);
+      List<String> sourceLines =
+          rel.endsWith(".svelte") ? extractSvelteScriptLines(rawLines) : rawLines;
+      List<String> statements = extractLogicalTsStatements(sourceLines);
 
       List<TypeDeclaration> types = new ArrayList<>();
       List<MethodNode> moduleFunctions = new ArrayList<>();
@@ -229,12 +233,16 @@ public class TypeScriptAstScanner implements LanguageScanner {
 
         Matcher reqMatcher = REQUIRE_CALL_PATTERN.matcher(trimmed);
         while (reqMatcher.find()) {
-          imports.add(new ImportRef(reqMatcher.group(1).trim(), List.of()));
+          if (!FileScannerUtil.isInsideStringLiteral(trimmed, reqMatcher.start())) {
+            imports.add(new ImportRef(reqMatcher.group(1).trim(), List.of()));
+          }
         }
 
         Matcher dynMatcher = DYNAMIC_IMPORT_PATTERN.matcher(trimmed);
         while (dynMatcher.find()) {
-          imports.add(new ImportRef(dynMatcher.group(1).trim(), List.of()));
+          if (!FileScannerUtil.isInsideStringLiteral(trimmed, dynMatcher.start())) {
+            imports.add(new ImportRef(dynMatcher.group(1).trim(), List.of()));
+          }
         }
 
         Matcher classMatcher = CLASS_PATTERN.matcher(trimmed);
@@ -610,77 +618,103 @@ public class TypeScriptAstScanner implements LanguageScanner {
     return moduleId;
   }
 
-  static List<String> extractLogicalTsStatements(List<String> rawLines) {
-    List<String> strippedLines = new ArrayList<>();
-    boolean inBlockComment = false;
+  static List<String> extractSvelteScriptLines(List<String> rawLines) {
+    if (rawLines == null || rawLines.isEmpty()) {
+      return List.of();
+    }
+    List<String> scriptLines = new ArrayList<>();
+    boolean inHtmlComment = false;
+    boolean inScript = false;
 
-    for (String line : rawLines) {
-      StringBuilder clean = new StringBuilder();
-      boolean inSingle = false;
-      boolean inDouble = false;
-      boolean inTemplate = false;
+    for (String rawLine : rawLines) {
       int i = 0;
-      int len = line.length();
+      int len = rawLine.length();
+      StringBuilder currentScriptChunk = new StringBuilder();
 
       while (i < len) {
-        if (inBlockComment) {
-          int endIdx = line.indexOf("*/", i);
-          if (endIdx == -1) {
+        if (inHtmlComment) {
+          int endComment = rawLine.indexOf("-->", i);
+          if (endComment == -1) {
             i = len;
           } else {
-            inBlockComment = false;
-            i = endIdx + 2;
+            inHtmlComment = false;
+            i = endComment + 3;
           }
           continue;
         }
 
-        char c = line.charAt(i);
-        if ((inSingle || inDouble || inTemplate) && c == '\\' && i + 1 < len) {
-          clean.append(c).append(line.charAt(i + 1));
-          i += 2;
-          continue;
-        }
-
-        if (!inDouble && !inTemplate && c == '\'') {
-          inSingle = !inSingle;
-          clean.append(c);
-          i++;
-          continue;
-        }
-        if (!inSingle && !inTemplate && c == '"') {
-          inDouble = !inDouble;
-          clean.append(c);
-          i++;
-          continue;
-        }
-        if (!inSingle && !inDouble && c == '`') {
-          inTemplate = !inTemplate;
-          clean.append(c);
-          i++;
-          continue;
-        }
-
-        if (!inSingle && !inDouble && !inTemplate && i + 1 < len) {
-          char next = line.charAt(i + 1);
-          if (c == '/' && next == '/') {
-            break;
-          }
-          if (c == '/' && next == '*') {
-            inBlockComment = true;
-            i += 2;
+        if (!inScript) {
+          int commentIdx = rawLine.indexOf("<!--", i);
+          int scriptIdx = indexOfScriptOpenTag(rawLine, i);
+          if (commentIdx != -1 && (scriptIdx == -1 || commentIdx < scriptIdx)) {
+            inHtmlComment = true;
+            i = commentIdx + 4;
             continue;
           }
+          if (scriptIdx == -1) {
+            break;
+          }
+          int tagClose = rawLine.indexOf('>', scriptIdx);
+          if (tagClose == -1) {
+            inScript = true;
+            break;
+          }
+          inScript = true;
+          i = tagClose + 1;
+          continue;
         }
 
-        clean.append(c);
-        i++;
+        int closeScriptIdx = indexOfScriptCloseTag(rawLine, i);
+        if (closeScriptIdx == -1) {
+          currentScriptChunk.append(rawLine, i, len);
+          i = len;
+        } else {
+          currentScriptChunk.append(rawLine, i, closeScriptIdx);
+          String emitted = currentScriptChunk.toString();
+          if (!emitted.isBlank()) {
+            scriptLines.add(emitted);
+          }
+          currentScriptChunk.setLength(0);
+          inScript = false;
+          int closeGt = rawLine.indexOf('>', closeScriptIdx);
+          i = closeGt == -1 ? len : closeGt + 1;
+        }
       }
 
-      String trimmed = clean.toString().trim();
-      if (!trimmed.isEmpty()) {
-        strippedLines.add(trimmed);
+      if (currentScriptChunk.length() > 0) {
+        scriptLines.add(currentScriptChunk.toString());
       }
     }
+    return scriptLines;
+  }
+
+  private static int indexOfScriptOpenTag(String line, int fromIdx) {
+    int limit = line.length() - 7;
+    for (int pos = Math.max(0, fromIdx); pos <= limit; pos++) {
+      if (line.regionMatches(true, pos, "<script", 0, 7)) {
+        int after = pos + 7;
+        if (after >= line.length()
+            || Character.isWhitespace(line.charAt(after))
+            || line.charAt(after) == '>') {
+          return pos;
+        }
+      }
+    }
+    return -1;
+  }
+
+  private static int indexOfScriptCloseTag(String line, int fromIdx) {
+    int limit = line.length() - 8;
+    for (int pos = Math.max(0, fromIdx); pos <= limit; pos++) {
+      if (line.regionMatches(true, pos, "</script", 0, 8)) {
+        return pos;
+      }
+    }
+    return -1;
+  }
+
+  static List<String> extractLogicalTsStatements(List<String> rawLines) {
+    List<String> strippedLines = stripTsCommentsAndTemplates(rawLines);
 
     List<String> logicalStatements = new ArrayList<>();
     StringBuilder accumulator = new StringBuilder();
@@ -711,6 +745,137 @@ public class TypeScriptAstScanner implements LanguageScanner {
     }
 
     return logicalStatements;
+  }
+
+  private static List<String> stripTsCommentsAndTemplates(List<String> rawLines) {
+    List<String> strippedLines = new ArrayList<>();
+    boolean inBlockComment = false;
+    boolean inTemplateText = false;
+    Deque<Integer> templateExprBraceStack = new ArrayDeque<>();
+
+    for (String line : rawLines) {
+      StringBuilder clean = new StringBuilder();
+      boolean inSingle = false;
+      boolean inDouble = false;
+      int i = 0;
+      int len = line.length();
+
+      while (i < len) {
+        if (inBlockComment) {
+          int endIdx = line.indexOf("*/", i);
+          if (endIdx == -1) {
+            i = len;
+          } else {
+            inBlockComment = false;
+            i = endIdx + 2;
+          }
+          continue;
+        }
+
+        char c = line.charAt(i);
+        if (inTemplateText) {
+          if (c == '\\' && i + 1 < len) {
+            i += 2;
+            continue;
+          }
+          if (c == '$' && i + 1 < len && line.charAt(i + 1) == '{') {
+            templateExprBraceStack.push(0);
+            inTemplateText = false;
+            clean.append(" + (");
+            i += 2;
+            continue;
+          }
+          if (c == '`') {
+            inTemplateText = false;
+            i++;
+            continue;
+          }
+          i++;
+          continue;
+        }
+
+        if ((inSingle || inDouble) && c == '\\' && i + 1 < len) {
+          clean.append(c).append(line.charAt(i + 1));
+          i += 2;
+          continue;
+        }
+
+        if (!inDouble && c == '\'') {
+          inSingle = !inSingle;
+          clean.append(c);
+          i++;
+          continue;
+        }
+        if (!inSingle && c == '"') {
+          inDouble = !inDouble;
+          clean.append(c);
+          i++;
+          continue;
+        }
+        if (!inSingle && !inDouble && c == '`') {
+          inTemplateText = true;
+          if (line.startsWith("/api", i + 1)) {
+            int p = i + 1;
+            while (p < len) {
+              char rc = line.charAt(p);
+              if (rc == '`'
+                  || rc == '"'
+                  || rc == '\''
+                  || rc == '?'
+                  || rc == ')'
+                  || Character.isWhitespace(rc)
+                  || (rc == '$' && p + 1 < len && line.charAt(p + 1) == '{')) {
+                break;
+              }
+              p++;
+            }
+            clean.append('"').append(line, i + 1, p).append('"');
+            i = p;
+          } else {
+            clean.append("\"\"");
+            i++;
+          }
+          continue;
+        }
+
+        if (!inSingle && !inDouble) {
+          if (i + 1 < len) {
+            char next = line.charAt(i + 1);
+            if (c == '/' && next == '/') {
+              break;
+            }
+            if (c == '/' && next == '*') {
+              inBlockComment = true;
+              i += 2;
+              continue;
+            }
+          }
+          if (!templateExprBraceStack.isEmpty()) {
+            if (c == '{') {
+              templateExprBraceStack.push(templateExprBraceStack.pop() + 1);
+            } else if (c == '}') {
+              int depth = templateExprBraceStack.pop();
+              if (depth == 0) {
+                inTemplateText = true;
+                clean.append(") + \"\"");
+                i++;
+                continue;
+              }
+              templateExprBraceStack.push(depth - 1);
+            }
+          }
+        }
+
+        clean.append(c);
+        i++;
+      }
+
+      String trimmed = clean.toString().trim();
+      if (!trimmed.isEmpty()) {
+        strippedLines.add(trimmed);
+      }
+    }
+    return strippedLines;
   }
 
   private static boolean isIncompleteImportOrExport(String text) {

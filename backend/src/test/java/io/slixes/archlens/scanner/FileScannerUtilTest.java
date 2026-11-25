@@ -162,15 +162,15 @@ class FileScannerUtilTest {
     assertTrue(modules.contains(webApp));
     assertTrue(modules.contains(uiPkg));
 
-    // Verify RustAstScanner scans Cargo workspace members when root/src does not exist
-    RustAstScanner rustScanner = new RustAstScanner();
+    // Verify RustLexicalScanner scans Cargo workspace members when root/src does not exist
+    RustLexicalScanner rustScanner = new RustLexicalScanner();
     LanguageScanner.ScanResult rustResult = rustScanner.scanProject(tempDir.toString(), "src", "");
     assertTrue(rustResult.classes().stream().anyMatch(c -> c.name().equals("Invoice")));
     assertTrue(rustResult.classes().stream().anyMatch(c -> c.name().equals("InvoiceController")));
   }
 
   @Test
-  void testCrossLanguageBoundaryTracingInTypeScriptAstScanner(@TempDir Path tempDir)
+  void testCrossLanguageBoundaryTracingInTypeScriptLexicalScanner(@TempDir Path tempDir)
       throws IOException {
     // 1. Backend Java JAX-RS resource
     Path javaDir = tempDir.resolve("backend/src/main/java/com/acme/delivery");
@@ -182,6 +182,14 @@ class FileScannerUtilTest {
         import jakarta.ws.rs.Path;
         @Path("/api/orders")
         public class OrderResource {}
+        """);
+    Files.writeString(
+        javaDir.resolve("FakeAdminResource.java"),
+        """
+        package com.acme.delivery;
+        import jakarta.ws.rs.Path;
+        @Path("/api/admin")
+        public class FakeAdminResource {}
         """);
 
     // 2. Backend Python FastAPI router
@@ -203,14 +211,18 @@ class FileScannerUtilTest {
         """
         export class CheckoutClient {
           async checkout(orderId: string) {
+            const docQuoted = "fetch('/api/admin')";
+            const docTemplate = `
+              await fetch('/api/admin');
+            `;
             const order = await fetch(`/api/orders/${orderId}`);
             const payment = await axios.post('/api/payments/charge', { orderId });
-            return { order, payment };
+            return { order, payment, docQuoted, docTemplate };
           }
         }
         """);
 
-    TypeScriptAstScanner tsScanner = new TypeScriptAstScanner();
+    TypeScriptLexicalScanner tsScanner = new TypeScriptLexicalScanner();
     LanguageScanner.ScanResult scanResult =
         tsScanner.scanProject(tempDir.toString(), "frontend/src", "");
 
@@ -226,6 +238,10 @@ class FileScannerUtilTest {
                 e.from().endsWith("CheckoutClient")
                     && e.to().equals("services.payments.routes")
                     && "HTTP /api/payments/charge".equals(e.label())));
+    assertFalse(
+        scanResult.edges().stream().anyMatch(e -> e.to().contains("FakeAdminResource")),
+        "Expected zero HTTP route edges from quoted or multiline-template fetch examples, got: "
+            + scanResult.edges());
   }
 
   @Test
@@ -264,7 +280,7 @@ class FileScannerUtilTest {
     Files.writeString(pySrc.resolve("good.py"), "class Order:\n    pass\n");
     Files.write(pySrc.resolve("corrupt.py"), invalidUtf8);
 
-    PythonAstScanner pyScanner = new PythonAstScanner();
+    PythonLexicalScanner pyScanner = new PythonLexicalScanner();
     LanguageScanner.ScanResult pyRes = pyScanner.scanProject(pyRoot.toString(), "src", "");
     assertEquals(1, pyRes.classes().size());
     assertEquals(1, pyRes.skippedFiles());
@@ -283,7 +299,7 @@ class FileScannerUtilTest {
     Files.write(tsSrc.resolve("corrupt.ts"), invalidUtf8);
     Files.write(tsBackend.resolve("BrokenRoute.java"), invalidUtf8);
 
-    TypeScriptAstScanner tsScanner = new TypeScriptAstScanner();
+    TypeScriptLexicalScanner tsScanner = new TypeScriptLexicalScanner();
     LanguageScanner.ScanResult tsRes = tsScanner.scanProject(tsRoot.toString(), "src", "");
     assertEquals(1, tsRes.classes().size());
     assertEquals(2, tsRes.skippedFiles());
@@ -297,7 +313,7 @@ class FileScannerUtilTest {
     Files.writeString(goSrc.resolve("good_test.go"), "package orders\n");
     Files.write(goSrc.resolve("corrupt.go"), invalidUtf8);
 
-    GoAstScanner goScanner = new GoAstScanner();
+    GoLexicalScanner goScanner = new GoLexicalScanner();
     LanguageScanner.ScanResult goRes = goScanner.scanProject(goRoot.toString(), null, "");
     assertEquals(1, goRes.classes().size());
     assertEquals(1, goRes.skippedFiles());
@@ -310,7 +326,7 @@ class FileScannerUtilTest {
     Files.writeString(rsSrc.resolve("good.rs"), "pub struct Ledger;\n");
     Files.write(rsSrc.resolve("corrupt.rs"), invalidUtf8);
 
-    RustAstScanner rsScanner = new RustAstScanner();
+    RustLexicalScanner rsScanner = new RustLexicalScanner();
     LanguageScanner.ScanResult rsRes = rsScanner.scanProject(rsRoot.toString(), "src", "");
     assertEquals(1, rsRes.classes().size());
     assertEquals(1, rsRes.skippedFiles());
@@ -357,11 +373,12 @@ class FileScannerUtilTest {
     assertEquals(0, new JavaAstScanner().scanProject(emptyWs.toString(), null, "").skippedFiles());
     assertEquals(
         0,
-        new TypeScriptAstScanner()
+        new TypeScriptLexicalScanner()
             .scanProject(emptyWs.toString(), "missing-src", "")
             .skippedFiles());
     assertEquals(
-        0, new RustAstScanner().scanProject(emptyWs.toString(), "missing-src", "").skippedFiles());
+        0,
+        new RustLexicalScanner().scanProject(emptyWs.toString(), "missing-src", "").skippedFiles());
 
     Path twoJavaRoot = tempDir.resolve("two-java");
     Path twoJavaSrc = twoJavaRoot.resolve("src/main/java/com/acme");
@@ -421,5 +438,53 @@ class FileScannerUtilTest {
       } catch (Exception ignored) {
       }
     }
+  }
+
+  @Test
+  void testStripCommentsAndRawStringsAndInsideStringLiteral() {
+    assertTrue(FileScannerUtil.stripCommentsAndRawStrings(null, false).isEmpty());
+    assertTrue(FileScannerUtil.stripCommentsAndRawStrings("", true).isEmpty());
+
+    String rustCode =
+        """
+        /* outer /* nested use crate::bad::Inner; */ still comment */
+        // line comment use crate::bad::Line;
+        pub fn demo<'a>(input: &'a str) -> char {
+            let q = '"';
+            let esc = '\\'';
+            let s = "escaped \\" quote\nand use crate::bad::Quoted;";
+            let bytes = br##"use crate::bad::RawBytes; "# still raw"##;
+            let unclosed = r#"tail
+        """;
+    List<String> rustLines = FileScannerUtil.stripCommentsAndRawStrings(rustCode, true);
+    assertEquals(rustCode.split("\\R", -1).length, rustLines.size());
+    assertFalse(String.join("\n", rustLines).contains("crate::bad"));
+    assertTrue(String.join("\n", rustLines).contains("pub fn demo<'a>"));
+
+    String goCode =
+        """
+        package domain // comment
+        import (
+            "github.com/acme/real" // "github.com/acme/commented"
+        )
+        const ch = '\\''
+        const msg = "escaped \\" text // not comment"
+        const raw = `
+        import "github.com/acme/fake"
+        `
+        """;
+    List<String> goLines = FileScannerUtil.stripCommentsAndRawStrings(goCode, false);
+    assertEquals(10, goLines.size());
+    String joinedGo = String.join("\n", goLines);
+    assertTrue(joinedGo.contains("\"github.com/acme/real\""));
+    assertFalse(joinedGo.contains("github.com/acme/commented"));
+    assertFalse(joinedGo.contains("github.com/acme/fake"));
+
+    assertFalse(FileScannerUtil.isInsideStringLiteral(null, 5));
+    assertFalse(FileScannerUtil.isInsideStringLiteral("import('a')", 0));
+    assertTrue(FileScannerUtil.isInsideStringLiteral("const s = \"a\\\"b require('x')\"", 16));
+    assertFalse(
+        FileScannerUtil.isInsideStringLiteral("const s = 'ok'; const m = require('x')", 26));
+    assertTrue(FileScannerUtil.isInsideStringLiteral("const t = `import('x')`", 11));
   }
 }

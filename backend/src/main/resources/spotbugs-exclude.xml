@@ -41,10 +41,6 @@
         <Package name="io.slixes.archlens.scanner"/>
         <Bug pattern="UC_USELESS_OBJECT"/>
     </Match>
-    <Match>
-        <Class name="io.slixes.archlens.scanner.GoAstScanner"/>
-        <Bug pattern="REC_CATCH_EXCEPTION"/>
-    </Match>
     <!-- FindSecBugs 1.14+ informational Jakarta REST endpoint inventory marker (not a defect) -->
     <Match>
         <Package name="io.slixes.archlens.delivery.rest"/>

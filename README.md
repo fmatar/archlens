@@ -331,7 +331,8 @@ flowchart TD
 | `--no-mcp` | | Skip automatic MCP client configuration (e.g. during `global` install) | `false` |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
-| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` / `global` | `false` |
+| `--docker` | | Force Docker container mode on `start` / `check` or configure ephemeral `mcp-stdio` manifests with `--mcp` / `global` | `false` |
+| `--offline` | | Force built-in offline JS lexical checker during `check` (skips backend delegation) | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--host <ADDR>` | | Bind / publish the workbench on `ADDR` instead of loopback (prints a warning; the token is still required) | `127.0.0.1` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |

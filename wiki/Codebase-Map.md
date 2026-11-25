@@ -146,6 +146,7 @@ flowchart TD
     vite_env_d_ts["vite-env.d.ts (0 exports, I=0)"]
     index_js["index.js (2 exports, I=1)"]
     analyzer_js["analyzer.js (10 exports, I=0.33)"]
+    backend_checker_js["backend-checker.js (4 exports, I=0.75)"]
     checker_js["checker.js (18 exports, I=0)"]
     docker_runner_js["docker-runner.js (20 exports, I=0.25)"]
     installer_js["installer.js (7 exports, I=0.5)"]
@@ -346,9 +347,10 @@ flowchart TD
 | `frontend/src/lib/utils/martinMetrics.ts` | 408 | 0 / 1 | `1` | `ComponentMetricsSummary` (L12), `calculateComponentMartinMetrics` (L23), `calculateAllMartinMetrics` (L105), `simulateSandboxGraph` (L122), `computeScatterCoordinates` (L343), `computeNodeRadius` (L360), `buildScatterPlotPoints` (L368) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Robert-C-Martin-Metrics.md` |
 | `frontend/src/main.ts` | 10 | 0 / 2 | `1` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/vite-env.d.ts` | 3 | 0 / 0 | `0` |  | `wiki/Codebase-Map.md` |
-| `cli/bin/index.js` | 841 | 0 / 9 | `1` | `parseArgs` (L155), `main` (L524) | `wiki/Codebase-Map.md` |
+| `cli/bin/index.js` | 874 | 0 / 10 | `1` | `parseArgs` (L160), `main` (L531) | `wiki/Codebase-Map.md` |
 | `cli/src/analyzer.js` | 846 | 4 / 2 | `0.33` | `detectProjectLanguage` (L13), `discoverWorkspaceModules` (L120), `detectSourceRoot` (L237), `findCommonPackagePrefix` (L316), `discoverSubpackages` (L411), `classifyLayers` (L447), `parseImportLinterConfig` (L501), `generatePolicy` (L570) +2 more | `wiki/Codebase-Map.md` |
-| `cli/src/checker.js` | 1500 | 3 / 0 | `0` | `findMatchingFiles` (L17), `loadProjectPolicy` (L60), `TECHNICAL_MARKERS` (L80), `calculateScreamingMetric` (L115), `TECHNICAL_SUFFIXES` (L169), `TECHNICAL_PREFIXES` (L205), `extractFeatureToken` (L216), `suggestFeatureClusters` (L242) +10 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `cli/src/backend-checker.js` | 1012 | 1 / 3 | `0.75` | `findFreeLoopbackPort` (L128), `hasRustOrGoSources` (L185), `mapBackendResultsToCliReport` (L394), `checkArchitectureViaBackend` (L681) | `wiki/Codebase-Map.md` |
+| `cli/src/checker.js` | 1502 | 4 / 0 | `0` | `findMatchingFiles` (L17), `loadProjectPolicy` (L60), `TECHNICAL_MARKERS` (L80), `calculateScreamingMetric` (L115), `TECHNICAL_SUFFIXES` (L169), `TECHNICAL_PREFIXES` (L205), `extractFeatureToken` (L216), `suggestFeatureClusters` (L242) +10 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `cli/src/docker-runner.js` | 492 | 3 / 1 | `0.25` | `DEFAULT_SERVER_URL` (L19), `DEFAULT_DOCKER_IMAGE` (L20), `DEFAULT_DOCKERHUB_IMAGE` (L21), `DEFAULT_CONTAINER_NAME` (L22), `checkServerHealth` (L24), `isJavaAvailable` (L40), `getPlatformBinarySuffix` (L49), `findNativeBinary` (L59) +12 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
 | `cli/src/installer.js` | 375 | 2 / 2 | `0.5` | `COMPANION_PROTOCOL_HEADER` (L20), `getCompanionProtocolBlock` (L22), `installLocalPolicy` (L40), `buildSkillsCliArgs` (L142), `getGlobalSkillDirectories` (L207), `installLocalSkills` (L240), `installGlobalSkills` (L297) | `wiki/Codebase-Map.md` |
 | `cli/src/mcp-registry.js` | 663 | 3 / 1 | `0.25` | `ARCHLENS_TOOL_SCHEMAS` (L13), `getAntigravityInstructions` (L256), `getClientConfigLocations` (L305), `resolveDockerHostWorkspace` (L400), `getMcpManifestEntry` (L418), `parseJsonc` (L456), `backupFile` (L527), `installMcpConfigs` (L534) | `wiki/Codebase-Map.md` |
@@ -414,6 +416,7 @@ flowchart TD
 | **ADR-020** | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | ADR-019 |
 | **ADR-021** | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | ADR-020 |
 | **ADR-022** | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | ADR-021 |
+| **ADR-023** | Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite | `architectural` | `accepted` | ADR-022 |
 
 ---
 

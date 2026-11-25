@@ -95,7 +95,7 @@ python3 scripts/init_policy.py --path .
 # Launch Workbench server (opens authenticated ?token=... browser URL; auto-resurrects if offline):
 npx @fadym/archlens-skill start --open
 
-# Execute Headless Clean Architecture CI Quality Gate (ADP cycles, Screaming score, Fitness index, SARIF):
+# Execute Headless Clean Architecture CI Quality Gate (delegates to Quarkus backend when available; pass --offline for pure JS fallback):
 npx @fadym/archlens-skill check --path . --max-violations 0 --detect-cycles --screaming-threshold 0.70 --suggest-features --fitness-threshold 0.85 --format sarif -O archlens-results.sarif
 
 # Export Clean Architecture LLM Refactoring Prompt Dossier (add --copy for system clipboard):

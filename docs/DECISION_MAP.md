@@ -62,6 +62,8 @@ flowchart TD
   ADR_021["ADR-021: Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard"]
   _243["Ticket #243 (refactor/issue-243-lexical-scanners-and-comment-string-stri)"]
   ADR_022["ADR-022: Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization"]
+  _244["Ticket #244 (feat/issue-244-unified-cli-backend-check)"]
+  ADR_023["ADR-023: Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -140,6 +142,8 @@ flowchart TD
   ADR_020 -.->|ADR Drift| ADR_021
   _243 -->|triggered_drift_adr| ADR_022
   ADR_021 -.->|ADR Drift| ADR_022
+  _244 -->|triggered_drift_adr| ADR_023
+  ADR_022 -.->|ADR Drift| ADR_023
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -178,6 +182,7 @@ flowchart TD
 | **ADR-020** | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | #247 | ADR-019 |
 | **ADR-021** | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | #268 | ADR-020 |
 | **ADR-022** | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | #243 | ADR-021 |
+| **ADR-023** | Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite | `architectural` | `accepted` | #244 | ADR-022 |
 
 ---
 

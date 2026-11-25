@@ -63,13 +63,30 @@ export function writeSessionFile(port, token, deps = {}) {
   }
 }
 
-/** Token for talking to {@code serverUrl}: ARCHLENS_TOKEN first, then the published session file. */
+/** Token for talking to {@code serverUrl}: ARCHLENS_TOKEN first, then the published loopback session file. */
 export function resolveSessionToken(serverUrl, deps = {}) {
   const env = deps.env || process.env;
   if (env.ARCHLENS_TOKEN && env.ARCHLENS_TOKEN.trim()) {
-    return env.ARCHLENS_TOKEN.trim();
+    if (!serverUrl || isSafeLoopbackServerUrl(serverUrl)) {
+      return env.ARCHLENS_TOKEN.trim();
+    }
+  }
+  if (!isSafeLoopbackServerUrl(serverUrl)) {
+    return null;
   }
   return readSessionToken(portFromUrl(serverUrl), deps);
+}
+
+export function isSafeLoopbackServerUrl(serverUrl) {
+  if (!serverUrl) return false;
+  try {
+    const url = new URL(serverUrl);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    if (url.username || url.password) return false;
+    return isLoopbackHost(url.hostname);
+  } catch {
+    return false;
+  }
 }
 
 /** Returns fetch init with the session token header added (unchanged when there is no token). */

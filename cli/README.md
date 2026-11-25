@@ -161,7 +161,8 @@ npx @fadym/archlens-skill start --path /path/to/project --port 8088 --open
 
 | Flag / Command | Shorthand | Description | Default |
 |------|-----------|-------------|---------|
-| `check` | `--check` | Run headless Clean Architecture CI quality gate | |
+| `check` | `--check` | Run headless Clean Architecture CI quality gate (delegates to backend engine when available, with offline JS fallback) | |
+| `--offline` | | Force built-in offline JS lexical checker during `check` | `false` |
 | `start` | | Start Archlens Workbench (Native Binary / JAR / Docker fallback) | |
 | `prompt` | `--prompt` | Export LLM Refactoring Prompt Dossier | |
 | `mcp` | | Run MCP stdio server bridge (online + offline static fallback) | |

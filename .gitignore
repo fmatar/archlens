@@ -23,7 +23,8 @@ reports/
 **/*.tgz
 
 .agents/
-.agent/
+.agent/*
+!.agent/sealit-config.json
 .claude/
 .github/skills/
 .impeccable/
@@ -45,3 +46,12 @@ frontend/package-lock.json
 .agent/workbench/index.html
 .agent/arch-trace.jsonl
 docs/ARCH_TRACE.md
+
+# Sealit local state & secrets (managed)
+.agent/.sealit-session.json
+.agent/.sealit-session.lock
+.agent/.sealit-config.lock
+.agent/.audit-chain.lock
+.agent/sealit-config.json.bak
+.stryker-tmp/
+.scratch/

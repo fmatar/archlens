@@ -92,25 +92,26 @@ Unlike static UML diagramming tools (PlantUML, Enterprise Architect) that fall o
 <!-- ADR_INDEX_START -->
 | ADR ID | Title | Scope | Status | Ticket | Supersedes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| ADR-001 | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | #6262 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| ADR-002 | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | #196 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| ADR-003 | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | #200 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| ADR-004 | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | #4772 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| ADR-005 | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | #6157 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| ADR-006 | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | #222 | CAP-01, CAP-02, CAP-03, CAP-04 |
-| ADR-007 | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | #8238 | None |
-| ADR-008 | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | #9283 | ADR-007 |
-| ADR-009 | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | #8714 | None |
-| ADR-010 | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | #8454 | ADR-009 |
-| ADR-011 | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | #4934 | ADR-010 |
-| ADR-012 | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | #224 | ADR-011 |
-| ADR-013 | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | #247 | ADR-012 |
-| ADR-014 | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | #247 | ADR-013 |
-| ADR-015 | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | #263 | ADR-014 |
-| ADR-016 | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | #265 | ADR-015 |
-| ADR-017 | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | #238 | ADR-016 |
-| ADR-018 | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
-| ADR-019 | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | #247 | ADR-018 |
-| ADR-020 | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | #247 | ADR-019 |
+| ADR-001 | Quarkus 3.40 MCP 2.0 Hexagonal Decoupling, Virtual Threads & Main Sequence Calibration | `technical` | `accepted` | 6262 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-002 | Quarkus 3.40.1.1 BOM Upgrade, Ring 1 WorkspacePathResolver Binding & MCP Hibernate Validator | `technical` | `accepted` | 196 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-003 | Multi-Agent Local MCP Registry, CI Hardening & End-to-End Smoke Suite | `technical` | `accepted` | 200 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-004 | Multi-Format Architecture Diagram Export (Mermaid, SVG, PNG) & v1.1.0 Release | `technical` | `accepted` | 4772 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-005 | Quarkus 3.40.1.2, MCP 2.0.4 & Latest GA Dependency Alignment | `technical` | `accepted` | 6157 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-006 | Release v1.1.1 — Manifest Synchronization, Brand Identity & GA Dependency Alignment | `technical` | `accepted` | 222 | CAP-01, CAP-02, CAP-03, CAP-04 |
+| ADR-007 | Enforce Agent Skills Release Parity and Convert Skill Installer to npx skills | `technical` | `accepted` | 8238 | None |
+| ADR-008 | Release v1.1.2 — Agent Skills Release Parity & npx skills Ecosystem Publication | `technical` | `accepted` | 9283 | ADR-007 |
+| ADR-009 | Dual-Transport Quarkus MCP STDIO Profile and Ephemeral Docker Container Support | `technical` | `accepted` | 8714 | None |
+| ADR-010 | Release v1.1.3 — Auto-MCP Global Onboarding, Interactive Docker Transport Choice & Documentation Parity | `technical` | `accepted` | 8454 | ADR-009 |
+| ADR-011 | Release v1.1.4 — Fix npx Symlink Entrypoint Resolution in @fmatar/archlens-skill | `technical` | `accepted` | 4934 | ADR-010 |
+| ADR-012 | Phase 1 Security, Action Self-Test Fixtures & macOS Canonical Root Guard | `technical` | `accepted` | 224 | ADR-011 |
+| ADR-013 | Release v1.1.5 — Phase 0 Workbench Security & Phase 1 CLI, GitHub Action & CI Hardening | `technical` | `accepted` | 247 | ADR-012 |
+| ADR-014 | Release v1.1.6 — Security Hotfix for Matrix-Parameter Auth Bypass, Chained RCE, CI Gates & Supply Chain | `technical` | `accepted` | 247 | ADR-013 |
+| ADR-015 | Phase 1.5 — GraalVM Native SecureRandom Fix, Recoverable Rollback Trash & Diagram Export MCP Tool Parity | `technical` | `accepted` | 263 | ADR-014 |
+| ADR-016 | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | 265 | ADR-015 |
+| ADR-017 | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | 238 | ADR-016 |
+| ADR-018 | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | 246 | ADR-017 |
+| ADR-019 | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | 247 | ADR-018 |
+| ADR-020 | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | 247 | ADR-019 |
+| ADR-021 | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | 268 | ADR-020 |
 <!-- ADR_INDEX_END -->
 

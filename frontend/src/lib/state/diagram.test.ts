@@ -9,6 +9,8 @@ describe('diagramStore state management', () => {
     diagramStore.activeProposalId = null;
     diagramStore.declutterMode = 'ARROWS';
     diagramStore.authRequired = false;
+    diagramStore.isLoading = false;
+    diagramStore.isSavingPolicy = false;
     diagramStore.graph = DEMO_GRAPH_REAL;
   });
 
@@ -501,6 +503,225 @@ describe('diagramStore state management', () => {
     } finally {
       diagramStore.graph = DEMO_GRAPH_REAL;
       diagramStore.authRequired = false;
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('ignores stale out-of-order loadGraph responses so slow initial scan cannot clobber active proposal', async () => {
+    const originalFetch = globalThis.fetch;
+    let resolveInitialGraph!: (res: any) => void;
+    const slowInitialPromise = new Promise((resolve) => {
+      resolveInitialGraph = resolve;
+    });
+
+    try {
+      globalThis.fetch = (async (input: any) => {
+        const url = String(input);
+        if (url.includes('/api/fitness')) {
+          return { ok: true, status: 200, json: async () => ({ fitnessScore: 0.95, grade: 'A', rules: [] }) };
+        }
+        if (url.includes('proposalId=clean-core')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              ...DEMO_GRAPH_REAL,
+              title: 'Clean Architecture Standard',
+              isProposal: true,
+              activeProposalId: 'clean-core'
+            })
+          };
+        }
+        return slowInitialPromise;
+      }) as any;
+
+      const initialLoad = diagramStore.loadGraph();
+      const proposalLoad = diagramStore.loadGraph('clean-core');
+      await proposalLoad;
+
+      expect(diagramStore.activeProposalId).toBe('clean-core');
+      expect(diagramStore.graph?.isProposal).toBe(true);
+
+      resolveInitialGraph({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ...DEMO_GRAPH_REAL,
+          isProposal: false,
+          activeProposalId: null
+        })
+      });
+      await initialLoad;
+
+      expect(diagramStore.activeProposalId).toBe('clean-core');
+      expect(diagramStore.graph?.isProposal).toBe(true);
+      expect(diagramStore.isLoading).toBe(false);
+
+      // Also verify a stale rejecting request cannot clobber a newer successful load
+      let rejectStale!: (err: any) => void;
+      const staleErrPromise = new Promise((_, rej) => {
+        rejectStale = rej;
+      });
+      globalThis.fetch = (async (input: any) => {
+        const url = String(input);
+        if (url.includes('/api/fitness')) {
+          return { ok: true, status: 200, json: async () => ({ fitnessScore: 0.95, grade: 'A', rules: [] }) };
+        }
+        if (url.includes('proposalId=clean-core')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ ...DEMO_GRAPH_REAL, isProposal: true, activeProposalId: 'clean-core' })
+          };
+        }
+        return staleErrPromise;
+      }) as any;
+
+      const staleFailing = diagramStore.loadGraph();
+      const freshProposal = diagramStore.loadGraph('clean-core');
+      await freshProposal;
+      rejectStale(new Error('network aborted'));
+      await staleFailing;
+      expect(diagramStore.activeProposalId).toBe('clean-core');
+      expect(diagramStore.graph?.isProposal).toBe(true);
+
+      // Post-res.json() guard: fetch() resolves first, then superseded while res.json() is pending
+      let resolveSlowBody!: (val: any) => void;
+      const slowBodyPromise = new Promise((r) => {
+        resolveSlowBody = r;
+      });
+      let callIdx = 0;
+      globalThis.fetch = (async (input: any) => {
+        const url = String(input);
+        if (url.includes('/api/fitness')) {
+          return { ok: true, status: 200, json: async () => ({ fitnessScore: 0.95, grade: 'A', rules: [] }) };
+        }
+        callIdx++;
+        if (callIdx === 1) {
+          return { ok: true, status: 200, json: () => slowBodyPromise };
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ...DEMO_GRAPH_REAL, isProposal: true, activeProposalId: 'clean-core' })
+        };
+      }) as any;
+
+      const bodyPendingLoad = diagramStore.loadGraph();
+      await Promise.resolve();
+      const supersedingLoad = diagramStore.loadGraph('clean-core');
+      await supersedingLoad;
+      resolveSlowBody({ ...DEMO_GRAPH_REAL, isProposal: false, activeProposalId: null });
+      await bodyPendingLoad;
+      expect(diagramStore.activeProposalId).toBe('clean-core');
+      expect(diagramStore.graph?.isProposal).toBe(true);
+    } finally {
+      diagramStore.graph = DEMO_GRAPH_REAL;
+      diagramStore.activeProposalId = null;
+      diagramStore.isLoading = false;
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('prevents in-flight loadGraph/savePolicy races across savePolicy, showcase presets, and sandbox proposals', async () => {
+    const originalFetch = globalThis.fetch;
+    try {
+      // 1. savePolicy superseding an in-flight loadGraph clears isLoading, resets activeProposalId, and handles 401
+      let resolveInFlightLoad!: (res: any) => void;
+      const inFlightLoadPromise = new Promise((r) => {
+        resolveInFlightLoad = r;
+      });
+      globalThis.fetch = (async (input: any, init?: any) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.includes('/api/policy')) {
+          return {
+            ok: true,
+            status: 200,
+            json: async () => ({ ...DEMO_GRAPH_REAL, title: 'Saved Policy Graph', isProposal: false })
+          };
+        }
+        return inFlightLoadPromise;
+      }) as any;
+
+      diagramStore.activeProposalId = 'clean-core';
+      const pendingLoad = diagramStore.loadGraph('clean-core');
+      expect(diagramStore.isLoading).toBe(true);
+
+      const policyPayload: any = { title: 'Saved Policy Graph', levels: [], order: [], proposals: [] };
+      await diagramStore.savePolicy(policyPayload);
+
+      expect(diagramStore.isLoading).toBe(false);
+      expect(diagramStore.activeProposalId).toBeNull();
+      expect(diagramStore.graph?.title).toBe('Saved Policy Graph');
+
+      resolveInFlightLoad({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...DEMO_GRAPH_REAL, title: 'Stale Proposal', isProposal: true })
+      });
+      await pendingLoad;
+      expect(diagramStore.graph?.title).toBe('Saved Policy Graph');
+      expect(diagramStore.isLoading).toBe(false);
+
+      // 2. Newer loadGraph superseding a slow savePolicy prevents stale savePolicy overwrite; 401 on savePolicy sets authRequired
+      let resolveSlowSave!: (res: any) => void;
+      const slowSavePromise = new Promise((r) => {
+        resolveSlowSave = r;
+      });
+      globalThis.fetch = (async (input: any, init?: any) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.includes('/api/policy')) {
+          return slowSavePromise;
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ...DEMO_GRAPH_REAL, title: 'Fresh Proposal', isProposal: true, activeProposalId: 'clean-core' })
+        };
+      }) as any;
+
+      const slowSave = diagramStore.savePolicy({ title: 'Stale Save', levels: [], order: [], proposals: [] } as any);
+      await diagramStore.loadGraph('clean-core');
+      resolveSlowSave({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...DEMO_GRAPH_REAL, title: 'Stale Save', isProposal: false })
+      });
+      await slowSave;
+      expect(diagramStore.graph?.title).toBe('Fresh Proposal');
+      expect(diagramStore.activeProposalId).toBe('clean-core');
+
+      globalThis.fetch = (async () => ({ ok: false, status: 401, json: async () => ({}) }) as any) as any;
+      await diagramStore.savePolicy(policyPayload);
+      expect(diagramStore.authRequired).toBe(true);
+      diagramStore.authRequired = false;
+
+      // 3. Showcase preset & saveSandboxAsProposal invalidate an in-flight loadGraph and clear isLoading
+      let resolvePresetRaceLoad!: (res: any) => void;
+      globalThis.fetch = (async () =>
+        new Promise((r) => {
+          resolvePresetRaceLoad = r;
+        }) as any) as any;
+
+      const presetRaceLoad = diagramStore.loadGraph();
+      expect(diagramStore.isLoading).toBe(true);
+      expect(diagramStore.loadShowcasePreset('preset:quarkus-quickstart')).toBe(true);
+      expect(diagramStore.isLoading).toBe(false);
+      resolvePresetRaceLoad({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...DEMO_GRAPH_REAL, title: 'Stale Initial Scan' })
+      });
+      await presetRaceLoad;
+      expect(diagramStore.activeShowcasePresetId).toBe('quarkus-quickstart');
+      expect(diagramStore.graph?.title).not.toBe('Stale Initial Scan');
+    } finally {
+      diagramStore.activeShowcasePresetId = null;
+      diagramStore.activeProposalId = null;
+      diagramStore.authRequired = false;
+      diagramStore.isLoading = false;
+      diagramStore.isSavingPolicy = false;
+      diagramStore.graph = DEMO_GRAPH_REAL;
       globalThis.fetch = originalFetch;
     }
   });

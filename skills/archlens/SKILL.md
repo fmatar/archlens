@@ -9,10 +9,10 @@ description: >-
   mailbox commands.
 license: Apache-2.0
 compatibility: "Node.js >= 22"
-version: 1.2.0
+version: 1.3.0
 metadata:
   author: fmatar
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # Archlens — Clean Architecture Governance, Policy Installer & Workbench Companion

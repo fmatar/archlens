@@ -64,6 +64,7 @@ flowchart TD
   ADR_022["ADR-022: Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization"]
   _244["Ticket #244 (feat/issue-244-unified-cli-backend-check)"]
   ADR_023["ADR-023: Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite"]
+  ADR_024["ADR-024: Release v1.3.0 — Lexical Scanner Sanitizers, Backend-First CLI Delegation & Sealit Proof Kernel"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -144,6 +145,7 @@ flowchart TD
   ADR_021 -.->|ADR Drift| ADR_022
   _244 -->|triggered_drift_adr| ADR_023
   ADR_022 -.->|ADR Drift| ADR_023
+  ADR_023 -.->|ADR Drift| ADR_024
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -183,6 +185,7 @@ flowchart TD
 | **ADR-021** | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | #268 | ADR-020 |
 | **ADR-022** | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | #243 | ADR-021 |
 | **ADR-023** | Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite | `architectural` | `accepted` | #244 | ADR-022 |
+| **ADR-024** | Release v1.3.0 — Lexical Scanner Sanitizers, Backend-First CLI Delegation & Sealit Proof Kernel | `technical` | `accepted` | #L-1 | ADR-023 |
 
 ---
 

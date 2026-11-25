@@ -7,7 +7,7 @@ flowchart TD
     User["Software Architect / Engineer"]
     Agent["Autonomous AI Coding Agent\n(Antigravity, Gemini CLI, Claude Code, Grok, Cursor, Windsurf)"]
     
-    subgraph System ["Archlens Governance & Refactoring Workbench (v1.2.0)"]
+    subgraph System ["Archlens Governance & Refactoring Workbench (v1.3.0)"]
         App["Archlens Dynamic Workbench\n(Quarkus 3.40.1.2 on Java 25 + Svelte 5 + @fadym/archlens-skill CLI)"]
     end
     

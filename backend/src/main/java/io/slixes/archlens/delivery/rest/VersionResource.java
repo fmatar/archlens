@@ -22,7 +22,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @Produces(MediaType.APPLICATION_JSON)
 public class VersionResource {
 
-  private static final String DEFAULT_VERSION = "1.2.0";
+  private static final String DEFAULT_VERSION = "1.3.0";
 
   private String configuredVersion = DEFAULT_VERSION;
   private final Map<String, String> versionInfo = new HashMap<>();

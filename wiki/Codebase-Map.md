@@ -417,6 +417,7 @@ flowchart TD
 | **ADR-021** | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | ADR-020 |
 | **ADR-022** | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | ADR-021 |
 | **ADR-023** | Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite | `architectural` | `accepted` | ADR-022 |
+| **ADR-024** | Release v1.3.0 — Lexical Scanner Sanitizers, Backend-First CLI Delegation & Sealit Proof Kernel | `technical` | `accepted` | ADR-023 |
 
 ---
 

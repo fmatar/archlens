@@ -19,9 +19,10 @@ import { checkArchitecture, generateMermaidReport } from './checker.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function getPackageVersion() {
+export function getPackageVersion() {
   try {
-    const pkgPath = path.resolve(__dirname, '..', 'package.json');
+    const pkgPath =
+      getPackageVersion.pkgPathOverride || path.resolve(__dirname, '..', 'package.json');
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       if (pkg.version) return pkg.version;
@@ -29,7 +30,7 @@ function getPackageVersion() {
   } catch {
     // ignore
   }
-  return '1.2.0';
+  return '1.3.0';
 }
 
 export function getMcpToolsList() {

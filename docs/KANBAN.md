@@ -5,7 +5,7 @@
 > To refresh this board: `.agent/scripts/kanban-sync.sh`
 
 > **Repository**: `fmatar/archlens`  
-> **Last Synced**: `2026-11-24 03:02:03 UTC`
+> **Last Synced**: `2026-11-25 16:00:00 UTC`
 
 ---
 
@@ -13,8 +13,11 @@
 
 | 📥 Backlog | 📋 Ready | ⚡ In Progress | 🔍 In Review | ✅ Done |
 | :--- | :--- | :--- | :--- | :--- |
+|  |  |  |  | #244: Unified backend-first CLI `check` & 9-fixture parity suite (`PR #277`) |
+|  |  |  |  | #243: `*LexicalScanner` renames & comment/string sanitizers (`PR #276`) |
+|  |  |  |  | #268: Frontend deps & `loadGraph` proposal race fix (`PR #274`) |
 |  |  |  |  | #237, #238, #239, #240, #241: Phase 2 Trust, Hygiene & Skipped-File Telemetry |
-|  | #244: CLI `check` & backend parity |  |  | #263: Phase 1.5 Native SecureRandom, Trash & Diagram MCP (`PR #264`) |
+|  |  |  |  | #263: Phase 1.5 Native SecureRandom, Trash & Diagram MCP (`PR #264`) |
 |  |  |  |  | #8238: [FEAT] feat: enforce-skills-release-and-npx-skills |
 |  |  |  |  | #7896: [FEAT] feat: milestone-3-monorepo-cross-lang-and-ast-idioms |
 |  |  |  |  | #1662: [FEAT] feat: automated-test-runner-verification-gate |

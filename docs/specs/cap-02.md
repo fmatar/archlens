@@ -6,13 +6,13 @@
 
 ## 1. Domain Contract & Acceptance Criteria
 
-1. **Logical Statement Normalization & Full ESM Import Coverage (`TypeScriptAstScanner.java`)**:
-   - Normalize physical lines into logical statements by stripping `/* ... */` multi-line block comments and `//` line comments outside string/template literals, and joining multi-line `import { ... } from '...'` and `export { ... } from '...'` clauses.
+1. **Logical Statement Normalization & Full ESM Import Coverage (`TypeScriptLexicalScanner.java`)**:
+   - Normalize physical lines into logical statements by stripping `/* ... */` multi-line block comments, `//` line comments outside string/template literals, and non-expression template literal bodies (`` `...` `` across multiple lines) while ignoring `require(...)` / `import(...)` occurrences inside quoted string literals, and joining multi-line `import { ... } from '...'` and `export { ... } from '...'` clauses.
    - Support default imports (`import Foo from './foo'`), named imports (`import { A, B as C } from './mod'`), combined default + named imports (`import React, { useState } from 'react'`), namespace imports (`import * as ns from './mod'`), type imports (`import type { T } from './mod'`, `import type * as T from './mod'`), side-effect imports (`import './setup'`), `require('...')`, and dynamic `import('...')`.
-2. **Accurate Stereotypes & Method Signature Extraction (`TypeScriptAstScanner.java`)**:
+2. **Accurate Stereotypes & Method Signature Extraction (`TypeScriptLexicalScanner.java`)**:
    - Assign `ClassNode.Stereotype.INTERFACE` to `interface` declarations and `ClassNode.Stereotype.ABSTRACT` to `abstract class` declarations.
    - Extract method signatures (`name`, parameter list `args`, `returnType`) from TypeScript classes and interfaces so `ArchitectureFitnessCalculator` computes accurate Abstractness ($A$) and `DipInversionSynthesizer` extracts non-empty Port contracts.
-3. **Barrel (`index.ts` / `index.js`) Re-Exports, `tsconfig.json` Paths & Hybrid Class-First Edges (`TypeScriptAstScanner.java`)**:
+3. **Barrel (`index.ts` / `index.js`) Re-Exports, `tsconfig.json` Paths & Hybrid Class-First Edges (`TypeScriptLexicalScanner.java`)**:
    - Parse `tsconfig.json` / `jsconfig.json` `compilerOptions.paths` and SvelteKit `$lib/` aliases to resolve internal module paths.
    - Index `index.ts` / `index.tsx` / `index.js` barrel re-exports (`export { X } from './x'`, `export * from './x'`) across up to 4 hops.
    - Emit `DependencyEdge`s using Hybrid Class-First Resolution (`currentModule + "." + ClassName` to target class/interface ID when imported symbols match declared types, falling back to module IDs).

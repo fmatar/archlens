@@ -30,7 +30,7 @@ flowchart TD
     T2 -->|"Not Found"| T3{"Tier 3: Docker Daemon\ndocker info running?"}
     T3 -->|"Running"| SpawnDocker["Resurrect or Run Container\nghcr.io/fmatar/archlens:latest (:8088)"]
     SpawnDocker --> Poll
-    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static AST Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
+    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static Lexical Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
     T4 --> Result["Return Concentric Ring Graph, Violations & DIP Ports"]
     Proxy --> Result
 ```
@@ -38,7 +38,7 @@ flowchart TD
 1. **Tier 1 — Live Server Reuse**: Pings `http://127.0.0.1:8088/api/version`. If the Quarkus server is already running, routes the request immediately.
 2. **Tier 2 — Native Runner JAR**: If `java -version` succeeds and a native runner JAR exists (`ARCHLENS_JAR`, `~/.archlens/runner/quarkus-app/quarkus-run.jar`, or `target/quarkus-app/quarkus-run.jar`), launches a detached background JVM process on port `8088`.
 3. **Tier 3 — Docker Container Auto-Resurrection**: If Docker is running (`docker info`), restarts an existing `archlens-server` container or launches `ghcr.io/fmatar/archlens:latest` detached on port `8088`.
-4. **Tier 4 — Offline Static AST Fallback**: If neither Java nor Docker is available, executes the built-in Node.js static AST analyzer directly on disk—ensuring zero downtime in restricted sandboxes or offline environments.
+4. **Tier 4 — Offline Static Lexical Fallback**: If neither Java nor Docker is available, executes the built-in Node.js static lexical analyzer directly on disk—ensuring zero downtime in restricted sandboxes or offline environments.
 
 ---
 

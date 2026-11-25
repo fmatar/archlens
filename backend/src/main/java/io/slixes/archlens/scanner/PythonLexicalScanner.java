@@ -24,9 +24,9 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class PythonAstScanner implements LanguageScanner {
+public class PythonLexicalScanner implements LanguageScanner {
 
-  private static final Logger LOG = Logger.getLogger(PythonAstScanner.class);
+  private static final Logger LOG = Logger.getLogger(PythonLexicalScanner.class);
 
   private static final Pattern FROM_IMPORT_PATTERN =
       Pattern.compile("^\\s*from\\s+([a-zA-Z0-9_.]+)(?:\\s+|(?<=\\.))import\\s+(.+)$");
@@ -382,6 +382,9 @@ public class PythonAstScanner implements LanguageScanner {
 
         Matcher dynMatcher = DYNAMIC_IMPORT_PATTERN.matcher(line);
         while (dynMatcher.find()) {
+          if (FileScannerUtil.isInsideStringLiteral(line, dynMatcher.start())) {
+            continue;
+          }
           String dynMod = dynMatcher.group(1).trim();
           String resolvedDyn = resolvePythonImport(currentModule, packageName, dynMod);
           if (resolvedDyn != null && !resolvedDyn.isBlank() && !isStdlib(resolvedDyn)) {
@@ -774,7 +777,7 @@ public class PythonAstScanner implements LanguageScanner {
 
       while (i < len) {
         if (inTripleDouble) {
-          int close = line.indexOf("\"\"\"", i);
+          int close = findClosingTripleQuote(line, i, "\"\"\"");
           if (close != -1) {
             inTripleDouble = false;
             i = close + 3;
@@ -784,7 +787,7 @@ public class PythonAstScanner implements LanguageScanner {
           continue;
         }
         if (inTripleSingle) {
-          int close = line.indexOf("'''", i);
+          int close = findClosingTripleQuote(line, i, "'''");
           if (close != -1) {
             inTripleSingle = false;
             i = close + 3;
@@ -795,11 +798,17 @@ public class PythonAstScanner implements LanguageScanner {
         }
 
         if (line.startsWith("\"\"\"", i)) {
+          if (!lineBuf.toString().isBlank() || currentStmt.length() > 0) {
+            lineBuf.append("\"\"");
+          }
           inTripleDouble = true;
           i += 3;
           continue;
         }
         if (line.startsWith("'''", i)) {
+          if (!lineBuf.toString().isBlank() || currentStmt.length() > 0) {
+            lineBuf.append("''");
+          }
           inTripleSingle = true;
           i += 3;
           continue;
@@ -849,6 +858,14 @@ public class PythonAstScanner implements LanguageScanner {
       }
 
       if (inTripleDouble || inTripleSingle) {
+        String pendingPrefix = lineBuf.toString();
+        if (!pendingPrefix.isBlank()) {
+          if (currentStmt.length() > 0) {
+            currentStmt.append(' ').append(pendingPrefix.trim());
+          } else {
+            currentStmt.append(pendingPrefix);
+          }
+        }
         continue;
       }
 
@@ -889,6 +906,22 @@ public class PythonAstScanner implements LanguageScanner {
     }
 
     return statements;
+  }
+
+  private static int findClosingTripleQuote(String line, int start, String delimiter) {
+    int len = line.length();
+    int k = start;
+    while (k < len) {
+      if (line.charAt(k) == '\\' && k + 1 < len) {
+        k += 2;
+        continue;
+      }
+      if (line.startsWith(delimiter, k)) {
+        return k;
+      }
+      k++;
+    }
+    return -1;
   }
 
   private String toCanonicalRelPath(

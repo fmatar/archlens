@@ -273,7 +273,7 @@ export async function executeToolCall(toolName, args = {}, options = {}, deps = 
       title: policy.title,
       offline: true,
       levels: policy.levels,
-      message: 'Generated via Archlens offline static AST engine'
+      message: 'Generated via Archlens offline static lexical engine'
     };
     return { content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }] };
   }

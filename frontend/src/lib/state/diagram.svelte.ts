@@ -29,6 +29,10 @@ import gsap from 'gsap';
 
 export type DeclutterMode = 'NONE' | 'ARROWS' | 'REMOVE_ARROWS' | 'ELEMENTS' | 'CLASSES';
 
+export function initialScannerTelemetryMessage(): string {
+  return 'Polyglot Scanners active for Java 25 AST & TypeScript';
+}
+
 class DiagramState {
   static readonly WEBGL_CLASS_THRESHOLD = 500;
 
@@ -289,7 +293,7 @@ class DiagramState {
       id: 'init-2',
       timestamp: '00:01:16',
       type: 'SUCCESS',
-      message: 'Polyglot AST Scanners active for Java 25 & TypeScript',
+      message: initialScannerTelemetryMessage(),
       details: 'All dependency rules verified conforming to Uncle Bob Clean Architecture'
     }
   ]);

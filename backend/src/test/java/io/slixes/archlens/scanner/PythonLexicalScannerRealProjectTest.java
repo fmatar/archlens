@@ -14,7 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class PythonAstScannerRealProjectTest {
+class PythonLexicalScannerRealProjectTest {
 
   @TempDir Path tempDir;
 
@@ -75,7 +75,7 @@ class PythonAstScannerRealProjectTest {
 
     File targetDir = tempDir.toFile();
 
-    PythonAstScanner scanner = new PythonAstScanner();
+    PythonLexicalScanner scanner = new PythonLexicalScanner();
     LanguageScannerRegistry registry = new LanguageScannerRegistry(List.of(scanner));
 
     GraphCompiler compiler = new GraphCompiler();

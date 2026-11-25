@@ -36,8 +36,8 @@ flowchart LR
 
 | Capability | Title | Spec File | Primary Implementation Modules | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `CAP-01` | Python AST Deep Class & Stereotype Extraction | `docs/specs/cap-01.md` | `backend/src/main/java/io/slixes/archlens/scanner/PythonAstScanner.java` | `COMPLETE` (`#5887`) |
-| `CAP-02` | TypeScript/JS Multi-Line ESM, Barrel & Alias Resolution | `docs/specs/cap-02.md` | `backend/src/main/java/io/slixes/archlens/scanner/TypeScriptAstScanner.java`, `cli/src/checker.js` | `COMPLETE` (`#5912`) |
+| `CAP-01` | Python Lexical Deep Class & Stereotype Extraction | `docs/specs/cap-01.md` | `backend/src/main/java/io/slixes/archlens/scanner/PythonLexicalScanner.java` | `COMPLETE` (`#5887`) |
+| `CAP-02` | TypeScript/JS Multi-Line ESM, Barrel & Alias Resolution | `docs/specs/cap-02.md` | `backend/src/main/java/io/slixes/archlens/scanner/TypeScriptLexicalScanner.java`, `cli/src/checker.js` | `COMPLETE` (`#5912`) |
 | `CAP-03` | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | `backend/src/main/java/io/slixes/archlens/domain/dossier/DipInversionSynthesizer.java`, `cli/src/checker.js` | `COMPLETE` (`#5936`) |
 | `CAP-04` | What-If Sandbox Simulation & Proposal Persistence | `docs/specs/cap-04.md` | `frontend/src/lib/state/diagram.svelte.ts`, `frontend/src/lib/components/Canvas.svelte`, `frontend/src/lib/components/SandboxToolbar.svelte` | `COMPLETE` (`#5962`) |
 

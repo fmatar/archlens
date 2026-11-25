@@ -10,9 +10,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class PythonAstScannerTest {
+class PythonLexicalScannerTest {
 
-  private final PythonAstScanner scanner = new PythonAstScanner();
+  private final PythonLexicalScanner scanner = new PythonLexicalScanner();
 
   @Test
   void testLanguageMetadataAndSupports(@TempDir Path tempDir) throws IOException {
@@ -505,5 +505,59 @@ class PythonAstScannerTest {
             .anyMatch(e ->
                 e.from().equals("application.service.OrderService")
                     && e.to().equals("domain.order.OrderPredicate")));
+  }
+
+  @Test
+  void testIgnoresDynamicImportsInsideStringLiterals(@TempDir Path tempDir) throws IOException {
+    Path domainDir = tempDir.resolve("src/myapp/domain");
+    Path adaptersDir = tempDir.resolve("src/myapp/adapters");
+    Path infraDir = tempDir.resolve("src/myapp/infra");
+    Files.createDirectories(domainDir);
+    Files.createDirectories(adaptersDir);
+    Files.createDirectories(infraDir);
+    Files.writeString(tempDir.resolve("src/myapp/__init__.py"), "");
+    Files.writeString(domainDir.resolve("__init__.py"), "");
+    Files.writeString(adaptersDir.resolve("__init__.py"), "");
+    Files.writeString(infraDir.resolve("__init__.py"), "");
+    Files.writeString(adaptersDir.resolve("http_client.py"), "class HttpClient:\n    pass\n");
+    Files.writeString(infraDir.resolve("db.py"), "class Db:\n    pass\n");
+    Files.writeString(domainDir.resolve("money.py"), "class Money:\n    pass\n");
+    Files.writeString(
+        domainDir.resolve("order.py"),
+        """
+        \"\"\"Docstring containing escaped \\\"\\\"\\\" triple quotes
+        from myapp.adapters.http_client import HttpClient
+        import myapp.infra.db
+        \"\"\"
+        # from myapp.adapters.http_client import HttpClient
+        from myapp.domain.money import Money
+
+        class Order:
+            def run_query(self, sql: str = \"\"\"
+                SELECT * FROM orders
+            \"\"\") -> Money:
+                _ = "importlib.import_module('myapp.adapters.http_client') and __import__('myapp.infra.db')"
+                return Money()
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "myapp");
+    assertFalse(
+        result.edges().stream()
+            .anyMatch(e -> e.to().contains("http_client") || e.to().contains("infra.db")),
+        "Expected zero edges from docstrings, comments, or string literals, got: "
+            + result.edges());
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(e ->
+                e.from().equals("myapp.domain.order.Order")
+                    && e.to().equals("myapp.domain.money.Money")),
+        "Expected real import edge Order -> Money to be preserved, got: " + result.edges());
+    var orderCls =
+        result.classes().stream().filter(c -> c.name().equals("Order")).findFirst().orElseThrow();
+    assertTrue(
+        orderCls.methods().stream()
+            .anyMatch(m -> m.name().equals("run_query") && "Money".equals(m.returnType())),
+        "Expected method signature with multiline triple-quoted default arg to be preserved, got: "
+            + orderCls.methods());
   }
 }

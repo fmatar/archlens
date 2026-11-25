@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { diagramStore } from './diagram.svelte';
+import { diagramStore, initialScannerTelemetryMessage } from './diagram.svelte';
 import { DEMO_GRAPH_REAL } from '../data/demoData';
 
 describe('diagramStore state management', () => {
@@ -724,5 +724,14 @@ describe('diagramStore state management', () => {
       diagramStore.graph = DEMO_GRAPH_REAL;
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it('reports honest Java 25 AST and lexical scanner telemetry message (#243)', () => {
+    expect(initialScannerTelemetryMessage()).toBe(
+      'Polyglot Scanners active for Java 25 AST & TypeScript'
+    );
+    expect(diagramStore.telemetryEvents.find((e) => e.id === 'init-2')?.message).toBe(
+      'Polyglot Scanners active for Java 25 AST & TypeScript'
+    );
   });
 });

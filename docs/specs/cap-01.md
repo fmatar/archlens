@@ -1,4 +1,4 @@
-# SPEC-01: Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures
+# SPEC-01: Python Lexical Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures
 
 - **Linked Capability**: `CAP-01`
 - **Status**: `ACTIVE`
@@ -6,14 +6,15 @@
 
 ## 1. Domain Contract & Acceptance Criteria
 
-1. **Class-Level & Symbol-Aware Dependency Edges (`PythonAstScanner.java`)**:
+1. **Class-Level & Symbol-Aware Dependency Edges (`PythonLexicalScanner.java`)**:
+   - Strip `#` line comments, `"""..."""` / `'''...'''` docstrings, and ignore dynamic import text inside string literals before matching `from ... import`, `import ...`, or `importlib.import_module` / `__import__`.
    - Index all discovered Python classes (`moduleId + "." + ClassName`) and `__init__.py` barrel re-exports in Pass 1 / Pass 1.5 so `from pkg.mod import ClassName` resolves directly to `pkg.mod.ClassName` when `ClassName` is a known class in `pkg.mod` (or re-exported via `__init__.py`).
    - When a source `.py` file declares one or more classes, emit outgoing `DependencyEdge` instances from each declaring class (`currentModule + "." + clsName`) to the resolved target class ID (or target module's classes / fallback module `ClassNode` ID if the target module is function-only).
    - When a source `.py` file is function-only (no `class` declarations), emit edges from `currentModule`.
-2. **Python Abstract & Protocol Stereotypes (`PythonAstScanner.java`)**:
+2. **Python Abstract & Protocol Stereotypes (`PythonLexicalScanner.java`)**:
    - Detect classes inheriting from `Protocol`, `typing.Protocol`, `typing_extensions.Protocol` as `ClassNode.Stereotype.INTERFACE`.
    - Detect classes inheriting from `ABC`, `abc.ABC`, `ABCMeta`, or containing `@abstractmethod` / `@abc.abstractmethod` methods as `ClassNode.Stereotype.ABSTRACT` (or `INTERFACE` when all public methods are abstract).
-3. **Class-Scoped Method Signatures & Type Annotations (`PythonAstScanner.java`)**:
+3. **Class-Scoped Method Signatures & Type Annotations (`PythonLexicalScanner.java`)**:
    - Scope `def` methods to their enclosing `class` declaration (based on indentation level) rather than sharing a single file-global `methods` list across all classes in the file.
    - Extract parameter names and optional type annotations (excluding `self` and `cls`) into `MethodNode.args()` and return type annotations (`-> ReturnType:`) into `MethodNode.returnType()`.
 4. **Module-Prefix Fallback in `ArchitectureFitnessCalculator.java`**:

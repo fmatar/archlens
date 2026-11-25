@@ -11,9 +11,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class TypeScriptAstScannerTest {
+class TypeScriptLexicalScannerTest {
 
-  private final TypeScriptAstScanner scanner = new TypeScriptAstScanner();
+  private final TypeScriptLexicalScanner scanner = new TypeScriptLexicalScanner();
 
   @Test
   void testLanguageMetadataAndSupports(@TempDir Path tempDir) throws IOException {
@@ -399,5 +399,82 @@ class TypeScriptAstScannerTest {
     assertTrue(
         result.edges().stream()
             .anyMatch(e -> e.from().contains("page") && e.to().contains("ui.components.Button")));
+  }
+
+  @Test
+  void testIgnoresImportsInsideMultilineTemplateAndQuotedStrings(@TempDir Path tempDir)
+      throws IOException {
+    Path domain = tempDir.resolve("src/domain");
+    Path lazy = tempDir.resolve("src/lazy");
+    Files.createDirectories(domain);
+    Files.createDirectories(lazy);
+    Files.writeString(lazy.resolve("RealLazy.ts"), "export class RealLazy {}\n");
+
+    Files.writeString(
+        domain.resolve("OrderTemplate.ts"),
+        """
+        export class OrderTemplate {
+          async renderExample(): Promise<string> {
+            const quoted = "require('../infra/PostgresRepo')";
+            const singleQuoted = 'import("../adapters/HttpAdapter")';
+            const interpolated = `prefix ${await import('../lazy/RealLazy').then(m => { return `${m}`; })}
+        import { PostgresRepo } from '../infra/PostgresRepo';
+        const dynamicMod = import('../adapters/HttpAdapter');
+            ` + quoted + singleQuoted;
+            return interpolated;
+          }
+        }
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "");
+    assertFalse(
+        result.edges().stream()
+            .anyMatch(e -> e.to().contains("PostgresRepo") || e.to().contains("HttpAdapter")),
+        "Expected zero edges from multiline template text or quoted strings, got: "
+            + result.edges());
+    assertTrue(
+        result.edges().stream().anyMatch(e -> e.to().contains("lazy.RealLazy")),
+        "Expected real dynamic import inside ${...} expression to be preserved");
+  }
+
+  @Test
+  void testSvelteIsolatesScriptBlocksAndIgnoresHtmlComments(@TempDir Path tempDir)
+      throws IOException {
+    Path domain = tempDir.resolve("src/domain");
+    Path ui = tempDir.resolve("src/ui");
+    Files.createDirectories(domain);
+    Files.createDirectories(ui);
+    Files.writeString(domain.resolve("RealModel.ts"), "export class RealModel {}\n");
+
+    Files.writeString(
+        ui.resolve("Widget.svelte"),
+        """
+        <!--
+        <script lang="ts">
+          import { CommentedLeak } from '../infra/CommentedLeak';
+        </script>
+        -->
+        <p>Unmatched backtick ` and /* comment marker in HTML markup</p>
+        <script lang="ts">
+          import { RealModel } from '../domain/RealModel';
+          const tr = 'İİİİİİİİİİ'; </script>
+        <pre><code>
+        import { MarkupLeak } from '../adapters/MarkupLeak';
+        const dyn = import('../adapters/DynMarkupLeak');
+        </code></pre>
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), "src", "");
+    assertTrue(
+        result.edges().stream().anyMatch(e -> e.to().contains("domain.RealModel")),
+        "Expected real import inside <script> to be preserved despite unmatched ` in HTML, got: "
+            + result.edges());
+    assertFalse(
+        result.edges().stream()
+            .anyMatch(e ->
+                e.to().contains("CommentedLeak")
+                    || e.to().contains("MarkupLeak")
+                    || e.to().contains("DynMarkupLeak")),
+        "Expected zero edges from HTML comments or non-script markup, got: " + result.edges());
   }
 }

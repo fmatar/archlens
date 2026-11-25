@@ -11,9 +11,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-class GoAstScannerTest {
+class GoLexicalScannerTest {
 
-  private final GoAstScanner scanner = new GoAstScanner();
+  private final GoLexicalScanner scanner = new GoLexicalScanner();
 
   @Test
   void testLanguageMetadataAndSupports(@TempDir Path tempDir) throws IOException {
@@ -194,5 +194,57 @@ class GoAstScannerTest {
             .findFirst()
             .orElseThrow();
     assertEquals("iter.Seq2[K, V]", streamPairsMethod.returnType());
+  }
+
+  @Test
+  void testIgnoresImportsInsideBlockCommentsAndRawBacktickStrings(@TempDir Path tempDir)
+      throws IOException {
+    Files.writeString(tempDir.resolve("go.mod"), "module github.com/example/cleanapp\n\ngo 1.23\n");
+    Path domainDir = tempDir.resolve("internal/domain");
+    Path modelDir = tempDir.resolve("internal/model");
+    Files.createDirectories(domainDir);
+    Files.createDirectories(modelDir);
+    Files.writeString(modelDir.resolve("money.go"), "package model\ntype Money struct{}\n");
+
+    Files.writeString(
+        domainDir.resolve("service.go"),
+        """
+        package domain
+
+        import(/* inline comment */
+            _ "github.com/example/cleanapp/internal/model")
+
+        /*
+        import "github.com/example/cleanapp/internal/infra"
+        */
+        const quotedNonImport = "github.com/example/cleanapp/internal/leaked"
+        const example = `
+        import (
+            "github.com/example/cleanapp/internal/adapters"
+        )
+        import "github.com/example/cleanapp/internal/web"
+        `
+
+        type Service struct{}
+        """);
+
+    LanguageScanner.ScanResult result = scanner.scanProject(tempDir.toString(), ".", "");
+    assertTrue(
+        result.classes().stream().anyMatch(c -> c.name().equals("Service")),
+        "Expected Service struct after inline-closed import(...) block, got: " + result.classes());
+    assertTrue(
+        result.edges().stream()
+            .anyMatch(e -> e.from().equals("internal.domain") && e.to().equals("internal.model")),
+        "Expected real grouped import edge internal.domain -> internal.model, got: "
+            + result.edges());
+    assertFalse(
+        result.edges().stream()
+            .anyMatch(e ->
+                e.to().contains("infra")
+                    || e.to().contains("adapters")
+                    || e.to().contains("web")
+                    || e.to().contains("leaked")),
+        "Expected zero edges from block comments, raw strings, or post-import strings, got: "
+            + result.edges());
   }
 }

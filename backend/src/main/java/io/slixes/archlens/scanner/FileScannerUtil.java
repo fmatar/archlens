@@ -451,6 +451,9 @@ public final class FileScannerUtil {
     for (String stmt : statements) {
       Matcher m = FRONTEND_API_CALL_PATTERN.matcher(stmt);
       while (m.find()) {
+        if (isInsideStringLiteral(stmt, m.start())) {
+          continue;
+        }
         String normalized = normalizeApiRoute(m.group(1));
         if (normalized.startsWith("/api")) {
           routes.add(normalized);
@@ -503,5 +506,230 @@ public final class FileScannerUtil {
       clean = clean.substring(0, clean.length() - 1);
     }
     return clean;
+  }
+
+  /**
+   * Strips {@code //} line comments, {@code /* ... *}{@code /} block comments (supporting nested
+   * block comments in Rust), Go raw backtick string literals ({@code `...`}), and Rust string / raw
+   * string literals ({@code "..."}, {@code r#"..."#}) while preserving every newline so line counts
+   * remain intact.
+   *
+   * @param content raw UTF-8 source text
+   * @param isRust true for Rust lexical rules (nested block comments, lifetimes, {@code r#"..."#});
+   *     false for Go lexical rules (raw backticks {@code `...`}, keeping single-line {@code "..."}
+   *     imports)
+   * @return sanitized lines with comments and raw/non-import strings blanked to spaces
+   */
+  public static List<String> stripCommentsAndRawStrings(String content, boolean isRust) {
+    if (content == null || content.isEmpty()) {
+      return List.of();
+    }
+    StringBuilder out = new StringBuilder(content.length());
+    int len = content.length();
+    int blockCommentDepth = 0;
+    int i = 0;
+
+    while (i < len) {
+      char c = content.charAt(i);
+      char next = i + 1 < len ? content.charAt(i + 1) : '\0';
+
+      if (blockCommentDepth > 0) {
+        if (isRust && c == '/' && next == '*') {
+          blockCommentDepth++;
+          out.append("  ");
+          i += 2;
+        } else if (c == '*' && next == '/') {
+          blockCommentDepth--;
+          out.append("  ");
+          i += 2;
+        } else {
+          out.append(c == '\n' ? '\n' : ' ');
+          i++;
+        }
+        continue;
+      }
+
+      if (c == '/' && next == '/') {
+        while (i < len && content.charAt(i) != '\n') {
+          out.append(' ');
+          i++;
+        }
+        continue;
+      }
+
+      if (c == '/' && next == '*') {
+        blockCommentDepth = 1;
+        out.append("  ");
+        i += 2;
+        continue;
+      }
+
+      if (isRust) {
+        int rawEnd = consumeRustRawString(content, i, out);
+        if (rawEnd > i) {
+          i = rawEnd;
+          continue;
+        }
+        if (c == '\'') {
+          if (i + 2 < len && content.charAt(i + 1) != '\\' && content.charAt(i + 2) == '\'') {
+            out.append("   ");
+            i += 3;
+            continue;
+          }
+          if (i + 3 < len && content.charAt(i + 1) == '\\' && content.charAt(i + 3) == '\'') {
+            out.append("    ");
+            i += 4;
+            continue;
+          }
+        }
+        if (c == '"') {
+          out.append('"');
+          i++;
+          while (i < len) {
+            char sc = content.charAt(i);
+            if (sc == '\\' && i + 1 < len) {
+              out.append(' ');
+              char esc = content.charAt(i + 1);
+              out.append(esc == '\n' ? '\n' : ' ');
+              i += 2;
+            } else if (sc == '"') {
+              out.append('"');
+              i++;
+              break;
+            } else {
+              out.append(sc == '\n' ? '\n' : ' ');
+              i++;
+            }
+          }
+          continue;
+        }
+      } else {
+        if (c == '`') {
+          out.append('`');
+          i++;
+          while (i < len) {
+            char sc = content.charAt(i++);
+            if (sc == '`') {
+              out.append('`');
+              break;
+            }
+            out.append(sc == '\n' ? '\n' : ' ');
+          }
+          continue;
+        }
+        if (c == '"' || c == '\'') {
+          char quote = c;
+          out.append(c);
+          i++;
+          while (i < len) {
+            char sc = content.charAt(i);
+            out.append(sc);
+            if (sc == '\\' && i + 1 < len) {
+              out.append(content.charAt(i + 1));
+              i += 2;
+            } else if (sc == quote || sc == '\n') {
+              i++;
+              break;
+            } else {
+              i++;
+            }
+          }
+          continue;
+        }
+      }
+
+      out.append(c);
+      i++;
+    }
+
+    return List.of(out.toString().split("\\R", -1));
+  }
+
+  private static int consumeRustRawString(String content, int start, StringBuilder out) {
+    int len = content.length();
+    if (start > 0) {
+      char prev = content.charAt(start - 1);
+      if (Character.isLetterOrDigit(prev) || prev == '_') {
+        return -1;
+      }
+    }
+    char c = content.charAt(start);
+    int rIdx = -1;
+    if (c == 'r') {
+      rIdx = start;
+    } else if ((c == 'b' || c == 'c') && start + 1 < len && content.charAt(start + 1) == 'r') {
+      rIdx = start + 1;
+    }
+    if (rIdx < 0) {
+      return -1;
+    }
+    int p = rIdx + 1;
+    int hashes = 0;
+    while (p < len && content.charAt(p) == '#') {
+      hashes++;
+      p++;
+    }
+    if (p >= len || content.charAt(p) != '"') {
+      return -1;
+    }
+    for (int k = start; k <= p; k++) {
+      out.append(' ');
+    }
+    p++;
+    while (p < len) {
+      char sc = content.charAt(p);
+      if (sc == '"' && hasClosingHashes(content, p + 1, hashes)) {
+        for (int k = 0; k <= hashes; k++) {
+          out.append(' ');
+        }
+        return p + 1 + hashes;
+      }
+      out.append(sc == '\n' ? '\n' : ' ');
+      p++;
+    }
+    return len;
+  }
+
+  private static boolean hasClosingHashes(String content, int idx, int hashes) {
+    if (idx + hashes > content.length()) {
+      return false;
+    }
+    for (int k = 0; k < hashes; k++) {
+      if (content.charAt(idx + k) != '#') {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Returns {@code true} if {@code targetIndex} in a normalized single-line statement falls inside
+   * a single-quoted, double-quoted, or backtick string literal.
+   */
+  public static boolean isInsideStringLiteral(String statement, int targetIndex) {
+    if (statement == null || targetIndex <= 0) {
+      return false;
+    }
+    int limit = Math.min(targetIndex, statement.length());
+    boolean inSingle = false;
+    boolean inDouble = false;
+    boolean inTemplate = false;
+    int i = 0;
+    while (i < limit) {
+      char c = statement.charAt(i);
+      if ((inSingle || inDouble || inTemplate) && c == '\\' && i + 1 < statement.length()) {
+        i += 2;
+        continue;
+      }
+      if (!inDouble && !inTemplate && c == '\'') {
+        inSingle = !inSingle;
+      } else if (!inSingle && !inTemplate && c == '"') {
+        inDouble = !inDouble;
+      } else if (!inSingle && !inDouble && c == '`') {
+        inTemplate = !inTemplate;
+      }
+      i++;
+    }
+    return inSingle || inDouble || inTemplate;
   }
 }

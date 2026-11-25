@@ -104,14 +104,14 @@ flowchart TD
     ArchitectureCompiler_java["ArchitectureCompiler.java (1 exports, I=0)"]
     GraphCompiler_java["GraphCompiler.java (4 exports, I=0)"]
     ProjectFileWatcher_java["ProjectFileWatcher.java (8 exports, I=0)"]
-    FileScannerUtil_java["FileScannerUtil.java (11 exports, I=0)"]
-    GoAstScanner_java["GoAstScanner.java (4 exports, I=0)"]
+    FileScannerUtil_java["FileScannerUtil.java (13 exports, I=0)"]
+    GoLexicalScanner_java["GoLexicalScanner.java (4 exports, I=0)"]
     JavaAstScanner_java["JavaAstScanner.java (6 exports, I=0)"]
     LanguageScanner_java["LanguageScanner.java (1 exports, I=0)"]
     LanguageScannerRegistry_java["LanguageScannerRegistry.java (5 exports, I=0)"]
-    PythonAstScanner_java["PythonAstScanner.java (4 exports, I=0)"]
-    RustAstScanner_java["RustAstScanner.java (4 exports, I=0)"]
-    TypeScriptAstScanner_java["TypeScriptAstScanner.java (4 exports, I=0)"]
+    PythonLexicalScanner_java["PythonLexicalScanner.java (4 exports, I=0)"]
+    RustLexicalScanner_java["RustLexicalScanner.java (4 exports, I=0)"]
+    TypeScriptLexicalScanner_java["TypeScriptLexicalScanner.java (4 exports, I=0)"]
     ProcessTestRunnerGateway_java["ProcessTestRunnerGateway.java (7 exports, I=0)"]
     LocalFilesystemGateway_java["LocalFilesystemGateway.java (8 exports, I=0)"]
     App_svelte["App.svelte (0 exports, I=0.94)"]
@@ -146,6 +146,7 @@ flowchart TD
     vite_env_d_ts["vite-env.d.ts (0 exports, I=0)"]
     index_js["index.js (2 exports, I=1)"]
     analyzer_js["analyzer.js (10 exports, I=0.33)"]
+    backend_checker_js["backend-checker.js (4 exports, I=0.75)"]
     checker_js["checker.js (18 exports, I=0)"]
     docker_runner_js["docker-runner.js (20 exports, I=0.25)"]
     installer_js["installer.js (7 exports, I=0.5)"]
@@ -306,14 +307,14 @@ flowchart TD
 | `backend/src/main/java/io/slixes/archlens/engine/ArchitectureCompiler.java` | 34 | 0 / 0 | `0` | `ArchitectureCompiler` (L12) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/engine/GraphCompiler.java` | 441 | 0 / 0 | `0` | `GraphCompiler` (L34), `loadPolicy` (L60), `computeCommonPrefix` (L86), `compileGraph` (L124) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `backend/src/main/java/io/slixes/archlens/engine/ProjectFileWatcher.java` | 290 | 0 / 0 | `0` | `ProjectFileWatcher` (L20), `isRunning` (L60), `getWatchedRoot` (L64), `void` (L68), `shutdown` (L122), `preVisitDirectory` (L162), `visitFileFailed` (L185), `isWatchedFile` (L270) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/scanner/FileScannerUtil.java` | 508 | 0 / 0 | `0` | `FileScannerUtil` (L32), `isIgnoredDirectory` (L65), `findFiles` (L88), `preVisitDirectory` (L106), `visitFile` (L114), `visitFileFailed` (L122), `findDirectories` (L165), `discoverWorkspaceModules` (L232) +3 more | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/scanner/GoAstScanner.java` | 295 | 0 / 0 | `0` | `GoAstScanner` (L27), `languageId` (L48), `supports` (L53), `scanProject` (L65) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/scanner/FileScannerUtil.java` | 735 | 0 / 0 | `0` | `FileScannerUtil` (L32), `isIgnoredDirectory` (L65), `findFiles` (L88), `preVisitDirectory` (L106), `visitFile` (L114), `visitFileFailed` (L122), `findDirectories` (L165), `discoverWorkspaceModules` (L232) +5 more | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/scanner/GoLexicalScanner.java` | 324 | 0 / 0 | `0` | `GoLexicalScanner` (L27), `languageId` (L51), `supports` (L56), `scanProject` (L68) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/JavaAstScanner.java` | 470 | 0 / 0 | `0` | `JavaAstScanner` (L35), `JavaParserFunction` (L40), `languageId` (L89), `supports` (L94), `resolveSourceDirs` (L110), `scanProject` (L176) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/LanguageScanner.java` | 163 | 0 / 0 | `0` | `LanguageScanner` (L16) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/scanner/LanguageScannerRegistry.java` | 72 | 0 / 0 | `0` | `LanguageScannerRegistry` (L12), `register` (L26), `getAllScanners` (L32), `findScanner` (L45), `resolveScanner` (L54) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/scanner/PythonAstScanner.java` | 982 | 0 / 0 | `0` | `PythonAstScanner` (L27), `languageId` (L51), `supports` (L56), `scanProject` (L186) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
-| `backend/src/main/java/io/slixes/archlens/scanner/RustAstScanner.java` | 197 | 0 / 0 | `0` | `RustAstScanner` (L26), `languageId` (L42), `supports` (L47), `scanProject` (L59) | `wiki/Codebase-Map.md` |
-| `backend/src/main/java/io/slixes/archlens/scanner/TypeScriptAstScanner.java` | 1021 | 0 / 0 | `0` | `TypeScriptAstScanner` (L27), `languageId` (L108), `supports` (L113), `scanProject` (L129) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `backend/src/main/java/io/slixes/archlens/scanner/PythonLexicalScanner.java` | 1014 | 0 / 0 | `0` | `PythonLexicalScanner` (L27), `languageId` (L51), `supports` (L56), `scanProject` (L186) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `backend/src/main/java/io/slixes/archlens/scanner/RustLexicalScanner.java` | 301 | 0 / 0 | `0` | `RustLexicalScanner` (L28), `languageId` (L42), `supports` (L47), `scanProject` (L59) | `wiki/Codebase-Map.md` |
+| `backend/src/main/java/io/slixes/archlens/scanner/TypeScriptLexicalScanner.java` | 1185 | 0 / 0 | `0` | `TypeScriptLexicalScanner` (L29), `languageId` (L110), `supports` (L115), `scanProject` (L131) | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `backend/src/main/java/io/slixes/archlens/verification/runner/ProcessTestRunnerGateway.java` | 167 | 0 / 0 | `0` | `ProcessTestRunnerGateway` (L22), `TEST_TIMEOUT` (L24), `runTests` (L28), `detectTestCommand` (L39), `isProjectLocalExecutable` (L79), `runTestCommand` (L94), `tail` (L151) | `wiki/Codebase-Map.md` |
 | `backend/src/main/java/io/slixes/archlens/workspace/fs/LocalFilesystemGateway.java` | 647 | 0 / 0 | `0` | `LocalFilesystemGateway` (L39), `NativePickerRunner` (L42), `resolveAllowedBrowseRoots` (L134), `isWithinAllowedRoots` (L182), `createPreRefactorSnapshot` (L472), `preVisitDirectory` (L610), `visitFile` (L621), `visitFileFailed` (L630) | `wiki/Codebase-Map.md` |
 | `frontend/src/App.svelte` | 439 | 1 / 17 | `0.94` |  | `wiki/Codebase-Map.md` |
@@ -346,9 +347,10 @@ flowchart TD
 | `frontend/src/lib/utils/martinMetrics.ts` | 408 | 0 / 1 | `1` | `ComponentMetricsSummary` (L12), `calculateComponentMartinMetrics` (L23), `calculateAllMartinMetrics` (L105), `simulateSandboxGraph` (L122), `computeScatterCoordinates` (L343), `computeNodeRadius` (L360), `buildScatterPlotPoints` (L368) | `wiki/ADR-002-Interactive-Architectural-Sandbox.md`, `wiki/Codebase-Map.md`, `wiki/Robert-C-Martin-Metrics.md` |
 | `frontend/src/main.ts` | 10 | 0 / 2 | `1` |  | `wiki/Codebase-Map.md` |
 | `frontend/src/vite-env.d.ts` | 3 | 0 / 0 | `0` |  | `wiki/Codebase-Map.md` |
-| `cli/bin/index.js` | 841 | 0 / 9 | `1` | `parseArgs` (L155), `main` (L524) | `wiki/Codebase-Map.md` |
+| `cli/bin/index.js` | 874 | 0 / 10 | `1` | `parseArgs` (L160), `main` (L531) | `wiki/Codebase-Map.md` |
 | `cli/src/analyzer.js` | 846 | 4 / 2 | `0.33` | `detectProjectLanguage` (L13), `discoverWorkspaceModules` (L120), `detectSourceRoot` (L237), `findCommonPackagePrefix` (L316), `discoverSubpackages` (L411), `classifyLayers` (L447), `parseImportLinterConfig` (L501), `generatePolicy` (L570) +2 more | `wiki/Codebase-Map.md` |
-| `cli/src/checker.js` | 1500 | 3 / 0 | `0` | `findMatchingFiles` (L17), `loadProjectPolicy` (L60), `TECHNICAL_MARKERS` (L80), `calculateScreamingMetric` (L115), `TECHNICAL_SUFFIXES` (L169), `TECHNICAL_PREFIXES` (L205), `extractFeatureToken` (L216), `suggestFeatureClusters` (L242) +10 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
+| `cli/src/backend-checker.js` | 1012 | 1 / 3 | `0.75` | `findFreeLoopbackPort` (L128), `hasRustOrGoSources` (L185), `mapBackendResultsToCliReport` (L394), `checkArchitectureViaBackend` (L681) | `wiki/Codebase-Map.md` |
+| `cli/src/checker.js` | 1502 | 4 / 0 | `0` | `findMatchingFiles` (L17), `loadProjectPolicy` (L60), `TECHNICAL_MARKERS` (L80), `calculateScreamingMetric` (L115), `TECHNICAL_SUFFIXES` (L169), `TECHNICAL_PREFIXES` (L205), `extractFeatureToken` (L216), `suggestFeatureClusters` (L242) +10 more | `wiki/Codebase-Map.md`, `wiki/Traceability.md` |
 | `cli/src/docker-runner.js` | 492 | 3 / 1 | `0.25` | `DEFAULT_SERVER_URL` (L19), `DEFAULT_DOCKER_IMAGE` (L20), `DEFAULT_DOCKERHUB_IMAGE` (L21), `DEFAULT_CONTAINER_NAME` (L22), `checkServerHealth` (L24), `isJavaAvailable` (L40), `getPlatformBinarySuffix` (L49), `findNativeBinary` (L59) +12 more | `wiki/Codebase-Map.md`, `wiki/MCP-Integration.md` |
 | `cli/src/installer.js` | 375 | 2 / 2 | `0.5` | `COMPANION_PROTOCOL_HEADER` (L20), `getCompanionProtocolBlock` (L22), `installLocalPolicy` (L40), `buildSkillsCliArgs` (L142), `getGlobalSkillDirectories` (L207), `installLocalSkills` (L240), `installGlobalSkills` (L297) | `wiki/Codebase-Map.md` |
 | `cli/src/mcp-registry.js` | 663 | 3 / 1 | `0.25` | `ARCHLENS_TOOL_SCHEMAS` (L13), `getAntigravityInstructions` (L256), `getClientConfigLocations` (L305), `resolveDockerHostWorkspace` (L400), `getMcpManifestEntry` (L418), `parseJsonc` (L456), `backupFile` (L527), `installMcpConfigs` (L534) | `wiki/Codebase-Map.md` |
@@ -381,8 +383,8 @@ flowchart TD
 
 | Capability ID | Title | Functional Spec | Status | Depends On |
 | :--- | :--- | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | `AMENDED (ADR-006)` | None |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | `AMENDED (ADR-006)` | None |
+| **CAP-01** | Python Lexical Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `docs/specs/cap-01.md` | `AMENDED (ADR-022)` | None |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `docs/specs/cap-02.md` | `AMENDED (ADR-022)` | None |
 | **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `docs/specs/cap-03.md` | `AMENDED (ADR-006)` | CAP-01, CAP-02 |
 | **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `docs/specs/cap-04.md` | `AMENDED (ADR-006)` | CAP-01, CAP-02 |
 
@@ -410,6 +412,12 @@ flowchart TD
 | **ADR-016** | Wave 1 — MCP Write Confinement, Pure-Git Tag Caching, and Watcher Root Switching | `technical` | `accepted` | ADR-015 |
 | **ADR-017** | Phase 2 — Skipped-File Telemetry, Clojure & Legacy Prototype Removal, and Provenance Hygiene | `technical` | `accepted` | ADR-016 |
 | **ADR-018** | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | ADR-017 |
+| **ADR-019** | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | ADR-018 |
+| **ADR-020** | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | ADR-019 |
+| **ADR-021** | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | ADR-020 |
+| **ADR-022** | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | ADR-021 |
+| **ADR-023** | Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite | `architectural` | `accepted` | ADR-022 |
+| **ADR-024** | Release v1.3.0 — Lexical Scanner Sanitizers, Backend-First CLI Delegation & Sealit Proof Kernel | `technical` | `accepted` | ADR-023 |
 
 ---
 

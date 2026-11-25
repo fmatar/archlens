@@ -20,6 +20,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { handleMcpMessage } from '../cli/src/mcp-server.js';
 import { installMcpConfigs } from '../cli/src/mcp-registry.js';
 import { generateSessionToken, withAuth, TOKEN_HEADER } from '../cli/src/session.js';
+import { runEngineParityChecks } from './engine-parity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,7 +73,7 @@ export async function waitForServerReady(
   return false;
 }
 
-export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.2.0', deps = {}) {
+export async function runHttpSmokeChecks(serverUrl, expectedVersion = '1.3.0', deps = {}) {
   const fetchFn = deps.fetch || fetch;
   const checks = [];
 
@@ -468,12 +469,20 @@ export async function runSmokeSuite(options = {}, deps = {}) {
       `  ✅ MCP Stdio Bridge & Multi-Agent Registry -> ${mcpResults.toolsCount} tools, ${mcpResults.resourcesCount} resources verified, DIP port=${mcpResults.dipPort}`
     );
 
+    let parityResults = { fixturesVerified: 0 };
+    if (!deps.fetch) {
+      parityResults = await runEngineParityChecks(serverUrl, token);
+      console.log(
+        `  ✅ CLI Backend-vs-Offline Engine Parity -> ${parityResults.fixturesVerified} polyglot fixtures verified (Java, Python, TypeScript, Rust, Go)`
+      );
+    }
+
     if (!httpResults.passed || !authResults.passed || !mcpResults.passed) {
       throw new Error('One or more smoke checks failed.');
     }
 
     console.log(`\n🎉 All End-to-End Smoke Checks Passed (v${expectedVersion})!`);
-    return { passed: true, httpResults, authResults, mcpResults };
+    return { passed: true, httpResults, authResults, mcpResults, parityResults };
   } finally {
     readinessAbort.abort();
     if (!childExited) {

@@ -15,7 +15,7 @@ class LanguageScannerRegistryTest {
   @Test
   void testRegistryResolutionAndFallbacks(@TempDir Path tempDir) throws IOException {
     JavaAstScanner javaScanner = new JavaAstScanner();
-    PythonAstScanner pythonScanner = new PythonAstScanner();
+    PythonLexicalScanner pythonScanner = new PythonLexicalScanner();
 
     LanguageScannerRegistry registry =
         new LanguageScannerRegistry(List.of(javaScanner, pythonScanner));

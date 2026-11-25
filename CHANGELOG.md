@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-25
+
+### Added
+- **Backend-first CLI `check` delegation & 9-fixture polyglot engine parity suite (`#244`, `PR #277`, `ADR-023`)**: `npx @fadym/archlens-skill check` (`cli/src/backend-checker.js`) now delegates to a live loopback server mounted on `projectRoot` or spawns an ephemeral local GraalVM binary / Quarkus runner JAR (or opt-in `--docker` container) on `127.0.0.1:<freePort>` with deterministic `SIGINT`/`SIGTERM` + `finally` cleanup. Retains `cli/src/checker.js` as the explicit `--offline` / zero-runtime fallback with `stderr`-only notices and `.rs`/`.go` warnings, verified by `scripts/engine-parity.js` across 9 Java, Python, TypeScript, Rust, and multi-file Go fixtures in `npm run smoke`.
+- **`@sealit/cli` Alignment + Proof Kernel governance (`ADR-021`)**: Added `.agent/sealit-config.json` enforcing module diff-coverage thresholds (`backend` `85%`, `frontend` `80%`, `cli` `85%`), concentric ring invariants, and HMAC-SHA256 Stage 7 merge receipts in `docs/AUDIT_CHAIN.jsonl`.
+
+### Security
+- **Loopback-only CLI `--server-url` & canonical container path confinement (`#244`, `PR #277`, `ADR-023`)**: Restricted CLI backend delegation and `~/.archlens/session-*.json` / `ARCHLENS_TOKEN` header attachment (`isSafeLoopbackServerUrl` + `redirect: 'error'`) to loopback addresses (`127.0.0.1`, `localhost`, `[::1]`) and confined `/workspace/...` container source-line rebasing inside `fs.realpathSync(projectRoot)`.
+
+### Fixed
+- **False-positive imports in comments, docstrings, raw strings & template literals (`#243`, `PR #276`, `ADR-022`)**: Added linear, line-preserving pre-pass sanitizers in `FileScannerUtil`, UTF-16-safe `.svelte` `<script>` & `<!-- ... -->` isolation, escaped Python triple-quote & multiline default-arg handling, inline-closed Go `import(...)` parsing, and bounded iterative Rust `pub(...) use` brace-tree expansion (`MAX_USE_TREE_DEPTH = 32`).
+- **Out-of-order `DiagramState.loadGraph` proposal race & `screamingThreshold === 0` (`#268`, `PR #274`, `ADR-021`, `ADR-023`)**: Guarded `DiagramState.loadGraph` with monotonic request sequencing so slower initial `/api/graph` fetches never clobber an active `clean-core` proposal, fixed `screamingThreshold !== null` evaluation, and normalized SARIF `artifactLocation.uri` path separators.
+
+### Changed
+- **Honest `*LexicalScanner` naming for non-Java scanners (`#243`, `PR #276`, `ADR-022`)**: Renamed `PythonAstScanner`, `TypeScriptAstScanner`, `GoAstScanner`, and `RustAstScanner` to `*LexicalScanner` (preserving `JavaAstScanner` on JavaParser 3.28 AST) with a regression guard in `scripts/test/repo-hygiene.test.js`.
+- **Frontend minor/patch dependency alignment (`#268`, `PR #274`, `ADR-021`)**: Updated `@lucide/svelte` (`^1.77.0`), `tailwind-merge` (`^3.7.1`), `@playwright/test` (`^1.65.1`), `@vitest/coverage-v8` (`^5.1.1`), `jsdom` (`^31.0.1`), `svelte` (`^5.59.1`), and `vitest` (`^5.1.1`).
+
 ## [1.2.0] - 2026-11-23
 
 ### Added

@@ -79,14 +79,14 @@ graph TD
 
 ---
 
-## ⚡ Polyglot AST Engine (SPI)
+## ⚡ Polyglot Scanner Engine (SPI)
 
 The backend employs an extensible Service Provider Interface (`LanguageScanner` SPI) for scanning polyglot codebases:
 - **Java (`JavaAstScanner`)**: JavaParser `3.28.2` (`ParserConfiguration.LanguageLevel.JAVA_25`) full AST parsing of records, sealed classes, interfaces, annotations, method signatures, and type references, plus JaCoCo XML and PITest mutation report correlation.
-- **TypeScript, JavaScript & Svelte 5 (`TypeScriptAstScanner`)**: Statement-normalizing ESM parser supporting multi-line `import`/`export ... from` statements, barrel `index.ts` re-exports, `tsconfig.json`/`jsconfig.json` `paths` & `baseUrl` aliases, and Svelte `<script>` extraction (`CAP-02`).
-- **Python (`PythonAstScanner`)**: Indentation-aware statement scanner detecting classes, `ABC`/`@abstractmethod` (`ABSTRACT`), `Protocol` (`INTERFACE`), `@dataclass`/`NamedTuple`/`TypedDict` (`RECORD`), method signatures, and type annotations (`CAP-01`).
-- **Go (`GoAstScanner`)**: Package, `struct`, and `interface` declaration scanner with intra-module import resolution via `go.mod`.
-- **Rust (`RustAstScanner`)**: Crate and module scanner detecting `struct`, `enum`, `trait` (`INTERFACE`), `fn` signatures, and `use crate::` / `super::` paths.
+- **TypeScript, JavaScript & Svelte 5 (`TypeScriptLexicalScanner`)**: Statement-normalizing ESM lexical scanner supporting multi-line `import`/`export ... from` statements, multiline template literal & comment stripping, barrel `index.ts` re-exports, `tsconfig.json`/`jsconfig.json` `paths` & `baseUrl` aliases, and Svelte `<script>` extraction (`CAP-02`).
+- **Python (`PythonLexicalScanner`)**: Indentation-aware lexical statement scanner stripping `#` comments, triple-quoted docstrings, and non-import string literals while detecting classes, `ABC`/`@abstractmethod` (`ABSTRACT`), `Protocol` (`INTERFACE`), `@dataclass`/`NamedTuple`/`TypedDict` (`RECORD`), method signatures, and type annotations (`CAP-01`).
+- **Go (`GoLexicalScanner`)**: Lexical package, `struct`, and `interface` declaration scanner stripping block/line comments and raw backtick strings with intra-module import resolution via `go.mod`.
+- **Rust (`RustLexicalScanner`)**: Lexical crate and module scanner stripping nested block/line comments and raw strings while detecting `struct`, `enum`, `trait` (`INTERFACE`), `fn` signatures, and `use crate::` / `super::` paths.
 
 ---
 

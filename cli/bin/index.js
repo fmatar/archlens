@@ -25,6 +25,10 @@ import {
   generateJsonReport,
   generateMermaidReport
 } from '../src/checker.js';
+import {
+  checkArchitectureViaBackend,
+  hasRustOrGoSources
+} from '../src/backend-checker.js';
 import { installMcpConfigs } from '../src/mcp-registry.js';
 import { startMcpStdioServer } from '../src/mcp-server.js';
 import {
@@ -86,7 +90,8 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   --host <ADDR>            Bind/publish the workbench on ADDR instead of 127.0.0.1 (exposes it to
                            your network; access still requires the session token)
   --native                 Prefer running workbench via native Java Quarkus runner (default)
-  --docker                 Force Docker container mode on start or ephemeral MCP STDIO with --mcp
+  --docker                 Force Docker container mode on start/check or ephemeral MCP STDIO with --mcp
+  --offline                Force built-in offline JS lexical checker (skips backend delegation)
   --jar <PATH>             Custom path to Archlens Quarkus runner JAR
   -o, --open               Open visual workbench in default browser upon startup
   -m, --mcp                Auto-configure MCP server manifests in AI clients (Claude, Antigravity, Cursor)
@@ -96,7 +101,7 @@ ${ui.colors.bold}OPTIONS:${ui.colors.reset}
   -c, --copy               Copy LLM prompt output directly to system clipboard
   -g, --global             Install or update skill globally in ~/.claude and ~/.gemini
   -u, --update             Update mode: sync new packages into existing policy
-  --format <FORMAT>        Output format: pretty (default), json, sarif
+  --format <FORMAT>        Output format: pretty (default), json, sarif, mermaid
   -O, --output <PATH>      Write audit report to specified file path
   -f, --force              Overwrite existing policy files
   --dry-run                Simulate actions without writing files to disk
@@ -171,6 +176,7 @@ export function parseArgs(args) {
     mcp: false,
     noMcp: false,
     check: false,
+    offline: false,
     maxViolations: 0,
     detectCycles: false,
     screamingThreshold: null,
@@ -254,6 +260,8 @@ export function parseArgs(args) {
       parsed.host = args[++i];
     } else if (arg === '--docker') {
       parsed.preferDocker = true;
+    } else if (arg === '--offline') {
+      parsed.offline = true;
     } else if (arg === '--native') {
       parsed.preferNative = true;
     } else if (arg === '--jar') {
@@ -352,7 +360,7 @@ async function runInteractive(options, deps = {}) {
       {
         value: 'npx',
         label: `${ui.colors.bold}NPX Stdio Bridge (Recommended for shared repos)${ui.colors.reset}`,
-        description: 'Path-agnostic npx -y @fadym/archlens-skill mcp with 4-tier offline AST fallback'
+        description: 'Path-agnostic npx -y @fadym/archlens-skill mcp with 4-tier offline lexical fallback'
       },
       {
         value: 'docker',
@@ -569,7 +577,33 @@ export async function main(rawArgs = process.argv.slice(2), deps = {}) {
       if (options.format === 'pretty') {
         ui.info(`Auditing Clean Architecture conformance for ${targetRoot}...`);
       }
-      const report = await checkArchitecture(targetRoot, options);
+      const backendChecker = deps.checkArchitectureViaBackend || checkArchitectureViaBackend;
+      const offlineChecker = deps.checkArchitecture || checkArchitecture;
+      const backendAttempt = await backendChecker(targetRoot, options, deps);
+      let report;
+      if (backendAttempt && backendAttempt.delegated) {
+        report = backendAttempt.report;
+      } else {
+        if (!options.offline) {
+          const reasonMap = {
+            'max-files': 'Using offline JS lexical checker because --max-files truncation was requested.',
+            'unsupported-backend-lang':
+              'Using offline JS lexical checker for Kotlin project policy.',
+            'legacy-policy-path':
+              'Using offline JS lexical checker for legacy root policy.json (move to .archlens/policy.json for backend delegation).'
+          };
+          const infoMsg =
+            reasonMap[backendAttempt?.reason] ||
+            'Backend engine unavailable; falling back to offline JS lexical checker (pass --offline to silence).';
+          process.stderr.write(`[archlens] INFO: ${infoMsg}\n`);
+        }
+        if (hasRustOrGoSources(targetRoot)) {
+          process.stderr.write(
+            '[archlens] WARN: Offline JS checker does not analyze Rust (.rs) or Go (.go) imports; run with the Archlens backend (Java JAR, native binary, or --docker) for full Rust/Go enforcement.\n'
+          );
+        }
+        report = await offlineChecker(targetRoot, options);
+      }
       if (report.error) {
         ui.error(report.error);
         return exit(report.error.startsWith('Invalid value') ? 2 : 1);

@@ -8,10 +8,10 @@
 
 # Archlens — Dynamic Clean Architecture Workbench
 
-**Real-time polyglot Clean Architecture workbench, AST governance engine, and autonomous AI refactoring studio for modern software teams.**
+**Real-time polyglot Clean Architecture workbench, dependency governance engine, and autonomous AI refactoring studio for modern software teams.**
 
 [![CI & Quality Gates](https://github.com/fmatar/archlens/actions/workflows/ci.yml/badge.svg)](https://github.com/fmatar/archlens/actions/workflows/ci.yml)
-[![Release v1.2.0](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
+[![Release v1.3.0](https://github.com/fmatar/archlens/actions/workflows/release.yml/badge.svg)](https://github.com/fmatar/archlens/releases/latest)
 [![NPM Package](https://img.shields.io/badge/npm-@fadym%2Farchlens--skill-CB3837.svg)](https://www.npmjs.com/package/@fadym/archlens-skill)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -47,7 +47,7 @@ Get full Clean Architecture governance, visual ring inspection, and autonomous A
 ### 1. Equip Your Repository & AI Coding Agents (One Command)
 
 ```bash
-# Portable / shared-repo setup (NPX stdio bridge + 4-tier offline AST fallback):
+# Portable / shared-repo setup (NPX stdio bridge + 4-tier offline lexical fallback):
 npx @fadym/archlens-skill --yes --skills --mcp
 
 # Personal workstation setup (ephemeral Docker mcp-stdio container — zero host Node/Java needed):
@@ -105,7 +105,7 @@ Publish the port on `127.0.0.1` only; see [Workbench security](#workbench-securi
     fitness-threshold: 0.85
 ```
 The Action runs the CLI bundled with the Action revision you pin (`@v1` follows the latest
-`v1.x.y` release; pin `@v1.2.0` for an exact version), not whatever is newest on npm. Threshold
+`v1.x.y` release; pin `@v1.3.0` for an exact version), not whatever is newest on npm. Threshold
 inputs must be plain numbers; anything else fails with a usage error (exit 2).
 
 #### Global CLI or Canary (`@dev`) Track
@@ -131,12 +131,12 @@ sequenceDiagram
     autonumber
     participant Architect as Software Architect
     participant Workbench as Archlens Workbench (:8088)
-    participant Core as Polyglot AST & Governance Engine
+    participant Core as Polyglot Scanner & Governance Engine
     participant Mailbox as .archlens/ Mailbox IPC & MCP
     participant Agent as Autonomous AI Agent (Antigravity / Claude)
     participant Code as Codebase & Tests
 
-    Core->>Code: 1. Polyglot AST Scan (Extract types, imports, calls)
+    Core->>Code: 1. Polyglot Source Scan (Java AST + Python/TS/Rust/Go lexical)
     Core->>Workbench: 2. Render Concentric Rings & Flag Outward Breaches
     Architect->>Workbench: 3. Prototype in Sandbox (S) or Click DIP Invert
     Workbench->>Mailbox: 4. 1-Click "Dispatch to Agent" (to-agent.json / MCP)
@@ -196,7 +196,7 @@ flowchart TD
     T2 -->|"Not Found"| T3{"Tier 3: Docker Daemon\ndocker info running?"}
     T3 -->|"Running"| SpawnDocker["Resurrect or Run Container\nghcr.io/fmatar/archlens:latest (:8088)"]
     SpawnDocker --> Poll
-    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static AST Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
+    T3 -->|"Docker Offline"| T4["Tier 4: Offline Static Lexical Fallback\nPure Node.js Polyglot Scanner (Zero Dependencies)"]
     T4 --> Result["Return Concentric Ring Graph, Violations & DIP Ports"]
     Proxy --> Result
 ```
@@ -233,7 +233,7 @@ flowchart TD
   "mcpServers": {
     "archlens": {
       "command": "npx",
-      "args": ["-y", "@fadym/archlens-skill@1.2.0", "mcp"],
+      "args": ["-y", "@fadym/archlens-skill@1.3.0", "mcp"],
       "env": {
         "ARCHLENS_SERVER_URL": "http://127.0.0.1:8088"
       }
@@ -331,7 +331,8 @@ flowchart TD
 | `--no-mcp` | | Skip automatic MCP client configuration (e.g. during `global` install) | `false` |
 | `--open` | `-o` | Open visual workbench in default browser upon startup | `false` |
 | `--native` | | Prefer running workbench via native Java Quarkus runner JAR | `true` |
-| `--docker` | | Force Docker container mode on `start` or configure ephemeral `mcp-stdio` manifests with `--mcp` / `global` | `false` |
+| `--docker` | | Force Docker container mode on `start` / `check` or configure ephemeral `mcp-stdio` manifests with `--mcp` / `global` | `false` |
+| `--offline` | | Force built-in offline JS lexical checker during `check` (skips backend delegation) | `false` |
 | `--port <PORT>` | | Workbench HTTP port | `8088` |
 | `--host <ADDR>` | | Bind / publish the workbench on `ADDR` instead of loopback (prints a warning; the token is still required) | `127.0.0.1` |
 | `--path <DIR>` | `-p` | Target repository directory | `.` |

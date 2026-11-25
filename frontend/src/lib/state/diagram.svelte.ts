@@ -29,6 +29,10 @@ import gsap from 'gsap';
 
 export type DeclutterMode = 'NONE' | 'ARROWS' | 'REMOVE_ARROWS' | 'ELEMENTS' | 'CLASSES';
 
+export function initialScannerTelemetryMessage(): string {
+  return 'Polyglot Scanners active for Java 25 AST & TypeScript';
+}
+
 class DiagramState {
   static readonly WEBGL_CLASS_THRESHOLD = 500;
 
@@ -67,6 +71,7 @@ class DiagramState {
     const preset = this.showcasePresets.find((p) => p.id === cleanId);
     if (!preset) return false;
 
+    this.nextGraphRequest(false);
     this.activeShowcasePresetId = preset.id;
     this.projectRoot = `preset:${preset.id}`;
     this.activeProposalId = null;
@@ -288,7 +293,7 @@ class DiagramState {
       id: 'init-2',
       timestamp: '00:01:16',
       type: 'SUCCESS',
-      message: 'Polyglot AST Scanners active for Java 25 & TypeScript',
+      message: initialScannerTelemetryMessage(),
       details: 'All dependency rules verified conforming to Uncle Bob Clean Architecture'
     }
   ]);
@@ -726,6 +731,7 @@ class DiagramState {
       }
     }
 
+    this.nextGraphRequest(false);
     this.baseGraph = {
       ...sim.simulatedGraph,
       isProposal: true,
@@ -1024,6 +1030,7 @@ class DiagramState {
   }
 
   async savePolicy(updatedPolicy: ArchitecturePolicy) {
+    const reqSeq = this.nextGraphRequest(false);
     this.isSavingPolicy = true;
     this.policySaveNotice = 'Saving policy and re-indexing architecture...';
 
@@ -1037,11 +1044,21 @@ class DiagramState {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedPolicy)
       });
-
+      if (reqSeq !== this.graphRequestSeq) {
+        this.isSavingPolicy = false;
+        return;
+      }
+      this.authRequired = res.status === 401;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      this.graph = await res.json();
+      const nextGraph = await res.json();
+      if (reqSeq !== this.graphRequestSeq) {
+        this.isSavingPolicy = false;
+        return;
+      }
+      this.graph = nextGraph;
       this.policy = updatedPolicy;
+      this.activeProposalId = null;
       this.policySaveNotice = 'Policy updated & architecture recompiled!';
       this.addTelemetryEvent(
         'SUCCESS',
@@ -1054,7 +1071,9 @@ class DiagramState {
         this.isPolicyEditorOpen = false;
       }, 1000);
     } catch (e: any) {
-      this.policySaveNotice = `Error saving policy: ${e?.message || e}`;
+      if (reqSeq === this.graphRequestSeq) {
+        this.policySaveNotice = `Error saving policy: ${e?.message || e}`;
+      }
       this.isSavingPolicy = false;
     }
   }
@@ -1130,21 +1149,32 @@ class DiagramState {
     await this.loadSnapshots();
   }
 
+  private graphRequestSeq = 0;
+
+  private nextGraphRequest(loading = false): number {
+    this.isLoading = loading;
+    return ++this.graphRequestSeq;
+  }
+
   async loadGraph(proposalId?: string | null) {
-    this.isLoading = true;
+    const reqSeq = this.nextGraphRequest(true);
     try {
       const params = new URLSearchParams();
       if (this.projectRoot) params.set('projectRoot', this.projectRoot);
       if (proposalId) params.set('proposalId', proposalId);
       
       const res = await fetch(`/api/graph?${params.toString()}`);
+      if (reqSeq !== this.graphRequestSeq) return;
       this.authRequired = res.status === 401;
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      this.graph = await res.json();
+      const nextGraph = await res.json();
+      if (reqSeq !== this.graphRequestSeq) return;
+      this.graph = nextGraph;
       this.activeProposalId = proposalId || null;
       this.isLoading = false;
       await this.loadFitness();
     } catch (e: any) {
+      if (reqSeq !== this.graphRequestSeq) return;
       // Graceful fallback to embedded demo dataset
       if (proposalId === 'clean-core') {
         this.graph = DEMO_GRAPH_PROPOSAL;
@@ -1153,7 +1183,9 @@ class DiagramState {
       }
       this.activeProposalId = proposalId || null;
     } finally {
-      this.isLoading = false;
+      if (reqSeq === this.graphRequestSeq) {
+        this.isLoading = false;
+      }
     }
   }
 

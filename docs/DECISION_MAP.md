@@ -13,7 +13,7 @@ flowchart TD
   INV_03["INV-03: Core Domain entities (Ring 0) must remain pure with zero imports from outer Web, DB, or framework layers (Clean Architecture Dependency Rule)."]
   INV_04["INV-04: Polyglot Scanners must emit class/interface-level `DependencyEdge` endpoints when symbols or classes exist (falling back to module `ClassNode` IDs for function-only modules) and classify abstract/interface stereotypes (`INTERFACE`, `ABSTRACT`) accurately for component coupling metrics ($C_a, C_e, I, A, D$)."]
   INV_05["INV-05: All architectural or contract deviations from this constitution require a linked ADR (`docs/adr/ADR-00X.md`) synchronized with `PRODUCT.md` and `docs/DECISION_MAP.md`."]
-  CAP_01["CAP-01: Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures"]
+  CAP_01["CAP-01: Python Lexical Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures"]
   SPEC_01["SPEC-01 (docs/specs/cap-01.md)"]
   CAP_02["CAP-02: TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner"]
   SPEC_02["SPEC-02 (docs/specs/cap-02.md)"]
@@ -58,6 +58,13 @@ flowchart TD
   _246["Ticket #246 (feature/issue-#246-phase-3-hygiene-di-ports-and-e2e-ci)"]
   ADR_019["ADR-019: Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports"]
   ADR_020["ADR-020: Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing"]
+  _268["Ticket #268 (fix/issue-268-frontend-deps-and-proposal-race)"]
+  ADR_021["ADR-021: Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard"]
+  _243["Ticket #243 (refactor/issue-243-lexical-scanners-and-comment-string-stri)"]
+  ADR_022["ADR-022: Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization"]
+  _244["Ticket #244 (feat/issue-244-unified-cli-backend-check)"]
+  ADR_023["ADR-023: Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite"]
+  ADR_024["ADR-024: Release v1.3.0 — Lexical Scanner Sanitizers, Backend-First CLI Delegation & Sealit Proof Kernel"]
   ADR_COMPACT_v0_1_0_Beta_12["Compacted 1 ADR(s) into SRS.md (v0.1.0-Beta-12)"]
   ADR_COMPACT_v1_1_1["Compacted 5 ADR(s) into SRS.md (v1.1.1)"]
   __5887["Ticket ##5887 (feature/issue-#5887-polyglot-ast-dip-sandbox)"]
@@ -132,6 +139,13 @@ flowchart TD
   ADR_018 -.->|ADR Drift| ADR_019
   _247 -->|triggered_drift_adr| ADR_020
   ADR_019 -.->|ADR Drift| ADR_020
+  _268 -->|triggered_drift_adr| ADR_021
+  ADR_020 -.->|ADR Drift| ADR_021
+  _243 -->|triggered_drift_adr| ADR_022
+  ADR_021 -.->|ADR Drift| ADR_022
+  _244 -->|triggered_drift_adr| ADR_023
+  ADR_022 -.->|ADR Drift| ADR_023
+  ADR_023 -.->|ADR Drift| ADR_024
   CAP_01 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_02 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
   CAP_03 -->|realized_by| ADR_COMPACT_v0_1_0_Beta_12
@@ -168,6 +182,10 @@ flowchart TD
 | **ADR-018** | Phase 3 — Repository Hygiene, Clean Architecture Ports & Constructor DI, and Playwright E2E CI | `technical` | `accepted` | #246 | ADR-017 |
 | **ADR-019** | Release v1.2.0 — Phase 1.5, Wave 1, Phase 2 Telemetry & Phase 3 Clean Architecture Ports | `technical` | `accepted` | #247 | ADR-018 |
 | **ADR-020** | Migrate NPM Package Scope to @fadym/archlens-skill with OIDC Trusted Publishing | `technical` | `accepted` | #247 | ADR-019 |
+| **ADR-021** | Wave 2 — Frontend Minor/Patch Dependency Updates & Monotonic loadGraph Sequence Guard | `technical` | `accepted` | #268 | ADR-020 |
+| **ADR-022** | Wave 3 — Honest Lexical Scanner Naming & Comment/String Literal Pre-Pass Sanitization | `architectural` | `accepted` | #243 | ADR-021 |
+| **ADR-023** | Wave 4 — Backend-First CLI check Delegation, Ephemeral Loopback Lifecycle & Engine Parity Suite | `architectural` | `accepted` | #244 | ADR-022 |
+| **ADR-024** | Release v1.3.0 — Lexical Scanner Sanitizers, Backend-First CLI Delegation & Sealit Proof Kernel | `technical` | `accepted` | #L-1 | ADR-023 |
 
 ---
 
@@ -175,7 +193,7 @@ flowchart TD
 
 | Capability ID | Description | Current Status |
 | :--- | :--- | :--- |
-| **CAP-01** | Python AST Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-006)` |
-| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-006)` |
+| **CAP-01** | Python Lexical Class-Level Edges, ABC/Protocol Stereotypes & Method Signatures | `AMENDED (ADR-022)` |
+| **CAP-02** | TypeScript/JS Multi-Line ESM, Barrel Re-Exports, tsconfig Aliases & CLI Scanner | `AMENDED (ADR-022)` |
 | **CAP-03** | Polyglot Surgical DIP Inverter & CLI Main Sequence Distance | `AMENDED (ADR-006)` |
 | **CAP-04** | What-If Sandbox Simulation, Class-Move Precedence & Proposal Persistence | `AMENDED (ADR-006)` |

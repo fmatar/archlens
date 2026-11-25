@@ -24,13 +24,15 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class GoAstScanner implements LanguageScanner {
+public class GoLexicalScanner implements LanguageScanner {
 
-  private static final Logger LOG = Logger.getLogger(GoAstScanner.class);
+  private static final Logger LOG = Logger.getLogger(GoLexicalScanner.class);
 
   private static final Pattern PACKAGE_PATTERN = Pattern.compile("^\\s*package\\s+([a-zA-Z0-9_]+)");
   private static final Pattern SINGLE_IMPORT_PATTERN =
-      Pattern.compile("^\\s*import\\s+(?:[a-zA-Z0-9_]+\\s+)?\"([^\"]+)\"");
+      Pattern.compile("^\\s*import\\s+(?:[a-zA-Z0-9_.]+\\s+)?\"([^\"]+)\"");
+  private static final Pattern IMPORT_BLOCK_START_PATTERN = Pattern.compile("^import\\s*\\((.*)$");
+  private static final Pattern BLOCK_IMPORT_ITEM_PATTERN = Pattern.compile("\"([^\"]+)\"");
   private static final Pattern TYPE_STRUCT_PATTERN =
       Pattern.compile("^\\s*type\\s+([a-zA-Z0-9_]+)(?:\\[[^\\]]*\\])?\\s+struct\\s*\\{");
   private static final Pattern TYPE_INTERFACE_PATTERN =
@@ -94,7 +96,8 @@ public class GoAstScanner implements LanguageScanner {
     for (Path goFile : goFiles) {
       List<String> lines;
       try {
-        lines = Files.readAllLines(goFile, StandardCharsets.UTF_8);
+        String rawContent = Files.readString(goFile, StandardCharsets.UTF_8);
+        lines = FileScannerUtil.stripCommentsAndRawStrings(rawContent, false);
       } catch (IOException e) {
         LOG.warnf("Skipping unreadable Go file %s: %s", goFile, e.getMessage());
         skippedFiles.incrementAndGet();
@@ -111,23 +114,33 @@ public class GoAstScanner implements LanguageScanner {
 
       for (String line : lines) {
         String trimmed = line.trim();
-        if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
+        if (trimmed.isEmpty()) {
           continue;
         }
 
-        if (trimmed.equals("import (")) {
-          inImportBlock = true;
+        if (inImportBlock) {
+          int closeIdx = findUnquotedCloseParen(trimmed);
+          String segment = closeIdx >= 0 ? trimmed.substring(0, closeIdx) : trimmed;
+          Matcher blockImp = BLOCK_IMPORT_ITEM_PATTERN.matcher(segment);
+          while (blockImp.find()) {
+            importedPaths.add(blockImp.group(1));
+          }
+          if (closeIdx >= 0) {
+            inImportBlock = false;
+          }
           continue;
         }
-        if (inImportBlock) {
-          if (trimmed.equals(")")) {
-            inImportBlock = false;
-            continue;
+
+        Matcher blockStart = IMPORT_BLOCK_START_PATTERN.matcher(trimmed);
+        if (blockStart.find()) {
+          String remainder = blockStart.group(1);
+          int closeIdx = findUnquotedCloseParen(remainder);
+          String segment = closeIdx >= 0 ? remainder.substring(0, closeIdx) : remainder;
+          Matcher blockImp = BLOCK_IMPORT_ITEM_PATTERN.matcher(segment);
+          while (blockImp.find()) {
+            importedPaths.add(blockImp.group(1));
           }
-          if (trimmed.contains("\"")) {
-            String imp = trimmed.replaceAll("^.*\"([^\"]+)\".*$", "$1");
-            importedPaths.add(imp);
-          }
+          inImportBlock = closeIdx < 0;
           continue;
         }
 
@@ -281,6 +294,23 @@ public class GoAstScanner implements LanguageScanner {
       LOG.warnf("Skipping unreadable go.mod %s: %s", goMod, e.getMessage());
     }
     return "";
+  }
+
+  private static int findUnquotedCloseParen(String text) {
+    boolean inDouble = false;
+    for (int i = 0; i < text.length(); i++) {
+      char c = text.charAt(i);
+      if (inDouble && c == '\\' && i + 1 < text.length()) {
+        i++;
+        continue;
+      }
+      if (c == '"') {
+        inDouble = !inDouble;
+      } else if (!inDouble && c == ')') {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private String toGoPackageId(String relPath) {

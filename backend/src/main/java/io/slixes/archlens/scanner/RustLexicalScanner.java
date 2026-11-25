@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,20 +25,20 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 @ApplicationScoped
-public class RustAstScanner implements LanguageScanner {
+public class RustLexicalScanner implements LanguageScanner {
 
-  private static final Logger LOG = Logger.getLogger(RustAstScanner.class);
+  private static final Logger LOG = Logger.getLogger(RustLexicalScanner.class);
 
-  private static final Pattern USE_PATTERN =
-      Pattern.compile("^\\s*use\\s+([a-zA-Z0-9_:]+)(?:\\s*as\\s+([a-zA-Z0-9_]+))?;");
-  private static final Pattern MOD_PATTERN =
-      Pattern.compile("^\\s*(?:pub\\s+)?mod\\s+([a-zA-Z0-9_]+);");
+  private static final Pattern USE_START_PATTERN =
+      Pattern.compile("^\\s*(?:pub(?:\\s*\\([^)]*\\))?\\s+)?use\\s+(.+)$");
   private static final Pattern STRUCT_PATTERN =
-      Pattern.compile("^\\s*(?:pub\\s+)?(?:struct|enum|trait)\\s+([a-zA-Z0-9_]+)");
+      Pattern.compile(
+          "^\\s*(?:pub(?:\\s*\\([^)]*\\))?\\s+)?(?:struct|enum|trait)\\s+([a-zA-Z0-9_]+)");
   private static final Pattern IMPL_TRAIT_PATTERN =
       Pattern.compile("^\\s*impl(?:<[^>]+>)?\\s+([a-zA-Z0-9_:]+)\\s+for\\s+([a-zA-Z0-9_:]+)");
   private static final Pattern FN_PATTERN =
-      Pattern.compile("^\\s*(?:pub\\s+)?(?:async\\s+)?fn\\s+([a-zA-Z0-9_]+)\\s*\\(");
+      Pattern.compile(
+          "^\\s*(?:pub(?:\\s*\\([^)]*\\))?\\s+)?(?:async\\s+)?fn\\s+([a-zA-Z0-9_]+)\\s*\\(");
 
   @Override
   public String languageId() {
@@ -93,7 +95,8 @@ public class RustAstScanner implements LanguageScanner {
     for (Path rsFile : rsFiles) {
       List<String> lines;
       try {
-        lines = Files.readAllLines(rsFile, StandardCharsets.UTF_8);
+        String rawContent = Files.readString(rsFile, StandardCharsets.UTF_8);
+        lines = FileScannerUtil.stripCommentsAndRawStrings(rawContent, true);
       } catch (IOException e) {
         LOG.warnf("Skipping unreadable Rust file %s: %s", rsFile, e.getMessage());
         skippedFiles.incrementAndGet();
@@ -107,16 +110,37 @@ public class RustAstScanner implements LanguageScanner {
       Set<String> importedPaths = new HashSet<>();
       List<String> typeNames = new ArrayList<>();
 
+      StringBuilder pendingUse = new StringBuilder();
+      boolean inUseStatement = false;
+
       for (String line : lines) {
         String trimmed = line.trim();
-        if (trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
+        if (trimmed.isEmpty()) {
           continue;
         }
 
-        Matcher useMatcher = USE_PATTERN.matcher(line);
+        if (inUseStatement) {
+          pendingUse.append(' ').append(trimmed);
+          int semi = pendingUse.indexOf(";");
+          if (semi >= 0) {
+            expandRustUseTree("", pendingUse.substring(0, semi).trim(), importedPaths);
+            pendingUse.setLength(0);
+            inUseStatement = false;
+          }
+          continue;
+        }
+
+        Matcher useMatcher = USE_START_PATTERN.matcher(line);
         if (useMatcher.find()) {
-          String usePath = useMatcher.group(1).trim();
-          importedPaths.add(usePath);
+          String rest = useMatcher.group(1).trim();
+          int semi = rest.indexOf(';');
+          if (semi >= 0) {
+            expandRustUseTree("", rest.substring(0, semi).trim(), importedPaths);
+          } else {
+            pendingUse.setLength(0);
+            pendingUse.append(rest);
+            inUseStatement = true;
+          }
           continue;
         }
 
@@ -168,6 +192,87 @@ public class RustAstScanner implements LanguageScanner {
     }
 
     return new ScanResult(classes, edges, skippedFiles.get());
+  }
+
+  private static final int MAX_USE_TREE_DEPTH = 32;
+
+  private record UseTreeFrame(String prefix, String tree, int depth) {}
+
+  static void expandRustUseTree(String rootPrefix, String rootTree, Set<String> out) {
+    if (rootTree == null || rootTree.isBlank()) {
+      return;
+    }
+    Deque<UseTreeFrame> stack = new ArrayDeque<>();
+    stack.push(new UseTreeFrame(rootPrefix, rootTree, 0));
+
+    while (!stack.isEmpty()) {
+      UseTreeFrame frame = stack.pop();
+      if (frame.depth() > MAX_USE_TREE_DEPTH || frame.tree().isBlank()) {
+        continue;
+      }
+      String tree = frame.tree();
+      String prefix = frame.prefix();
+
+      int braceDepth = 0;
+      int start = 0;
+      List<String> parts = new ArrayList<>();
+      for (int i = 0; i < tree.length(); i++) {
+        char c = tree.charAt(i);
+        if (c == '{') {
+          braceDepth++;
+        } else if (c == '}') {
+          braceDepth = Math.max(0, braceDepth - 1);
+        } else if (c == ',' && braceDepth == 0) {
+          parts.add(tree.substring(start, i));
+          start = i + 1;
+        }
+      }
+      parts.add(tree.substring(start));
+
+      for (int idx = parts.size() - 1; idx >= 0; idx--) {
+        String part = parts.get(idx).trim();
+        if (part.isEmpty()) {
+          continue;
+        }
+        int openBrace = part.indexOf('{');
+        int closeBrace = part.lastIndexOf('}');
+        if (openBrace >= 0 && closeBrace > openBrace) {
+          String subPrefix = part.substring(0, openBrace).trim();
+          if (subPrefix.endsWith("::")) {
+            subPrefix = subPrefix.substring(0, subPrefix.length() - 2).trim();
+          }
+          String combined = joinRustPrefix(prefix, subPrefix);
+          stack.push(
+              new UseTreeFrame(
+                  combined, part.substring(openBrace + 1, closeBrace), frame.depth() + 1));
+          continue;
+        }
+        int asIdx = part.indexOf(" as ");
+        if (asIdx > 0) {
+          part = part.substring(0, asIdx).trim();
+        }
+        if (part.startsWith("::")) {
+          part = part.substring(2).trim();
+        }
+        if ("self".equals(part) || "*".equals(part)) {
+          if (!prefix.isEmpty()) {
+            out.add(prefix);
+          }
+        } else if (!part.isEmpty()) {
+          out.add(joinRustPrefix(prefix, part));
+        }
+      }
+    }
+  }
+
+  private static String joinRustPrefix(String prefix, String segment) {
+    if (prefix == null || prefix.isEmpty()) {
+      return segment;
+    }
+    if (segment == null || segment.isEmpty()) {
+      return prefix;
+    }
+    return prefix + "::" + segment;
   }
 
   private String toRustModuleId(String relPath) {

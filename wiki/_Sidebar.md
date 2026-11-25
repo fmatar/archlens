@@ -5,7 +5,7 @@
 ### Core Architecture
 - **[System Architecture](Architecture)**
 - **[Concentric Rings](Architecture#the-concentric-rings)**
-- **[Polyglot AST Scanners](Architecture#polyglot-ast-engine-spi)**
+- **[Polyglot Scanners](Architecture#polyglot-scanner-engine-spi)**
 - **[🗺️ Codebase Map](Codebase-Map)**
 
 ---

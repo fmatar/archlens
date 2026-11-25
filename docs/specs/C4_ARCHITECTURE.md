@@ -7,7 +7,7 @@ flowchart TD
     User["Software Architect / Engineer"]
     Agent["Autonomous AI Coding Agent\n(Antigravity, Gemini CLI, Claude Code, Grok, Cursor, Windsurf)"]
     
-    subgraph System ["Archlens Governance & Refactoring Workbench (v1.2.0)"]
+    subgraph System ["Archlens Governance & Refactoring Workbench (v1.3.0)"]
         App["Archlens Dynamic Workbench\n(Quarkus 3.40.1.2 on Java 25 + Svelte 5 + @fadym/archlens-skill CLI)"]
     end
     
@@ -70,6 +70,6 @@ Archlens strictly enforces its own Clean Architecture policy ([`.archlens/policy
 | Concentric Ring | Packages (`io.slixes.archlens.*`) | Key Components & Responsibilities |
 | :--- | :--- | :--- |
 | **Ring 0: Domain Core** | `domain.graph`, `domain.policy`, `domain.fitness`, `domain.screaming`, `domain.dossier`, `domain.mailbox` | Pure immutable records (`ArchitectureGraph`, `ComponentNode`, `ClassNode`, `DependencyEdge`, `FitnessEvaluation`, `DipInversionPlan`) and pure domain services (`CrapScoreCalculator`, `DependencyRuleValidator`, `PackageCycleDetector`, `ArchitectureFitnessCalculator`, `ScreamingArchitectureAnalyzer`, `DipInversionSynthesizer`, `ArchitecturalDossierGenerator`, `MailboxGateway`). Zero framework or I/O imports. |
-| **Ring 1: Application & Engine** | `usecase`, `engine`, `scanner` | Application interactors (`EvaluateFitnessUseCase`, `GetFitnessHistoryUseCase`, `ExportDossierUseCase`, `ExportDiagramUseCase`, `SynthesizeDipInversionUseCase`, `ProposeScreamingMigrationUseCase`, `ManageSnapshotsUseCase`, `VerifyAndRollbackRefactorUseCase`, `SyncAdrUseCase`, `SavePolicyUseCase`, `ResolveFilesystemUseCase`, `WorkspacePathResolver`, `ProjectPathGuard`, `OpenedProjectRegistry`), ports (`FilesystemGateway`, `TestRunnerGateway`), `ArchitectureCompiler` (`GraphCompiler`), `ProjectFileWatcher`, and the 5-language `LanguageScanner` SPI (`JavaAstScanner`, `PythonAstScanner`, `TypeScriptAstScanner`, `RustAstScanner`, `GoAstScanner`). |
+| **Ring 1: Application & Engine** | `usecase`, `engine`, `scanner` | Application interactors (`EvaluateFitnessUseCase`, `GetFitnessHistoryUseCase`, `ExportDossierUseCase`, `ExportDiagramUseCase`, `SynthesizeDipInversionUseCase`, `ProposeScreamingMigrationUseCase`, `ManageSnapshotsUseCase`, `VerifyAndRollbackRefactorUseCase`, `SyncAdrUseCase`, `SavePolicyUseCase`, `ResolveFilesystemUseCase`, `WorkspacePathResolver`, `ProjectPathGuard`, `OpenedProjectRegistry`), ports (`FilesystemGateway`, `TestRunnerGateway`), `ArchitectureCompiler` (`GraphCompiler`), `ProjectFileWatcher`, and the 5-language `LanguageScanner` SPI (`JavaAstScanner`, `PythonLexicalScanner`, `TypeScriptLexicalScanner`, `RustLexicalScanner`, `GoLexicalScanner`). |
 | **Ring 2: Driven Adapters** | `mailbox.fs`, `workspace.fs`, `verification.runner` | `FileMailboxService` (`MailboxGateway`), `LocalFilesystemGateway` (`FilesystemGateway`), and `ProcessTestRunnerGateway` (`TestRunnerGateway`) isolating filesystem discovery, snapshot backup/restore, and bounded test-runner process trees. |
 | **Ring 3: Driving Delivery & MCP** | `delivery.rest`, `mcp` | Constructor-injected `@RunOnVirtualThread` REST resources (`DiagramResource`, `FitnessResource`, `MailboxResource`, `ProjectFilesystemResource`, `SnapshotResource`, `VersionResource`) and `ArchlensMcpService` exposing 11 `@Tool`s, 3 `@Resource`s, and 2 `@Prompt`s with `@NotBlank` Bean Validation constraints. |

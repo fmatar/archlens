@@ -996,7 +996,10 @@ export async function checkArchitecture(projectRoot, options = {}) {
 
   const allKnownPackages = Array.from(pkgToLevel.keys());
   const screaming = calculateScreamingMetric(allKnownPackages);
-  const screamingThreshold = options.screamingThreshold !== undefined ? Number(options.screamingThreshold) : null;
+  const screamingThreshold =
+    options.screamingThreshold !== undefined && options.screamingThreshold !== null
+      ? Number(options.screamingThreshold)
+      : null;
   const failOnScreaming = screamingThreshold !== null && screaming.score < screamingThreshold;
 
   const cycles = detectPackageCycles(packageEdges);
@@ -1265,7 +1268,7 @@ export function generateSarifReport(report, options = {}) {
       {
         physicalLocation: {
           artifactLocation: {
-            uri: v.fromFile
+            uri: String(v.fromFile || '').replace(/\\/g, '/')
           },
           region: {
             startLine: v.line || 1

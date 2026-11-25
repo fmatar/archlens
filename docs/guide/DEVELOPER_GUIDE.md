@@ -26,7 +26,7 @@ flowchart TD
 
 ### The Inward Dependency Rule:
 - **Domain Core (Ring 0)**: Pure business domain models (`domain.graph`, `domain.policy`, `domain.fitness`, `domain.screaming`, `domain.dossier`, `domain.mailbox`). Zero dependencies on outer frameworks, HTTP libraries, or filesystem I/O.
-- **Application, Engine & Scanners (Ring 1)**: Orchestrates use cases (`usecase.*`), graph compilation (`engine.GraphCompiler`), CRAP score calculation (`metrics.CrapScoreCalculator`), and polyglot AST scanning (`scanner.*`).
+- **Application, Engine & Scanners (Ring 1)**: Orchestrates use cases (`usecase.*`), graph compilation (`engine.GraphCompiler`), CRAP score calculation (`metrics.CrapScoreCalculator`), and polyglot source scanning (`scanner.*`: Java AST + Python/TS/Svelte/Rust/Go lexical).
 - **Adapters (Ring 2)**: Implements file mailbox communication queues (`mailbox.fs.*` implementing `domain.mailbox.MailboxGateway`).
 - **Infrastructure & Delivery (Ring 3)**: Exposes HTTP/REST APIs (`delivery.rest.*`), Server-Sent Events (SSE), Quarkus MCP 2.0 endpoints (`mcp.ArchlensMcpService`), the Svelte 5 browser canvas (`frontend/`), and the Node.js CLI (`cli/`).
 
@@ -49,7 +49,7 @@ archlens/
 │   └── vitest.config.ts      # Vitest component and store testing configuration
 ├── cli/                      # Zero-Dependency Multi-Agent Skill & MCP Stdio Bridge (@fadym/archlens-skill)
 │   ├── bin/index.js          # CLI entrypoint (archlens, archlens-skill, archlens-init)
-│   ├── src/analyzer.js       # Polyglot offline AST classifier & LLM dossier generator
+│   ├── src/analyzer.js       # Polyglot offline lexical classifier & LLM dossier generator
 │   ├── src/checker.js        # Headless CI conformance, ADP cycle, Screaming & Fitness gate engine
 │   ├── src/docker-runner.js  # 4-Tier Auto-Resurrection engine (Live -> Native JAR -> Docker -> Offline)
 │   ├── src/installer.js      # Policy scaffolder and companion guideline injector (AGENTS.md / CLAUDE.md)
@@ -228,7 +228,7 @@ node .agent/scripts/sdlc-engine.mjs wiki audit --strict
 Archlens uses a Service Provider Interface (SPI) design for language scanners. Follow this five-step recipe to add support for a new language (e.g. Swift, C#, Scala, Ruby):
 
 ### Step 1: Implement `LanguageScanner`
-Create `backend/src/main/java/io/slixes/archlens/scanner/<Language>AstScanner.java`:
+Create `backend/src/main/java/io/slixes/archlens/scanner/<Language>LexicalScanner.java` (or `<Language>AstScanner.java` when backed by a full parser AST):
 
 ```java
 package io.slixes.archlens.scanner;
@@ -243,7 +243,7 @@ import java.io.IOException;
 import java.util.List;
 
 @ApplicationScoped
-public class SwiftAstScanner implements LanguageScanner {
+public class SwiftLexicalScanner implements LanguageScanner {
 
   @Override
   public String language() {
@@ -279,7 +279,7 @@ In `backend/src/main/java/io/slixes/archlens/domain/dossier/DipInversionSynthesi
 Always traverse source files using `FileScannerUtil.findFiles(...)`. This automatically skips hidden folders (`.git`, `.archlens`), dependency directories (`node_modules`, `target`, `.build`), Unix sockets, and unreadable files.
 
 ### Step 5: Add Comprehensive Tests
-Create `backend/src/test/java/io/slixes/archlens/scanner/<Language>AstScannerTest.java`:
+Create `backend/src/test/java/io/slixes/archlens/scanner/<Language>LexicalScannerTest.java`:
 - Provide realistic source file fixtures in `@TempDir`.
 - Verify extracted components, `INTERFACE` / `ABSTRACT` stereotypes for Martin Abstractness ($A$), inner layer classifications, and outward dependencies.
 - Ensure 100% test pass rate with meaningful domain assertions.

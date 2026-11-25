@@ -77,13 +77,13 @@ flowchart LR
   1. **Enterprise Monorepo & Multi-Module Scanners (`#3001`, `CAP-02`)**:
      - [x] Deep nested Maven multi-module discovery (`discoverMavenModuleSourceDirs`) and `tsconfig.json` / `jsconfig.json` path alias & barrel `index.ts` re-export resolution (`CAP-02`).
      - [x] Cross-project boundary detection: distinguishing internal intra-repository imports vs external 3rd-party dependencies.
-     - [x] Gradle subproject (`settings.gradle` / `settings.gradle.kts`), Nx/Turborepo/pnpm workspace (`pnpm-workspace.yaml` / `package.json` `workspaces`), and Cargo workspace (`[workspace]`) multi-module aggregation across `FileScannerUtil.discoverWorkspaceModules`, `JavaAstScanner`, `RustAstScanner`, `TypeScriptAstScanner`, and `cli/src/analyzer.js`.
+     - [x] Gradle subproject (`settings.gradle` / `settings.gradle.kts`), Nx/Turborepo/pnpm workspace (`pnpm-workspace.yaml` / `package.json` `workspaces`), and Cargo workspace (`[workspace]`) multi-module aggregation across `FileScannerUtil.discoverWorkspaceModules`, `JavaAstScanner`, `RustLexicalScanner`, `TypeScriptLexicalScanner`, and `cli/src/analyzer.js`.
   2. **Cross-Language Boundary Tracing (`#3001`)**:
      - [x] Bridge frontend API client calls (Svelte 5 / TS `fetch('/api/...')` / `axios('/api/...')`) to backend entrypoints (Quarkus/Spring REST `@Path` / `@RequestMapping` and FastAPI/Flask `@app.get` / `@router.post` via `FileScannerUtil.indexBackendRestRoutes`) within a unified cross-language dependency graph (`HTTP /api/...` edges).
-  3. **AST Parser Resiliency & Polyglot Dialect Parity (`CAP-01`, `CAP-03`, `#3001`)**:
-     - [x] Graceful partial AST degradation & explicit `skippedFiles` telemetry: per-file exception isolation across `JavaAstScanner` (`ParserConfiguration.LanguageLevel.RAW`), `TypeScriptAstScanner`, `PythonAstScanner` (`CAP-01`), `GoAstScanner`, and `RustAstScanner`.
+  3. **Scanner Resiliency & Polyglot Dialect Parity (`CAP-01`, `CAP-03`, `#3001`)**:
+     - [x] Graceful partial scan degradation & explicit `skippedFiles` telemetry: per-file exception isolation across `JavaAstScanner` (`ParserConfiguration.LanguageLevel.RAW`), `TypeScriptLexicalScanner`, `PythonLexicalScanner` (`CAP-01`), `GoLexicalScanner`, and `RustLexicalScanner`.
      - [x] Modern Java 25 syntax idioms (records, sealed classes, pattern matching), Svelte 5 runes (`$state`, `$derived`, `$props`), and polyglot DIP port synthesis (`DipInversionSynthesizer` for Java, Python, TypeScript, Go, and Rust — `CAP-03`).
-     - [x] Go 1.23 iterator idioms (`iter.Seq[T]` / `iter.Seq2[K, V]` signatures and functional iterator contracts in `GoAstScanner`) and Python 3.12 (`PEP 695`) `type <Alias>[T] = ...` statement aliases and generic classes/functions in `PythonAstScanner`.
+     - [x] Go 1.23 iterator idioms (`iter.Seq[T]` / `iter.Seq2[K, V]` signatures and functional iterator contracts in `GoLexicalScanner`) and Python 3.12 (`PEP 695`) `type <Alias>[T] = ...` statement aliases and generic classes/functions in `PythonLexicalScanner`.
 - **Exit Criteria for `v0.2.0`**: Multi-module Gradle/Cargo/pnpm workspace auto-discovery and cross-language REST boundary linking verified with fixture integration tests.
 
 ---

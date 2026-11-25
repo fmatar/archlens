@@ -7,6 +7,7 @@ import * as os from 'node:os';
 import { EventEmitter } from 'node:events';
 
 import {
+  getPackageVersion,
   getMcpToolsList,
   getMcpResourcesList,
   readMcpResource,
@@ -677,5 +678,15 @@ test('executeToolCall supports exportArchitectureDiagram online, fallback endpoi
     assert.match(offlineUml.content[0].text, /CoreEntity/);
   } finally {
     fs.rmSync(tmpProj, { recursive: true, force: true });
+  }
+});
+
+test('getPackageVersion resolves cli/package.json version and falls back cleanly when missing', () => {
+  assert.equal(getPackageVersion(), '1.3.0');
+  getPackageVersion.pkgPathOverride = path.join(os.tmpdir(), 'archlens-nonexistent-pkg.json');
+  try {
+    assert.equal(getPackageVersion(), '1.3.0');
+  } finally {
+    delete getPackageVersion.pkgPathOverride;
   }
 });

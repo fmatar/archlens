@@ -23,7 +23,8 @@ reports/
 **/*.tgz
 
 .agents/
-.agent/
+.agent/*
+!.agent/sealit-config.json
 .claude/
 .github/skills/
 .impeccable/

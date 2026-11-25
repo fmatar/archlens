@@ -1,0 +1,66 @@
+{
+  "$schema": "./schemas/sealit-config.schema.json",
+  "version": "0.1.0",
+  "ci": {
+    "runsOn": "${{ vars.SEALIT_RUNS_ON || vars.SDLC_RUNS_ON || 'ubuntu-latest' }}",
+    "checkName": "Verify & Quality Gates"
+  },
+  "archlens": {
+    "enabled": true,
+    "policyPath": ".archlens/policy.json"
+  },
+  "modules": [
+    {
+      "name": "backend",
+      "path": "backend",
+      "language": "java",
+      "commands": {
+        "lint": "mvn -B -ntp spotless:check",
+        "build": "mvn -B -ntp test-compile",
+        "test": "mvn -B -ntp test",
+        "coverage": "mvn -B -ntp test jacoco:report",
+        "coverageFile": "target/site/jacoco/jacoco.xml",
+        "mutation": null
+      },
+      "thresholds": {
+        "diffCoverage": 85,
+        "mutationScore": null
+      }
+    },
+    {
+      "name": "frontend",
+      "path": "frontend",
+      "language": "typescript",
+      "commands": {
+        "lint": "pnpm run check",
+        "build": "pnpm run build",
+        "test": "pnpm run test",
+        "coverage": "pnpm run test:coverage",
+        "coverageFile": "coverage/lcov.info",
+        "mutation": null
+      },
+      "thresholds": {
+        "diffCoverage": 80,
+        "mutationScore": null
+      }
+    },
+    {
+      "name": "cli",
+      "path": "cli",
+      "language": "javascript",
+      "commands": {
+        "lint": null,
+        "build": null,
+        "test": "npm test",
+        "coverage": "npm run test:coverage",
+        "coverageFile": "coverage/lcov.info",
+        "mutation": null
+      },
+      "thresholds": {
+        "diffCoverage": 85,
+        "mutationScore": null
+      }
+    }
+  ],
+  "exemptions": []
+}
